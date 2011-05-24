@@ -1,0 +1,65 @@
+<!DOCTYPE HTML>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<body/>
+<script type="text/javascript" src="spectrum128.js"></script>
+<script type="text/javascript" src="spectrum3f.js"></script>
+<script type="text/javascript" src="fdc.js"></script>
+<script type="text/javascript" src="z80p.js"></script>
+<script type="text/javascript" src="debug.js"></script>
+<script type="text/javascript">
+/*<![CDATA[*/
+game=t=u=0;
+function cb(b,f){
+  if(f[0]=='_')
+    emul=b;
+  else 
+    game=b;
+  if(!t--){
+    document.body.style.margin= 0;
+    he= document.createElement('canvas');
+    he.setAttribute('width','512');
+    he.setAttribute('height','384');
+    he.setAttribute('style','display:none;position:absolute');
+    document.body.appendChild(he);
+    eld= (elm= (ct= he.getContext('2d')).getImageData(0,0,512,384)).data;
+    ir= document.createElement('iframe');
+    ir.setAttribute('style','display:none');
+    document.body.appendChild(ir);
+    while(t<98303)
+      a= emul.charCodeAt(++t+24) >> 4,
+      eld[u++]= emul.charCodeAt(3*a),
+      eld[u++]= emul.charCodeAt(3*a+1),
+      eld[u++]= emul.charCodeAt(3*a+2),
+      eld[u++]= a ? 255 : 55,
+      a= emul.charCodeAt(t+24) & 15,
+      eld[u++]= emul.charCodeAt(3*a),
+      eld[u++]= emul.charCodeAt(3*a+1),
+      eld[u++]= emul.charCodeAt(3*a+2),
+      eld[u++]= a ? 255 : 55;
+    ct.putImageData(elm, 0, 0);
+    cv= document.createElement('canvas');
+    cv.setAttribute('width','256');
+    cv.setAttribute('height','192');
+    document.body.appendChild(cv);
+    eld= (elm= (ct= cv.getContext('2d')).getImageData(0,0,256,192)).data;
+    init();
+  }
+}
+function ajax(f,a){
+  var xhr=new XMLHttpRequest();
+  xhr.onreadystatechange=function(){
+    if(xhr&&xhr.readyState==4)
+      a(xhr.responseText,f);
+  };
+  xhr.open('GET',f,true);
+  xhr.overrideMimeType('text/plain;charset=x-user-defined');
+  xhr.send(null);
+}
+k=location.href.indexOf('?')+1;
+if(k)
+  t++,
+  ajax(location.href.substr(k),cb);
+ajax('_+2A',cb);
+//]]>
+</script>
+</html>

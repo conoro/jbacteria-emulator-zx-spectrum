@@ -1,0 +1,68 @@
+<!DOCTYPE HTML>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head><title>Roland6128</title></head>
+<body/>
+<script type="text/javascript" src="jcpc.js"></script>
+<script type="text/javascript" src="j6128.js"></script>
+<script type="text/javascript" src="screen0_6128.js"></script>
+<script type="text/javascript" src="out6128s0.js"></script>
+<script type="text/javascript" src="z80p.js"></script>
+<script type="text/javascript" src="fdc.js"></script>
+<script type="text/javascript" src="debug.js"></script>
+<script type="text/javascript">
+/*<![CDATA[*/
+param= game=t=u=0;
+function cb(b,f){
+  if(f[0]=='_')
+    emul=b;
+  else
+    game=b;
+  if(!t--){
+    document.body.style.margin= 0;
+    he= document.createElement('canvas');
+    he.width= 512;
+    he.height= 384;
+    he.setAttribute('style','display:none;position:absolute');
+    document.body.appendChild(he);
+    eld= (elm= (ct= he.getContext('2d')).getImageData(0,0,512,384)).data;
+    ir= document.createElement('iframe');
+    ir.setAttribute('style','display:none');
+    document.body.appendChild(ir);
+    while(t<98303)
+      a= emul.charCodeAt(++t+21) >> 4,
+      eld[u++]= emul.charCodeAt(3*a) & 255,
+      eld[u++]= emul.charCodeAt(3*a+1) & 255,
+      eld[u++]= emul.charCodeAt(3*a+2) & 255,
+      eld[u++]= a ? 255 : 55,
+      a= emul.charCodeAt(t+21) & 15,
+      eld[u++]= emul.charCodeAt(3*a) & 255,
+      eld[u++]= emul.charCodeAt(3*a+1) & 255,
+      eld[u++]= emul.charCodeAt(3*a+2) & 255,
+      eld[u++]= a ? 255 : 55;
+    ct.putImageData(elm, 0, 0);
+    cv= document.createElement('canvas');
+    document.body.appendChild(cv);
+    eld= (elm= (ct= cv.getContext('2d')).getImageData(0,0,1,1)).data;
+    init();
+  }
+}
+function ajax(f,a){
+  var xhr=new XMLHttpRequest();
+  xhr.onreadystatechange=function(){
+    if(xhr&&xhr.readyState==4)
+      a(xhr.responseText,f);
+  };
+  xhr.open('GET',f,true);
+  xhr.overrideMimeType('text/plain;charset=x-user-defined');
+  xhr.send(null);
+}
+k=location.href.indexOf('?')+1;
+if(k)
+  l=location.href.substr(k).indexOf('/'),
+  param= decodeURI(location.href.substr(k+l+1)),
+  t++,
+  ajax(location.href.substr(k,l),cb);
+ajax('_6128',cb);
+//]]>
+</script>
+</html>
