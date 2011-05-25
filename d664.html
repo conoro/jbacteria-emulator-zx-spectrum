@@ -1,22 +1,19 @@
 <!DOCTYPE HTML>
-<html xmlns="http://www.w3.org/1999/xhtml">
-<head><title>Roland464</title></head>
+<html>
+<head><title>Roland664</title></head>
 <body/>
 <script type="text/javascript" src="jcpc.js"></script>
-<script type="text/javascript" src="j464.js"></script>
+<script type="text/javascript" src="j664.js"></script>
 <script type="text/javascript" src="screen1.js"></script>
-<script type="text/javascript" src="out464s1.js"></script>
+<script type="text/javascript" src="out664s1.js"></script>
 <script type="text/javascript" src="z80p.js"></script>
+<script type="text/javascript" src="fdc.js"></script>
 <script type="text/javascript" src="debug.js"></script>
 <script type="text/javascript">
-/*<![CDATA[*/
-tapep=cdt=game=t=u=0;
+param= game=t=u=0;
 function cb(b,f){
   if(f[0]=='_')
     emul=b;
-  else if(f.slice(-2)=='dt')
-    cdt=b,
-    tapep=10;
   else
     game=b;
   if(!t--){
@@ -60,9 +57,10 @@ function ajax(f,a){
 }
 k=location.href.indexOf('?')+1;
 if(k)
+  l=location.href.substr(k).indexOf('/'),
+  param= decodeURI(location.href.substr(k+l+1)),
   t++,
-  ajax(location.href.substr(k),cb);
-ajax('_464',cb);
-//]]>
+  ajax(location.href.substr(k,l),cb);
+ajax('_664',cb);
 </script>
 </html>
