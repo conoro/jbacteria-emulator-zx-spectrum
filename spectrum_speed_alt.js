@@ -81,113 +81,120 @@ function run() {
 //cond(),
     r++,
     g[m[pc++&0xffff]]();
-  if( !(++flash & 15) )
+  if( !(++flash & 15) ){
     put.title=  na
               + parseInt( trein
                         / ( (nt= new Date().getTime())
                           - time
                           )
                         )
-              + '%',
+              + '%';
     time= nt;
+    for ( o= 0
+        ; o < 0x300
+        ; o++ )
+      if( m[o+0x5800] & 0x80 )
+        vm[o]= 0xff;
+  }
   t= -1;
-  while(t++ < 0x2ff){
-    for ( col= m[t+0x5800]
-        , bk= pal[col    & 7
-                | col>>3 & 8]
-        , fr= pal[col>>3 & 15]
-        , co= 0
-        , dx= t<<3 & 0xff
-        , dy= t>>5 << 3
-        , o=  dy<<10
-            | t<<5 & 0x3ff
-        , u=  0x4000
-            | t    & 0xff 
-            | t<<3 & 0x1800
-        , n=  0
-        ; n < 8
-        ; u+= 0x100
-        , o+= 0x400
-        , n++ )
-      if( k=  col>>7
+  while( t++ < 0x2ff )
+    if( j= vm[t] ){
+      vm[t]= 0;
+      for ( col= m[t+0x5800]
+          , bk= pal[col    & 7
+                  | col>>3 & 8]
+          , fr= pal[col>>3 & 15]
+          , co= 0
+          , dx= t<<3 & 0xff
+          , dy= t>>5 << 3
+          , o=  dy<<10
+              | t<<5 & 0x3ff
+          , u=  0x4000
+              | t    & 0xff 
+              | t<<3 & 0x1800
+          , n=  0
+          ; n < 8
+          ; u+= 0x100
+          , o+= 0x400
+          , n++ )
+        if( j>>n & 1 ){
+          k=  col>>7
             & flash>>4
               ? ~m[u]
-              : m[u]
-        , vm[u] != (col | k<<8) ){
-        vm[u]= col | k<<8;
-        if( k&128 )
-          eld[o  ]= bk[0],
-          eld[o+1]= bk[1],
-          eld[o+2]= bk[2];
-        else
-          eld[o  ]= fr[0],
-          eld[o+1]= fr[1],
-          eld[o+2]= fr[2];
-        if( k&64 )
-          eld[o+4]= bk[0],
-          eld[o+5]= bk[1],
-          eld[o+6]= bk[2];
-        else
-          eld[o+4]= fr[0],
-          eld[o+5]= fr[1],
-          eld[o+6]= fr[2];
-        if( k&32 )
-          eld[o+8 ]= bk[0],
-          eld[o+9 ]= bk[1],
-          eld[o+10]= bk[2];
-        else
-          eld[o+8 ]= fr[0],
-          eld[o+9 ]= fr[1],
-          eld[o+10]= fr[2];
-        if( k&16 )
-          eld[o+12]= bk[0],
-          eld[o+13]= bk[1],
-          eld[o+14]= bk[2];
-        else
-          eld[o+12]= fr[0],
-          eld[o+13]= fr[1],
-          eld[o+14]= fr[2];
-        if( k&8 )
-          eld[o+16]= bk[0],
-          eld[o+17]= bk[1],
-          eld[o+18]= bk[2];
-        else
-          eld[o+16]= fr[0],
-          eld[o+17]= fr[1],
-          eld[o+18]= fr[2];
-        if( k&4 )
-          eld[o+20]= bk[0],
-          eld[o+21]= bk[1],
-          eld[o+22]= bk[2];
-        else
-          eld[o+20]= fr[0],
-          eld[o+21]= fr[1],
-          eld[o+22]= fr[2];
-        if( k&2 )
-          eld[o+24]= bk[0],
-          eld[o+25]= bk[1],
-          eld[o+26]= bk[2];
-        else
-          eld[o+24]= fr[0],
-          eld[o+25]= fr[1],
-          eld[o+26]= fr[2];
-        if( k&1 )
-          eld[o+28]= bk[0],
-          eld[o+29]= bk[1],
-          eld[o+30]= bk[2];
-        else
-          eld[o+28]= fr[0],
-          eld[o+29]= fr[1],
-          eld[o+30]= fr[2];
-      }
-      else{
-        if(n>co)
-          ct.putImageData(elm, 0, 0, dx-1, dy+co-1, 10, n-co+2);
-        co= n+1;
-      }
-    if(n>co)
-      ct.putImageData(elm, 0, 0, dx-1, dy+co-1, 10, n-co+2);
-  }
+              : m[u];
+          if( k&128 )
+            eld[o  ]= bk[0],
+            eld[o+1]= bk[1],
+            eld[o+2]= bk[2];
+          else
+            eld[o  ]= fr[0],
+            eld[o+1]= fr[1],
+            eld[o+2]= fr[2];
+          if( k&64 )
+            eld[o+4]= bk[0],
+            eld[o+5]= bk[1],
+            eld[o+6]= bk[2];
+          else
+            eld[o+4]= fr[0],
+            eld[o+5]= fr[1],
+            eld[o+6]= fr[2];
+          if( k&32 )
+            eld[o+8 ]= bk[0],
+            eld[o+9 ]= bk[1],
+            eld[o+10]= bk[2];
+          else
+            eld[o+8 ]= fr[0],
+            eld[o+9 ]= fr[1],
+            eld[o+10]= fr[2];
+          if( k&16 )
+            eld[o+12]= bk[0],
+            eld[o+13]= bk[1],
+            eld[o+14]= bk[2];
+          else
+            eld[o+12]= fr[0],
+            eld[o+13]= fr[1],
+            eld[o+14]= fr[2];
+          if( k&8 )
+            eld[o+16]= bk[0],
+            eld[o+17]= bk[1],
+            eld[o+18]= bk[2];
+          else
+            eld[o+16]= fr[0],
+            eld[o+17]= fr[1],
+            eld[o+18]= fr[2];
+          if( k&4 )
+            eld[o+20]= bk[0],
+            eld[o+21]= bk[1],
+            eld[o+22]= bk[2];
+          else
+            eld[o+20]= fr[0],
+            eld[o+21]= fr[1],
+            eld[o+22]= fr[2];
+          if( k&2 )
+            eld[o+24]= bk[0],
+            eld[o+25]= bk[1],
+            eld[o+26]= bk[2];
+          else
+            eld[o+24]= fr[0],
+            eld[o+25]= fr[1],
+            eld[o+26]= fr[2];
+          if( k&1 )
+            eld[o+28]= bk[0],
+            eld[o+29]= bk[1],
+            eld[o+30]= bk[2];
+          else
+            eld[o+28]= fr[0],
+            eld[o+29]= fr[1],
+            eld[o+30]= fr[2];
+        }
+        else{
+          if(n>co)
+            ct.putImageData(elm, 0, 0, dx-1, dy+co-1, 10, n-co+2);
+          co= n+1;
+        }
+      if(n>co)
+        ct.putImageData(elm, 0, 0, dx-1, dy+co-1, 10, n-co+2);
+    }
   st= 0;
   z80interrupt();
 }
@@ -214,6 +221,8 @@ function init() {
   }
   while( t < 0x30000 )
     eld[t++]= 0xff;
+  for (o= 0; o < 0x300; o++)
+    vm[o]= 0xff;
   for ( j= 0
       ; j < 0x10000
       ; j++ )        // fill memory
@@ -241,9 +250,10 @@ function init() {
       interval= setInterval(myrun, 20);
   }
   else{
-    if(typeof Audio == 'function'){
+    if( typeof Audio == 'function'
+     && (audioOutput= new Audio())
+     && typeof audioOutput.mozSetup == 'function' ){
       paso= 69888/2048;
-      audioOutput= new Audio();
       audioOutput.mozSetup(2, 51200);
       myrun= mozrun;
       interval= setInterval(myrun, 20);
@@ -514,8 +524,15 @@ function wp(addr, val) {                // write port, only border color emulati
 }
 
 function wb(addr, val) {
-  if( addr > 0x3fff )
+  if( addr > 0x3fff
+   && val != m[addr] ){
     m[addr]= val;
+    if( addr < 0x5800 )
+      vm[ addr    & 0xff
+        | addr>>3 & 0x300 ]|= 1 << (addr>>8 & 7);
+    else if( addr < 0x5b00 )
+      vm[addr-0x5800]= 0xff;
+  }
 }
 
 function rm(o) {
@@ -549,6 +566,8 @@ function rm(o) {
   while(j<0xc01b)
     m[j+0x3fe5]= o.charCodeAt(j++);
   g[0xc9]();
+  for (o= 0; o < 0x300; o++)
+    vm[o]= 0xff;
 }
 
 function wm() {

@@ -1,153 +1,178 @@
 na= 'jBacteriaSe ';
 kc= [0,0,0,0,0,0,0,0,      // keyboard codes
-    385,  // 8 backspace, 129+256
-    482,  // 9 tab (extend), 226+256
+    0x05<<7|0x25, // 8 backspace
+    0x05<<7|0x3c, // 9 tab (extend)
     0,0,0,
-    193,  // 13 enter 
+    0x35,         // 13 enter 
     0,0,
-    1,    // 16 caps
-    226,  // 17 sym
-    0,    // 18 alt (kempston fire)
-    0,0,0,0,0,0,0,0,
-    353,  // 27 esc (edit), 97+256
+    0x05,         // 16 caps
+    0x3c,         // 17 sym
+    0,0,0,0,0,0,0,0,0,
+    0x05<<7|0x1d, // 27 esc (edit)
     0,0,0,0,
-    225,  // 32 space
+    0x3d,         // 32 space
     0,0,0,0,
-    368,  // cursor left, 112+256
-    392,  // cursor up, 136+256
-    388,  // cursor right, 132+256
-    400,  // cursor down, 144+256
+    0x05<<7|0x19, // cursor left
+    0x05<<7|0x22, // cursor up
+    0x05<<7|0x23, // cursor right
+    0x05<<7|0x21, // cursor down
     0,0,0,0,0,0,0,
-    129,  // 0 (48)
-    97,   // 1
-    98,   // 2
-    100,  // 3
-    104,  // 4
-    112,  // 5
-    144,  // 6
-    136,  // 7
-    132,  // 8
-    130,  // 9
+    0x25,         // 0 (48)
+    0x1d,         // 1
+    0x1c,         // 2
+    0x1b,         // 3
+    0x1a,         // 4
+    0x19,         // 5
+    0x21,         // 6
+    0x22,         // 7
+    0x23,         // 8
+    0x24,         // 9
     0,0,0,0,0,0,0,
-    33,   // A (65)
-    240,  // B
-    8,    // C
-    36,   // D
-    68,   // E
-    40,   // F
-    48,   // G
-    208,  // H
-    164,  // I
-    200,  // J
-    196,  // K
-    194,  // L
-    228,  // M
-    232,  // N
-    162,  // O
-    161,  // P
-    65,   // Q
-    72,   // R
-    34,   // S
-    80,   // T
-    168,  // U
-    16,   // V
-    66,   // W
-    4,    // X
-    176,  // Y
-    2,    // Z (97)
-    0,0,0,0,0,0,0,0,0,0,
-    0,0,0,0,0,0,0,0,0,0,
-    0,0,0,0,0,0,0,0,0,3,
-    0,0,0,0,0,0,0,0,0,0,
-    0,0,0,0,0,0,0,0,0,0,
-    0,0,0,0,0,0,0,0,0,0,
-    0,0,0,0,0,0,0,0,0,0,
-    0,0,0,0,0,0,0,0,0,0,
-    0,0,0,0,0,0,0,0,0,0,
-    0,0,0,0,0,
-    58018,
-    58050,
-    58088,
-    58056,
-    58084,
-    57872,
-    57860,
+    0x0d,         // A (65)
+    0x39,         // B
+    0x02,         // C
+    0x0b,         // D
+    0x13,         // E
+    0x0a,         // F
+    0x09,         // G
+    0x31,         // H
+    0x2b,         // I
+    0x32,         // J
+    0x33,         // K
+    0x34,         // L
+    0x3b,         // M
+    0x3a,         // N
+    0x2c,         // O
+    0x2d,         // P
+    0x15,         // Q
+    0x12,         // R
+    0x0c,         // S
+    0x11,         // T
+    0x2a,         // U
+    0x01,         // V
+    0x14,         // W
+    0x03,         // X
+    0x29,         // Y
+    0x04,         // Z (90)
+    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+    0x3c<<7|0x2c, // 186
+    0x3c<<7|0x34,
+    0x3c<<7|0x3a,
+    0x3c<<7|0x32,
+    0x3c<<7|0x3b,
+    0x3c<<7|0x01,
+    0x3c<<7|0x03, //192
     0,0,0,0,0,0,0,0,
     0,0,0,0,0,0,0,0,0,0,
     0,0,0,0,0,0,0,0,
-    58032,
-    57892,
-    58024,
-    57992];
+    0x3c<<7|0x29, //219
+    0x3c<<7|0x0b,
+    0x3c<<7|0x2a,
+    0x3c<<7|0x22];
 
 function kdown(evt) {
-  if(evt.keyCode>36&&evt.keyCode<41||evt.keyCode==9)
-    kb[8]&= (1 << '41302'[(evt.keyCode-9)%9])^255;
   var code= kc[evt.keyCode];
-  if (code)
-    if(code>256)
-      kb[code>>5&7]&= ~code & 31,
-      kb[code>>13]&= ~code >> 8 & 31;
+  if( code )
+    if( code>0x7f )
+      kb[code>>3 & 15]&=  ~(0x20 >> (code     & 7)),
+      kb[code>>10]&=      ~(0x20 >> (code>>7  & 7));
     else
-      kb[code>>5]&= ~code & 31;
-  else if(evt.keyCode==116)
+      kb[code>>3]&=       ~(0x20 >> (code     & 7));
+  else if( evt.keyCode==116 )
     location.reload();
-  else if(evt.keyCode==122)
-    return true;
-  else if(evt.keyCode==112)
-    if(ft^= 1)
-      clearInterval(interval),
-      he.style.display= 'block';
-    else
-      interval= setInterval(run, 20),
-      he.style.display= 'none';
-  else if(evt.keyCode==113)
-    kc[9]^= 482,
-    kc[37]^= 368,
-    kc[38]^= 392,
-    kc[39]^= 388,
-    kc[40]^= 400;
-  if(code==1)
-    kc[186]= 57858,
-    kc[187]= 58052,
-    kc[188]= 57928,
-    kc[189]= 57985,
-    kc[190]= 57936,
-    kc[191]= 57864,
-    kc[192]= 57889,
-    kc[219]= 57896,
-    kc[220]= 57890,
-    kc[221]= 57904,
-    kc[222]= 58017;
-  if(code==57858||code==58052||code==57928||code==57985||code==57936||
-     code==57864||code==57889||code==57896||code==57890||code==57904||code==58017)
+  else if( evt.keyCode==122 )
+    return 1;
+  else if( evt.keyCode==112 )
+    if( ft^= 1 ){
+      if( trein==32000 )
+        clearInterval(interval);
+      else
+        node.onaudioprocess= 0;
+      pt.style.display= he.style.display= 'block';
+    }
+    else{
+      if( trein==32000 )
+        interval= setInterval(myrun, 20);
+      else
+        node.onaudioprocess= audioprocess;
+      pt.style.display= he.style.display= 'none';
+    }
+  else if( evt.keyCode==113 )
+    kc[9]^=  0x41^(0x05<<7 | 0x3c),
+    kc[37]^= 0x44^(0x05<<7 | 0x19),
+    kc[38]^= 0x42^(0x05<<7 | 0x22),
+    kc[39]^= 0x45^(0x05<<7 | 0x23),
+    kc[40]^= 0x43^(0x05<<7 | 0x21),
+    alert(kc[9]&4
+          ? 'Cursors enabled'
+          : 'Joystick enabled on Cursors + Tab');
+  if(code==0x05)
+    kc[186]= 0x3c<<7|0x04,
+    kc[187]= 0x3c<<7|0x33,
+    kc[188]= 0x3c<<7|0x12,
+    kc[189]= 0x3c<<7|0x25,
+    kc[190]= 0x3c<<7|0x11,
+    kc[191]= 0x3c<<7|0x02,
+    kc[192]= 0x3c<<7|0x0d,
+    kc[219]= 0x3c<<7|0x0a,
+    kc[220]= 0x3c<<7|0x0c,
+    kc[221]= 0x3c<<7|0x09,
+    kc[222]= 0x3c<<7|0x2d;
+  else if( evt.keyCode==114 )
+    localStorage.savese= wm();
+  else if( evt.keyCode==115 )
+    rm(localStorage.savese);
+  else if( evt.keyCode==119 )
+    pc= 0;
+  else if( evt.keyCode==121 ){
+    o= wm();
+    t= new ArrayBuffer(o.length);
+    u= new Uint8Array(t, 0);
+    for ( j=0; j<o.length; j++ )
+      u[j]= o.charCodeAt(j);
+    j= new WebKitBlobBuilder(); 
+    j.append(t);
+    ir.src= webkitURL.createObjectURL(j.getBlob());
+    alert('Snapshot saved.\nRename the file (without extension) to SNA');
+  }
+  if( code==(0x3c<<7|0x04)
+   || code==(0x3c<<7|0x33)
+   || code==(0x3c<<7|0x12)
+   || code==(0x3c<<7|0x25)
+   || code==(0x3c<<7|0x11)
+   || code==(0x3c<<7|0x02)
+   || code==(0x3c<<7|0x0d)
+   || code==(0x3c<<7|0x0a)
+   || code==(0x3c<<7|0x0c)
+   || code==(0x3c<<7|0x09)
+   || code==(0x3c<<7|0x2d) )
     kb[0]|= 1;
   if (!evt.metaKey)
     return false;
 }
 
 function kup(evt) {
-  if(evt.keyCode>36&&evt.keyCode<41||evt.keyCode==9)
-    kb[8]|= 1 << '41302'[(evt.keyCode-9)%9];
   var code= kc[evt.keyCode];
-  if(code==1)
-    kc[186]= 58018,
-    kc[187]= 58050,
-    kc[188]= 58088,
-    kc[189]= 58056,
-    kc[190]= 58084,
-    kc[191]= 57872,
-    kc[192]= 57860,
-    kc[219]= 58032,
-    kc[220]= 57892,
-    kc[221]= 58024,
-    kc[222]= 57992;
-  if (code)
-    if(code>256)
-      kb[code>>5&7]|= code & 31,
-      kb[code>>13]|= code >> 8 & 31;
+  if( code==0x05 )
+    kc[186]= 0x3c<<7|0x2c,
+    kc[187]= 0x3c<<7|0x34,
+    kc[188]= 0x3c<<7|0x3a,
+    kc[189]= 0x3c<<7|0x32,
+    kc[190]= 0x3c<<7|0x3b,
+    kc[191]= 0x3c<<7|0x01,
+    kc[192]= 0x3c<<7|0x03,
+    kc[219]= 0x3c<<7|0x29,
+    kc[220]= 0x3c<<7|0x0b,
+    kc[221]= 0x3c<<7|0x2a,
+    kc[222]= 0x3c<<7|0x22;
+  if( code )
+    if( code>0x7f )
+      kb[code>>3 & 15]|=  0x20 >> (code     & 7),
+      kb[code>>10]|=      0x20 >> (code>>7  & 7);
     else
-      kb[code>>5]|= code & 31;
-  if (!evt.metaKey)
+      kb[code>>3]|=       0x20 >> (code     & 7);
+  if( !evt.metaKey )
     return false;
 }

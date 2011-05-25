@@ -1,5 +1,5 @@
 <?
-/*
+///*
   ob_start();
   require'list_wos.php';
   file_put_contents('aa.rom', ob_get_contents());
@@ -226,67 +226,67 @@
   require'emu.php';
   file_put_contents('aa.rom', ob_get_contents());
   exec('kzip -y temp.zip aa.rom');
-  file_put_contents('128i.xhtml.deflate', substr(file_get_contents('temp.zip'), 36, -75));
+  file_put_contents('128i.html.deflate', substr(file_get_contents('temp.zip'), 36, -75));
 ///*
   ob_start();$x=16;$y=0x8000;
   require'emu.php';
   file_put_contents('aa.rom', ob_get_contents());
   exec('kzip -y temp.zip aa.rom');
-  file_put_contents('16.xhtml.deflate', substr(file_get_contents('temp.zip'), 36, -75));
+  file_put_contents('16.html.deflate', substr(file_get_contents('temp.zip'), 36, -75));
 ///*
   ob_start();$x='+2';$y=0x14000;
   require'emu.php';
   file_put_contents('aa.rom', ob_get_contents());
   exec('kzip -y temp.zip aa.rom');
-  file_put_contents('+2.xhtml.deflate', substr(file_get_contents('temp.zip'), 36, -75));
+  file_put_contents('+2.html.deflate', substr(file_get_contents('temp.zip'), 36, -75));
 ///*
   ob_start();$x='+2A';$y=0x1C000;
   require'emu.php';
   file_put_contents('aa.rom', ob_get_contents());
   exec('kzip -y temp.zip aa.rom');
-  file_put_contents('+2A.xhtml.deflate', substr(file_get_contents('temp.zip'), 36, -75));
+  file_put_contents('+2A.html.deflate', substr(file_get_contents('temp.zip'), 36, -75));
 ///*
   ob_start();
   require'emu_se.php';
   file_put_contents('aa.rom', ob_get_contents());
   exec('kzip -y temp.zip aa.rom');
-  file_put_contents('SE.xhtml.deflate', substr(file_get_contents('temp.zip'), 36, -75));
+  file_put_contents('SE.html.deflate', substr(file_get_contents('temp.zip'), 36, -75));
 ///*
   ob_start();$x='464';$y=0x18000;$title='Roland464';
   require'emu_cpc.php';
   file_put_contents('aa.rom', ob_get_contents());
   exec('kzip -y temp.zip aa.rom');
-  file_put_contents('464.xhtml.deflate', substr(file_get_contents('temp.zip'), 36, -75));
+  file_put_contents('464.html.deflate', substr(file_get_contents('temp.zip'), 36, -75));
 ///*
   ob_start();$x='464s';$y=0x18000;$title='Roland464';
   require'emu_cpc.php';
   file_put_contents('aa.rom', ob_get_contents());
   exec('kzip -y temp.zip aa.rom');
-  file_put_contents('464s.xhtml.deflate', substr(file_get_contents('temp.zip'), 36, -75));
+  file_put_contents('464s.html.deflate', substr(file_get_contents('temp.zip'), 36, -75));
 ///*
   ob_start();$x='664';$y=0x1c000;$title='Roland664';
   require'emu_cpc_disk.php';
   file_put_contents('aa.rom', ob_get_contents());
   exec('kzip -y temp.zip aa.rom');
-  file_put_contents('664.xhtml.deflate', substr(file_get_contents('temp.zip'), 36, -75));
+  file_put_contents('664.html.deflate', substr(file_get_contents('temp.zip'), 36, -75));
 ///*
   ob_start();$x='664s';$y=0x1c000;$title='Roland664';
   require'emu_cpc_disk.php';
   file_put_contents('aa.rom', ob_get_contents());
   exec('kzip -y temp.zip aa.rom');
-  file_put_contents('664s.xhtml.deflate', substr(file_get_contents('temp.zip'), 36, -75));
+  file_put_contents('664s.html.deflate', substr(file_get_contents('temp.zip'), 36, -75));
 ///*
   ob_start();$x='6128';$y=0x1c000;$title='Roland6128';
   require'emu_cpc_disk.php';
   file_put_contents('aa.rom', ob_get_contents());
   exec('kzip -y temp.zip aa.rom');
-  file_put_contents('6128.xhtml.deflate', substr(file_get_contents('temp.zip'), 36, -75));
+  file_put_contents('6128.html.deflate', substr(file_get_contents('temp.zip'), 36, -75));
 ///*
   ob_start();$x='6128s';$y=0x1c000;$title='Roland6128';
   require'emu_cpc_disk.php';
   file_put_contents('aa.rom', ob_get_contents());
   exec('kzip -y temp.zip aa.rom');
-  file_put_contents('6128s.xhtml.deflate', substr(file_get_contents('temp.zip'), 36, -75));
+  file_put_contents('6128s.html.deflate', substr(file_get_contents('temp.zip'), 36, -75));
 //*/
   unlink('aa.rom');
   unlink('temp.zip');

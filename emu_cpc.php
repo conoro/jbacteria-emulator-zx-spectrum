@@ -1,9 +1,8 @@
 <!DOCTYPE HTML><?
-?><html xmlns="http://www.w3.org/1999/xhtml"><?
+?><html><?
 ?><head><title><?=$title?></title></head><?
 ?><body/><?
 ?><script type="text/javascript"><?
-?>/*<![CDATA[*/<?
 ?>tapep=cdt=game=t=u=0;<?
 ?>function cb(b,f){<?
   ?>if(f[0]=='_')<?
@@ -31,6 +30,5 @@
   ?>t++,<?
   ?>ajax(location.href.substr(k),cb);<?
 ?>ajax('_<?=$x?>',cb);<?
-?>//]]><?
 ?></script><?
 ?></html>

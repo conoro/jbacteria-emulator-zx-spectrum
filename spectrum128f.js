@@ -67,9 +67,10 @@ function init() {
       interval= setInterval(myrun, 20);
   }
   else{
-    if(typeof Audio == 'function'){
-      paso= 70908/2048;
-      audioOutput= new Audio();
+    if( typeof Audio == 'function'
+     && (audioOutput= new Audio())
+     && typeof audioOutput.mozSetup == 'function' ){
+      paso= 69888/2048;
       audioOutput.mozSetup(2, 51200);
       myrun= mozrun;
       interval= setInterval(myrun, 20);

@@ -1,0 +1,5 @@
+spectrum128_speed.js
+spectrum128f.js
+spectrum2.js
+z80p.js
+dom.js
