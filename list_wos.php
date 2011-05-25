@@ -35,13 +35,17 @@
 ?>}<?
 ?></style><?
 ?><body><ol style="margin-bottom:10px"><?
-?><li><a id="l" href="noframes" style="display:block;text-align:center;font-size:10px;margin-top:0" target="_top">NO FRAMES</a></li><?
+?><li><a id="l" href="noframes" style="display:block;text-align:left;font-size:10px;margin-top:0" target="_top">NO FRAMES</a><?
+?><a href="noframess" style="display:block;text-align:right;font-size:10px;margin-top:0" target="_top">SLOW RENDER</a></li><?
 ?><li><a id="av" href="main" target="main" onclick="l(this)">Home</a></li><?
-?><li><a title="Original 48K ROM" href="48" target="main" onclick="l(this)">48K Rom</a></li><?
-?><li><a title="Investronica/Sinclair 128K" href="128" target="main" onclick="l(this)">128K Rom</a></li><?
-?><li><a title="Amstrad +2" href="+2" target="main" onclick="l(this)">+2 Rom</a></li><?
-?><li><a title="Amstrad +2A" href="+2A" target="main" onclick="l(this)">+2A Rom</a></li><?
-?><li><a title="Modified by Andrew Owen" href="SE" target="main" onclick="l(this)">SE Basic</a></li><?
+?><li><a title="Original 16K ROM" href="16<?=$vesionra?>" target="main" onclick="l(this)">16K Sinclair</a></li><?
+?><li><a title="Original 48K ROM" href="48<?=$vesionra?>" target="main" onclick="l(this)">48K Sinclair</a></li><?
+?><li><a title="Sinclair 128K" href="128<?=$vesionra?>" target="main" onclick="l(this)">128K Sinclair</a></li><?
+?><li><a title="Investronica 128K" href="128i<?=$vesionra?>" target="main" onclick="l(this)">128K Inves</a></li><?
+?><li><a title="Amstrad +2" href="+2<?=$vesionra?>" target="main" onclick="l(this)">+2 Amstrad</a></li><?
+?><li><a title="Amstrad +2A" href="+2A<?=$vesionra?>" target="main" onclick="l(this)">+2A Amstrad</a></li><?
+?><li><a title="Amstrad +3" href="+3<?=$vesionra?>" target="main" onclick="l(this)">+3 Amstrad</a></li><?
+?><li><a title="Modified by Andrew Owen" href="SE<?=$vesionra?>" target="main" onclick="l(this)">SE Basic</a></li><?
 ?></ol><ul><?
 $mi= explode("\n", file_get_contents('wos.txt'));
 $num= count($mi);
@@ -55,10 +59,13 @@ while($num--){
   $pub= trim(substr($mi[$i], 76, 36));
   $snombre= trim(substr($mi[$i], 113, 8));
   $file= trim(substr($mi[$i++], 122));
-  $pref= $plat=='16' ? 16 :
-                       ($plat=='48' ? 48 : 128);
+  $pref=  $plat=='16'
+          ? 16
+          : ( $plat=='48' 
+              ? 48
+              : 128 );
   if($snombre){
-?><li><a title="<?=$nombre?>" href="<?=$pref?>?<?=$snombre?>.tap" target="main" onclick="l(this)"><?=$nombre?></a><?
+?><li><a title="<?=$nombre?>" href="<?=$pref.$vesionra.'?'.$snombre?>.tap" target="main" onclick="l(this)"><?=$nombre?></a><?
 ?><a href="http://www.worldofspectrum.org/infoseekid.cgi?id=00<?=$nn?>" target="_blank"> <img src="wos.png" width="30" height="9"/></a><?
 ?></li><li><?=$year=='0000'?'':$year?> <?=$pub?></li><?
 }}

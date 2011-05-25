@@ -40,7 +40,7 @@ function init() {
     ram[j>>14][j&0x3fff]= 1 << (j>>14) & 0xa1
                           ? emul.charCodeAt(0x18018+r++) & 0xff 
                           : 0;
-  mw[0]= ram[8]; //dummy for rom write
+//  mw[0]= ram[8]; //dummy for rom write
   m[1]= mw[1]= ram[5];
   m[2]= mw[2]= ram[2];
   if(game)                               // emulate LOAD ""
@@ -143,37 +143,34 @@ function wp(addr, val) {                // write port, only border color emulati
               : ( 1<<ay & 0x700
                   ? 0x1f
                   : 0xff),
-        ayr[ay]= val;
-    else                    // 0xxx xxxx xxxx xx0x
-      if( addr&0x4000 )     // 01xx xxxx xxxx xx0x
-        if( pag ){
-          scree= val&8 ? ram[7] : ram[5];
-          p0= val;
-          pag= ~val & 32;
-          if( ~p1&1 )
-            mw[0]= ram[8], //dummy for rom write
-            m[0]= rom[  p0>>4 & 1
-                      | p1>>1 & 2 ],
-            m[1]= mw[1]= ram[5], //for good reset
-            m[2]= mw[2]= ram[2], //
-            m[3]= mw[3]= ram[p0&7];
-        }
-      else                       // 00xx xxxx xxxx xx0x
-        if (pag && addr>>12==1){ // 0001 xxxx xxxx xx0x
-          p1= val;
-          if(val&1)
-            m[0]= mw[0]= ram[val&6 ? 4 : 0],
-            m[1]= mw[1]= ram['1557'[val>>1 & 3]],
-            m[2]= mw[2]= ram[val&6 ? 6 : 2],
-            m[3]= mw[3]= ram[val>>1==1 ? 7 : 3];
-          else
-            mw[0]= ram[8],
-            m[0]= rom[  p0>>4 & 1
-                      | p1>>1 & 2 ],
-            m[1]= mw[1]= ram[5],
-            m[2]= mw[2]= ram[2],
-            m[3]= mw[3]= ram[p0&7];
-        }
+        ayr[ay]= val;       // 0xxx xxxx xxxx xx0x
+    else if( pag && addr&0x4000 ){  // 01xx xxxx xxxx xx0x
+      scree= val&8 ? ram[7] : ram[5];
+      p0= val;
+      pag= ~val & 32;
+      if( ~p1&1 )
+        mw[0]= ram[8], //dummy for rom write
+        m[0]= rom[  p0>>4 & 1
+                  | p1>>1 & 2 ],
+        m[1]= mw[1]= ram[5], //for good reset
+        m[2]= mw[2]= ram[2], //
+        m[3]= mw[3]= ram[p0&7];
+    }                         // 00xx xxxx xxxx xx0x
+    else if( pag && addr&0x1000 ){ // 0001 xxxx xxxx xx0x
+      p1= val;
+      if(val&1)
+        m[0]= mw[0]= ram[val&6 ? 4 : 0],
+        m[1]= mw[1]= ram['1557'[val>>1 & 3]],
+        m[2]= mw[2]= ram[val&6 ? 6 : 2],
+        m[3]= mw[3]= ram[val>>1==1 ? 7 : 3];
+      else
+        mw[0]= ram[8],
+        m[0]= rom[  p0>>4 & 1
+                  | p1>>1 & 2 ],
+        m[1]= mw[1]= ram[5],
+        m[2]= mw[2]= ram[2],
+        m[3]= mw[3]= ram[p0&7];
+    }
 }
 
 function rm(o) {

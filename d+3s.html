@@ -16,11 +16,13 @@ function cb(b,f){
     game=b;
   if(!t--){
     document.body.style.margin= 0;
+    pt= document.createElement('select');
+    pt.setAttribute('onchange','tapep=this.value;tapei=this.selectedIndex');
+    pt.setAttribute('style','display:none;position:absolute');
     he= document.createElement('canvas');
-    he.setAttribute('width','512');
-    he.setAttribute('height','384');
+    he.width= 512;
+    he.height= 384;
     he.setAttribute('style','display:none;position:absolute');
-    document.body.appendChild(he);
     eld= (elm= (ct= he.getContext('2d')).getImageData(0,0,512,384)).data;
     ir= document.createElement('iframe');
     ir.setAttribute('style','display:none');
@@ -38,9 +40,11 @@ function cb(b,f){
       eld[u++]= a ? 255 : 55;
     ct.putImageData(elm, 0, 0);
     cv= document.createElement('canvas');
-    cv.setAttribute('width','256');
-    cv.setAttribute('height','192');
+    cv.width= 256;
+    cv.height= 192;
     document.body.appendChild(cv);
+    document.body.appendChild(he);
+    document.body.appendChild(pt);
     eld= (elm= (ct= cv.getContext('2d')).getImageData(0,0,256,192)).data;
     init();
   }
@@ -59,6 +63,6 @@ k=location.href.indexOf('?')+1;
 if(k)
   t++,
   ajax(location.href.substr(k),cb);
-ajax('_+2A',cb);
+ajax('_+3',cb);
 </script>
 </html>

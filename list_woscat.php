@@ -67,7 +67,7 @@ while($num--){
     <li style="height:35px"><a name="<?=$z[$y]?>"><?=$z[$y++]?></a><a name="" href="#">⇧</a></li>
 <?}
   elseif($snombre){
-?><li><a title="<?=$nombre?>" href="<?=$pref?>?<?=$snombre?>.tap" target="main" onclick="l(this)"><?=$nombre?></a><?
+?><li><a title="<?=$nombre?>" href="<?=$pref.$vesionra.'?'.$snombre?>.tap" target="main" onclick="l(this)"><?=$nombre?></a><?
 ?><a href="http://www.worldofspectrum.org/infoseekid.cgi?id=00<?=$nn?>" target="_blank"> <img src="wos.png" width="30" height="9"/></a><?
 ?></li><li><?=$year=='0000'?'':$year?> <?=$pub?></li><?
 }}
