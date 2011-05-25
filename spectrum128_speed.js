@@ -111,20 +111,23 @@ function run() {
               + '%',
     time= nt;
   t= -1;
-  while(t++ < 0x2ff)
+  while(t++ < 0x2ff){
     for ( col= scree[t+0x1800]
         , bk= pal[col    & 7
                 | col>>3 & 8]
         , fr= pal[col>>3 & 15]
-        , o=  t>>5 << 13 
+        , co= 0
+        , dx= t<<3 & 0xff
+        , dy= t>>5 << 3
+        , o=  dy<<10
             | t<<5 & 0x3ff
         , u=  t    & 0xff 
             | t<<3 & 0x1800
-        ; ! ( 0x1800
-            & ( u ^ t<<3 )
-            )
+        , n=  0
+        ; n < 8
         ; u+= 0x100
-        , o+= 0x400 )
+        , o+= 0x400
+        , n++ )
       if( k=  col>>7
             & flash>>4
               ? ~scree[u]
@@ -196,7 +199,14 @@ function run() {
           eld[o+29]= fr[1],
           eld[o+30]= fr[2];
       }
-  ct.putImageData(elm, 0, 0);
+      else{
+        if(n>co)
+          ct.putImageData(elm, 0, 0, dx-1, dy+co-1, 10, n-co+2);
+        co= n+1;
+      }
+    if(n>co)
+      ct.putImageData(elm, 0, 0, dx-1, dy+co-1, 10, n-co+2);
+  }
   st= 0;
   z80interrupt();
 }

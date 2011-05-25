@@ -18,9 +18,12 @@ function init() {
   yl= 0x3a;
   i=  0x3f;
   sp= 0xff46;
-  put=  top==self
-        ? document 
-        : parent.document;
+  try{
+    put= top==self ? document : parent.document;
+  }
+  catch(error){
+    put= document;
+  }
   while( t < 0x30000 )
     eld[t++]= 0xff;
   for ( o= 0
@@ -56,7 +59,7 @@ function init() {
     cts= new webkitAudioContext();
     if( cts.sampleRate>44000 && cts.sampleRate<50000 )
       trein*= 50*1024/cts.sampleRate,
-      paso= 69888/1024,
+      paso= 70908/1024,
       node= cts.createJavaScriptNode(1024, 0, 1),
       node.onaudioprocess= audioprocess,
       node.connect(cts.destination);
@@ -65,7 +68,7 @@ function init() {
   }
   else{
     if(typeof Audio == 'function'){
-      paso= 69888/2048;
+      paso= 70908/2048;
       audioOutput= new Audio();
       audioOutput.mozSetup(2, 51200);
       myrun= mozrun;
@@ -165,8 +168,8 @@ function wp(addr, val) {                // write port, only border color emulati
       val&= 1<<ay & 0x202a
             ? 15
             : ( 1<<ay & 0x700
-                ? 31
-                : 255),
+                ? 0x1f
+                : 0xff),
       ayr[ay]= val;
 }
 
@@ -253,12 +256,12 @@ function handleFileSelect(evt) {
     case 'sna':
       if( evt.dataTransfer.files[0].size != 0x2001f )
         return alert('Invalid SNA file');
-    var reader= new FileReader();
-    reader.onloadend = function(ev) {
-      o= ev.target.result;
-      rm(o);
-    }
-    reader.readAsBinaryString(evt.dataTransfer.files[0]);
+      var reader= new FileReader();
+      reader.onloadend = function(ev) {
+        o= ev.target.result;
+        rm(o);
+      }
+      reader.readAsBinaryString(evt.dataTransfer.files[0]);
       break;
 /*    case 'z80':
       var reader= new FileReader();

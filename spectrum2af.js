@@ -4,113 +4,175 @@ ayr= [];
 rom= [[],[],[],[]]; //  rom= [new Uint8Array(16384),new Uint8Array(16384),new Uint8Array(16384),new Uint8Array(16384)];
 
 function init() {
-  resize();
-  p0= p1= sha= ft= st= time= tape= flash= tapep= 0;
+  onresize();
+  cts= playp= vbp= bor= p0= p1= sha= ft= st= time= flash= 0;
+  sample= 0.5;
   pag= 1;
   z80init();
   a= b= c= d= f= h= l= a_= b_= c_= d_= e_= h_= l_= r= r7= pc= iff= im= halted= t= u= 0;
-  e= 17;
-  f_= 1;
-  xh= 92;
-  xl= 226;
-  yh= 92;
-  yl= 58;
-  i= 63;
-  sp= 65350;
-  put= top==self ? document : parent.document;
-  while(t<0x30000)
-    eld[t++]= 255;
-  for (o= 0; o< 768; o++)
-    vm[o]= 255;
-  for (o= 0; o< 15; o++)
+  e=  0x11;
+  f_= 0x01;
+  xh= 0x5c;
+  xl= 0xe2;
+  yh= 0x5c;
+  yl= 0x3a;
+  i=  0x3f;
+  sp= 0xff46;
+  try{
+    put= top==self ? document : parent.document;
+  }
+  catch(error){
+    put= document;
+  }
+  while( t < 0x30000 )
+    eld[t++]= 0xff;
+  for ( o= 0
+      ; o < 15
+      ; o++ )
     ayr[o]= 0;
-  for (r= 0; r < 65536; r++)        // fill memory
-    rom[r>>14][r&16383]= emul.charCodeAt(0x18018+r) & 255;
-  for (j= 0; j < 0x24000; j++)        // fill memory
-    ram[j>>14][j&16383]= 1 << (j>>14) & 161 ? emul.charCodeAt(0x18018+r++) & 255 : 0;
+  for ( r= 0
+      ; r < 0x10000
+      ; r++ )
+    rom[r>>14][r&0x3fff]= emul.charCodeAt(0x18018+r) & 0xff;
+  for ( j= 0
+      ; j < 0x24000
+      ; j++)
+    ram[j>>14][j&0x3fff]= 1 << (j>>14) & 0xa1
+                          ? emul.charCodeAt(0x18018+r++) & 0xff 
+                          : 0;
   mw[0]= ram[8]; //dummy for rom write
   m[1]= mw[1]= ram[5];
   m[2]= mw[2]= ram[2];
   if(game)                               // emulate LOAD ""
+    tp(),
     p1= 4,
-    pc= 1388;
-  wp(32765, game ? 16 : 0);
+    pc= 0x56c;
+  wp(0x7ffd, game ? 16 : 0);
   document.ondragover= handleDragOver;
   document.ondrop= handleFileSelect;
   document.onkeydown= kdown;          // key event handling
   document.onkeyup= kup;
   document.onkeypress= kpress;
-  document.body.onresize= resize;
-  interval= setInterval(run, 20);
+  document.onresize= document.body.onresize= onresize;
+  trein= 32000;
+  myrun= run;
+  if(typeof webkitAudioContext == 'function'){
+    cts= new webkitAudioContext();
+    if( cts.sampleRate>44000 && cts.sampleRate<50000 )
+      trein*= 50*1024/cts.sampleRate,
+      paso= 70908/1024,
+      node= cts.createJavaScriptNode(1024, 0, 1),
+      node.onaudioprocess= audioprocess,
+      node.connect(cts.destination);
+    else
+      interval= setInterval(myrun, 20);
+  }
+  else{
+    if(typeof Audio == 'function'){
+      paso= 70908/2048;
+      audioOutput= new Audio();
+      audioOutput.mozSetup(2, 51200);
+      myrun= mozrun;
+      interval= setInterval(myrun, 20);
+    }
+    else
+      interval= setInterval(myrun, 20);
+  }
   self.focus();
 }
 
+function audioprocess(e){
+  vbp= play= playp= j= 0;
+  run();
+  data1= e.outputBuffer.getChannelData(0);
+  data2= e.outputBuffer.getChannelData(1);
+  while( j<1024 ){
+    data1[j++]= data2[j]= sample;
+    play+= paso;
+    if( play > vb[playp] && playp<vbp )
+      playp++,
+      sample= -sample;
+  }
+}
+
+function mozrun(){
+  vbp= play= playp= j= 0;
+  run();
+  while( j<2048 ){
+    data[j++]= sample;
+    play+= paso;
+    if( play > vb[playp] && playp<vbp )
+      playp++,
+      sample= -sample;
+  }
+  audioOutput.mozWriteAudio(data);
+}
+
 function rp(addr) {
-  j= 255;
-  if (!(addr & 224))                    // read kempston
+  j= 0xff;
+  if( !(addr & 0xe0) )                    // read kempston
     j^= kb[8];
-  else if (~addr & 1){                   // read keyboard
-    for (k= 8; k < 16; k++)
-      if (~addr & 1 << k)            // scan row
+  else if( ~addr & 1 ){                   // read keyboard
+    for ( k= 8
+        ; k < 16
+        ; k++ )
+      if( ~addr & 1<<k )            // scan row
         j&= kb[k-8];
   }
-  else if((addr&49154)==49152)
+  else if( (addr&0xc002) == 0xc000 )
     j= ayr[ay];
-  else{
-    t= parseInt(st/224);
-    u= st%224;
-    if(u<192 && t<124 && !(t&4))
-      j= m[t>>1&1 | t>>2 | (t&1 ? 6144 | u<<2&992 : u&6144 | u<<2&224 | u<<8&1792)];
-  }
   return j;
 }
 
 function wp(addr, val) {                // write port, only border color emulation
-  if (~addr & 1)
-    document.body.style.backgroundColor= '#'+palb.substr(3*(bor=val&7), 3);
-  else if(~addr&0x0002){    // xxxx xxxx xxxx xx0x
-    if(addr&0x8000){        // 1xxx xxxx xxxx xx0x
-      if(addr&0x4000)       // 11xx xxxx xxxx xx0x
+  if( ~addr & 1 ){
+    if( (bor^val) & 0x10 )
+      vb[vbp++]= st;
+    document.body.style.backgroundColor=  'rgb('
+                                        + pal[(bor= val)&7].toString()
+                                        + ')';
+  }
+  else if( ~addr&0x0002 )   // xxxx xxxx xxxx xx0x
+    if( addr&0x8000 )       // 1xxx xxxx xxxx xx0x
+      if( addr&0x4000 )     // 11xx xxxx xxxx xx0x
         ay= val&15;
       else                  // 10xx xxxx xxxx xx0x
-        val&= 1<<ay&8234 ? 15 : (1<<ay&1792 ? 31 : 255),
+        val&= 1<<ay & 0x202a
+              ? 15
+              : ( 1<<ay & 0x700
+                  ? 0x1f
+                  : 0xff),
         ayr[ay]= val;
-    }
-    else{                   // 0xxx xxxx xxxx xx0x
-      if(addr&0x4000){      // 01xx xxxx xxxx xx0x
-        if (pag){
+    else                    // 0xxx xxxx xxxx xx0x
+      if( addr&0x4000 )     // 01xx xxxx xxxx xx0x
+        if( pag ){
           scree= val&8 ? ram[7] : ram[5];
-          if((p0^val) & 8)
-            for(t= 0; t<768; t++)
-              vm[t]= 255;
           p0= val;
           pag= ~val & 32;
-          if(~p1&1)
+          if( ~p1&1 )
             mw[0]= ram[8], //dummy for rom write
-            m[0]= rom[p0>>4&1|p1>>1&2],
+            m[0]= rom[  p0>>4 & 1
+                      | p1>>1 & 2 ],
             m[1]= mw[1]= ram[5], //for good reset
             m[2]= mw[2]= ram[2], //
             m[3]= mw[3]= ram[p0&7];
         }
-      }
-      else{                 // 00xx xxxx xxxx xx0x
+      else                       // 00xx xxxx xxxx xx0x
         if (pag && addr>>12==1){ // 0001 xxxx xxxx xx0x
           p1= val;
           if(val&1)
-            m[0]= mw[0]= ram[val&6?4:0],
-            m[1]= mw[1]= ram['1557'[val>>1&3]],
-            m[2]= mw[2]= ram[val&6?6:2],
-            m[3]= mw[3]= ram[val>>1==1?7:3];
+            m[0]= mw[0]= ram[val&6 ? 4 : 0],
+            m[1]= mw[1]= ram['1557'[val>>1 & 3]],
+            m[2]= mw[2]= ram[val&6 ? 6 : 2],
+            m[3]= mw[3]= ram[val>>1==1 ? 7 : 3];
           else
             mw[0]= ram[8],
-            m[0]= rom[p0>>4&1|p1>>1&2],
+            m[0]= rom[  p0>>4 & 1
+                      | p1>>1 & 2 ],
             m[1]= mw[1]= ram[5],
             m[2]= mw[2]= ram[2],
             m[3]= mw[3]= ram[p0&7];
         }
-      }
-    }
-  }
 }
 
 function rm(o) {
@@ -181,8 +243,6 @@ function rm(o) {
   r7<<= 7;
   wp(0x7ffd, p0);
   wp(0x1ffd, p1);
-  for (o= 0; o< 768; o++)
-    vm[o]= 255;
 }
 
 function wm() {
@@ -202,13 +262,24 @@ function wm() {
 function handleFileSelect(evt) {
   evt.stopPropagation();
   evt.preventDefault();
-  if(evt.dataTransfer.files[0].name.slice(-3).toLowerCase()!='z80')
-    return alert('Invalid Z80 file');
-  var reader= new FileReader();
-  reader.onloadend = function(ev) {
-    o= ev.target.result;
-    if(rm(o))
-      return alert('Invalid Z80 file');
+  switch(evt.dataTransfer.files[0].name.slice(-3).toLowerCase()){
+    case 'z80':
+      var reader= new FileReader();
+      reader.onloadend = function(ev) {
+        o= ev.target.result;
+        if(rm(o))
+          return alert('Invalid Z80 file');
+      }
+      reader.readAsBinaryString(evt.dataTransfer.files[0]);
+      break;
+    default:
+      return alert(evt.dataTransfer.files[0].name+' has an invalid extension');
+    case 'tap':
+      var reader= new FileReader();
+      reader.onloadend = function(ev) {
+        game= ev.target.result;
+        tp();
+      }
+      reader.readAsBinaryString(evt.dataTransfer.files[0]);
   }
-  reader.readAsBinaryString(evt.dataTransfer.files[0]);
 }

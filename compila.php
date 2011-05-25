@@ -37,6 +37,19 @@
   exec('kzip -y temp.zip aa.rom');
   file_put_contents('_48.tap.deflate', substr(file_get_contents('temp.zip'), 36, -75));
 ///*
+  exec("java yui 48s");
+  $rom= file_get_contents('48.rom');
+  $rom[0x56c]= chr(0xed);
+  $rom[0x56d]= chr(0xfc);
+  file_put_contents('aa.rom', file_get_contents('k-spectrum.pal').
+                              file_get_contents('k-spectrum.bin').
+                              $rom.
+                              file_get_contents('48.mem').
+                              file_get_contents('48.js'));
+  unlink('48.js');
+  exec('kzip -y temp.zip aa.rom');
+  file_put_contents('_48s.tap.deflate', substr(file_get_contents('temp.zip'), 36, -75));
+///*
   exec("java yui 128");
   $rom= file_get_contents('128.rom');
   $rom[0x456c]= chr(0xed);
@@ -48,7 +61,7 @@
                               file_get_contents('128.js'));
   exec('kzip -y temp.zip aa.rom');
   file_put_contents('_128.tap.deflate', substr(file_get_contents('temp.zip'), 36, -75));
-  $rom= file_get_contents('128s.rom');
+  $rom= file_get_contents('128i.rom');
   $rom[0x456c]= chr(0xed);
   $rom[0x456d]= chr(0xfc);
   file_put_contents('aa.rom', file_get_contents('k-spectrum.pal').
@@ -57,7 +70,7 @@
                               file_get_contents('128.mem').
                               file_get_contents('128.js'));
   exec('kzip -y temp.zip aa.rom');
-  file_put_contents('_128s.tap.deflate', substr(file_get_contents('temp.zip'), 36, -75));
+  file_put_contents('_128i.tap.deflate', substr(file_get_contents('temp.zip'), 36, -75));
   unlink('128.js');
 ///*
   exec("java yui 16");
@@ -174,17 +187,23 @@
   exec('kzip -y temp.zip aa.rom');
   file_put_contents('48.html.deflate', substr(file_get_contents('temp.zip'), 36, -75));
 ///*
+  ob_start();$x='48s';$y=0x10000;
+  require'emu.php';
+  file_put_contents('aa.rom', ob_get_contents());
+  exec('kzip -y temp.zip aa.rom');
+  file_put_contents('48s.html.deflate', substr(file_get_contents('temp.zip'), 36, -75));
+///*
   ob_start();$x=128;$y=0x14000;
   require'emu.php';
   file_put_contents('aa.rom', ob_get_contents());
   exec('kzip -y temp.zip aa.rom');
   file_put_contents('128.html.deflate', substr(file_get_contents('temp.zip'), 36, -75));
 ///*
-  ob_start();$x='128s';$y=0x14000;
+  ob_start();$x='128i';$y=0x14000;
   require'emu.php';
   file_put_contents('aa.rom', ob_get_contents());
   exec('kzip -y temp.zip aa.rom');
-  file_put_contents('128s.xhtml.deflate', substr(file_get_contents('temp.zip'), 36, -75));
+  file_put_contents('128i.xhtml.deflate', substr(file_get_contents('temp.zip'), 36, -75));
 ///*
   ob_start();$x=16;$y=0x8000;
   require'emu.php';

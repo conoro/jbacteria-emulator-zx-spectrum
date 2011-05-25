@@ -1,11 +1,12 @@
 <!DOCTYPE HTML>
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html>
+<head><title>jAmeba2</title></head>
 <body/>
 <script type="text/javascript" src="spectrum128.js"></script>
 <script type="text/javascript" src="spectrum128f.js"></script>
+<script type="text/javascript" src="spectrum2.js"></script>
 <script type="text/javascript" src="z80p.js"></script>
 <script type="text/javascript">
-/*<![CDATA[*/
 game=t=u=0;
 function cb(b,f){
   if(f[0]=='_')
@@ -61,7 +62,6 @@ k=location.href.indexOf('?')+1;
 if(k)
   t++,
   ajax(location.href.substr(k),cb);
-ajax('_128',cb);
-//]]>
+ajax('_+2',cb);
 </script>
 </html>
