@@ -1,4 +1,4 @@
-na= 'jBacteria16 ';
+var na= 'jBacteria16 ';
 
 function init() {
   onresize();
@@ -22,6 +22,8 @@ function init() {
   }
   while( t < 0x30000 )
     eld[t++]= 0xff;
+  for (o= 0; o < 768; o++)
+    vm[o]= 255;
   for ( j= 0
       ; j < 0x10000
       ; j++ )        // fill memory
@@ -65,6 +67,14 @@ function init() {
 }
 
 function wb(addr, val) {
-  if (addr > 0x3fff && addr < 0x8000)
+  if (   addr > 0x3fff
+      && addr < 0x8000
+      && val != m[addr] ){
     m[addr]= val;
+    if( addr < 0x5800 )
+      vm[ addr    & 0xff
+        | addr>>3 & 0x300 ]|= 1 << (addr>>8 & 7);
+    else if( addr < 0x5b00 )
+      vm[addr-0x5800]= 0xff;
+  }
 }

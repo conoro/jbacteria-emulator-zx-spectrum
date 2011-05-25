@@ -25,157 +25,180 @@
   file_put_contents('noframess.html.deflate', substr(file_get_contents('temp.zip'), 36, -75));
 ///*
   exec("java yui 48");
-  $rom= file_get_contents('48.rom');
+  $rom= file_get_contents('rom/48.rom');
   $rom[0x56c]= chr(0xed);
   $rom[0x56d]= chr(0xfc);
-  file_put_contents('aa.rom', file_get_contents('k-spectrum.pal').
-                              file_get_contents('k-spectrum.bin').
+  file_put_contents('aa.rom', file_get_contents('rom/k-spectrum.pal').
+                              file_get_contents('rom/k-spectrum.bin').
                               $rom.
-                              file_get_contents('48.mem').
+                              file_get_contents('rom/48.mem').
                               file_get_contents('48.js'));
   unlink('48.js');
   exec('kzip -y temp.zip aa.rom');
   file_put_contents('_48.tap.deflate', substr(file_get_contents('temp.zip'), 36, -75));
 ///*
   exec("java yui 48s");
-  $rom= file_get_contents('48.rom');
+  $rom= file_get_contents('rom/48.rom');
   $rom[0x56c]= chr(0xed);
   $rom[0x56d]= chr(0xfc);
-  file_put_contents('aa.rom', file_get_contents('k-spectrum.pal').
-                              file_get_contents('k-spectrum.bin').
+  file_put_contents('aa.rom', file_get_contents('rom/k-spectrum.pal').
+                              file_get_contents('rom/k-spectrum.bin').
                               $rom.
-                              file_get_contents('48.mem').
+                              file_get_contents('rom/48.mem').
                               file_get_contents('48.js'));
   unlink('48.js');
   exec('kzip -y temp.zip aa.rom');
   file_put_contents('_48s.tap.deflate', substr(file_get_contents('temp.zip'), 36, -75));
 ///*
   exec("java yui 128");
-  $rom= file_get_contents('128.rom');
+  $rom= file_get_contents('rom/128.rom');
   $rom[0x456c]= chr(0xed);
   $rom[0x456d]= chr(0xfc);
-  file_put_contents('aa.rom', file_get_contents('k-spectrum.pal').
-                              file_get_contents('k-spectrum.bin').
+  file_put_contents('aa.rom', file_get_contents('rom/k-spectrum.pal').
+                              file_get_contents('rom/k-spectrum.bin').
                               $rom.
-                              file_get_contents('128.mem').
+                              file_get_contents('rom/128.mem').
                               file_get_contents('128.js'));
   exec('kzip -y temp.zip aa.rom');
   file_put_contents('_128.tap.deflate', substr(file_get_contents('temp.zip'), 36, -75));
-  $rom= file_get_contents('128i.rom');
+  $rom= file_get_contents('rom/128i.rom');
   $rom[0x456c]= chr(0xed);
   $rom[0x456d]= chr(0xfc);
-  file_put_contents('aa.rom', file_get_contents('k-spectrum.pal').
-                              file_get_contents('k-spectrum.bin').
+  file_put_contents('aa.rom', file_get_contents('rom/k-spectrum.pal').
+                              file_get_contents('rom/k-spectrum.bin').
                               $rom.
-                              file_get_contents('128.mem').
+                              file_get_contents('rom/128.mem').
                               file_get_contents('128.js'));
   exec('kzip -y temp.zip aa.rom');
   file_put_contents('_128i.tap.deflate', substr(file_get_contents('temp.zip'), 36, -75));
   unlink('128.js');
 ///*
+  exec("java yui 128s");
+  $rom= file_get_contents('rom/128.rom');
+  $rom[0x456c]= chr(0xed);
+  $rom[0x456d]= chr(0xfc);
+  file_put_contents('aa.rom', file_get_contents('rom/k-spectrum.pal').
+                              file_get_contents('rom/k-spectrum.bin').
+                              $rom.
+                              file_get_contents('rom/128.mem').
+                              file_get_contents('128.js'));
+  exec('kzip -y temp.zip aa.rom');
+  file_put_contents('_128s.tap.deflate', substr(file_get_contents('temp.zip'), 36, -75));
+  $rom= file_get_contents('rom/128i.rom');
+  $rom[0x456c]= chr(0xed);
+  $rom[0x456d]= chr(0xfc);
+  file_put_contents('aa.rom', file_get_contents('rom/k-spectrum.pal').
+                              file_get_contents('rom/k-spectrum.bin').
+                              $rom.
+                              file_get_contents('rom/128.mem').
+                              file_get_contents('128.js'));
+  exec('kzip -y temp.zip aa.rom');
+  file_put_contents('_128is.tap.deflate', substr(file_get_contents('temp.zip'), 36, -75));
+  unlink('128.js');
+///*
   exec("java yui 16");
-  $rom= file_get_contents('16.rom');
+  $rom= file_get_contents('rom/16.rom');
   $rom[0x56c]= chr(0xed);
   $rom[0x56d]= chr(0xfc);
-  file_put_contents('aa.rom', file_get_contents('k-spectrum.pal').
-                              file_get_contents('k-spectrum.bin').
+  file_put_contents('aa.rom', file_get_contents('rom/k-spectrum.pal').
+                              file_get_contents('rom/k-spectrum.bin').
                               $rom.
-                              file_get_contents('16.mem').
+                              file_get_contents('rom/16.mem').
                               file_get_contents('16.js'));
   unlink('16.js');
   exec('kzip -y temp.zip aa.rom');
   file_put_contents('_16.tap.deflate', substr(file_get_contents('temp.zip'), 36, -75));
 ///*
   exec("java yui +2");
-  $rom= file_get_contents('+2.rom');
+  $rom= file_get_contents('rom/+2.rom');
   $rom[0x456c]= chr(0xed);
   $rom[0x456d]= chr(0xfc);
-  file_put_contents('aa.rom', file_get_contents('k-spectrum.pal').
-                              file_get_contents('k-spectrum.bin').
+  file_put_contents('aa.rom', file_get_contents('rom/k-spectrum.pal').
+                              file_get_contents('rom/k-spectrum.bin').
                               $rom.
-                              file_get_contents('+2.mem').
+                              file_get_contents('rom/+2.mem').
                               file_get_contents('+2.js'));
   unlink('+2.js');
   exec('kzip -y temp.zip aa.rom');
   file_put_contents('_+2.tap.deflate', substr(file_get_contents('temp.zip'), 36, -75));
 ///*
   exec("java yui +2A");
-  $rom= file_get_contents('+2A.rom');
+  $rom= file_get_contents('rom/+2A.rom');
   $rom[0xc56c]= chr(0xed);
   $rom[0xc56d]= chr(0xfc);
-  file_put_contents('aa.rom', file_get_contents('k-spectrum.pal').
-                              file_get_contents('k-spectrum.bin').
+  file_put_contents('aa.rom', file_get_contents('rom/k-spectrum.pal').
+                              file_get_contents('rom/k-spectrum.bin').
                               $rom.
-                              file_get_contents('+2A.mem').
+                              file_get_contents('rom/+2A.mem').
                               file_get_contents('+2A.js'));
   unlink('+2A.js');
   exec('kzip -y temp.zip aa.rom');
   file_put_contents('_+2A.tap.deflate', substr(file_get_contents('temp.zip'), 36, -75));
 ///*
   exec("java yui SE");
-  file_put_contents('aa.rom', file_get_contents('k-spectrum.pal').
-                              file_get_contents('k-spectrum.bin').
-                              file_get_contents('SE.rom').
+  file_put_contents('aa.rom', file_get_contents('rom/k-spectrum.pal').
+                              file_get_contents('rom/k-spectrum.bin').
+                              file_get_contents('rom/SE.rom').
                               file_get_contents('SE.js'));
   unlink('SE.js');
   exec('kzip -y temp.zip aa.rom');
   file_put_contents('_SE.tap.deflate', substr(file_get_contents('temp.zip'), 36, -75));
 ///*
   exec("java yui 464");
-  file_put_contents('aa.rom', file_get_contents('k-cpc.pal').
-                              file_get_contents('k-cpc.bin').
-                              file_get_contents('464.rom').
-                              file_get_contents('464.mem').
+  file_put_contents('aa.rom', file_get_contents('rom/k-cpc.pal').
+                              file_get_contents('rom/k-cpc.bin').
+                              file_get_contents('rom/464.rom').
+                              file_get_contents('rom/464.mem').
                               file_get_contents('464.js'));
   unlink('464.js');
   exec('kzip -y temp.zip aa.rom');
   file_put_contents('_464.tap.deflate', substr(file_get_contents('temp.zip'), 36, -75));
 ///*
   exec("java yui 464s");
-  file_put_contents('aa.rom', file_get_contents('k-cpc.pal').
-                              file_get_contents('k-cpc.bin').
-                              file_get_contents('464.rom').
-                              file_get_contents('464.mem').
+  file_put_contents('aa.rom', file_get_contents('rom/k-cpc.pal').
+                              file_get_contents('rom/k-cpc.bin').
+                              file_get_contents('rom/464.rom').
+                              file_get_contents('rom/464.mem').
                               file_get_contents('464s.js'));
   unlink('464s.js');
   exec('kzip -y temp.zip aa.rom');
   file_put_contents('_464s.tap.deflate', substr(file_get_contents('temp.zip'), 36, -75));
 ///*
   exec("java yui 664");
-  file_put_contents('aa.rom', file_get_contents('k-cpc.pal').
-                              file_get_contents('k-cpc.bin').
-                              file_get_contents('664.rom').
-                              file_get_contents('664.mem').
+  file_put_contents('aa.rom', file_get_contents('rom/k-cpc.pal').
+                              file_get_contents('rom/k-cpc.bin').
+                              file_get_contents('rom/664.rom').
+                              file_get_contents('rom/664.mem').
                               file_get_contents('664.js'));
   unlink('664.js');
   exec('kzip -y temp.zip aa.rom');
   file_put_contents('_664.tap.deflate', substr(file_get_contents('temp.zip'), 36, -75));
 ///*
   exec("java yui 664s");
-  file_put_contents('aa.rom', file_get_contents('k-cpc.pal').
-                              file_get_contents('k-cpc.bin').
-                              file_get_contents('664.rom').
-                              file_get_contents('664.mem').
+  file_put_contents('aa.rom', file_get_contents('rom/k-cpc.pal').
+                              file_get_contents('rom/k-cpc.bin').
+                              file_get_contents('rom/664.rom').
+                              file_get_contents('rom/664.mem').
                               file_get_contents('664s.js'));
   unlink('664s.js');
   exec('kzip -y temp.zip aa.rom');
   file_put_contents('_664s.tap.deflate', substr(file_get_contents('temp.zip'), 36, -75));
 ///*
   exec("java yui 6128");
-  file_put_contents('aa.rom', file_get_contents('k-cpc.pal').
-                              file_get_contents('k-cpc.bin').
-                              file_get_contents('6128.rom').
-                              file_get_contents('6128.mem').
+  file_put_contents('aa.rom', file_get_contents('rom/k-cpc.pal').
+                              file_get_contents('rom/k-cpc.bin').
+                              file_get_contents('rom/6128.rom').
+                              file_get_contents('rom/6128.mem').
                               file_get_contents('6128.js'));
   unlink('6128.js');
   exec('kzip -y temp.zip aa.rom');
   file_put_contents('_6128.tap.deflate', substr(file_get_contents('temp.zip'), 36, -75));
 ///*
   exec("java yui 6128s");
-  file_put_contents('aa.rom', file_get_contents('k-cpc.pal').
-                              file_get_contents('k-cpc.bin').
-                              file_get_contents('6128.rom').
-                              file_get_contents('6128.mem').
+  file_put_contents('aa.rom', file_get_contents('rom/k-cpc.pal').
+                              file_get_contents('rom/k-cpc.bin').
+                              file_get_contents('rom/6128.rom').
+                              file_get_contents('rom/6128.mem').
                               file_get_contents('6128s.js'));
   unlink('6128s.js');
   exec('kzip -y temp.zip aa.rom');

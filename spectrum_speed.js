@@ -523,15 +523,15 @@ function wp(addr, val) {                // write port, only border color emulati
 }
 
 function wb(addr, val) {
-  if( addr > 0x3fff )
-    if( val != m[addr] ){
-      m[addr]= val;
-      if( addr < 0x5800 )
-        vm[ addr    & 0xff
-          | addr>>3 & 0x300 ]|= 1 << (addr>>8 & 7);
-      else if( addr < 0x5b00 )
-        vm[addr-0x5800]= 0xff;
-    }
+  if( addr > 0x3fff
+   && val != m[addr] ){
+    m[addr]= val;
+    if( addr < 0x5800 )
+      vm[ addr    & 0xff
+        | addr>>3 & 0x300 ]|= 1 << (addr>>8 & 7);
+    else if( addr < 0x5b00 )
+      vm[addr-0x5800]= 0xff;
+  }
 }
 
 function rm(o) {

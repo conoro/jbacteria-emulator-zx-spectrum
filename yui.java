@@ -27,7 +27,7 @@ public class yui{
     String enjs= "";
     Pattern p;
     Matcher m;
-    String[] lista= file_get_contents(args[0]+".txt").split("\n");
+    String[] lista= file_get_contents("txt/"+args[0]+".txt").split("\n");
     for (int i= 0; i<lista.length; i++)
       enjs+= file_get_contents(lista[i]);
     p= Pattern.compile("\\/\\*\\*\\/(.*)\\/\\*.*\\*\\/");
