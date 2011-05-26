@@ -15,6 +15,9 @@
 ?>a:hover{<?
 ?>text-decoration:underline<?
 ?>}<?
+?>ol li{<?
+?>list-style-type:none<?
+?>}<?
 ?>ol a{<?
 ?>font-size:30px;<?
 ?>}<?
@@ -47,11 +50,12 @@
 ?>}<?
 ?></style><?
 ?><body><ol style="margin-bottom:10px"><?
-?><li><a id="l" href="noframes" style="display:block;text-align:center;font-size:10px;margin-top:0" target="_top">NO FRAMES</a></li><?
-?><li><a id="av" href="main" target="main" onclick="l(this)">Home</a></li><?
-?><li><a title="Amstrad CPC 464" href="464<?=$vesionra?>" target="main" onclick="l(this)">464 Rom</a></li><?
-?><li><a title="Amstrad CPC 664" href="664<?=$vesionra?>" target="main" onclick="l(this)">664 Rom</a></li><?
-?><li><a title="Amstrad CPC 6128" href="6128<?=$vesionra?>" target="main" onclick="l(this)">6128 Rom</a></li><?
+?><li><a id="l" href="noframes<?=$vra?'s':''?>" style="float:left;font-size:10px" target="_top">NO FRAMES</a><?
+?><a id="m" href="noframes<?=$vra?'':'s'?>?" style="float:right;font-size:10px"><?=$vra?'FAST RENDER':'SLOW RENDER'?></a></li><?
+?><li style="clear:left"><a id="av" href="main" target="main" onclick="l(this)">Home</a></li><?
+?><li><a title="Amstrad CPC 464" href="464<?=$vra?'':'s'?>" target="main" onclick="l(this)">464 Rom</a></li><?
+?><li><a title="Amstrad CPC 664" href="664<?=$vra?'':'s'?>" target="main" onclick="l(this)">664 Rom</a></li><?
+?><li><a title="Amstrad CPC 6128" href="6128<?=$vra?'':'s'?>" target="main" onclick="l(this)">6128 Rom</a></li><?
 ?></ol><ul><?
 $mi= explode("\n", file_get_contents('cpc.txt'));
 array_pop($mi);
@@ -63,8 +67,7 @@ foreach ($mi as $mifi){
   $pub= trim(substr($mifi, 58, 35));
   $year= trim(substr($mifi, 53, 4));
   $snombre= $tipo=='a' ? trim(substr($mifi, 93, 8)).'.tap' : trim(substr($mifi, 93, 8)).'.dsk/'.urlencode(trim(substr($mifi, 102, 13)));
-  $pref= $arti[$tipo].$vesionra;
-?><li><a title="<?=$nombre?>" href="<?=$pref?>?<?=$snombre?>"<?=$tipo=='a'?' class="c"':''?> target="main" onclick="l(this)"><?=$nombre?></a><?
+?><li><a title="<?=$nombre?>" href="<?=$arti[$tipo].($vra?'':'s').'?'.$snombre?>"<?=$tipo=='a'?' class="c"':''?> target="main" onclick="l(this)"><?=$nombre?></a><?
 if($num > 0){?>
 <a href="http://www.cpc-power.com/index.php?page=detail&num=<?=$num?>" target="_blank"> <img src="cpcpow.png" width="48" height="7"/></a>
 <?}?>
@@ -80,6 +83,7 @@ if($num > 0){?>
 ?>last= document.getElementById('av');<?
 ?>last.style.backgroundColor= '#0FF';<?
 ?>if(location.href.indexOf('?')<0)<?
+?>document.getElementById('m').href=document.getElementById('m').href.slice(0,-1),<?
 ?>document.getElementById('l').href='/',<?
 ?>document.getElementById('l').innerHTML= 'I ♡ FRAMES';<?
 ?>//]]><?

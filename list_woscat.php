@@ -15,6 +15,9 @@
 ?>a:hover{<?
 ?>text-decoration:underline<?
 ?>}<?
+?>ol li{<?
+?>list-style-type:none<?
+?>}<?
 ?>ol a{<?
 ?>font-size:30px;<?
 ?>}<?
@@ -39,8 +42,9 @@
 ?>}<?
 ?></style><?
 ?><body><ol style="margin-bottom:10px"><?
-?><li><a id="l" href="noframes_cat" style="display:block;text-align:center;font-size:10px;margin-top:0" target="_top">NO FRAMES</a></li><?
-?><li><a id="av" href="main" target="main" onclick="l(this)">Home</a></li><?
+?><li><a id="l" href="noframes_cat<?=$vra?'s':''?>" style="float:left;font-size:10px" target="_top">NO FRAMES</a><?
+?><a id="m" href="noframes_cat<?=$vra?'':'s'?>?" style="float:right;font-size:10px"><?=$vra?'FAST RENDER':'SLOW RENDER'?></a></li><?
+?><li style="clear:left"><a id="av" href="main" target="main" onclick="l(this)">Home</a></li><?
 ?><li><a title="Adventures" href="#Adventures" onclick="l(this)">Adventures</a></li><?
 ?><li><a title="Educational" href="#Educational" onclick="l(this)">Educational</a></li><?
 ?><li><a title="Utilities" href="#Utilities" onclick="l(this)">Utilities</a></li><?
@@ -67,7 +71,7 @@ while($num--){
     <li style="height:35px"><a name="<?=$z[$y]?>"><?=$z[$y++]?></a><a name="" href="#">⇧</a></li>
 <?}
   elseif($snombre){
-?><li><a title="<?=$nombre?>" href="<?=$pref.$vesionra.'?'.$snombre?>.tap" target="main" onclick="l(this)"><?=$nombre?></a><?
+?><li><a title="<?=$nombre?>" href="<?=$pref.($vra?'':'s').'?'.$snombre?>.tap" target="main" onclick="l(this)"><?=$nombre?></a><?
 ?><a href="http://www.worldofspectrum.org/infoseekid.cgi?id=00<?=$nn?>" target="_blank"> <img src="wos.png" width="30" height="9"/></a><?
 ?></li><li><?=$year=='0000'?'':$year?> <?=$pub?></li><?
 }}
@@ -81,6 +85,7 @@ while($num--){
 ?>last= document.getElementById('av');<?
 ?>last.style.backgroundColor= '#0FF';<?
 ?>if(location.href.indexOf('?')<0)<?
+?>document.getElementById('m').href=document.getElementById('m').href.slice(0,-1),<?
 ?>document.getElementById('l').href='rest',<?
 ?>document.getElementById('l').innerHTML= 'I ♡ FRAMES';<?
 ?>//]]><?

@@ -15,6 +15,9 @@
 ?>a:hover{<?
 ?>text-decoration:underline<?
 ?>}<?
+?>ol li{<?
+?>list-style-type:none<?
+?>}<?
 ?>ol a{<?
 ?>font-size:30px;<?
 ?>}<?
@@ -35,17 +38,18 @@
 ?>}<?
 ?></style><?
 ?><body><ol style="margin-bottom:10px"><?
-?><li><a id="l" href="noframes" style="display:block;text-align:left;font-size:10px;margin-top:0" target="_top">NO FRAMES</a><?
-?><a href="noframess" style="display:block;text-align:right;font-size:10px;margin-top:0" target="_top">SLOW RENDER</a></li><?
-?><li><a id="av" href="main" target="main" onclick="l(this)">Home</a></li><?
-?><li><a title="Original 16K ROM" href="16<?=$vesionra?>" target="main" onclick="l(this)">16K Sinclair</a></li><?
-?><li><a title="Original 48K ROM" href="48<?=$vesionra?>" target="main" onclick="l(this)">48K Sinclair</a></li><?
-?><li><a title="Sinclair 128K" href="128<?=$vesionra?>" target="main" onclick="l(this)">128K Sinclair</a></li><?
-?><li><a title="Investronica 128K" href="128i<?=$vesionra?>" target="main" onclick="l(this)">128K Inves</a></li><?
-?><li><a title="Amstrad +2" href="+2<?=$vesionra?>" target="main" onclick="l(this)">+2 Amstrad</a></li><?
-?><li><a title="Amstrad +2A" href="+2A<?=$vesionra?>" target="main" onclick="l(this)">+2A Amstrad</a></li><?
-?><li><a title="Amstrad +3" href="+3<?=$vesionra?>" target="main" onclick="l(this)">+3 Amstrad</a></li><?
-?><li><a title="Modified by Andrew Owen" href="SE<?=$vesionra?>" target="main" onclick="l(this)">SE Basic</a></li><?
+?><li><a id="l" href="noframes<?=$vra?'s':''?>" style="float:left;font-size:10px" target="_top">NO FRAMES</a><?
+?><a id="m" href="noframes<?=$vra?'':'s'?>?" style="float:right;font-size:10px"><?=$vra?'FAST RENDER':'SLOW RENDER'?></a></li><?
+?><li style="clear:left"><a id="av" href="main" target="main" onclick="l(this)">Home</a></li><?
+?><li><a title="Original 16K" href="16<?=$vra?'':'s'?>" target="main" onclick="l(this)">16K Sinclair</a></li><?
+?><li><a title="Original 48K" href="48<?=$vra?'':'s'?>" target="main" onclick="l(this)">48K Sinclair</a></li><?
+?><li><a title="Sinclair 128K" href="128<?=$vra?'':'s'?>" target="main" onclick="l(this)">128K Sinclair</a></li><?
+?><li><a title="Investronica 128K" href="128i<?=$vra?'':'s'?>" target="main" onclick="l(this)">128K Inves</a></li><?
+?><li><a title="Amstrad +2" href="+2<?=$vra?'':'s'?>" target="main" onclick="l(this)">+2 Amstrad</a></li><?
+?><li><a title="Amstrad +2A" href="+2A<?=$vra?'':'s'?>" target="main" onclick="l(this)">+2A Amstrad</a></li><?
+?><li><a title="Amstrad +3" href="+3<?=$vra?'':'s'?>" target="main" onclick="l(this)">+3 Amstrad</a></li><?
+?><li><a title="Microdigital TK 90X" href="tk90<?=$vra?'':'s'?>" target="main" onclick="l(this)">TK 90X</a></li><?
+?><li><a title="Modified by Andrew Owen" href="SE<?=$vra?'':'s'?>" target="main" onclick="l(this)">SE Basic</a></li><?
 ?></ol><ul><?
 $mi= explode("\n", file_get_contents('wos.txt'));
 $num= count($mi);
@@ -65,7 +69,7 @@ while($num--){
               ? 48
               : 128 );
   if($snombre){
-?><li><a title="<?=$nombre?>" href="<?=$pref.$vesionra.'?'.$snombre?>.tap" target="main" onclick="l(this)"><?=$nombre?></a><?
+?><li><a title="<?=$nombre?>" href="<?=$pref.($vra?'':'s').'?'.$snombre?>.tap" target="main" onclick="l(this)"><?=$nombre?></a><?
 ?><a href="http://www.worldofspectrum.org/infoseekid.cgi?id=00<?=$nn?>" target="_blank"> <img src="wos.png" width="30" height="9"/></a><?
 ?></li><li><?=$year=='0000'?'':$year?> <?=$pub?></li><?
 }}
@@ -79,6 +83,7 @@ while($num--){
 ?>last= document.getElementById('av');<?
 ?>last.style.backgroundColor= '#0FF';<?
 ?>if(location.href.indexOf('?')<0)<?
+?>document.getElementById('m').href=document.getElementById('m').href.slice(0,-1),<?
 ?>document.getElementById('l').href='/',<?
 ?>document.getElementById('l').innerHTML= 'I ♡ FRAMES';<?
 ?>//]]><?

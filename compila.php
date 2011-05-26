@@ -15,20 +15,19 @@
   file_put_contents('noframes_cat.html.deflate', substr(file_get_contents('temp.zip'), 36, -75));
 ///*
   error_log("list_wos.php");
-  ob_start();$vesionra='s';
+  ob_start();$vra=1;
   require'list_wos.php';
   file_put_contents('aa.rom', ob_get_contents());
   exec('kzip -y temp.zip aa.rom');
   file_put_contents('noframess.html.deflate', substr(file_get_contents('temp.zip'), 36, -75));
 ///*
   error_log("list_woscat.php");
-  ob_start();$vesionra='s';
+  ob_start();$vra=1;
   require'list_woscat.php';
   file_put_contents('aa.rom', ob_get_contents());
   exec('kzip -y temp.zip aa.rom');
   file_put_contents('noframes_cats.html.deflate', substr(file_get_contents('temp.zip'), 36, -75));
-//
-/*
+///*
   error_log("list_cpc.php");
   ob_start();
   require'list_cpc.php';
@@ -37,7 +36,7 @@
   file_put_contents('noframes.html.deflate', substr(file_get_contents('temp.zip'), 36, -75));
 ///*
   error_log("list_cpc.phpS");
-  ob_start();$vesionra='s';
+  ob_start();$vra=1;
   require'list_cpc.php';
   file_put_contents('aa.rom', ob_get_contents());
   exec('kzip -y temp.zip aa.rom');
@@ -53,9 +52,19 @@
                               $rom.
                               file_get_contents('rom/48.mem').
                               file_get_contents('48.js'));
-  unlink('48.js');
   exec('kzip -y temp.zip aa.rom');
   file_put_contents('_48.tap.deflate', substr(file_get_contents('temp.zip'), 36, -75));
+  $rom= file_get_contents('rom/tk90.rom');
+  $rom[0x56c]= chr(0xed);
+  $rom[0x56d]= chr(0xfc);
+  file_put_contents('aa.rom', file_get_contents('rom/k-spectrum.pal').
+                              file_get_contents('rom/k-spectrum.bin').
+                              $rom.
+                              file_get_contents('rom/48.mem').
+                              file_get_contents('48.js'));
+  unlink('48.js');
+  exec('kzip -y temp.zip aa.rom');
+  file_put_contents('_tk90.tap.deflate', substr(file_get_contents('temp.zip'), 36, -75));
 ///*
   error_log("48s");
   exec("java yui 48s");
@@ -67,9 +76,19 @@
                               $rom.
                               file_get_contents('rom/48.mem').
                               file_get_contents('48s.js'));
-  unlink('48s.js');
   exec('kzip -y temp.zip aa.rom');
   file_put_contents('_48s.tap.deflate', substr(file_get_contents('temp.zip'), 36, -75));
+  $rom= file_get_contents('rom/tk90.rom');
+  $rom[0x56c]= chr(0xed);
+  $rom[0x56d]= chr(0xfc);
+  file_put_contents('aa.rom', file_get_contents('rom/k-spectrum.pal').
+                              file_get_contents('rom/k-spectrum.bin').
+                              $rom.
+                              file_get_contents('rom/48.mem').
+                              file_get_contents('48s.js'));
+  unlink('48s.js');
+  exec('kzip -y temp.zip aa.rom');
+  file_put_contents('_tk90s.tap.deflate', substr(file_get_contents('temp.zip'), 36, -75));
 ///*
   error_log("128");
   exec("java yui 128");
@@ -104,7 +123,7 @@
                               file_get_contents('rom/k-spectrum.bin').
                               $rom.
                               file_get_contents('rom/128.mem').
-                              file_get_contents('128.js'));
+                              file_get_contents('128s.js'));
   exec('kzip -y temp.zip aa.rom');
   file_put_contents('_128s.tap.deflate', substr(file_get_contents('temp.zip'), 36, -75));
   $rom= file_get_contents('rom/128i.rom');
@@ -324,6 +343,20 @@
   file_put_contents('aa.rom', ob_get_contents());
   exec('kzip -y temp.zip aa.rom');
   file_put_contents('48s.html.deflate', substr(file_get_contents('temp.zip'), 36, -75));
+///*
+  error_log("tk90.html");
+  ob_start();$x='tk90';$y=0x10000;
+  require'emu.php';
+  file_put_contents('aa.rom', ob_get_contents());
+  exec('kzip -y temp.zip aa.rom');
+  file_put_contents('tk90.html.deflate', substr(file_get_contents('temp.zip'), 36, -75));
+///*
+  error_log("tk90s.html");
+  ob_start();$x='tk90s';$y=0x10000;
+  require'emu.php';
+  file_put_contents('aa.rom', ob_get_contents());
+  exec('kzip -y temp.zip aa.rom');
+  file_put_contents('tk90s.html.deflate', substr(file_get_contents('temp.zip'), 36, -75));
 ///*
   error_log("128.html");
   ob_start();$x=128;$y=0x14000;

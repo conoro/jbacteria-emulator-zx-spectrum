@@ -5,7 +5,7 @@
 ?>game=t=u=0;<?
 ?>function cb(b){<?
   ?>emul=b;<?
-  ?>this.eval(emul.substr(<?=0x4000+0x30018?>));<?
+  ?>this.eval(emul.substr(<?=0x18018+0x4000?>));<?
 ?>}<?
 ?>xhr=new XMLHttpRequest();<?
 ?>xhr.onreadystatechange=function(){<?

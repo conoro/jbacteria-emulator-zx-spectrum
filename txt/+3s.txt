@@ -1,4 +1,5 @@
 spectrum128_speed.js
 spectrum3f.js
+fdc.js
 z80p.js
 dom.js
