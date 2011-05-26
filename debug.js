@@ -91,7 +91,7 @@ console.log(ap, rb, m[0]==ram[0], m[1]==ram[7], m[2]==ram[2], m[3]==ram[3]);
   j+= 149;
   for (t= 0; t < 131072; t++)
     ram[t>>14][t&16383]= o.charCodeAt(j++);
-  resize();
+  onresize();
   caca= 0;
 }
 */

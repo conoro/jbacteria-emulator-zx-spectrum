@@ -404,7 +404,7 @@ function kdown(evt) {
   else if( evt.keyCode==122 )
     return 1;
   else if( evt.keyCode==112 )
-    if( ft^= 1 ){
+    if( (ft^= 1) & 1 ){
       if( trein==32000 )
         clearInterval(interval);
       else
@@ -426,13 +426,23 @@ function kdown(evt) {
     kc[40]^= 0x43^(0x05<<7 | 0x21),
     alert(kc[9]&4
           ? 'Cursors enabled'
-          : 'Joystick enabled on Cursors + Tab');
+          : 'Joystick enabled on Cursors + Tab'),
+    self.focus();
   else if( evt.keyCode==114 )
     localStorage.save= wm();
   else if( evt.keyCode==115 )
     rm(localStorage.save);
   else if( evt.keyCode==119 )
     pc= 0;
+  else if( evt.keyCode==120 )
+    cv.setAttribute('style', 'image-rendering:'+( (ft^= 2) & 2
+                                                  ? 'optimizeSpeed'
+                                                  : '' )),
+    onresize(),
+    alert(ft & 2
+          ? 'Nearest neighbor scaling'
+          : 'Bilinear scaling'),
+    self.focus();
   else if( evt.keyCode==121 ){
     o= wm();
     t= new ArrayBuffer(o.length);

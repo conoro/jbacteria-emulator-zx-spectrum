@@ -5,7 +5,7 @@ function init() {
   for (t= 0; t < 256; t++)
     lut0[t]= t>>7&1 | t>>3&4 | t>>2&2 | t<<2&8,
     lut1[t]= t>>6&1 | t>>2&4 | t>>1&2 | t<<3&8;
-  resize();
+  onresize();
   ft= st= time= flash= 0;
   z80init();
   d= r= r7= pc= iff= halted= t= u= 0;
@@ -60,7 +60,7 @@ function init() {
   document.onkeydown= kdown;          // key event handling
   document.onkeyup= kup;
   document.onkeypress= kpress;
-  document.body.onresize= resize;
+  document.onresize= document.body.onresize= onresize;
   interval= setInterval(run, 20);
   self.focus();
 }
@@ -73,7 +73,7 @@ function wp(addr, val) {
         m[3]= val&8 ? mw[3] : rom[1];
         if(gm != (val&3))
           gm= val&3,
-          resize();
+          onresize();
       }
     }
     else{ 
@@ -95,7 +95,7 @@ function wp(addr, val) {
   else if((addr&0x4300)==0x0100 && cr[ci] != val){ //x0xxxx01 ... crtc data
     cr[ci]= val;
     if(1<<ci&0x242)
-      resize();
+      onresize();
   }
   if (~addr&0x0800){ //xxxx0xxx ... 8255
     if(addr&0x0200){

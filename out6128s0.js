@@ -21,7 +21,7 @@ function init() {
               ((t>>6&1 | t>>1&2)==0) | ((t>>6&1 | t>>1&2)==1)<<1 | ((t>>6&1 | t>>1&2)==2)<<2 | ((t>>6&1 | t>>1&2)==3)<<3 |
               ((t>>5&1 | t   &2)==0) | ((t>>5&1 | t   &2)==1)<<1 | ((t>>5&1 | t   &2)==2)<<2 | ((t>>5&1 | t   &2)==3)<<3 |
               ((t>>4&1 | t<<1&2)==0) | ((t>>4&1 | t<<1&2)==1)<<1 | ((t>>4&1 | t<<1&2)==2)<<2 | ((t>>4&1 | t<<1&2)==3)<<3;
-  resize();
+  onresize();
   ga= ft= st= time= flash= 0;
   z80init();
   fdcinit();
@@ -68,7 +68,7 @@ function init() {
   document.onkeydown= kdown;          // key event handling
   document.onkeyup= kup;
   document.onkeypress= kpress;
-  document.body.onresize= resize;
+  document.onresize= document.body.onresize= onresize;
   interval= setInterval(run, 20);
   self.focus();
 }
@@ -92,7 +92,7 @@ function wp(addr, val) {
         m[3]= val&8 ? mw[3] : rom[rs];
         if(gm != (val&3))
           gm= val&3,
-          resize();
+          onresize();
       }
     }
     else{ 
@@ -144,7 +144,7 @@ function wp(addr, val) {
         vb[t]= -1;
     }
     else if(1<<ci&0x242)
-      resize();
+      onresize();
   }
   if (~addr&0x2000){ //xx0xxxxx ... upper rom bank
     if(m[3] == rom[rs])

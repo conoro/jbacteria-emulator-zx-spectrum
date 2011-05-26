@@ -63,7 +63,7 @@ function rm(o) {
   j+= 149;
   for (t= 0; t < 65536; t++)
     mw[t>>14][t&16383]= o.charCodeAt(j++);
-  resize();
+  onresize();
 }
 
 function wm() {

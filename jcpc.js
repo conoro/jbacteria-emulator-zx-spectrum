@@ -199,7 +199,7 @@ function kdown(evt) {
   else if(evt.keyCode==122)
     return 1;
   else if(evt.keyCode==112)
-    if(ft^= 1)
+    if( (ft^= 1) & 1 )
       clearInterval(interval),
       he.style.display= 'block';
     else
@@ -211,13 +211,23 @@ function kdown(evt) {
     kc[38]^= 0x90,
     kc[39]^= 0x92,
     kc[40]^= 0x93,
-    alert('Joystick '+(kc[9]&0x10?'en':'dis')+'abled on Cursors + Tab');
+    alert('Joystick '+(kc[9]&0x10?'en':'dis')+'abled on Cursors + Tab'),
+    self.focus();
   else if(evt.keyCode==114)
     save= wm();
   else if(evt.keyCode==115)
     rm(save);
   else if(evt.keyCode==119)
     m[0]= rom[pc= 0];
+  else if( evt.keyCode==120 )
+    alert(ft & 2
+          ? 'Nearest neighbor scaling'
+          : 'Bilinear scaling'),
+    cv.setAttribute('style', 'image-rendering:'+( (ft^= 2) & 2
+                                                  ? 'optimizeSpeed'
+                                                  : '' )),
+    onresize(),
+    self.focus();
   else if(evt.keyCode==121){
     o= wm();
     t= new ArrayBuffer(o.length);

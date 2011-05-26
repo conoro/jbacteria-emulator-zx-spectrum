@@ -122,7 +122,7 @@ function paintScreen(){
   ct.putImageData(elm, 0, 0);
 }
 
-function resize() {
+function onresize() {
   cv.width= cr[1]<<gm+2;
   cv.height= (cr[9]+1)*cr[6];
   eld= (elm= (ct= cv.getContext('2d')).getImageData(0,0,cv.width,cv.height)).data;
