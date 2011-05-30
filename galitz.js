@@ -246,7 +246,7 @@ function init() {
 }
 
 function underRun(samples){
-  return new ArrayBuffer(samples);
+  return data.slice(-samples);
 }
 
 function handleFileSelect(evt) {
