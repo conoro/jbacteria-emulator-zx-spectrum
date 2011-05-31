@@ -191,8 +191,8 @@ function run() {
   }
   st= 0;
   z80interrupt();
-  while( j<1024*2 ){
-    data[j++]= data[j++]= sample;
+  while( j<1024 ){
+    data[j++]= sample;
     play+= paso;
     if( play > vb[playp] && playp<vbp )
       playp++,
@@ -237,10 +237,9 @@ function init() {
   document.onkeypress= kpress;
   document.onresize= document.body.onresize= onresize;
   trein= 32000;
-  if(typeof webkitAudioContext == 'function')
-    sampleRate= 48000,
-    paso= 69888*50/sampleRate,
-    audioHandle= new XAudioServer(1, sampleRate, 15000, 25000, underRun);
+  sampleRate= 48000;
+  paso= 69888*50/sampleRate;
+  audioHandle= new XAudioServer(1, sampleRate, 15000, 25000, underRun);
   interval= setInterval(run, 20);
   self.focus();
 }
