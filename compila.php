@@ -138,6 +138,20 @@
   file_put_contents('_128is.tap.deflate', substr(file_get_contents('temp.zip'), 36, -75));
   unlink('128s.js');
 ///*
+  error_log("galitz");
+  exec("java yui gali");
+  $rom= file_get_contents('rom/48.rom');
+  $rom[0x56c]= chr(0xed);
+  $rom[0x56d]= chr(0xfc);
+  file_put_contents('aa.rom', file_get_contents('rom/k-spectrum.pal').
+                              file_get_contents('rom/k-spectrum.bin').
+                              $rom.
+                              file_get_contents('rom/48.mem').
+                              file_get_contents('gali.js'));
+  unlink('gali.js');
+  exec('kzip -y temp.zip aa.rom');
+  file_put_contents('_galitz.tap.deflate', substr(file_get_contents('temp.zip'), 36, -75));
+///*
   error_log("16");
   exec("java yui 16");
   $rom= file_get_contents('rom/16.rom');
@@ -329,6 +343,13 @@
   unlink('6128s.js');
   exec('kzip -y temp.zip aa.rom');
   file_put_contents('_6128s.tap.deflate', substr(file_get_contents('temp.zip'), 36, -75));
+///*
+  error_log("galitz.html");
+  ob_start();$x='galitz';$y=0x10000;
+  require'emu.php';
+  file_put_contents('aa.rom', ob_get_contents());
+  exec('kzip -y temp.zip aa.rom');
+  file_put_contents('galitz.html.deflate', substr(file_get_contents('temp.zip'), 36, -75));
 ///*
   error_log("48.html");
   ob_start();$x=48;$y=0x10000;
