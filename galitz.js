@@ -191,7 +191,7 @@ function run() {
   }
   st= 0;
   z80interrupt();
-  while( j<1024 ){
+  while( j<800 ){
     data[j++]= sample;
     play+= paso;
     if( play > vb[playp] && playp<vbp )
@@ -237,7 +237,7 @@ function init() {
   document.onkeypress= kpress;
   document.onresize= document.body.onresize= onresize;
   trein= 32000;
-  sampleRate= 48000;
+  sampleRate= 40000;
   paso= 69888*50/sampleRate;
   audioHandle= new XAudioServer(1, sampleRate, 15000, 25000, underRun);
   interval= setInterval(run, 20);
@@ -245,7 +245,7 @@ function init() {
 }
 
 function underRun(samples){
-  return data.slice(-samples);
+  return new Float32Array(samples);
 }
 
 function handleFileSelect(evt) {

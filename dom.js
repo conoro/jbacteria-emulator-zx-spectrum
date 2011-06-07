@@ -22,6 +22,8 @@ while(t<98303)
   eld[u++]= emul.charCodeAt(3*a+2),
   eld[u++]= a ? 255 : 55;
 ct.putImageData(elm, 0, 0);
+//bug en chrome 13
+   ct.fillRect(0,0,1,1);
 cv= document.createElement('canvas');
 cv.width= 256;
 cv.height= 192;
