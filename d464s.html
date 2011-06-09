@@ -9,22 +9,21 @@
 <script type="text/javascript" src="z80p.js"></script>
 <script type="text/javascript" src="debug.js"></script>
 <script type="text/javascript">
-tapep=cdt=game=t=u=0;
+game=t=u=0;
 function cb(b,f){
   if(f[0]=='_')
     emul=b;
-  else if(f.slice(-2)=='dt')
-    cdt=b,
-    tapep=10;
   else
     game=b;
   if(!t--){
     document.body.style.margin= 0;
+    pt= document.createElement('select');
+    pt.setAttribute('onchange','tapep=this.value;tapei=this.selectedIndex');
+    pt.setAttribute('style','display:none;position:absolute');
     he= document.createElement('canvas');
     he.width= 512;
     he.height= 384;
     he.setAttribute('style','display:none;position:absolute');
-    document.body.appendChild(he);
     eld= (elm= (ct= he.getContext('2d')).getImageData(0,0,512,384)).data;
     ir= document.createElement('iframe');
     ir.setAttribute('style','display:none');
@@ -43,6 +42,8 @@ function cb(b,f){
     ct.putImageData(elm, 0, 0);
     cv= document.createElement('canvas');
     document.body.appendChild(cv);
+    document.body.appendChild(he);
+    document.body.appendChild(pt);
     eld= (elm= (ct= cv.getContext('2d')).getImageData(0,0,1,1)).data;
     init();
   }

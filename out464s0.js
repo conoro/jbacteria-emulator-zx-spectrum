@@ -64,7 +64,8 @@ function init() {
   rom[0][0x2871]= 0xfa,
   rom[0][0x2836]= 0xed,
   rom[0][0x2837]= 0xfc;
-  if(game)                               // emulate LOAD ""
+  if( game )                               // emulate LOAD ""
+    tp(),
     pc= 0x2a5e;
   document.ondragover= handleDragOver;
   document.ondrop= handleFileSelect;

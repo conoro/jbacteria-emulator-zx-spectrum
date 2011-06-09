@@ -85,19 +85,38 @@ function wm() {
   return t;
 }
 
+function tp(){
+  tapei= tapep= t= j= 0;
+  v= '';
+  while(u=  game.charCodeAt(t)      & 0xff
+          | game.charCodeAt(t+1)<<8 & 0xffff)
+    v+= '<option value="'+t+'">#'+ ++j+
+        ( game.charCodeAt(t+2) == 0x2c
+          ? ' Prog: '+game.substr(t+3,16).trim()
+          : ' Data: '+u+' bytes'
+        )+'</option>',
+    t+= 2+u;
+  pt.innerHTML= v;
+}
+
 function loadblock() {
-  o= game.charCodeAt(tapep++) & 255 | game.charCodeAt(tapep++) << 8 & 65535;
-//console.log(hex(game.charCodeAt(tapep)), hex(o), hex(e | d << 8));
-  if(!o)
-    tapep= 0,
-    o= game.charCodeAt(tapep++) & 255 | game.charCodeAt(tapep++) << 8 & 65535;
+  o=  game.charCodeAt(tapep++)    & 0xff
+    | game.charCodeAt(tapep++)<<8 & 0xffff;
+  tapei++;
   tapep++;
-  for (j= 0; j < o-1; j++)
-    mw[h >> 6][l | h << 8 & 16383]= game.charCodeAt(tapep++) & 255,
+  for ( j= 0
+      ; j < o-1
+      ; j++ )
+    mw[h >> 6][l | h<<8 & 0x3fff]= game.charCodeAt(tapep++) & 0xff,
     g[0x23]();
   iff= 1;
   pc= 0x286d;                           // exit address
   f= 0x45;
+  o=  game.charCodeAt(tapep)      & 0xff
+    | game.charCodeAt(tapep+1)<<8 & 0xffff;
+  if( !o )
+    tapei= tapep= 0;
+  pt.selectedIndex= tapei;
 }
 
 function rp(addr) {

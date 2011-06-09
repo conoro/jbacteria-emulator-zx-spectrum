@@ -212,21 +212,19 @@ function onresize() {
     eld[u]= 255;
   while(t--)
     vb[t]= -1;
-  var ratio= innerWidth/innerHeight;
-  document.body.style.height= '0';
-  document.body.style.width= '0';
-  if (ratio>1.33)
-    cv.style.height= innerHeight-50+'px',
-    cv.style.width= parseInt(ratio=(innerHeight-50)*1.33)+'px',
+  ratio= innerWidth/innerHeight;
+  if( ratio>1.33 )
+    cv.style.height= innerHeight - 50 + 'px',
+    cv.style.width= parseInt(ratio= (innerHeight-50)*1.33) + 'px',
     cv.style.marginTop= '25px',
-    cv.style.marginLeft= ((innerWidth-ratio)>>1)+'px';
+    cv.style.marginLeft= (innerWidth-ratio >> 1) + 'px';
   else
     cv.style.width= innerWidth-50+'px',
     cv.style.height= parseInt(ratio=(innerWidth-50)/1.33)+'px',
     cv.style.marginLeft= '25px',
-    cv.style.marginTop= ((innerHeight-ratio)>>1)+'px';
+    cv.style.marginTop= (innerHeight-ratio >> 1) + 'px';
   he.style.width= cv.style.width;
   he.style.height= cv.style.height;
-  he.style.left= cv.style.marginLeft;
-  he.style.top= cv.style.marginTop;
+  pt.style.left= he.style.left= cv.style.marginLeft;
+  pt.style.top= he.style.top= cv.style.marginTop;
 }

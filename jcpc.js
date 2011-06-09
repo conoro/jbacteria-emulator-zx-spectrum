@@ -201,10 +201,10 @@ function kdown(evt) {
   else if(evt.keyCode==112)
     if( (ft^= 1) & 1 )
       clearInterval(interval),
-      he.style.display= 'block';
+      pt.style.display= he.style.display= 'block';
     else
       interval= setInterval(run, 20),
-      he.style.display= 'none';
+      pt.style.display= he.style.display= 'none';
   else if(evt.keyCode==113)
     kc[9]^= 0x10,
     kc[37]^= 0x82,
