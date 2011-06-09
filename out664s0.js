@@ -120,17 +120,17 @@ function wp(addr, val) {
       }
     }
   }
-  if (!(addr&0x4300)){ //x0xxxx00 ... crtc select
+  if ( !(addr&0x4300) ) //x0xxxx00 ... crtc select
     ci= val&0x1f;
-  }
-  else if((addr&0x4300)==0x0100 && cr[ci] != val){ //x0xxxx01 ... crtc data
+  else if( (addr&0x4300) == 0x0100
+        && cr[ci] != val ){ //x0xxxx01 ... crtc data
     cr[ci]= val;
-    if(1<<ci&0x3000){
+    if( 1<<ci & 0x3000 ){
       t= cr[1]*(cr[9]+1)*cr[6]<<1;
       while(t--)
         vb[t]= -1;
     }
-    else if(1<<ci&0x242)
+    else if( 1<<ci & 0x242 )
       onresize();
   }
   if (~addr&0x2000){ //xx0xxxxx ... upper rom bank

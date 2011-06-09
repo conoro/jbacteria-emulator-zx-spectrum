@@ -1,10 +1,9 @@
 caca= 0;//0x10000000;
 function cond() {
-//  if(pc==0x221){
-//    console.log('hola');
-//      if(caca++ == 0x3800)
-//        generateSnap();
-//  }
+//  if(pc==0xc96d && ope==16 && a==0x0f)  //16 seek 0 2
+//console.log(hex(a));
+//    generateSnap();
+
 }
 
 function generateSnap() {

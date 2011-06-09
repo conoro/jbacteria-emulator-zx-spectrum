@@ -1,3 +1,4 @@
+ope= 0;
 function fdcinit(){
   fdcint= fdctrack= st0= st1= st2= st3= params= readp= command= 0;
   endsector= startsector= 1;
@@ -41,7 +42,7 @@ function fdcmw(val){
 function fdcdr(){
   if (!readp)
     alert('Reading but no params in '+hex(command)+', pc='+hex(pc));
- switch (command){
+ switch (command & 0x1F){
     case 0x04: /*Sense drive status*/
       readp= 0;
       fdcs= 0x80;
@@ -90,7 +91,7 @@ function fdcdr(){
       }
       break;
 
-    case 0x86: /*Read sector fail*/
+/*    case 0x86: //Read sector fail
       readp--;
       switch (readp){
         case 6: st0=0x40; st1=0x84; st2=0; return st0;
@@ -101,7 +102,7 @@ function fdcdr(){
         case 1: return startsector;
         case 0: fdcs= 0x80; return 2;
       }
-      break;
+      break;*/
 
     case 0x08: /*Sense interrupt state*/
       readp--;
@@ -121,7 +122,7 @@ function fdcdr(){
         case 2: return game.charCodeAt(1|tra[fdctrack]|startsector+3<<3) & 255;
         case 1: return game.charCodeAt(2|tra[fdctrack]|startsector+3<<3) & 255;
         case 0: fdcs= 0x80;
-console.log('ReadIdResult', hex(pc),game.charCodeAt(  tra[fdctrack]|startsector+3<<3) & 255,
+console.log(ope+++' ReadIdResult', hex(pc),game.charCodeAt(  tra[fdctrack]|startsector+3<<3) & 255,
                                     game.charCodeAt(1|tra[fdctrack]|startsector+3<<3) & 255,
                                     game.charCodeAt(2|tra[fdctrack]|startsector+3<<3) & 255,
                                     game.charCodeAt(3|tra[fdctrack]|startsector+3<<3) & 255);
@@ -140,9 +141,9 @@ function fdcdw(val){
     paramdat[params-1]= val;
     params--;
     if (!params){
-      switch (command){
+      switch (command & 0x1F){
         case 0x03: /*Specify*/
-console.log('Specify', hex(pc), paramdat[1], paramdat[0]);
+console.log(ope+++' Specify', hex(pc), paramdat[1], paramdat[0]);
           fdcs= 0x80;
           break;
         case 0x04: /*Sense drive status*/
@@ -151,7 +152,7 @@ console.log('Specify', hex(pc), paramdat[1], paramdat[0]);
             st3|= 0x10;
           fdcs= 0xd0;
           readp= 1;
-console.log('Sense', hex(pc), hex(st3));
+console.log(ope+++' Sense drive', hex(pc), paramdat[0]);
           break;
 
         case 0x06: /*Read sectors*/
@@ -159,8 +160,7 @@ console.log('Sense', hex(pc), hex(st3));
           fdctrack= paramdat[6];
           startsector= paramdat[4] & 15;
           endsector= paramdat[2] & 15;
-console.log(endsector, hex(m[3][0x240b]), paramdat);
-console.log('Read', hex(pc), hex(command), fdctrack, startsector, endsector);
+console.log(ope+++' Read', hex(pc), hex(command), fdctrack, startsector, endsector);
           posinsector= 0;
           readp= 1;
           reading= 1;
@@ -168,14 +168,14 @@ console.log('Read', hex(pc), hex(command), fdctrack, startsector, endsector);
           break;
 
         case 0x07: /*Recalibrate*/
-console.log('Recalibrate', hex(pc), paramdat[0]);
+console.log(ope+++' Recalibrate', hex(pc), paramdat[0]);
           fdcs= 0x80;
           fdctrack= 0;
           fdcint= 1;
           break;
 
         case 0x0A: /*Read sector ID*/
-console.log('ReadId', hex(pc), paramdat[0], fdctrack, startsector, endsector);
+console.log(ope+++' ReadId', hex(pc), paramdat[0], fdctrack, startsector, endsector);
           fdcs= 0xd0;//0x60;
           readp= 7;
           break;
@@ -183,7 +183,7 @@ console.log('ReadId', hex(pc), paramdat[0], fdctrack, startsector, endsector);
         case 0x0F: /*Seek*/
           fdcs= 0x80;
           fdctrack= paramdat[0];
-console.log('Seek', hex(pc), paramdat[1], fdctrack);
+console.log(ope+++' Seek', hex(pc), paramdat[1], fdctrack);
           fdcint= 1;
           break;
 
@@ -193,8 +193,8 @@ console.log('Seek', hex(pc), paramdat[1], fdctrack);
     }
   }
   else{
-    command= val & 0x1F;
-    switch (command){
+    command= val;
+    switch (command & 0x1F){
       case 0: case 0x1F: return; /*Invalid*/
       case 0x03: /*Specify*/
         params= 2;
@@ -218,6 +218,7 @@ console.log('Seek', hex(pc), paramdat[1], fdctrack);
         break;
 
       case 0x08: /*Sense interrupt state*/
+console.log(ope+++' Sense interrupt', hex(pc));
         st0= 0x20;
         if (!fdcint)
           st0|= 0x80;

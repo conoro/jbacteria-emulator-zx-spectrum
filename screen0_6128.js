@@ -57,7 +57,7 @@ function paintScreen(){
           else
             pos+= 8;
         }
-    if(may>miy)
+    if( may >= miy )
       ct.putImageData(elm, 0, 0, (mix<<2)-1, miy-1, (max-mix<<2)+6, may-miy+3);
   }
   else if(gm==1){
@@ -133,7 +133,7 @@ function paintScreen(){
           else
             pos+= 16;
         }
-    if(may>miy)
+    if( may >= miy )
       ct.putImageData(elm, 0, 0, (mix<<3)-1, miy-1, (max-mix<<3)+10, may-miy+3);
   }
   else{
@@ -197,7 +197,7 @@ function paintScreen(){
           else
             pos+= 32;
         }
-    if(may>miy)
+    if( may >= miy )
       ct.putImageData(elm, 0, 0, (mix<<3)-1, miy-1, (max-mix<<3)+10, may-miy+3);
   }
 }

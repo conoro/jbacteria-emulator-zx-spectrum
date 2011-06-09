@@ -71,13 +71,13 @@ function wm() {
      sp&255,sp>>8,pc&255,pc>>8,im,f_,a_,c_,b_,e_,d_,l_,h_,ga);
   for (j= 0; j < 17; j++)
     t+= String.fromCharCode(gc[j]);
-  t+= String.fromCharCode(gm+(m[0]==mw[0]?4:0)+(m[3]==mw[3]?8:0),0,ci);
+  t+= String.fromCharCode(0x80+gm+(m[0]==mw[0]?4:0)+(m[3]==mw[3]?8:0),0,ci);
   for (j= 0; j < 18; j++)
     t+= String.fromCharCode(cr[j]);
   t+= String.fromCharCode((rs==2?7:0),ap,bp,cp,io,ay);
   for (j= 0; j < 16; j++)
     t+= String.fromCharCode(ayr[j]);
-  t+= String.fromCharCode(64,0, 0,0, 1,1,1,1,1,1);
+  t+= String.fromCharCode(64,0, 1,0, 0,0,0,0,0,0);
   for (j= 0; j < 139; j++)
     t+= String.fromCharCode(0);
   for (j= 0; j < 65536; j++)
