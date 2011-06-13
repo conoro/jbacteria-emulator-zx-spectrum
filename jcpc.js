@@ -152,28 +152,28 @@ pal=[[128, 128, 128],
 function run() {
   for (vs= 0; vs<5; vs++){
     while(st < 10000) // 4000000MHz/50Hz= 80000cycles/frame*0.75= 60000/6=10000
-cond(),
+//cond(),
       r++,
       g[m[pc>>14&3][pc++&16383]]();
     st= 0;
     z80interrupt();
   }
   while(st < 10000-4400)
-cond(),
+//cond(),
     r++,
     g[m[pc>>14&3][pc++&16383]]();
   st= 0;
   vsync= 1;
 
   while(st < 400)
-cond(),
+//cond(),
     r++,
     g[m[pc>>14&3][pc++&16383]]();
   st= 0;
   z80interrupt();
 
   while(st < 4000)
-cond(),
+//cond(),
     r++,
     g[m[pc>>14&3][pc++&16383]]();
   vsync= 0;

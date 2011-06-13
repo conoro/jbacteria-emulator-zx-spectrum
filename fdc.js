@@ -41,7 +41,7 @@ function fdcmw(val){
 
 function fdcdr(){
   if (!readp)
-    alert('Reading but no params in '+hex(command)+', pc='+hex(pc));
+    alert('Reading but no params in '+command+', pc='+pc);
  switch (command & 0x1F){
     case 0x04: /*Sense drive status*/
       readp= 0;
@@ -51,11 +51,11 @@ function fdcdr(){
     case 0x06: /*Read sectors*/
     case 0x0C: /*Read deleted sectors*/
       if (reading){
-        temp= game.charCodeAt(posinsector+sect[fdctrack][startsector]) & 255;
+        temp= game.charCodeAt(posinsector+sect[fdctrack][startsector&15]) & 255;
 //if(caca++<20)
 //  console.log(temp, hex(pc));
         posinsector++;
-        if (posinsector==sects[fdctrack][startsector]){
+        if (posinsector==sects[fdctrack][startsector&15]){
 
 //console.log(posinsector, m[pc>>14][pc&16383], hex(pc), hex(l|h<<8), fdctrack, fdctrack, startsector-1, endsector-1);
           if ((startsector&15)==(endsector&15)){
@@ -118,20 +118,20 @@ function fdcdr(){
         case 6: return st0;
         case 5: return st1;
         case 4: return st2;
-        case 3: return game.charCodeAt(  tra[fdctrack]|startsector+3<<3) & 255;
-        case 2: return game.charCodeAt(1|tra[fdctrack]|startsector+3<<3) & 255;
-        case 1: return game.charCodeAt(2|tra[fdctrack]|startsector+3<<3) & 255;
+        case 3: return game.charCodeAt(  tra[fdctrack]|startsector+2<<3&0x7f) & 0xff;
+        case 2: return game.charCodeAt(1|tra[fdctrack]|startsector+2<<3&0x7f) & 0xff;
+        case 1: return game.charCodeAt(2|tra[fdctrack]|startsector+2<<3&0x7f) & 0xff;
         case 0: fdcs= 0x80;
-console.log(ope+++' ReadIdResult', hex(pc),game.charCodeAt(  tra[fdctrack]|startsector+3<<3) & 255,
-                                    game.charCodeAt(1|tra[fdctrack]|startsector+3<<3) & 255,
-                                    game.charCodeAt(2|tra[fdctrack]|startsector+3<<3) & 255,
-                                    game.charCodeAt(3|tra[fdctrack]|startsector+3<<3) & 255);
-                return game.charCodeAt(3|tra[fdctrack]|startsector+3<<3) & 255;
+/*console.log(ope+++' ReadIdResult', hex(pc), game.charCodeAt(  tra[fdctrack]|(startsector&15)+2<<3) & 255,
+                                    game.charCodeAt(1|tra[fdctrack]|startsector+2<<3&0x7f) & 0xff,
+                                    game.charCodeAt(2|tra[fdctrack]|startsector+2<<3&0x7f) & 0xff,
+                                    game.charCodeAt(3|tra[fdctrack]|startsector+2<<3&0x7f) & 0xff);
+*/                return game.charCodeAt(3|tra[fdctrack]|startsector+2<<3&0x7f) & 0xff;
       }
       break;
 
     default:
-      alert('Reading command '+hex(command)+', pc='+hex(pc));
+      alert('Reading command '+command+', pc='+pc);
   }
 }
 
@@ -143,7 +143,7 @@ function fdcdw(val){
     if (!params){
       switch (command & 0x1F){
         case 0x03: /*Specify*/
-console.log(ope+++' Specify', hex(pc), paramdat[1], paramdat[0]);
+//console.log(ope+++' Specify', hex(pc), paramdat[1], paramdat[0]);
           fdcs= 0x80;
           break;
         case 0x04: /*Sense drive status*/
@@ -152,15 +152,15 @@ console.log(ope+++' Specify', hex(pc), paramdat[1], paramdat[0]);
             st3|= 0x10;
           fdcs= 0xd0;
           readp= 1;
-console.log(ope+++' Sense drive', hex(pc), paramdat[0]);
+//console.log(ope+++' Sense drive', hex(pc), paramdat[0]);
           break;
 
         case 0x06: /*Read sectors*/
         case 0x0C: /*Read deleted sectors*/
           fdctrack= paramdat[6];
-          startsector= paramdat[4] & 15;
-          endsector= paramdat[2] & 15;
-console.log(ope+++' Read', hex(pc), hex(command), fdctrack, startsector, endsector);
+          startsector= paramdat[4];// & 15;
+          endsector= paramdat[2];// & 15;
+//console.log(ope+++' Read', hex(pc), hex(fdctrack|command<<8), hex(endsector|startsector<<8));
           posinsector= 0;
           readp= 1;
           reading= 1;
@@ -168,14 +168,14 @@ console.log(ope+++' Read', hex(pc), hex(command), fdctrack, startsector, endsect
           break;
 
         case 0x07: /*Recalibrate*/
-console.log(ope+++' Recalibrate', hex(pc), paramdat[0]);
+//console.log(ope+++' Recalibrate', hex(pc), paramdat[0]);
           fdcs= 0x80;
           fdctrack= 0;
           fdcint= 1;
           break;
 
         case 0x0A: /*Read sector ID*/
-console.log(ope+++' ReadId', hex(pc), paramdat[0], fdctrack, startsector, endsector);
+//console.log(ope+++' ReadId', hex(pc), paramdat[0], fdctrack, startsector, endsector);
           fdcs= 0xd0;//0x60;
           readp= 7;
           break;
@@ -183,12 +183,12 @@ console.log(ope+++' ReadId', hex(pc), paramdat[0], fdctrack, startsector, endsec
         case 0x0F: /*Seek*/
           fdcs= 0x80;
           fdctrack= paramdat[0];
-console.log(ope+++' Seek', hex(pc), paramdat[1], fdctrack);
+//console.log(ope+++' Seek', hex(pc), paramdat[1], fdctrack);
           fdcint= 1;
           break;
 
         default:
-          alert('Executing bad command '+hex(command)+', pc='+hex(pc));
+          alert('Executing bad command '+command+', pc='+pc);
       }
     }
   }
@@ -218,7 +218,7 @@ console.log(ope+++' Seek', hex(pc), paramdat[1], fdctrack);
         break;
 
       case 0x08: /*Sense interrupt state*/
-console.log(ope+++' Sense interrupt', hex(pc));
+//console.log(ope+++' Sense interrupt', hex(pc));
         st0= 0x20;
         if (!fdcint)
           st0|= 0x80;
@@ -239,7 +239,7 @@ console.log(ope+++' Sense interrupt', hex(pc));
         break;
 
       default:
-        alert('Starting bad command: '+hex(command)+', pc='+hex(pc));
+        alert('Starting bad command: '+command+', pc='+pc);
     }
   }
 }

@@ -3,13 +3,10 @@
 ?><head><title><?=$title?></title></head><?
 ?><body/><?
 ?><script type="text/javascript"><?
-?>tapep=cdt=game=t=u=0;<?
+?>game=t=u=0;<?
 ?>function cb(b,f){<?
   ?>if(f[0]=='_')<?
     ?>emul=b;<?
-  ?>else if(f.slice(-2)=='dt')<?
-  ?>cdt=b,<?
-  ?>tapep=10;<?
   ?>else <?
     ?>game=b;<?
   ?>if(!t--)<?

@@ -1,7 +1,8 @@
 caca= 0;//0x10000000;
 function cond() {
 //  if(pc==0xc96d && ope==16 && a==0x0f)  //16 seek 0 2
-//console.log(hex(a));
+  if(pc==0xc8a6)  //16 seek 0 2
+console.log(hex(m[2][0x3e52]|m[2][0x3e51]<<8),hex(m[2][0x3e54]|m[2][0x3e53]<<8));
 //    generateSnap();
 
 }
