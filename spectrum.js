@@ -91,7 +91,7 @@ function run() {
               + '%',
     time= nt;
   t= -1;
-  while(t++ < 0x2ff)
+  while( t++ < 0x2ff )
     for ( col= m[t+0x5800]
         , bk= pal[col    & 7
                 | col>>3 & 8]
@@ -250,7 +250,7 @@ function audioprocess(e){
   run();
   data1= e.outputBuffer.getChannelData(0);
   data2= e.outputBuffer.getChannelData(1);
-  while( j<1024 ){
+  while( j < 1024 ){
     data1[j++]= data2[j]= sample;
     play+= paso;
     if( play > vb[playp] && playp<vbp )
@@ -262,7 +262,7 @@ function audioprocess(e){
 function mozrun(){
   vbp= play= playp= j= 0;
   run();
-  while( j<2048 ){
+  while( j < 2048 ){
     data[j++]= sample;
     play+= paso;
     if( play > vb[playp] && playp<vbp )
@@ -327,7 +327,7 @@ function handleFileSelect(evt) {
             ? o.charCodeAt(j+4) | o.charCodeAt(j+5)<<8
             : o.charCodeAt(6) | o.charCodeAt(7)<<8;
         j+= u+4;
-        while( j<o.length ){
+        while( j < o.length ){
           t= o.charCodeAt(j++) | o.charCodeAt(j++)<<8;
           u= o.charCodeAt(j++);
           u=  ( u==8
@@ -337,19 +337,19 @@ function handleFileSelect(evt) {
               <<
               14;
           if( t<0xffff )
-            while(t--)
+            while( t-- )
               if( o.charCodeAt(j)==0xed && o.charCodeAt(j+1)==0xed ){
                 t-= 3;
                 w= o.charCodeAt(j+2);
                 j+= 4;
-                while(w--)
+                while( w-- )
                   m[u++]= o.charCodeAt(j-1);
               }
               else
                 m[u++]= o.charCodeAt(j++);
           else
             do m[u++]= o.charCodeAt(j++)
-            while( u&0x3fff );
+            while( u & 0x3fff );
         }
         r7<<= 7;
       }
@@ -547,7 +547,7 @@ function rm(o) {
   sp= o.charCodeAt(j++) | o.charCodeAt(j++)<<8;
   im= o.charCodeAt(j++);
   wp(0,o.charCodeAt(j++));
-  while(j<0xc01b)
+  while( j < 0xc01b )
     m[j+0x3fe5]= o.charCodeAt(j++);
   g[0xc9]();
 }
@@ -567,8 +567,8 @@ function wm() {
 function tp(){
   tapei= tapep= t= j= 0;
   v= '';
-  while(u=  game.charCodeAt(t)      & 0xff
-          | game.charCodeAt(t+1)<<8 & 0xffff)
+  while( u= game.charCodeAt(t)      & 0xff
+          | game.charCodeAt(t+1)<<8 & 0xffff )
     v+= '<option value="'+t+'">#'+ ++j+
         ( game.charCodeAt(t+2)
           ? ' Data: '+u+' bytes'
