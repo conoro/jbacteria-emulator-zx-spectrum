@@ -344,6 +344,17 @@
   exec('kzip -y temp.zip aa.rom');
   file_put_contents('_6128s.tap.deflate', substr(file_get_contents('temp.zip'), 36, -75));
 ///*
+  error_log("3");
+  exec("java yui 3");
+  file_put_contents('aa.rom', file_get_contents('rom/k-trs.pal').
+                              file_get_contents('rom/k-trs.bin').
+                              file_get_contents('rom/trs80-3.rom').
+                              file_get_contents('rom/trs80-char.bin').
+                              file_get_contents('3.js'));
+  unlink('3.js');
+  exec('kzip -y temp.zip aa.rom');
+  file_put_contents('_3.tap.deflate', substr(file_get_contents('temp.zip'), 36, -75));
+///*
   error_log("galitz.html");
   ob_start();$x='galitz';$y=0x10000;
   require'emu.php';
@@ -518,6 +529,13 @@
   file_put_contents('aa.rom', ob_get_contents());
   exec('kzip -y temp.zip aa.rom');
   file_put_contents('6128s.html.deflate', substr(file_get_contents('temp.zip'), 36, -75));
+///*
+  error_log("3.html");
+  ob_start();$x=3;$y=0x3800+0xf00;$title='jTandyIII';
+  require'emu_trs.php';
+  file_put_contents('aa.rom', ob_get_contents());
+  exec('kzip -y temp.zip aa.rom');
+  file_put_contents('3.html.deflate', substr(file_get_contents('temp.zip'), 36, -75));
 //*/
   unlink('aa.rom');
   unlink('temp.zip');

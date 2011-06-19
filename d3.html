@@ -1,0 +1,72 @@
+<!DOCTYPE HTML>
+<html>
+<head><title>jTandyIII</title></head>
+<body/>
+<script type="text/javascript" src="tandy3.js"></script>
+<script type="text/javascript" src="z80.js"></script>
+<script type="text/javascript">
+game=t=u=0;
+function cb(b,f){
+  if(f[0]=='_')
+    emul=b;
+  else 
+    game=b;
+  if(!t--){
+    document.body.style.margin= 0;
+    document.body.style.background= '#111';
+    he= document.createElement('canvas');
+    he.width= 512;
+    he.height= 384;
+    he.setAttribute('style','display:none;position:absolute');
+    eld= (elm= (ct= he.getContext('2d')).getImageData(0,0,512,384)).data;
+    ir= document.createElement('iframe');
+    ir.setAttribute('style','display:none');
+    document.body.appendChild(ir);
+    while( t < 0xbfff )
+      a= emul.charCodeAt(++t+12)>>6 & 3,
+      eld[u++]= emul.charCodeAt(3*a),
+      eld[u++]= emul.charCodeAt(3*a+1),
+      eld[u++]= emul.charCodeAt(3*a+2),
+      eld[u++]= a ? 255 : 55,
+      a= emul.charCodeAt(t+12)>>4 & 3,
+      eld[u++]= emul.charCodeAt(3*a),
+      eld[u++]= emul.charCodeAt(3*a+1),
+      eld[u++]= emul.charCodeAt(3*a+2),
+      eld[u++]= a ? 255 : 55,
+      a= emul.charCodeAt(t+12)>>2 & 3,
+      eld[u++]= emul.charCodeAt(3*a),
+      eld[u++]= emul.charCodeAt(3*a+1),
+      eld[u++]= emul.charCodeAt(3*a+2),
+      eld[u++]= a ? 255 : 55,
+      a= emul.charCodeAt(t+12) & 3,
+      eld[u++]= emul.charCodeAt(3*a),
+      eld[u++]= emul.charCodeAt(3*a+1),
+      eld[u++]= emul.charCodeAt(3*a+2),
+      eld[u++]= a ? 255 : 55;
+    ct.putImageData(elm, 0, 0);
+    cv= document.createElement('canvas');
+    cv.width= 512;
+    cv.height= 192;
+    document.body.appendChild(cv);
+    document.body.appendChild(he);
+    eld= (elm= (ct= cv.getContext('2d')).getImageData(0,0,512,192)).data;
+    init();
+  }
+}
+function ajax(f,a){
+  var xhr=new XMLHttpRequest();
+  xhr.onreadystatechange=function(){
+    if(xhr&&xhr.readyState==4)
+      a(xhr.responseText,f);
+  };
+  xhr.open('GET',f,true);
+  xhr.overrideMimeType('text/plain;charset=x-user-defined');
+  xhr.send(null);
+}
+k=location.href.indexOf('?')+1;
+if(k)
+  t++,
+  ajax(location.href.substr(k),cb);
+ajax('_3',cb);
+</script>
+</html>
