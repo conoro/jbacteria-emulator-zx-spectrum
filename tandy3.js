@@ -1,60 +1,59 @@
-m= [];                                 // memory
-kc= [0,0,0,0,0,0,0,0,      // keyboard codes
-    517,  // 8 backspace, same as cursor left
-    8,    // 9 tab @
+m= [];         // memory
+kc= [0,0,0,0,0,0,0,0,
+    5|2<<3,    // 8 backspace, same as cursor left
+    0|8<<3,    // 9 tab @
     0,0,0,
-    512,  // 13 enter 
+    0|2<<3,    // 13 enter 
     0,0,
-    1024, // 16 shift
-    514,  // 17 control (break)
-    0,    // 18 alt
-    0,0,0,0,0,0,0,0,
-    513,  // 27 esc (clear)
+    0|1<<3,    // 16 shift
+    2|2<<3,    // 17 control (break)
+    0,0,0,0,0,0,0,0,0,
+    1|2<<3,    // 27 esc (clear)
     0,0,0,0,
-    519,  // 32 space
+    7|2<<3,    // 32 space
     0,0,0,0,
-    517,  // cursor left
-    515,  // cursor up
-    518,  // cursor right
-    516,  // cursor down
+    5|2<<3,    // cursor left
+    3|2<<3,    // cursor up
+    6|2<<3,    // cursor right
+    4|2<<3,    // cursor down
     0,0,0,0,0,0,0,
-    128,  // 0 (48)
-    129,  // 1
-    130,  // 2
-    131,  // 3
-    132,  // 4
-    133,  // 5
-    134,  // 6
-    135,  // 7
-    256,  // 8
-    257,  // 9
+    0|4<<3,    // 0 (48)
+    1|4<<3,    // 1
+    2|4<<3,    // 2
+    3|4<<3,    // 3
+    4|4<<3,    // 4
+    5|4<<3,    // 5
+    6|4<<3,    // 6
+    7|4<<3,    // 7
+    0|3<<3,    // 8
+    1|3<<3,    // 9
     0,0,0,0,0,0,0,
-    9,    // A (65)
-    10,   // B
-    11,   // C
-    12,   // D
-    13,   // E
-    14,   // F
-    15,   // G
-    16,   // H
-    17,   // I
-    18,   // J
-    19,   // K
-    20,   // L
-    21,   // M
-    22,   // N
-    23,   // O
-    32,   // P
-    33,   // Q
-    34,   // R
-    35,   // S
-    36,   // T
-    37,   // U
-    38,   // V
-    39,   // W
-    64,   // X
-    65,   // Y
-    66,   // Z (90)
+    1|8<<3,    // A (65)
+    2|8<<3,    // B
+    3|8<<3,    // C
+    4|8<<3,    // D
+    5|8<<3,    // E
+    6|8<<3,    // F
+    7|8<<3,    // G
+    0|7<<3,    // H
+    1|7<<3,    // I
+    2|7<<3,    // J
+    3|7<<3,    // K
+    4|7<<3,    // L
+    5|7<<3,    // M
+    6|7<<3,    // N
+    7|7<<3,    // O
+    0|6<<3,    // P
+    1|6<<3,    // Q
+    2|6<<3,    // R
+    3|6<<3,    // S
+    4|6<<3,    // T
+    5|6<<3,    // U
+    6|6<<3,    // V
+    7|6<<3,    // W
+    0|5<<3,    // X
+    1|6<<3,    // Y
+    2|6<<3,    // Z (90)
     0,0,0,0,0,0,0,0,0,   // 91
     0,0,0,0,0,0,0,0,0,0, // 100
     0,0,0,0,0,0,0,0,0,0, // 110
@@ -65,17 +64,18 @@ kc= [0,0,0,0,0,0,0,0,      // keyboard codes
     0,0,0,0,0,0,0,0,0,0, // 160
     0,0,0,0,0,0,0,0,0,0, // 170
     0,0,0,0,0,0,         // 180
-    259,                 // 186 ;
-    261,                 // 187 - qwerty -
-    260,                 // 188 ,
-    258,                 // 189 : qwerty =
-    262,                 // 190 .
-    263,0,0,0,0,0,0,0,0, // 191 /
+    3|3<<3,    // 186 ;
+    5|3<<3,    // 187 - qwerty -
+    4|3<<3,    // 188 ,
+    2|3<<3,    // 189 : qwerty =
+    6|3<<3,    // 190 .
+    7|3<<3,    // 191 /
+    0,0,0,0,0,0,0,0,     // 192
     0,0,0,0,0,0,0,0,0,0, // 200
     0,0,0,0,0,0,0,0,0,   // 210
-    258,0,               // 219 : dvorak [ 
-    261                  // 221 - dvorak ]
-];  
+    2|3<<3,    // 219 : dvorak [
+    0,         // 220
+    5|3<<3];   // 221 - dvorak ]
 
 function run() {
   while(st < 67584)                       // execute z80 instructions during a frame
@@ -145,14 +145,14 @@ function init() {
   ft= st= time= tape= flash= p236= bIRQ= bIRQe= 0;  // states, time (miliseconts), tape data, flash frame, tape pointer
   z80init();
   a= b= c= d= f= h= l= a_= b_= c_= d_= e_= h_= l_= r= r7= pc= iff= im= halted= t= u= 0;
-  e=  0x11;
-  f_= 0x01;
-  xh= 0x5c;
-  xl= 0xe2;
-  yh= 0x5c;
-  yl= 0x3a;
-  i=  0x3f;
-  sp= 0xff4a;
+  e=  0;
+  f_= 0;
+  xh= 0;
+  xl= 0;
+  yh= 0;
+  yl= 0;
+  i=  0;
+  sp= 0;
   try{
     put= top==self ? document : parent.document;
   }
@@ -166,22 +166,14 @@ function init() {
       ; j++ )        // fill memory
     m[j]= j < 0x3800
           ? emul.charCodeAt(j+0xc00c) & 0xff
-          : ( j < 0x3c00
+          : ( j < 0x4000
               ? 0
               : 0x76 );
-  if( game )                               // emulate LOAD ""
+  if( game )
     loadFile();
-//  tab= document.getElementById('table').getContext('2d');
-//  tab.drawImage(document.getElementById('tab'), 0, 0);
-//  n= (j= tab.getImageData(0, 0, 1024, 120)).data;
-//  for(y= 0; y<60; y++)
-//    for(x= 0; x<512; x++)
-//      for(r= 0; r<4; r++)
-//        n[(y+60)*4096+8*x+4+r]= n[(y+60)*4096+8*x+r]= n[y*4096+x*4+r];
-//  tab.putImageData(j, 0, 0);
   document.ondragover= handleDragOver;
   document.ondrop= handleFileSelect;
-  document.onkeydown= kdown;          // key event handling
+  document.onkeydown= kdown;
   document.onkeyup= kup;
   document.onkeypress= kpress;
   document.onresize= document.body.onresize= onresize;
@@ -192,18 +184,27 @@ function init() {
 function handleFileSelect(evt) {
   evt.stopPropagation();
   evt.preventDefault();
-  if(evt.dataTransfer.files[0].name.slice(-3).toLowerCase()!='cmd')
-    return alert('Invalid CMD file');
-  var reader= new FileReader();
-  k= evt.dataTransfer.files[0].size;
-  reader.onloadend = function(ev) {
-    tape= load.getImageData(0, 0, 1024, 128).data;
-    o= ev.target.result;
-    for(j=0; j<k; j++)
-      tape[j<<2]= o.charCodeAt(j)
-    loadFile(k);
+  switch(evt.dataTransfer.files[0].name.slice(-3).toLowerCase()){
+    case 'sna':
+      if( evt.dataTransfer.files[0].size != 0xc500 )
+        return alert('Invalid SNA file');
+      var reader= new FileReader();
+      reader.onloadend = function(ev) {
+        o= ev.target.result;
+        rm(o);
+      }
+      reader.readAsBinaryString(evt.dataTransfer.files[0]);
+      break;
+    default:
+      return alert(evt.dataTransfer.files[0].name+' has an invalid extension');
+    case 'cmd':
+      var reader= new FileReader();
+      reader.onloadend = function(ev) {
+        game= ev.target.result;
+        loadFile();
+      }
+      reader.readAsBinaryString(evt.dataTransfer.files[0]);
   }
-  reader.readAsBinaryString(evt.dataTransfer.files[0]);
 }
 
 function handleDragOver(evt) {
@@ -211,56 +212,96 @@ function handleDragOver(evt) {
   evt.preventDefault();
 }
 
-function loadFile(k) {
-  pc= 0;
-//  run();
-  j= 0;
-  if(tape[j<<2]<31) // CMD file
-    while(j<k)
-      switch(tape[j++<<2]){
-        case 1:
-          n= tape[j++<<2]-2;
-          n+= n-2 & 256;
-          r= tape[j++<<2]|tape[j++<<2]<<8;
-          while(n--)
-            m[r++]= tape[j++<<2];
-          break;
-        case 2:
-          j++;
-          pc= tape[j++<<2]|tape[j++<<2]<<8;
-          k=j;
-          break;
-        default:
-          j+= 1+tape[j++<<2]
-      }
-  else if(tape[j<<2]<57){
-  }
+function loadFile() {
+  pc= j= 0;
+  run();
+  run();
+  run();
+  run();
+  run();
+  run();
+//  if( (game.charCodeAt(j)&0xff) < 31 ) // CMD file
+  while( j < game.length )
+    switch( game.charCodeAt(j++) ){
+      case 1:
+        n= (game.charCodeAt(j++)&0xff)-2;
+        n+= n-2 & 0x100;
+        r=  game.charCodeAt(j++)    & 0xff
+          | game.charCodeAt(j++)<<8 & 0xffff;
+        while(n--)
+          m[r++]= game.charCodeAt(j++) & 0xff;
+        break;
+      case 2:
+        j++;
+        pc=  game.charCodeAt(j++)    & 0xff
+           | game.charCodeAt(j++)<<8 & 0xffff;
+        j= game.length;
+        break;
+      default:
+        j+= 1+game.charCodeAt(j++) & 0xff;
+    }
+//  else if( game.charCodeAt(j) < 57 ){
+//  }
+
+/*    o= wm();
+    t= new ArrayBuffer(o.length);
+    u= new Uint8Array(t, 0);
+    for ( j=0; j<o.length; j++ )
+      u[j]= o.charCodeAt(j);
+    j= new WebKitBlobBuilder(); 
+    j.append(t);
+    ir.src= webkitURL.createObjectURL(j.getBlob());
+    alert('Snapshot saved.\nRename the file (without extension) to .SNA.');*/
+
 }
 
 function kdown(evt) {
-  var code= kc[evt.keyCode];
-//console.log(evt.keyCode, code);
-  if (code)
-    m[0x3800|code>>3]|= 1 << (code&7);
-  else if(evt.keyCode==116)
+  if( kc[evt.keyCode] )
+    m[0x3800  |  0x100 >> (kc[evt.keyCode]>>3)]|= 1 << (kc[evt.keyCode]&7);
+  else if( evt.keyCode==114 )
+    localStorage.save= wm();
+  else if( evt.keyCode==115 )
+    rm(localStorage.save);
+  else if( evt.keyCode==116 )
     location.reload();
-  else if(evt.keyCode==122)
-    return true;
-  else if(evt.keyCode==112)
-    if( ft^= 1 )
+  else if( evt.keyCode==119 )
+    pc= 0;
+  else if( evt.keyCode==120 )
+    cv.setAttribute('style', 'image-rendering:'+( (ft^= 2) & 2
+                                                  ? 'optimizeSpeed'
+                                                  : '' )),
+    onresize(),
+    alert(ft & 2
+          ? 'Nearest neighbor scaling'
+          : 'Bilinear scaling'),
+    self.focus();
+  else if( evt.keyCode==122 )
+    return 1;
+  else if( evt.keyCode==112 )
+    if( (ft^= 1) & 1 )
       clearInterval(interval),
       he.style.display= 'block';
     else
       interval= setInterval(run, 33),
       he.style.display= 'none';
+  else if( evt.keyCode==121 ){
+    o= wm();
+    t= new ArrayBuffer(o.length);
+    u= new Uint8Array(t, 0);
+    for ( j=0; j<o.length; j++ )
+      u[j]= o.charCodeAt(j);
+    j= new WebKitBlobBuilder(); 
+    j.append(t);
+    ir.src= webkitURL.createObjectURL(j.getBlob());
+    alert('Snapshot saved.\nRename the file (without extension) to .SNA.');
+  }
   if (!evt.metaKey)
     return false;
 }
 
 function kup(evt) {
-  var code= kc[evt.keyCode];
-  if (code)
-    m[0x3800|code>>3]&= 255 ^ 1<<(code&7);
+  if( kc[evt.keyCode] )
+    m[0x3800  |  0x100 >> (kc[evt.keyCode]>>3)]&= 0xff  ^  1 << (kc[evt.keyCode]&7);
   if (!evt.metaKey)
     return false;
 }
@@ -290,12 +331,10 @@ function onresize(evt) {
 
 function rp(addr) {
   switch( addr & 0xff ){
-    // XXX - only reports status of video IRQ, not others.
-    case 0xe0: return bIRQ ? 0xfb : 0xff;
-    // XXX - big hack -- port 255 gives most of 236
-    case 0xff: return p236 & 0xfc;
+    case 0xe0: return bIRQ ? 0xfb : 0xff; // status of video IRQ
+    case 0xff: return p236 & 0xfc;        // port 0xff gives most of 236
     case 0xec: bIRQ= 0;
-    case 0xf8: return 0x30 // printer is ready!
+    case 0xf8: return 0x30;               // printer is ready!
   }
   return 0xff;
 }
@@ -311,4 +350,50 @@ function wp(addr, val) {                // write port, only border color emulati
 function wb(addr, val) {
   if( addr > 0x3bff )
     m[addr]= val;
+}
+
+function wm() {
+  t= 'TRS80m3 - SNA'+String.fromCharCode(0,0,0,1,f,a,c,b,e,d,l,h,r,i,iff,0,xl,xh,yl,yh,
+     sp&255,sp>>8,pc&255,pc>>8,im,f_,a_,c_,b_,e_,d_,l_,h_,bIRQ, bIRQe, p236);
+  for (j= 0; j < 207; j++)
+    t+= String.fromCharCode(0);
+  for (j= 0x3c00; j < 0x10000; j++)
+    t+= String.fromCharCode(m[j]);
+  return t;
+}
+
+function rm(o) {
+  j= 17;
+  f= o.charCodeAt(j++);
+  a= o.charCodeAt(j++);
+  c= o.charCodeAt(j++);
+  b= o.charCodeAt(j++);
+  e= o.charCodeAt(j++);
+  d= o.charCodeAt(j++);
+  l= o.charCodeAt(j++);
+  h= o.charCodeAt(j++);
+  r= o.charCodeAt(j++);
+  i= o.charCodeAt(j++);
+  iff= o.charCodeAt(j++)&1;
+  j++;
+  xl= o.charCodeAt(j++);
+  xh= o.charCodeAt(j++);
+  yl= o.charCodeAt(j++);
+  yh= o.charCodeAt(j++);
+  sp= o.charCodeAt(j++) | o.charCodeAt(j++)<<8;
+  pc= o.charCodeAt(j++) | o.charCodeAt(j++)<<8;
+  im= o.charCodeAt(j++);
+  f_= o.charCodeAt(j++);
+  a_= o.charCodeAt(j++);
+  c_= o.charCodeAt(j++);
+  b_= o.charCodeAt(j++);
+  e_= o.charCodeAt(j++);
+  d_= o.charCodeAt(j++);
+  l_= o.charCodeAt(j++);
+  h_= o.charCodeAt(j++);
+  bIRQ= o.charCodeAt(j++);
+  bIRQe= o.charCodeAt(j++);
+  p236= o.charCodeAt(j++);
+  for (j= 0x3c00; j < 0x10000; j++)
+    m[j]= o.charCodeAt(j-0x3b00);
 }

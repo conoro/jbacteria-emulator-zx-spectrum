@@ -42,6 +42,13 @@
   exec('kzip -y temp.zip aa.rom');
   file_put_contents('noframess.html.deflate', substr(file_get_contents('temp.zip'), 36, -75));
 ///*
+  error_log("list_trs.php");
+  ob_start();
+  require'list_trs.php';
+  file_put_contents('aa.rom', ob_get_contents());
+  exec('kzip -y temp.zip aa.rom');
+  file_put_contents('noframes.html.deflate', substr(file_get_contents('temp.zip'), 36, -75));
+///*
   error_log("48");
   exec("java yui 48");
   $rom= file_get_contents('rom/48.rom');
