@@ -1,4 +1,5 @@
 spectrum128.js
 spectrum128f.js
+ay.js
 z80p.js
 dom.js

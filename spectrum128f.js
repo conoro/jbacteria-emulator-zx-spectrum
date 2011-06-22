@@ -5,6 +5,8 @@ rom= [[],[]]; //  , rom= [new Uint8Array(16384),new Uint8Array(16384)];
 
 function init() {
   onresize();
+  envc= envx= ay13= noic= noir= tons= 0;
+  tonc= [0, 0, 0];
   cts= playp= vbp= bor= ft= st= time= flash= lo= 0;
   sample= 0.5;
   pag= 1;
@@ -27,7 +29,7 @@ function init() {
   while( t < 0x30000 )
     eld[t++]= 0xff;
   for ( o= 0
-      ; o < 15
+      ; o < 16
       ; o++ )
     ayr[o]= 0;
   for ( r= 0
@@ -70,8 +72,8 @@ function init() {
     if( typeof Audio == 'function'
      && (audioOutput= new Audio())
      && typeof audioOutput.mozSetup == 'function' ){
-      paso= 69888/2048;
-      audioOutput.mozSetup(2, 51200);
+      paso= 70908/2048;
+      audioOutput.mozSetup(1, 181525);
       myrun= mozrun;
       interval= setInterval(myrun, 20);
     }
@@ -87,11 +89,13 @@ function audioprocess(e){
   data1= e.outputBuffer.getChannelData(0);
   data2= e.outputBuffer.getChannelData(1);
   while( j<1024 ){
-    data1[j++]= data2[j]= sample;
+    
+    data1[j++]= data2[j]= aystep()+aystep();
+/*    data1[j++]= data2[j]= sample;
     play+= paso;
     if( play > vb[playp] && playp<vbp )
       playp++,
-      sample= -sample;
+      sample= -sample;*/
   }
 }
 
@@ -99,11 +103,13 @@ function mozrun(){
   vbp= play= playp= j= 0;
   run();
   while( j<2048 ){
-    data[j++]= sample;
+    data[j++]= aystep();
+//console.log(vb[j-1]);
+/*    data[j++]= sample;
     play+= paso;
     if( play > vb[playp] && playp<vbp )
       playp++,
-      sample= -sample;
+      sample= -sample;*/
   }
   audioOutput.mozWriteAudio(data);
 }
@@ -165,13 +171,14 @@ function wp(addr, val) {                // write port, only border color emulati
   else if( (addr&0x8002) == 0x8000 )
     if( addr&0x4000 )
       ay= val&15;
-    else
-      val&= 1<<ay & 0x202a
-            ? 15
-            : ( 1<<ay & 0x700
-                ? 0x1f
-                : 0xff),
-      ayr[ay]= val;
+    else{
+      ayr[ay]= val & rmask[ay];
+      if( ay==13 )
+        envx= 0,
+        ay13= val & 8
+              ? 1 | val>>1 & 2 | val & 4
+              : val;
+    }
 }
 
 function rm(o) {
