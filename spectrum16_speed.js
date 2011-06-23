@@ -1,6 +1,9 @@
 var na= 'jBacteria16 ';
 
 function init() {
+  cv.setAttribute('style', 'image-rendering:'+( localStorage.ft & 1
+                                                ? 'optimizeSpeed'
+                                                : '' ));
   onresize();
   cts= playp= vbp= bor= f1= st= time= flash= 0;
   if( localStorage.ft==undefined )

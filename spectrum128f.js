@@ -2,6 +2,9 @@ suf= '';
 rom= [[],[]]; //  , rom= [new Uint8Array(16384),new Uint8Array(16384)];
 
 function init() {
+  cv.setAttribute('style', 'image-rendering:'+( localStorage.ft & 1
+                                                ? 'optimizeSpeed'
+                                                : '' ));
   onresize();
   ay= envc= envx= ay13= noic= noir= tons= 0;
   ayr= [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -94,13 +97,17 @@ function audioprocess(e){
   run();
   data1= e.outputBuffer.getChannelData(0);
   data2= e.outputBuffer.getChannelData(1);
-  while( j<1024 ){ // 48000/1024= 46.875  70908/1024= 69.24
-    data1[j++]= data2[j]= (aystep()+aystep()+aystep()+aystep()+sample*4)/4;
-    play+= paso;
-    if( play > vb[playp] && playp<vbp )
-      playp++,
-      sample= -sample;
-  }
+  if( localStorage.ft & 4 )
+    while( j<1024 ){ // 48000/1024= 46.875  70908/1024= 69.24
+      data1[j++]= data2[j]= (aystep()+aystep()+aystep()+aystep()+sample*4)/4;
+      play+= paso;
+      if( play > vb[playp] && playp<vbp )
+        playp++,
+        sample= -sample;
+    }
+  else
+    while( j<1024 )
+      data1[j++]= data2[j]= 0;
 }
 
 function mozrun(){

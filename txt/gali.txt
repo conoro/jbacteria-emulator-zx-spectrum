@@ -1,4 +1,0 @@
-galitz.js
-z80.js
-XAudioServer.js
-dom.js

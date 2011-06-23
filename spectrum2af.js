@@ -2,6 +2,9 @@ suf= '2a';
 rom= [[],[],[],[]]; //  rom= [new Uint8Array(16384),new Uint8Array(16384),new Uint8Array(16384),new Uint8Array(16384)];
 
 function init() {
+  cv.setAttribute('style', 'image-rendering:'+( localStorage.ft & 1
+                                                ? 'optimizeSpeed'
+                                                : '' ));
   onresize();
   ay= envc= envx= ay13= noic= noir= tons= 0;
   ayr= [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -106,6 +109,9 @@ function audioprocess(e){
         playp++,
         sample= -sample;
     }
+  else
+    while( j<1024 )
+      data1[j++]= data2[j]= 0;
 }
 
 function mozrun(){

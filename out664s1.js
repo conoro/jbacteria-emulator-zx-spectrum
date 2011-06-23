@@ -5,13 +5,16 @@ function init() {
   for (t= 0; t < 256; t++)
     lut0[t]= t>>7&1 | t>>3&4 | t>>2&2 | t<<2&8,
     lut1[t]= t>>6&1 | t>>2&4 | t>>1&2 | t<<3&8;
+  cv.setAttribute('style', 'image-rendering:'+( localStorage.ft & 1
+                                                ? 'optimizeSpeed'
+                                                : '' ));
   onresize();
   ay= envc= envx= ay13= noic= noir= tons= 0;
   ayr= [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         0, 0, 0]; // last 3 values for tone counter
   ga= f1= st= time= flash= 0;
   if( localStorage.ft==undefined )
-    localStorage.ft= 0;
+    localStorage.ft= 4;
   z80init();
   fdcinit();
   d= r= r7= pc= iff= halted= t= u= 0;
@@ -80,34 +83,6 @@ function init() {
       interval= setInterval(myrun, 20);
   }
   self.focus();
-}
-
-function audioprocess0(e){
-  data1= e.outputBuffer.getChannelData(0);
-  data2= e.outputBuffer.getChannelData(1);
-  j= 0;
-  while( j<1024 )
-    data1[j++]= data2[j]= 0;
-}
-
-function audioprocess(e){
-  run();
-  data1= e.outputBuffer.getChannelData(0);
-  data2= e.outputBuffer.getChannelData(1);
-  j= 0;
-  if( localStorage.ft & 4 )
-    while( j<1024 ) // 48000/1024= 46.875  60000/1024= 58.59
-      data1[j++]= data2[j]= (aystep()+aystep()+aystep()+aystep())/4;
-}
-
-function mozrun(){
-  run();
-  if( localStorage.ft & 4 ){
-    j= 0;
-    while( j<3750 )
-      data[j++]= aystep();
-    audioOutput.mozWriteAudio(data);
-  }
 }
 
 function wp(addr, val) {

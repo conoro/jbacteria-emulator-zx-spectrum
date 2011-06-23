@@ -292,13 +292,10 @@ function kdown(evt) {
     ir.src= webkitURL.createObjectURL(j.getBlob());
     alert('Snapshot saved.\nRename the file (without extension) to .'+(suf>'2'?'Z80':'SNA'));
   }
-  else if( evt.keyCode==123 ){
-    localStorage.ft^= 4;
-    if( trein!=32000 )
-      node.onaudioprocess= localStorage.ft & 4 ? audioprocess : audioprocess0;
-    alert('Sound '+(localStorage.ft & 4?'en':'dis')+'abled');
+  else if( evt.keyCode==123 )
+    localStorage.ft^= 4,
+    alert('Sound '+(localStorage.ft & 4?'en':'dis')+'abled'),
     self.focus();
-  }
   if( code==(0x3c<<7|0x04)
    || code==(0x3c<<7|0x33)
    || code==(0x3c<<7|0x12)

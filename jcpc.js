@@ -240,7 +240,7 @@ function kdown(evt) {
     alert(localStorage.ft & 1
           ? 'Nearest neighbor scaling'
           : 'Bilinear scaling'),
-    cv.setAttribute('style', 'image-rendering:'+( (localStorage.ft^= 2) & 1
+    cv.setAttribute('style', 'image-rendering:'+( (localStorage.ft^= 1) & 1
                                                   ? 'optimizeSpeed'
                                                   : '' )),
     onresize(),
@@ -256,13 +256,10 @@ function kdown(evt) {
     ir.src= webkitURL.createObjectURL(j.getBlob());
     alert('Snapshot saved.\nRename the file (without extension) to .SNA.');
   }
-  else if( evt.keyCode==123 ){
-    localStorage.ft^= 4;
-    if( trein!=32000 )
-      node.onaudioprocess= localStorage.ft & 4 ? audioprocess : audioprocess0;
-    alert('Sound '+(localStorage.ft & 4?'en':'dis')+'abled');
+  else if( evt.keyCode==123 )
+    localStorage.ft^= 4,
+    alert('Sound '+(localStorage.ft & 4?'en':'dis')+'abled'),
     self.focus();
-  }
   if (!evt.metaKey)
     return false;
 }
@@ -278,4 +275,35 @@ function kup(evt) {
 function kpress(evt) {
   if (!evt.metaKey)
     return false;
+}
+
+function audioprocess0(e){
+  data1= e.outputBuffer.getChannelData(0);
+  data2= e.outputBuffer.getChannelData(1);
+  j= 0;
+  while( j<1024 )
+    data1[j++]= data2[j]= 0;
+}
+
+function audioprocess(e){
+  run();
+  data1= e.outputBuffer.getChannelData(0);
+  data2= e.outputBuffer.getChannelData(1);
+  j= 0;
+  if( localStorage.ft & 4 )
+    while( j<1024 ) // 48000/1024= 46.875  60000/1024= 58.59
+      data1[j++]= data2[j]= (aystep()+aystep()+aystep()+aystep())/4;
+  else
+    while( j<1024 )
+      data1[j++]= data2[j]= 0;
+}
+
+function mozrun(){
+  run();
+  if( localStorage.ft & 4 ){
+    j= 0;
+    while( j<3750 )
+      data[j++]= aystep();
+    audioOutput.mozWriteAudio(data);
+  }
 }

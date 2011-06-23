@@ -203,6 +203,9 @@ function run() {
 }
 
 function init() {
+  cv.setAttribute('style', 'image-rendering:'+( localStorage.ft & 1
+                                                ? 'optimizeSpeed'
+                                                : '' ));
   onresize();
   cts= playp= vbp= bor= f1= st= time= flash= 0;
   if( localStorage.ft==undefined )
@@ -288,6 +291,9 @@ function audioprocess(e){
         playp++,
         sample= -sample;
     }
+  else
+    while( j<1024 )
+      data1[j++]= data2[j]= 0;
 }
 
 function mozrun(){
@@ -468,13 +474,10 @@ function kdown(evt) {
     ir.src= webkitURL.createObjectURL(j.getBlob());
     alert('Snapshot saved.\nRename the file (without extension) to .SNA.');
   }
-  else if( evt.keyCode==123 ){
-    localStorage.ft^= 4;
-    if( trein!=32000 )
-      node.onaudioprocess= localStorage.ft & 4 ? audioprocess : audioprocess0;
-    alert('Sound '+(localStorage.ft & 4?'en':'dis')+'abled');
+  else if( evt.keyCode==123 )
+    localStorage.ft^= 4,
+    alert('Sound '+(localStorage.ft & 4?'en':'dis')+'abled'),
     self.focus();
-  }
   if( !evt.metaKey )
     return false;
 }
