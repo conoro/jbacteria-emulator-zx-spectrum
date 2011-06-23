@@ -1,13 +1,15 @@
 suf= '';
-ay= 0;
-ayr= [];
 rom= [[],[]]; //  , rom= [new Uint8Array(16384),new Uint8Array(16384)];
 
 function init() {
   onresize();
-  envc= envx= ay13= noic= noir= tons= 0;
-  tonc= [0, 0, 0];
-  cts= playp= vbp= bor= ft= st= time= flash= lo= 0;
+  ay= envc= envx= ay13= noic= noir= tons= 0;
+  ayr= [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0]; // last 3 values for tone counter
+  cts= playp= vbp= bor= f1= st= time= flash= lo= 0;
+  if( localStorage.ft==undefined )
+    localStorage.ft= 4;
+ console.log(localStorage.ft);
   sample= 0.5;
   pag= 1;
   z80init();
@@ -28,10 +30,6 @@ function init() {
   }
   while( t < 0x30000 )
     eld[t++]= 0xff;
-  for ( o= 0
-      ; o < 16
-      ; o++ )
-    ayr[o]= 0;
   for ( r= 0
       ; r < 0x8000
       ; r++ )
@@ -72,8 +70,8 @@ function init() {
     if( typeof Audio == 'function'
      && (audioOutput= new Audio())
      && typeof audioOutput.mozSetup == 'function' ){
-      paso= 70908/2048;
-      audioOutput.mozSetup(1, 181525);
+      paso= 70908/2048; // 221600/4432= 50  70908/4432= 16
+      audioOutput.mozSetup(1, 221600);
       myrun= mozrun;
       interval= setInterval(myrun, 20);
     }
@@ -83,35 +81,41 @@ function init() {
   self.focus();
 }
 
+function audioprocess0(e){
+  data1= e.outputBuffer.getChannelData(0);
+  data2= e.outputBuffer.getChannelData(1);
+  j= 0;
+  while( j<1024 )
+    data1[j++]= data2[j]= 0;
+}
+
 function audioprocess(e){
   vbp= play= playp= j= 0;
   run();
   data1= e.outputBuffer.getChannelData(0);
   data2= e.outputBuffer.getChannelData(1);
-  while( j<1024 ){
-    
-    data1[j++]= data2[j]= aystep()+aystep();
-/*    data1[j++]= data2[j]= sample;
+  while( j<1024 ){ // 48000/1024= 46.875  70908/1024= 69.24
+    data1[j++]= data2[j]= (aystep()+aystep()+aystep()+aystep()+sample*4)/4;
     play+= paso;
     if( play > vb[playp] && playp<vbp )
       playp++,
-      sample= -sample;*/
+      sample= -sample;
   }
 }
 
 function mozrun(){
   vbp= play= playp= j= 0;
   run();
-  while( j<2048 ){
-    data[j++]= aystep();
-//console.log(vb[j-1]);
-/*    data[j++]= sample;
-    play+= paso;
-    if( play > vb[playp] && playp<vbp )
-      playp++,
-      sample= -sample;*/
+  if( localStorage.ft & 4 ){
+    while( j<4432 ){
+      data[j++]= aystep()+sample;
+      play+= paso;
+      if( play > vb[playp] && playp<vbp )
+        playp++,
+        sample= -sample;
+    }
+    audioOutput.mozWriteAudio(data);
   }
-  audioOutput.mozWriteAudio(data);
 }
 
 function rp(addr) {
@@ -171,14 +175,8 @@ function wp(addr, val) {                // write port, only border color emulati
   else if( (addr&0x8002) == 0x8000 )
     if( addr&0x4000 )
       ay= val&15;
-    else{
-      ayr[ay]= val & rmask[ay];
-      if( ay==13 )
-        envx= 0,
-        ay13= val & 8
-              ? 1 | val>>1 & 2 | val & 4
-              : val;
-    }
+    else
+      ayw(val);
 }
 
 function rm(o) {

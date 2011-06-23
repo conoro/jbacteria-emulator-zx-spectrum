@@ -7,7 +7,9 @@ ram= [[],[],[],[],[],[],[],[],[]];        // [new Uint8Array(16384),new Uint8Arr
 kb= [0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff]; // keyboard state
 kc= [0,0,0,0,0,0,0,0,      // keyboard codes
     0x05<<7|0x25, // 8 backspace
-    0x05<<7|0x3c, // 9 tab (extend)
+    localStorage.ft & 2
+    ? 0x05<<7|0x3c
+    : 0x41,       // 9 tab (extend)
     0,0,0,
     0x35,         // 13 enter 
     0,0,
@@ -18,10 +20,18 @@ kc= [0,0,0,0,0,0,0,0,      // keyboard codes
     0,0,0,0,
     0x3d,         // 32 space
     0,0,0,0,
-    0x05<<7|0x19, // cursor left
-    0x05<<7|0x22, // cursor up
-    0x05<<7|0x23, // cursor right
-    0x05<<7|0x21, // cursor down
+    localStorage.ft & 2
+    ? 0x05<<7|0x19
+    : 0x44,       // cursor left
+    localStorage.ft & 2
+    ? 0x05<<7|0x22 
+    : 0x42,       // cursor up
+    localStorage.ft & 2
+    ? 0x05<<7|0x23
+    : 0x45,       // cursor right
+    localStorage.ft & 2
+    ? 0x05<<7|0x21
+    : 0x43,       // cursor down
     0,0,0,0,0,0,0,
     0x25,         // 0 (48)
     0x1d,         // 1
@@ -229,11 +239,11 @@ function kdown(evt) {
   else if( evt.keyCode==122 )
     return 1;
   else if( evt.keyCode==112 )
-    if( (ft^= 1) & 1 ){
+    if( f1= ~f1 ){
       if( trein==32000 )
         clearInterval(interval);
       else
-        node.onaudioprocess= 0;
+        node.onaudioprocess= audioprocess0;
       pt.style.display= he.style.display= 'block';
     }
     else{
@@ -249,7 +259,7 @@ function kdown(evt) {
     kc[38]^= 0x42^(0x05<<7 | 0x22),
     kc[39]^= 0x45^(0x05<<7 | 0x23),
     kc[40]^= 0x43^(0x05<<7 | 0x21),
-    alert(kc[9]&4
+    alert((localStorage.ft^= 2) & 2
           ? 'Cursors enabled'
           : 'Joystick enabled on Cursors + Tab'),
     self.focus();
@@ -273,11 +283,11 @@ function kdown(evt) {
     pag= 1,
     wp(0x7ffd, pc= 0);
   else if( evt.keyCode==120 )
-    cv.setAttribute('style', 'image-rendering:'+( (ft^= 2) & 2
+    cv.setAttribute('style', 'image-rendering:'+( (localStorage.ft^= 1) & 1
                                                   ? 'optimizeSpeed'
                                                   : '' )),
     onresize(),
-    alert(ft & 2
+    alert(localStorage.ft & 1
           ? 'Nearest neighbor scaling'
           : 'Bilinear scaling'),
     self.focus();
@@ -291,6 +301,13 @@ function kdown(evt) {
     j.append(t);
     ir.src= webkitURL.createObjectURL(j.getBlob());
     alert('Snapshot saved.\nRename the file (without extension) to .'+(suf>'2'?'Z80':'SNA'));
+  }
+  else if( evt.keyCode==123 ){
+    localStorage.ft^= 4;
+    if( trein!=32000 )
+      node.onaudioprocess= localStorage.ft & 4 ? audioprocess : audioprocess0;
+    alert('Sound '+(localStorage.ft & 4?'en':'dis')+'abled');
+    self.focus();
   }
   if( code==(0x3c<<7|0x04)
    || code==(0x3c<<7|0x33)

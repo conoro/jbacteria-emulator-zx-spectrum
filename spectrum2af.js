@@ -1,11 +1,14 @@
 suf= '2a';
-ay= 0;
-ayr= [];
 rom= [[],[],[],[]]; //  rom= [new Uint8Array(16384),new Uint8Array(16384),new Uint8Array(16384),new Uint8Array(16384)];
 
 function init() {
   onresize();
-  cts= playp= vbp= bor= p0= p1= sha= ft= st= time= flash= 0;
+  ay= envc= envx= ay13= noic= noir= tons= 0;
+  ayr= [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0]; // last 3 values for tone counter
+  cts= playp= vbp= bor= p0= p1= sha= f1= st= time= flash= 0;
+  if( localStorage.ft==undefined )
+    localStorage.ft= 4;
   sample= 0.5;
   pag= 1;
   z80init();
@@ -71,8 +74,8 @@ function init() {
     if( typeof Audio == 'function'
      && (audioOutput= new Audio())
      && typeof audioOutput.mozSetup == 'function' ){
-      paso= 69888/2048;
-      audioOutput.mozSetup(2, 51200);
+      paso= 70908/2048; // 221600/4432= 50  70908/4432= 16
+      audioOutput.mozSetup(1, 221600);
       myrun= mozrun;
       interval= setInterval(myrun, 20);
     }
@@ -82,31 +85,42 @@ function init() {
   self.focus();
 }
 
+function audioprocess0(e){
+  data1= e.outputBuffer.getChannelData(0);
+  data2= e.outputBuffer.getChannelData(1);
+  j= 0;
+  while( j<1024 )
+    data1[j++]= data2[j]= 0;
+}
+
 function audioprocess(e){
   vbp= play= playp= j= 0;
   run();
   data1= e.outputBuffer.getChannelData(0);
   data2= e.outputBuffer.getChannelData(1);
-  while( j<1024 ){
-    data1[j++]= data2[j]= sample;
-    play+= paso;
-    if( play > vb[playp] && playp<vbp )
-      playp++,
-      sample= -sample;
-  }
+  if( localStorage.ft & 4 )
+    while( j<1024 ){ // 48000/1024= 46.875  70908/1024= 69.24
+      data1[j++]= data2[j]= (aystep()+aystep()+aystep()+aystep()+sample*4)/4;
+      play+= paso;
+      if( play > vb[playp] && playp<vbp )
+        playp++,
+        sample= -sample;
+    }
 }
 
 function mozrun(){
   vbp= play= playp= j= 0;
   run();
-  while( j<2048 ){
-    data[j++]= sample;
-    play+= paso;
-    if( play > vb[playp] && playp<vbp )
-      playp++,
-      sample= -sample;
+  if( localStorage.ft & 4 ){
+    while( j<4432 ){
+      data[j++]= aystep()+sample;
+      play+= paso;
+      if( play > vb[playp] && playp<vbp )
+        playp++,
+        sample= -sample;
+    }
+    audioOutput.mozWriteAudio(data);
   }
-  audioOutput.mozWriteAudio(data);
 }
 
 function rp(addr) {

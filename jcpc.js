@@ -1,24 +1,25 @@
  bp= 0;
   gc= [0x04,0x0a,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00];
-  ayr= [0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00];
   cr= [0x00,0x28,0x00,0x00,0x00,0x00,0x19,0x00,0x00,0x07,0x00,0x00,0x30,0x00,0x00,0x00];
 pl= [];
 lut0= [];
 lut1= [];
 
-  ay= 0;
   ci= 0;
   ap= 0;
   io= 0;
   vsync= 0;
 
+data= [];
 m= [];                                 // memory
 mw= [[],[],[],[]];        // [new Uint8Array(16384),new Uint8Array(16384),new Uint8Array(16384),new Uint8Array(16384), new Uint8Array(16384),new Uint8Array(16384),new Uint8Array(16384),new Uint8Array(16384)]
 kb= [255,255,255,255,255,255,255,255,
      255,255,255,255,255,255,255,255]; // keyboard state
 kc= [255,255,255,255,255,255,255,255,      // keyboard codes
     0x97,// 8 del qwerty backspace
-    0x84,// 9 tab 
+    localStorage.ft & 2
+    ? 0x84
+    : 0x94,       // 9 tab
           255,255,255,
     0x22,// 13 enter 
           255,255,
@@ -32,10 +33,18 @@ kc= [255,255,255,255,255,255,255,255,      // keyboard codes
           255,255,255,255,
     0x57,// 32 space
           255,255,255,255,
-    0x10,// cursor left
-    0x00,// cursor up
-    0x01,// cursor right
-    0x02,// cursor down
+    localStorage.ft & 2
+    ? 0x10
+    : 0x92,// cursor left
+    localStorage.ft & 2
+    ? 0x00
+    : 0x90,// cursor up
+    localStorage.ft & 2
+    ? 0x01
+    : 0x93,// cursor right
+    localStorage.ft & 2
+    ? 0x02
+    : 0x91,// cursor down
           255,255,255,255,
     0x11,// 45 COPY querty Ins
     0x20,// 46 CLR qwerty Del
@@ -181,7 +190,7 @@ function run() {
 
   paintScreen();
   if (!(++flash & 15))
-    put.title= 'Roland'+suf+' '+parseInt(32000/((nt= new Date().getTime())-time))+'%',
+    put.title= 'Roland'+suf+' '+parseInt(trein/((nt= new Date().getTime())-time))+'%',
     time= nt;
 }
 
@@ -199,19 +208,27 @@ function kdown(evt) {
   else if(evt.keyCode==122)
     return 1;
   else if(evt.keyCode==112)
-    if( (ft^= 1) & 1 )
-      clearInterval(interval),
+    if( f1= ~f1 ){
+      if( trein==32000 )
+        clearInterval(interval);
+      else
+        node.onaudioprocess= audioprocess0;
       pt.style.display= he.style.display= 'block';
-    else
-      interval= setInterval(run, 20),
+    }
+    else{
+      if( trein==32000 )
+        interval= setInterval(myrun, 20);
+      else
+        node.onaudioprocess= audioprocess;
       pt.style.display= he.style.display= 'none';
+    }
   else if(evt.keyCode==113)
     kc[9]^= 0x10,
     kc[37]^= 0x82,
     kc[38]^= 0x90,
     kc[39]^= 0x92,
     kc[40]^= 0x93,
-    alert('Joystick '+(kc[9]&0x10?'en':'dis')+'abled on Cursors + Tab'),
+    alert('Joystick '+((localStorage.ft^= 2) & 2?'en':'dis')+'abled on Cursors + Tab'),
     self.focus();
   else if(evt.keyCode==114)
     save= wm();
@@ -220,10 +237,10 @@ function kdown(evt) {
   else if(evt.keyCode==119)
     m[0]= rom[pc= 0];
   else if( evt.keyCode==120 )
-    alert(ft & 2
+    alert(localStorage.ft & 1
           ? 'Nearest neighbor scaling'
           : 'Bilinear scaling'),
-    cv.setAttribute('style', 'image-rendering:'+( (ft^= 2) & 2
+    cv.setAttribute('style', 'image-rendering:'+( (localStorage.ft^= 2) & 1
                                                   ? 'optimizeSpeed'
                                                   : '' )),
     onresize(),
@@ -238,6 +255,13 @@ function kdown(evt) {
     j.append(t);
     ir.src= webkitURL.createObjectURL(j.getBlob());
     alert('Snapshot saved.\nRename the file (without extension) to .SNA.');
+  }
+  else if( evt.keyCode==123 ){
+    localStorage.ft^= 4;
+    if( trein!=32000 )
+      node.onaudioprocess= localStorage.ft & 4 ? audioprocess : audioprocess0;
+    alert('Sound '+(localStorage.ft & 4?'en':'dis')+'abled');
+    self.focus();
   }
   if (!evt.metaKey)
     return false;

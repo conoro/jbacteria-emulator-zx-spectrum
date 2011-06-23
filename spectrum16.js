@@ -2,7 +2,9 @@ na= 'jBacteria16 ';
 
 function init() {
   onresize();
-  cts= playp= vbp= bor= ft= st= time= flash= 0;
+  cts= playp= vbp= bor= f1= st= time= flash= 0;
+  if( localStorage.ft==undefined )
+    localStorage.ft= 4;
   sample= 0.5;
   z80init();
   a= b= c= d= f= h= l= a_= b_= c_= d_= e_= h_= l_= r= r7= pc= iff= im= halted= t= u= 0;
@@ -66,6 +68,6 @@ function init() {
 }
 
 function wb(addr, val) {
-  if (addr > 0x3fff && addr < 0x8000)
+  if( addr > 0x3fff && addr < 0x8000 )
     m[addr]= val;
 }

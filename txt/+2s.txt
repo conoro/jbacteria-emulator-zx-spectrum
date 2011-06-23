@@ -1,5 +1,6 @@
 spectrum128_speed.js
 spectrum128f.js
 spectrum2.js
+ay.js
 z80p.js
 dom.js

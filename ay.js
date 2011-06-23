@@ -18,8 +18,8 @@ function aystep() {
 }
 function cstep(ch) {
   if( ayr[ch<<1] | ayr[1|ch<<1]
-   && ++tonc[ch] >= (ayr[ch<<1] | ayr[1|ch<<1]<<8) )
-    tonc[ch]= 0,
+   && ++ayr[ch+16] >= (ayr[ch<<1] | ayr[1|ch<<1]<<8) )
+    ayr[ch+16]= 0,
     tons^= 1 << ch;
   return  ( ( ( ( ayr[7] >> ch   | tons >> ch )
               ^ ( ayr[7] >> ch+3 | noiv       ) ) & 1 ) - 0.5 )
@@ -37,4 +37,12 @@ function estep() {
   return  ay13 & 4
           ? envx++
           : 15 - envx++;
+}
+function ayw(val) {
+  ayr[ay]= val & rmask[ay];
+  if( ay==13 )
+    envx= 0,
+    ay13= val & 8
+          ? 1 | val>>1 & 2 | val & 4
+          : val;
 }

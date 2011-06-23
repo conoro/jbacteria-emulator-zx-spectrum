@@ -1,5 +1,6 @@
 spectrum128.js
 spectrum3f.js
 fdc.js
+ay.js
 z80p.js
 dom.js
