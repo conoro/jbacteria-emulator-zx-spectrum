@@ -116,7 +116,8 @@ function rp(addr) {
     if(addr&0x0001) //xxxxx0x1 0xxxxxx1 ... fdc data
       j&= fdcdr();
     else //xxxxx0x1 0xxxxxx0 ... fdc status
-      j&= fdcs;
+      j&= fdc_msr_read();
+//      j&= fdcs;
   }
   return j;
 }
