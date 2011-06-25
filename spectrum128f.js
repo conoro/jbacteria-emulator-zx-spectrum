@@ -12,7 +12,6 @@ function init() {
   cts= playp= vbp= bor= f1= st= time= flash= lo= 0;
   if( localStorage.ft==undefined )
     localStorage.ft= 4;
- console.log(localStorage.ft);
   sample= 0.5;
   pag= 1;
   z80init();

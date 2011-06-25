@@ -75,7 +75,7 @@ function init() {
     if( typeof Audio == 'function'
      && (audioOutput= new Audio())
      && typeof audioOutput.mozSetup == 'function' ){
-      audioOutput.mozSetup(1, 187500); // 187500/3750= 50  60000/3750= 16
+      audioOutput.mozSetup(1, 125000); // 125000/2500= 50  60000/2500= 24
       myrun= mozrun;
       interval= setInterval(myrun, 20);
     }
