@@ -18,8 +18,8 @@ kb= [255,255,255,255,255,255,255,255,
 kc= [255,255,255,255,255,255,255,255,      // keyboard codes
     0x97,// 8 del qwerty backspace
     localStorage.ft & 2
-    ? 0x84
-    : 0x94,       // 9 tab
+    ? 0x94
+    : 0x84,       // 9 tab
           255,255,255,
     0x22,// 13 enter 
           255,255,
@@ -34,17 +34,17 @@ kc= [255,255,255,255,255,255,255,255,      // keyboard codes
     0x57,// 32 space
           255,255,255,255,
     localStorage.ft & 2
-    ? 0x10
-    : 0x92,// cursor left
+    ? 0x92
+    : 0x10,// cursor left
     localStorage.ft & 2
-    ? 0x00
-    : 0x90,// cursor up
+    ? 0x90
+    : 0x00,// cursor up
     localStorage.ft & 2
-    ? 0x01
-    : 0x93,// cursor right
+    ? 0x93
+    : 0x01,// cursor right
     localStorage.ft & 2
-    ? 0x02
-    : 0x91,// cursor down
+    ? 0x91
+    : 0x02,// cursor down
           255,255,255,255,
     0x11,// 45 COPY querty Ins
     0x20,// 46 CLR qwerty Del
@@ -228,7 +228,9 @@ function kdown(evt) {
     kc[38]^= 0x90,
     kc[39]^= 0x92,
     kc[40]^= 0x93,
-    alert('Joystick '+((localStorage.ft^= 2) & 2?'en':'dis')+'abled on Cursors + Tab'),
+    alert((localStorage.ft^= 2) & 2
+          ? 'Joystick enabled on Cursors + Tab'
+          : 'Joystick disabled'),
     self.focus();
   else if(evt.keyCode==114)
     save= wm();
