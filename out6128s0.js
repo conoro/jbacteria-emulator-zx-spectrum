@@ -56,7 +56,12 @@ function init() {
   i= 0;
   im= 0;
   sp= 0xbfec;
-  put= top==self ? document : parent.document;
+  try{
+    put= top==self ? document : parent.document;
+  }
+  catch(error){
+    put= document;
+  }
   for (r= 0; r < 49152; r++)        // fill memory
     rom[r>>14][r&16383]= emul.charCodeAt(0x18015+r) & 255;
   for (j= 0; j < 131072; j++)        // fill memory
