@@ -125,38 +125,104 @@ kc= [255,255,255,255,255,255,255,255,      // keyboard codes
     0x23,// 221 ]
     0x34];// 222 ' qwerty ;
     
-pal=[[128, 128, 128],
-     [128, 128, 128],
-     [  0, 255, 128],
-     [255, 255, 128],
-     [  0,   0, 128],
-     [255,   0, 128],
-     [  0, 128, 128],
-     [255, 128, 128],
-     [255,   0, 128],
-     [255, 255, 128],
-     [255, 255,   0],
+pal=[[128, 128, 128], //13
+     [128, 128, 128], //13
+     [  0, 255, 128], //7
+     [255, 255, 128], //25
+     [  0,   0, 128], //1
+     [255,   0, 128], //19
+     [  0, 128, 128], //4
+     [255, 128, 128], //22
+     [255,   0, 128], //19
+     [255, 255, 128], //25
+     [255, 255,   0], //24
+     [255, 255, 255], //26
+     [255,   0,   0], //18
+     [255,   0, 255], //20
+     [255, 128,   0], //21
+     [255, 128, 255], //23
+     [  0,   0, 128], //1
+     [  0, 255, 128], //7
+     [  0, 255,   0], //6
+     [  0, 255, 255], //8
+     [  0,   0,   0], //0
+     [  0,   0, 255], //2
+     [  0, 128,   0], //3
+     [  0, 128, 255], //5
+     [128,   0, 128], //10
+     [128, 255, 128], //16
+     [128, 255,   0], //15
+     [128, 255, 255], //17
+     [128,   0,   0], //9
+     [128,   0, 255], //11
+     [128, 128,   0], //12
+     [128, 128, 255]];//14
+palalt= // paleta en blanco y negro
+    [[123, 123, 123],
+     [123, 123, 123],
+     [ 66,  66,  66],
+     [239, 239, 239],
+     [  8,   8,   8],
+     [181, 181, 181],
+     [ 33,  33,  33],
+     [214, 214, 214],
+     [181, 181, 181],
+     [239, 239, 239],
+     [231, 231, 231],
      [255, 255, 255],
-     [255,   0,   0],
-     [255,   0, 255],
-     [255, 128,   0],
-     [255, 128, 255],
-     [  0,   0, 128],
-     [  0, 255, 128],
-     [  0, 255,   0],
-     [  0, 255, 255],
+     [173, 173, 173],
+     [189, 189, 189],
+     [206, 206, 206],
+     [222, 222, 222],
+     [  8,   8,   8],
+     [ 66,  66,  66],
+     [ 57,  57,  57],
+     [ 74,  74,  74],
      [  0,   0,   0],
-     [  0,   0, 255],
-     [  0, 128,   0],
-     [  0, 128, 255],
-     [128,   0, 128],
-     [128, 255, 128],
-     [128, 255,   0],
-     [128, 255, 255],
-     [128,   0,   0],
-     [128,   0, 255],
-     [128, 128,   0],
-     [128, 128, 255]];
+     [ 16,  16,  16],
+     [ 24,  24,  24],
+     [ 49,  49,  49],
+     [ 99,  99,  99],
+     [156, 156, 156],
+     [148, 148, 148],
+     [165, 165, 165],
+     [ 82,  82,  82],
+     [107, 107, 107],
+     [115, 115, 115],
+     [132, 132, 132],
+        // paleta fósforo verde
+     [ 65, 174,  51],
+     [ 65, 174,  51],
+     [ 34,  92,  27],
+     [200, 237, 195],
+     [  5,  11,   4],
+     [124, 214, 113],
+     [ 18,  48,  14],
+     [164, 226, 156],
+     [124, 214, 113],
+     [200, 237, 195],
+     [189, 234, 183],
+     [217, 243, 214],
+     [114, 211, 102],
+     [134, 217, 124],
+     [154, 223, 145],
+     [177, 230, 170],
+     [  5,  11,   4],
+     [ 34,  92,  27],
+     [ 29,  79,  23],
+     [ 39, 105,  31],
+     [  0,   0,   0],
+     [  9,  22,   7],
+     [ 14,  36,  11],
+     [ 25,  67,  20],
+     [ 51, 137,  40],
+     [ 91, 203,  77],
+     [ 81, 200,  66],
+     [101, 207,  88],
+     [ 43, 116,  34],
+     [ 56, 149,  44],
+     [ 59, 160,  47],
+     [ 68, 186,  54]];
 
 function run() {
   for (vs= 0; vs<5; vs++){
@@ -203,11 +269,7 @@ function kdown(evt) {
   var code= kc[evt.keyCode];
   if (code<255)
     kb[code>>4]&= ~(1 << (code & 0x07));
-  else if(evt.keyCode==116)
-    location.reload();
-  else if(evt.keyCode==122)
-    return 1;
-  else if(evt.keyCode==112)
+  else if( evt.keyCode==112 ) // F1
     if( f1= ~f1 ){
       if( trein==32000 )
         clearInterval(interval);
@@ -222,7 +284,7 @@ function kdown(evt) {
         node.onaudioprocess= audioprocess;
       pt.style.display= he.style.display= 'none';
     }
-  else if(evt.keyCode==113)
+  else if( evt.keyCode==113 ) // F2
     kc[9]^= 0x10,
     kc[37]^= 0x82,
     kc[38]^= 0x90,
@@ -232,13 +294,19 @@ function kdown(evt) {
           ? 'Joystick enabled on Cursors + Tab'
           : 'Joystick disabled'),
     self.focus();
-  else if(evt.keyCode==114)
+  else if( evt.keyCode==114 ) // F3
     save= wm();
-  else if(evt.keyCode==115)
+  else if( evt.keyCode==115 ) // F4
     rm(save);
-  else if(evt.keyCode==119)
+  else if( evt.keyCode==116 ) // F5
+    return 1;
+  else if( evt.keyCode==118 ) // F7
+    localStorage.ft= +localStorage.ft+8 & 0x1f,
+    t= 1,
+    rotapal();
+  else if( evt.keyCode==119 ) // F8
     m[0]= rom[pc= 0];
-  else if( evt.keyCode==120 )
+  else if( evt.keyCode==120 ) // F9
     alert(localStorage.ft & 1
           ? 'Nearest neighbor scaling'
           : 'Bilinear scaling'),
@@ -247,7 +315,7 @@ function kdown(evt) {
                                                   : '' )),
     onresize(),
     self.focus();
-  else if(evt.keyCode==121){
+  else if( evt.keyCode==121 ){// F10
     o= wm();
     t= new ArrayBuffer(o.length);
     u= new Uint8Array(t, 0);
@@ -258,7 +326,9 @@ function kdown(evt) {
     ir.src= webkitURL.createObjectURL(j.getBlob());
     alert('Snapshot saved.\nRename the file (without extension) to .SNA.');
   }
-  else if( evt.keyCode==123 )
+  else if( evt.keyCode==122 ) // F11
+    return 1;
+  else if( evt.keyCode==123 ) // F12
     localStorage.ft^= 4,
     alert('Sound '+(localStorage.ft & 4?'en':'dis')+'abled'),
     self.focus();

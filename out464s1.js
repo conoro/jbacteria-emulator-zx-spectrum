@@ -8,6 +8,8 @@ function init() {
   cv.setAttribute('style', 'image-rendering:'+( localStorage.ft & 1
                                                 ? 'optimizeSpeed'
                                                 : '' ));
+  t= localStorage.ft>>3;
+  rotapal();
   onresize();
   ay= envc= envx= ay13= noic= noir= tons= 0;
   ayr= [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -16,7 +18,7 @@ function init() {
   if( localStorage.ft==undefined )
     localStorage.ft= 4;
   z80init();
-  d= r= r7= pc= iff= halted= t= u= 0;
+  d= r= r7= pc= iff= halted= 0;
   a= 0x09;
   f= 0x0;
   b= 0xf7;
@@ -111,7 +113,6 @@ function wp(addr, val) {
       if(val & 0x40 && gc[ga] != (val&0x1f)){ //colour for pen
         gc[ga]= val&0x1f;
         pl[ga]= pal[val&0x1f];
-// console.log(ga);
         if(ga==16)
           document.body.style.backgroundColor= 'rgb('+pl[ga][0]+','+pl[ga][1]+','+pl[ga][2]+')';
       }

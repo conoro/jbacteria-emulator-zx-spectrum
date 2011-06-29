@@ -147,3 +147,15 @@ function onresize() {
   pt.style.left= he.style.left= cv.style.marginLeft;
   pt.style.top= he.style.top= cv.style.marginTop;
 }
+
+function rotapal(){
+  while( t-- )
+    for (u= 0; u < 32; u++)
+      v= palalt[u],
+      palalt[u]= palalt[u+32],
+      palalt[u+32]= pal[u],
+      pal[u]= v;
+  for (t= 0; t < 17; t++)
+    pl[t]= pal[gc[t]];
+  document.body.style.backgroundColor= 'rgb('+pl[16][0]+','+pl[16][1]+','+pl[16][2]+')';
+}

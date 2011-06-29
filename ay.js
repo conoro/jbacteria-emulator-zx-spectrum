@@ -7,7 +7,7 @@ amp= [0,      0.0137, 0.0205, 0.0291,
       0.1691, 0.2647, 0.3527, 0.4499,
       0.5704, 0.6873, 0.8482, 1];
 function aystep() {
-  if( ++envc >= (ayr[11] | ayr[12]<<8) )
+  if( ++envc >= (ayr[11]<<1 | ayr[12]<<9) )
     envc= 0,
     envv= estep();
   if( ++noic >= ayr[6] )
@@ -17,12 +17,12 @@ function aystep() {
   return (cstep(0) + cstep(1) + cstep(2)) / 3;
 }
 function cstep(ch) {
-  if( ayr[ch<<1] | ayr[1|ch<<1]
-   && ++ayr[ch+16] >= (ayr[ch<<1] | ayr[1|ch<<1]<<8) )
+  if( ++ayr[ch+16] >= (ayr[ch<<1] | ayr[1|ch<<1]<<8) )
     ayr[ch+16]= 0,
     tons^= 1 << ch;
-  return  ( ( ( ( ayr[7] >> ch   | tons >> ch )
-              ^ ( ayr[7] >> ch+3 | noiv       ) ) & 1 ) - 0.5 )
+  return  ( ( ayr[7] >> ch   | tons >> ch
+            & ayr[7] >> ch+3 | noiv
+            & 1 ) - 0.5 )
         * amp[ ayr[8+ch] & 0x10
                ? envv
                : ayr[8+ch] & 0x0f ];

@@ -8,6 +8,8 @@ function init() {
   cv.setAttribute('style', 'image-rendering:'+( localStorage.ft & 1
                                                 ? 'optimizeSpeed'
                                                 : '' ));
+  t= localStorage.ft>>3;
+  rotapal();
   onresize();
   ay= envc= envx= ay13= noic= noir= tons= 0;
   ayr= [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -17,7 +19,7 @@ function init() {
     localStorage.ft= 4;
   z80init();
   fdcinit();
-  d= r= r7= pc= iff= halted= t= u= 0;
+  d= r= r7= pc= iff= halted= 0;
   a= 0x0d;
   f= 0x0;
   b= 0;
