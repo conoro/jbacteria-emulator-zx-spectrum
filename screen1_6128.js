@@ -149,9 +149,9 @@ function onresize() {
 function rotapal(){
   while( t-- )
     for (u= 0; u < 32; u++)
-      v= palalt[u],
-      palalt[u]= palalt[u+32],
-      palalt[u+32]= pal[u],
+      v= pal[u+32],
+      pal[u+32]= pal[u+64],
+      pal[u+64]= pal[u],
       pal[u]= v;
   for (t= 0; t < 17; t++)
     pl[t]= pal[gc[t]];

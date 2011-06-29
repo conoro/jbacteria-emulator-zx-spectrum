@@ -156,9 +156,9 @@ pal=[[128, 128, 128], //13
      [128,   0,   0], //9
      [128,   0, 255], //11
      [128, 128,   0], //12
-     [128, 128, 255]];//14
-palalt= // paleta en blanco y negro
-    [[123, 123, 123],
+     [128, 128, 255], //14
+// paleta en blanco y negro
+     [123, 123, 123],
      [123, 123, 123],
      [ 66,  66,  66],
      [239, 239, 239],
@@ -190,7 +190,7 @@ palalt= // paleta en blanco y negro
      [107, 107, 107],
      [115, 115, 115],
      [132, 132, 132],
-        // paleta fósforo verde
+// paleta fósforo verde
      [ 65, 174,  51],
      [ 65, 174,  51],
      [ 34,  92,  27],
@@ -301,7 +301,7 @@ function kdown(evt) {
   else if( evt.keyCode==116 ) // F5
     return 1;
   else if( evt.keyCode==118 ) // F7
-    localStorage.ft= +localStorage.ft+8 & 0x1f,
+    localStorage.ft= +localStorage.ft+8 % 24,
     t= 1,
     rotapal();
   else if( evt.keyCode==119 ) // F8
