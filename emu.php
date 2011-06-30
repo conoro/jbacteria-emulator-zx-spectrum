@@ -1,6 +1,12 @@
 <!DOCTYPE HTML><?
 ?><html><?
+?><head><title><?=$title?></title></head><?
 ?><body/><?
+?><script type="text/javascript">ie=0</script><?
+?><!--[if IE]><?
+?><script type="text/javascript">ie=1</script><?
+?><script type="text/vbscript" src="ie.vbscript"></script><?
+?><![endif]--><?
 ?><script type="text/javascript"><?
 ?>game=t=u=0;<?
 ?>function cb(a,f){<?
@@ -15,10 +21,13 @@
   ?>var xhr=new XMLHttpRequest();<?
   ?>xhr.onreadystatechange=function(){<?
     ?>if(xhr&&xhr.readyState==4)<?
-      ?>cb(xhr.responseText,f);<?
+      ?>cb(ie<?
+         ?>?String.fromCharCode.apply(0,bin2arr(xhr.responseBody).toArray())<?
+         ?>:xhr.responseText,f);<?
   ?>};<?
   ?>xhr.open('GET',f,true);<?
-  ?>xhr.overrideMimeType('text/plain;charset=x-user-defined');<?
+  ?>if(!ie)<?
+    ?>xhr.overrideMimeType('text/plain;charset=x-user-defined');<?
   ?>xhr.send(null);<?
 ?>}<?
 ?>k=location.href.indexOf('?')+1;<?
