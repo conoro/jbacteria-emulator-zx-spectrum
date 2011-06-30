@@ -160,7 +160,7 @@ function handleFileSelect(evt) {
       var reader= new FileReader();
       reader.onloadend = function(ev) {
         game= ev.target.result;
-        tapep= 0;
+        tp();
       }
       reader.readAsBinaryString(evt.dataTransfer.files[0]);
   }
