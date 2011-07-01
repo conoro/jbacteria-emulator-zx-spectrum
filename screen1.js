@@ -135,17 +135,21 @@ function onresize() {
   if( ratio>1.33 )
     cv.style.height= innerHeight - 50 + 'px',
     cv.style.width= parseInt(ratio= (innerHeight-50)*1.33) + 'px',
+    cu.style.height= parseInt((innerHeight-50)*.28)-20+'px',
+    cu.style.width= parseInt(ratio*.6)+'px',
     cv.style.marginTop= '25px',
     cv.style.marginLeft= (innerWidth-ratio >> 1) + 'px';
   else
     cv.style.width= innerWidth-50+'px',
     cv.style.height= parseInt(ratio=(innerWidth-50)/1.33)+'px',
+    cu.style.width= parseInt((innerWidth-50)*.6)+'px',
+    cu.style.height= parseInt(ratio*.28)-20+'px',
     cv.style.marginLeft= '25px',
     cv.style.marginTop= (innerHeight-ratio >> 1) + 'px';
   he.style.width= cv.style.width;
   he.style.height= cv.style.height;
-  pt.style.left= he.style.left= cv.style.marginLeft;
-  pt.style.top= he.style.top= cv.style.marginTop;
+  dv.style.left= he.style.left= cv.style.marginLeft;
+  dv.style.top= he.style.top= cv.style.marginTop;
 }
 
 function rotapal(){
