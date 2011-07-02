@@ -12,7 +12,7 @@
 <script type="text/javascript" src="debug.js"></script>
 <script type="text/javascript">ie=0</script>
 <!--[if IE]>
-<script type="text/javascript">ie=1</script>
+<script type="text/javascript">ie=1;onhelp=function(){return false}</script>
 <script type="text/vbscript" src="ie.vbscript"></script>
 <![endif]-->
 <script type="text/javascript">
@@ -77,14 +77,19 @@ function ajax(f,a){
   var xhr=new XMLHttpRequest();
   xhr.onreadystatechange=function(){
     if(xhr&&xhr.readyState==4)
-      a(  ie
-          ? String.fromCharCode.apply(undefined, bin2arr(xhr.responseBody).toArray())
-          : xhr.responseText, f);
-  };
+      a(ie ? bin2arr(xhr.responseBody) : xhr.responseText, f);
+    };
   xhr.open('GET',f,true);
   if (!ie)
     xhr.overrideMimeType('text/plain;charset=x-user-defined');
   xhr.send(null);
+}
+function bin2arr(a) {
+  v= [];
+  for ( i= 0; i < 256; i++ )
+    for ( j= 0; j < 256; j++ )
+      v[String.fromCharCode(i | j<<8)]= String.fromCharCode(i, j);
+  return arr(a).replace(/[\s\S]/g, function(t){return v[t]}) + arrl(a);
 }
 k=location.href.indexOf('?')+1;
 if(k)

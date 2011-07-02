@@ -1,9 +1,7 @@
-' code extracted from http://benfirshman.com/projects/jsnes/
-Function bin2arr(kk)
-  Dim i
-  ReDim ba(LenB(kk))
-  For i = 1 To LenB(kk)
-    ba(i-1) = AscB(MidB(kk, i, 1))
-  Next
-  bin2arr = ba
+Function arr(t)
+  arr= CStr(t)
+End Function
+Function arrl(t)
+  arrl= ""
+  if LenB(t) mod 2 Then arrl= Chr(AscB(RightB(t,1)))
 End Function
