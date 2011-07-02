@@ -28,12 +28,11 @@
     ?>xhr.overrideMimeType('text/plain;charset=x-user-defined');<?
   ?>xhr.send(null);<?
 ?>}<?
-?>function bin2arr(a) {<?
-?>v=[];<?
-?>for(i=0;i<256;i++)<?
-  ?>for(j=0;j<256;j++)<?
-    ?>v[String.fromCharCode(i|j<<8)]=String.fromCharCode(i,j);<?
-?>return arr(a).replace(/[\s\S]/g,function(t){return v[t]})+arrl(a);<?
+?>function bin2arr(a){<?
+?>return arr(a).replace(/[\s\S]/g,function(t){<?
+  ?>v=t.charCodeAt(0);<?
+  ?>return String.fromCharCode(v&0xff,v>>8)<?
+?>})+arrl(a);<?
 ?>}<?
 ?>k=location.href.indexOf('?')+1;<?
 ?>if(k)<?
