@@ -8,7 +8,9 @@ function init() {
   cts= playp= vbp= bor= f1= st= time= flash= 0;
   if( localStorage.ft==undefined )
     localStorage.ft= 4;
-  sample= 0.5;
+  if ( localStorage.ft & 8 )
+    rotapal();
+  sample= 0;
   z80init();
   a= b= c= d= f= h= l= a_= b_= c_= d_= e_= h_= l_= r= r7= pc= iff= im= halted= t= u= 0;
   e=  0x11;

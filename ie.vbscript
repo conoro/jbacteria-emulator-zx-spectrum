@@ -1,0 +1,9 @@
+' code extracted from http://benfirshman.com/projects/jsnes/
+Function bin2arr(kk)
+  Dim i
+  ReDim ba(LenB(kk))
+  For i = 1 To LenB(kk)
+    ba(i-1) = AscB(MidB(kk, i, 1))
+  Next
+  bin2arr = ba
+End Function

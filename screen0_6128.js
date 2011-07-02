@@ -242,7 +242,7 @@ function rotapal(){
       pal[u]= v;
   for (t= 0; t < 17; t++)
     pl[t]= pal[gc[t]];
-  document.body.style.backgroundColor= 'rgb('+pl[16][0]+','+pl[16][1]+','+pl[16][2]+')';
+  document.body.style.backgroundColor= 'rgb('+pl[16].toString()+')';
   t= cr[1]*(cr[9]+1)*cr[6]<<1;
   while(t--)
     vb[t]= -1;

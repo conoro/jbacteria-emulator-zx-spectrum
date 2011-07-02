@@ -114,7 +114,7 @@ function wp(addr, val) {
         gc[ga]= val&0x1f;
         pl[ga]= pal[val&0x1f];
         if(ga==16)
-          document.body.style.backgroundColor= 'rgb('+pl[ga][0]+','+pl[ga][1]+','+pl[ga][2]+')';
+          document.body.style.backgroundColor= 'rgb('+pl[16].toString()+')';
       }
       else{ //select pen
         ga= val;

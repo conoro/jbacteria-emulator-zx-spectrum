@@ -131,7 +131,7 @@ function wp(addr, val) {
         pl[ga]= pal[val&0x1f];
         t= cr[1]*(cr[9]+1)*cr[6]<<1;
         if(ga==16)
-          document.body.style.backgroundColor= 'rgb('+pl[ga][0]+','+pl[ga][1]+','+pl[ga][2]+')';
+          document.body.style.backgroundColor= 'rgb('+pl[16].toString()+')';
         else if(ga<1<<(4>>gm)){
           u= 1<<ga;
           if(gm==0){

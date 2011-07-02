@@ -90,26 +90,22 @@ function kdown(evt) {
       kb[code>>10]&=      ~(0x20 >> (code>>7  & 7));
     else
       kb[code>>3]&=       ~(0x20 >> (code     & 7));
-  else if( evt.keyCode==116 )
-    location.reload();
-  else if( evt.keyCode==122 )
-    return 1;
-  else if( evt.keyCode==112 )
+  else if( evt.keyCode==112 ) // F1
     if( f1= ~f1 ){
       if( trein==32000 )
         clearInterval(interval);
       else
         node.onaudioprocess= audioprocess0;
-      pt.style.display= he.style.display= 'block';
+      dv.style.display= he.style.display= 'block';
     }
     else{
       if( trein==32000 )
         interval= setInterval(myrun, 20);
       else
         node.onaudioprocess= audioprocess;
-      pt.style.display= he.style.display= 'none';
+      dv.style.display= he.style.display= 'none';
     }
-  else if( evt.keyCode==113 )
+  else if( evt.keyCode==113 ) // F2
     kc[9]^=  0x41^(0x05<<7 | 0x3c),
     kc[37]^= 0x44^(0x05<<7 | 0x19),
     kc[38]^= 0x42^(0x05<<7 | 0x22),
@@ -118,6 +114,43 @@ function kdown(evt) {
     alert(kc[9]&4
           ? 'Cursors enabled'
           : 'Joystick enabled on Cursors + Tab'),
+    self.focus();
+  else if( evt.keyCode==114 ) // F3
+    localStorage.savese= wm();
+  else if( evt.keyCode==115 ) // F4
+    rm(localStorage.savese);
+  else if( evt.keyCode==116 ) // F5
+    location.reload();
+  else if( evt.keyCode==118 ) // F7
+    localStorage.ft^= 8,
+    rotapal();
+  else if( evt.keyCode==119 ) // F8
+    pc= 0;
+  else if( evt.keyCode==120 ) // F9
+    cv.setAttribute('style', 'image-rendering:'+( (localStorage.ft^= 1) & 1
+                                                  ? 'optimizeSpeed'
+                                                  : '' )),
+    onresize(),
+    alert(localStorage.ft & 1
+          ? 'Nearest neighbor scaling'
+          : 'Bilinear scaling'),
+    self.focus();
+  else if( evt.keyCode==121 ){ // F10
+    o= wm();
+    t= new ArrayBuffer(o.length);
+    u= new Uint8Array(t, 0);
+    for ( j=0; j<o.length; j++ )
+      u[j]= o.charCodeAt(j);
+    j= new WebKitBlobBuilder(); 
+    j.append(t);
+    ir.src= webkitURL.createObjectURL(j.getBlob());
+    alert('Snapshot saved.\nRename the file (without extension) to SNA');
+  }
+  else if( evt.keyCode==122 ) // F11
+    return 1;
+  else if( evt.keyCode==123 ) // F12
+    localStorage.ft^= 4,
+    alert('Sound '+(localStorage.ft & 4?'en':'dis')+'abled'),
     self.focus();
   if(code==0x05)
     kc[186]= 0x3c<<7|0x04,
@@ -131,39 +164,6 @@ function kdown(evt) {
     kc[220]= 0x3c<<7|0x0c,
     kc[221]= 0x3c<<7|0x09,
     kc[222]= 0x3c<<7|0x2d;
-  else if( evt.keyCode==114 )
-    localStorage.savese= wm();
-  else if( evt.keyCode==115 )
-    rm(localStorage.savese);
-  else if( evt.keyCode==119 )
-    pc= 0;
-  else if( evt.keyCode==120 )
-    cv.setAttribute('style', 'image-rendering:'+( (localStorage.ft^= 1) & 1
-                                                  ? 'optimizeSpeed'
-                                                  : '' )),
-    onresize(),
-    alert(localStorage.ft & 1
-          ? 'Nearest neighbor scaling'
-          : 'Bilinear scaling'),
-    self.focus();
-  else if( evt.keyCode==121 ){
-    o= wm();
-    t= new ArrayBuffer(o.length);
-    u= new Uint8Array(t, 0);
-    for ( j=0; j<o.length; j++ )
-      u[j]= o.charCodeAt(j);
-    j= new WebKitBlobBuilder(); 
-    j.append(t);
-    ir.src= webkitURL.createObjectURL(j.getBlob());
-    alert('Snapshot saved.\nRename the file (without extension) to SNA');
-  }
-  else if( evt.keyCode==123 ){
-    localStorage.ft^= 4;
-    if( trein!=32000 )
-      node.onaudioprocess= localStorage.ft & 4 ? audioprocess : audioprocess0;
-    alert('Sound '+(localStorage.ft & 4?'en':'dis')+'abled');
-    self.focus();
-  }
   if( code==(0x3c<<7|0x04)
    || code==(0x3c<<7|0x33)
    || code==(0x3c<<7|0x12)

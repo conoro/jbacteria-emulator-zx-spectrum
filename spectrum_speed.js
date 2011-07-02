@@ -69,22 +69,39 @@ kc= [0,0,0,0,0,0,0,0,      // keyboard codes
     0x03,         // X
     0x29,         // Y
     0x04];        // Z (97)
-pal= [[   0,    0,    0],
-      [   0,    0, 0xc0],
-      [0xc0,    0,    0],
-      [0xc0,    0, 0xc0],
-      [   0, 0xc0,    0],
-      [   0, 0xc0, 0xc0],
-      [0xc0, 0xc0,    0],
-      [0xc0, 0xc0, 0xc0],
-      [   0,    0,    0],
-      [   0,    0, 0xff],
-      [0xff,    0,    0],
-      [0xff,    0, 0xff],
-      [   0, 0xff,    0],
-      [   0, 0xff, 0xff],
-      [0xff, 0xff,    0],
-      [0xff, 0xff, 0xff]];
+pal= [[  0,   0,   0],
+      [  0,   0, 202],
+      [202,   0,   0],
+      [202,   0, 202],
+      [  0, 202,   0],
+      [  0, 202, 202],
+      [202, 202,   0],
+      [197, 199, 197],
+      [  0,   0,   0],
+      [  0,   0, 255],
+      [255,   0,   0],
+      [255,   0, 255],
+      [  0, 255,   0],
+      [  0, 255, 255],
+      [255, 255,   0],
+      [255, 255, 255],
+// grayscale
+      [  0,   0,   0],
+      [ 23,  23,  23],
+      [ 60,  60,  60],
+      [ 83,  83,  83],
+      [119, 119, 119],
+      [142, 142, 142],
+      [179, 179, 179],
+      [198, 198, 198],
+      [  0,   0,   0],
+      [ 29,  29,  29],
+      [ 76,  76,  76],
+      [105, 105, 105],
+      [150, 150, 150],
+      [179, 179, 179],
+      [226, 226, 226],
+      [255, 255, 255]];
 
 function run() {
   while( st < 69888 )                       // execute z80 instructions during a frame
@@ -210,7 +227,9 @@ function init() {
   cts= playp= vbp= bor= f1= st= time= flash= 0;
   if( localStorage.ft==undefined )
     localStorage.ft= 4;
-  sample= 0.5;
+  if ( localStorage.ft & 8 )
+    rotapal();
+  sample= 0;
   z80init();
   a= b= c= d= f= h= l= a_= b_= c_= d_= e_= h_= l_= r= r7= pc= iff= im= halted= t= u= 0;
   e=  0x11;
@@ -289,7 +308,7 @@ function audioprocess(e){
       play+= paso;
       if( play > vb[playp] && playp<vbp )
         playp++,
-        sample= -sample;
+        sample^= 1;
     }
   else
     while( j<1024 )
@@ -305,7 +324,7 @@ function mozrun(){
       play+= paso;
       if( play > vb[playp] && playp<vbp )
         playp++,
-        sample= -sample;
+        sample^= 1;
     }
     audioOutput.mozWriteAudio(data);
   }
@@ -419,26 +438,22 @@ function kdown(evt) {
       kb[code>>10]&=      ~(0x20 >> (code>>7  & 7));
     else
       kb[code>>3]&=       ~(0x20 >> (code     & 7));
-  else if( evt.keyCode==116 )
-    location.reload();
-  else if( evt.keyCode==122 )
-    return 1;
-  else if( evt.keyCode==112 )
+  else if( evt.keyCode==112 ) // F1
     if( f1= ~f1 ){
       if( trein==32000 )
         clearInterval(interval);
       else
         node.onaudioprocess= audioprocess0;
-      pt.style.display= he.style.display= 'block';
+      dv.style.display= he.style.display= 'block';
     }
     else{
       if( trein==32000 )
         interval= setInterval(myrun, 20);
       else
         node.onaudioprocess= audioprocess;
-      pt.style.display= he.style.display= 'none';
+      dv.style.display= he.style.display= 'none';
     }
-  else if( evt.keyCode==113 )
+  else if( evt.keyCode==113 ) // F2
     kc[9]^=  0x41^(0x05<<7 | 0x3c),
     kc[37]^= 0x44^(0x05<<7 | 0x19),
     kc[38]^= 0x42^(0x05<<7 | 0x22),
@@ -448,13 +463,18 @@ function kdown(evt) {
           ? 'Cursors enabled'
           : 'Joystick enabled on Cursors + Tab'),
     self.focus();
-  else if( evt.keyCode==114 )
+  else if( evt.keyCode==114 ) // F3
     localStorage.save= wm();
-  else if( evt.keyCode==115 )
+  else if( evt.keyCode==115 ) // F4
     rm(localStorage.save);
-  else if( evt.keyCode==119 )
+  else if( evt.keyCode==116 ) // F5
+    location.reload();
+  else if( evt.keyCode==118 ) // F7
+    localStorage.ft^= 8,
+    rotapal();
+  else if( evt.keyCode==119 ) // F8
     pc= 0;
-  else if( evt.keyCode==120 )
+  else if( evt.keyCode==120 ) // F9
     cv.setAttribute('style', 'image-rendering:'+( (localStorage.ft^= 1) & 1
                                                   ? 'optimizeSpeed'
                                                   : '' )),
@@ -463,7 +483,7 @@ function kdown(evt) {
           ? 'Nearest neighbor scaling'
           : 'Bilinear scaling'),
     self.focus();
-  else if( evt.keyCode==121 ){
+  else if( evt.keyCode==121 ){ // F10
     o= wm();
     t= new ArrayBuffer(o.length);
     u= new Uint8Array(t, 0);
@@ -474,7 +494,9 @@ function kdown(evt) {
     ir.src= webkitURL.createObjectURL(j.getBlob());
     alert('Snapshot saved.\nRename the file (without extension) to .SNA.');
   }
-  else if( evt.keyCode==123 )
+  else if( evt.keyCode==122 ) // F11
+    return 1;
+  else if( evt.keyCode==123 ) // F12
     localStorage.ft^= 4,
     alert('Sound '+(localStorage.ft & 4?'en':'dis')+'abled'),
     self.focus();
@@ -504,17 +526,21 @@ function onresize(evt) {
   if( ratio>1.33 )
     cv.style.height= innerHeight - 50 + 'px',
     cv.style.width= parseInt(ratio= (innerHeight-50)*1.33) + 'px',
+    cu.style.height= parseInt((innerHeight-50)*.28)-20+'px',
+    cu.style.width= parseInt(ratio*.6)+'px',
     cv.style.marginTop= '25px',
     cv.style.marginLeft= (innerWidth-ratio >> 1) + 'px';
   else
     cv.style.width= innerWidth-50+'px',
     cv.style.height= parseInt(ratio=(innerWidth-50)/1.33)+'px',
+    cu.style.width= parseInt((innerWidth-50)*.6)+'px',
+    cu.style.height= parseInt(ratio*.28)-20+'px',
     cv.style.marginLeft= '25px',
     cv.style.marginTop= (innerHeight-ratio >> 1) + 'px';
   he.style.width= cv.style.width;
   he.style.height= cv.style.height;
-  pt.style.left= he.style.left= cv.style.marginLeft;
-  pt.style.top= he.style.top= cv.style.marginTop;
+  dv.style.left= he.style.left= cv.style.marginLeft;
+  dv.style.top= he.style.top= cv.style.marginTop;
 }
 
 function rp(addr) {
@@ -640,4 +666,16 @@ function loadblock() {
   if( !o )
     tapei= tapep= 0;
   pt.selectedIndex= tapei;
+}
+
+function rotapal(){
+  for (t= 0; t < 16; t++)
+    u= pal[t],
+    pal[t]= pal[t+16],
+    pal[t+16]= u;
+  for (t= 0x4000; t < 0x5800; t++)
+    vm[t]= -1;
+  document.body.style.backgroundColor=  'rgb('
+                                      + pal[bor&7].toString()
+                                      + ')';
 }

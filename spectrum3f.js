@@ -12,7 +12,9 @@ function init() {
   cts= playp= vbp= bor= p0= p1= sha= f1= st= time= flash= 0;
   if( localStorage.ft==undefined )
     localStorage.ft= 4;
-  sample= 0.5;
+  if ( localStorage.ft & 8 )
+    rotapal();
+  sample= 0;
   pag= 1;
   z80init();
   fdcinit();
@@ -99,11 +101,11 @@ function audioprocess(e){
   data2= e.outputBuffer.getChannelData(1);
   if( localStorage.ft & 4 )
     while( j<1024 ){ // 48000/1024= 46.875  70908/1024= 69.24
-      data1[j++]= data2[j]= (aystep()+aystep()+aystep()+aystep()+sample*4)/4;
+      data1[j++]= data2[j]= (aystep()+aystep()+aystep()+aystep()+sample)/5;
       play+= paso;
       if( play > vb[playp] && playp<vbp )
         playp++,
-        sample= -sample;
+        sample^= 1;
     }
   else
     while( j<1024 )
@@ -115,11 +117,11 @@ function mozrun(){
   run();
   if( localStorage.ft & 4 ){
     while( j<4432 ){
-      data[j++]= aystep()+sample;
+      data[j++]= (aystep()+sample)/2;
       play+= paso;
       if( play > vb[playp] && playp<vbp )
         playp++,
-        sample= -sample;
+        sample^= 1;
     }
     audioOutput.mozWriteAudio(data);
   }
