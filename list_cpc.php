@@ -2,6 +2,7 @@
 ?><html><head><title>Roland, probably the worst Amstrad CPC emulator</title><?
 ?><style type="text/css"><?
 ?>*{<?
+?>border:0;<?
 ?>margin:0;<?
 ?>padding:0;<?
 ?>}<?

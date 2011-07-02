@@ -2,6 +2,7 @@
 ?><html><head><title>jBacteria, the smallest javascript spectrum emulator</title><?
 ?><style type="text/css"><?
 ?>*{<?
+?>border:0;<?
 ?>margin:0;<?
 ?>padding:0;<?
 ?>}<?
