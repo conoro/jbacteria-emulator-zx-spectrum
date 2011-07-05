@@ -1,6 +1,7 @@
 // I use this temporal cpcbox.com driver because the main one is very buggy
-
+//kkk= '';
 debug_mode= 0;
+ope= 0;
 current_time= 0;
 function fdcinit(){;
   init_fdd();
@@ -78,7 +79,7 @@ function parse_track(c) {
 }
 function parse_sector(c, d) {
 	generated_sector = new sector_block();
-	generated_sector.weak_idx = 0;
+	generated_sector.weak_idx = 1; /* esto lo he cambiado yo */
 	generated_sector.track = dskfile_raw[c];
 	generated_sector.side = dskfile_raw[0x01 + c];
 	generated_sector.id = dskfile_raw[0x02 + c];
@@ -108,7 +109,7 @@ function track_block() {
 function sector_block() {
 	var c, d, f, g, h, st1, k, l;
 }
-var fdd_zip, head_sector_pos, head_track_pos, fdd_led = false,
+var /*fdd_zip, */head_sector_pos, head_track_pos, fdd_led = false,
 fdd_dsk_loaded = false;
 fdd_ft = 0,
 fdd_ts = 1,
@@ -118,11 +119,11 @@ function init_fdd() {
 	head_track_pos = 0;
 	fdd_led_off();
 }
-function dsk_side_select(c) {
+/*function dsk_side_select(c) {
 	dskfile_binstr = fdd_zip.extract(c);
 	dskfile_raw = binstr_to_array(dskfile_binstr);
 	fdd_dsk_loaded = dsk_loader(dskfile_raw);
-}
+}*/
 function fdd_led_on() {
 	if (fdd_led == false) {
 		fdd_led = true;
@@ -194,8 +195,8 @@ fdc_seek = [exec_fdc_seek, 0x07, 2, NO_TRANSFER, 0, "seek (0x0f)"];
 fdc_invalid_op = [exec_fdc_invalid_op, 0, 0, NO_TRANSFER, 1, "invalid_op"];
 function init_fdc() {
 
-  dskfile_raw = binstr_to_array(game);
-  fdd_dsk_loaded = dsk_loader(dskfile_raw);
+  dskfile_raw= game ? binstr_to_array(game) : '',
+  fdd_dsk_loaded = game ? dsk_loader(dskfile_raw) : '';
 
 	fdc_motor = false;
 	fdc_change_state(FDC_INACTIVE);
@@ -341,6 +342,7 @@ function fdc_decode_cmd(c) {
 		fdd_led_on();
 		break;
 	default:
+// console.log('invalid '+hex(c));
 		fdc_decoded = fdc_invalid_op;
 	}
 	var d = (c >>> 5) & fdc_decoded[FDC_CMD_MASK];
@@ -411,6 +413,7 @@ function exec_fdc_read_data() {
 		break;
 	case FDC_EXECUTE:
 		var c = fdc_current_sector.data[fdc_current_sector.weak_idx][fdc_state_idx];
+///kkk+= ','+c;
 		fdc_state_idx++;
 		if (fdc_state_idx == fdc_dtl) {
 			if ((fdc_params[FDC_PARAM_R] == fdc_params[FDC_PARAM_EOT]) && (fdc_st1 == 0)) fdc_st1 = 0x80;
@@ -418,7 +421,7 @@ function exec_fdc_read_data() {
 				push_full_result(fdc_st1, fdc_st2);
 			} else {
 				fdc_params[FDC_PARAM_R] = (fdc_params[FDC_PARAM_R] + 1) & 0xff;
-				fdc_get_sector();
+        fdc_get_sector();
 			}
 		}
 		return c;
@@ -550,7 +553,7 @@ function push_full_result(st1, c) {
 }
 function fdc_change_state(c) {
 	if (debug_mode) {
-		if (c == FDC_COMMAND) fdc_debug_str = "Track:" + head_track_pos + " - Sector:" + head_sector_pos + " - Command: " + fdc_decoded[5];
+		if (c == FDC_COMMAND) fdc_debug_str = ope+++" Track:" + head_track_pos + " - Sector:" + head_sector_pos + " - PC:"+hex(pc)+" - Command: " + fdc_decoded[5];
 		else if (fdc_state == FDC_COMMAND) {
 			if (fdc_decoded[FDC_CMD_PARAMS] > 0) {
 				var d = fdc_params.slice(0, fdc_decoded[FDC_CMD_PARAMS]);

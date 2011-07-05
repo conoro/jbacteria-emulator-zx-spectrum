@@ -35,9 +35,11 @@
 ?>})+arrl(a);<?
 ?>}<?
 ?>k=location.href.indexOf('?')+1;<?
+?>ifra=location.href.slice(-1)=='#';<?
 ?>if(k)<?
   ?>l=location.href.substr(k).indexOf('/'),<?
   ?>param= decodeURI(location.href.substr(k+l+1)),<?
+  ?>ifra=location.href[k+l-1]=='#',<?
   ?>t++,<?
   ?>ajax(location.href.substr(k,l));<?
 ?>ajax('_<?=$x?>');<?

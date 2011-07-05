@@ -123,7 +123,7 @@ function paintScreen(){
 }
 
 function onresize() {
-  cv.width= cr[1]<<gm+2;
+  cv.width= cr[1] ? cr[1]<<gm+2 : 1;
   cv.height= (cr[9]+1)*cr[6];
   eld= (elm= (ct= cv.getContext('2d')).getImageData(0,0,cv.width,cv.height)).data;
   u= cr[1]*(cr[9]+1)*cr[6]<<gm+4;

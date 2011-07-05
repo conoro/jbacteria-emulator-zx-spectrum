@@ -256,7 +256,7 @@ function run() {
 
   paintScreen();
   if (!(++flash & 15))
-    put.title= 'Roland'+suf+' '+parseInt(trein/((nt= new Date().getTime())-time))+'%',
+    titul(),
     time= nt;
 }
 

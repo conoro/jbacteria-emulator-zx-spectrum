@@ -391,10 +391,13 @@ function tp(){
     v+= '<option value="'+t+'">#'+ ++j+
         ( game.charCodeAt(t+2)
           ? ' Data: '+u+' bytes'
-          : ' Prog: '+game.substr(t+4,10).trim()
+          : ' Prog: '+game.substr(t+4,10).replace(/\0/g, '')
         )+'</option>',
     t+= 2+u;
-  pt.innerHTML= v;
+  if( ie )
+    pt.outerHTML= '<select onchange="tapep=this.value;tapei=this.selectedIndex">'+v+'</select>';
+  else
+    pt.innerHTML= v;
 }
 
 function loadblock() {

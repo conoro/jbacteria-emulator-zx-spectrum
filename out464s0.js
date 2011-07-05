@@ -57,11 +57,20 @@ function init() {
   i= 0;
   im= 0;
   sp= 0xbfe8;
-  try{
-    put= top==self ? document : parent.document;
+  if( ifra ){
+    put= document.createElement('div');
+    put.style.width= '40px';
+    put.style.textAlign= 'right';
+    document.body.appendChild(put);
+    titul= function(){
+      put.innerHTML= parseInt(trein/((nt= new Date().getTime())-time))+'%';
+    }
   }
-  catch(error){
-    put= document;
+  else{
+    put= top==self ? document : parent.document;
+    titul= function(){
+      put.title= 'Roland464 '+parseInt(trein/((nt= new Date().getTime())-time))+'%';
+    }
   }
   for (r= 0; r < 32768; r++)        // fill memory
     rom[r>>14][r&16383]= emul.charCodeAt(0x18015+r) & 255;
@@ -130,8 +139,11 @@ function wp(addr, val) {
         gc[ga]= val&0x1f;
         pl[ga]= pal[val&0x1f];
         t= cr[1]*(cr[9]+1)*cr[6]<<1;
-        if(ga==16)
+        if( ga==16 ){
           document.body.style.backgroundColor= 'rgb('+pl[16].toString()+')';
+          if( ifra )
+            put.style.color= pl[16][0]+pl[16][1]+pl[16][2]<300 ? '#fff' : '#000';
+        }
         else if(ga<1<<(4>>gm)){
           u= 1<<ga;
           if(gm==0){

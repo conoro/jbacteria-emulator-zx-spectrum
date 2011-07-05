@@ -1,4 +1,3 @@
-suf= '6128';
 rb= 0;
 ram= [[],[],[],[],[],[],[],[]];        // [new Uint8Array(16384),new Uint8Array(16384),new Uint8Array(16384),new Uint8Array(16384), new Uint8Array(16384),new Uint8Array(16384),new Uint8Array(16384),new Uint8Array(16384)]
 rom= [[],[],[]]; //  , rom= [new Uint8Array(16384),new Uint8Array(16384)];

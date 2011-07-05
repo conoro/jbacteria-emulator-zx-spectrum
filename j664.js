@@ -1,4 +1,3 @@
-suf= '664';
 rom= [[],[],[]]; //  , rom= [new Uint8Array(16384),new Uint8Array(16384)];
 
 function rm(o) {

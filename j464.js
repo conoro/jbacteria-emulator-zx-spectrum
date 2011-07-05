@@ -1,4 +1,3 @@
-suf= '464';
 rom= [[],[]]; //  , rom= [new Uint8Array(16384),new Uint8Array(16384)];
 
 function rm(o) {
@@ -92,11 +91,14 @@ function tp(){
           | game.charCodeAt(t+1)<<8 & 0xffff)
     v+= '<option value="'+t+'">#'+ ++j+
         ( game.charCodeAt(t+2) == 0x2c
-          ? ' Prog: '+game.substr(t+3,16).trim()
+          ? ' Prog: '+game.substr(t+3,16).replace(/\0/g, '')
           : ' Data: '+u+' bytes'
         )+'</option>',
     t+= 2+u;
-  pt.innerHTML= v;
+  if( ie )
+    pt.outerHTML= '<select onchange="tapep=this.value;tapei=this.selectedIndex">'+v+'</select>';
+  else
+    pt.innerHTML= v;
 }
 
 function loadblock() {
