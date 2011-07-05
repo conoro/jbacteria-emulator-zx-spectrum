@@ -41,7 +41,7 @@
   ?>param= decodeURI(location.href.substr(k+l+1)),<?
   ?>ifra=location.href[k+l-1]=='#',<?
   ?>t++,<?
-  ?>ajax(location.href.substr(k,l));<?
+  ?>ajax(location.href.substr(k,l-ifra));<?
 ?>ajax('_<?=$x?>');<?
 ?></script><?
 ?></html>
