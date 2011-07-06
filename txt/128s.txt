@@ -1,4 +1,5 @@
-spectrum128_speed.js
+spectrum128.js
+spec128s0.js
 spectrum128f.js
 ay.js
 z80p.js

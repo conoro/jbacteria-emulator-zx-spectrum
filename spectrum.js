@@ -117,94 +117,7 @@ function run() {
                         )
               + '%',
     time= nt;
-  t= -1;
-  while( t++ < 0x2ff )
-    for ( col= m[t+0x5800]
-        , bk= pal[col    & 7
-                | col>>3 & 8]
-        , fr= pal[col>>3 & 15]
-        , o=  t>>5 << 13 
-            | t<<5 & 0x3ff
-        , u=  0x4000
-            | t    & 0xff 
-            | t<<3 & 0x1800
-        ; ! ( 0x1800
-            & ( u ^ t<<3 )
-            )
-        ; u+= 0x100
-        , o+= 0x400 )
-      if( k=  col>>7
-            & flash>>4
-              ? ~m[u]
-              : m[u]
-        , vm[u] != (col | k<<8) ){
-        vm[u]= col | k<<8;
-        if( k&128 )
-          eld[o  ]= bk[0],
-          eld[o+1]= bk[1],
-          eld[o+2]= bk[2];
-        else
-          eld[o  ]= fr[0],
-          eld[o+1]= fr[1],
-          eld[o+2]= fr[2];
-        if( k&64 )
-          eld[o+4]= bk[0],
-          eld[o+5]= bk[1],
-          eld[o+6]= bk[2];
-        else
-          eld[o+4]= fr[0],
-          eld[o+5]= fr[1],
-          eld[o+6]= fr[2];
-        if( k&32 )
-          eld[o+8 ]= bk[0],
-          eld[o+9 ]= bk[1],
-          eld[o+10]= bk[2];
-        else
-          eld[o+8 ]= fr[0],
-          eld[o+9 ]= fr[1],
-          eld[o+10]= fr[2];
-        if( k&16 )
-          eld[o+12]= bk[0],
-          eld[o+13]= bk[1],
-          eld[o+14]= bk[2];
-        else
-          eld[o+12]= fr[0],
-          eld[o+13]= fr[1],
-          eld[o+14]= fr[2];
-        if( k&8 )
-          eld[o+16]= bk[0],
-          eld[o+17]= bk[1],
-          eld[o+18]= bk[2];
-        else
-          eld[o+16]= fr[0],
-          eld[o+17]= fr[1],
-          eld[o+18]= fr[2];
-        if( k&4 )
-          eld[o+20]= bk[0],
-          eld[o+21]= bk[1],
-          eld[o+22]= bk[2];
-        else
-          eld[o+20]= fr[0],
-          eld[o+21]= fr[1],
-          eld[o+22]= fr[2];
-        if( k&2 )
-          eld[o+24]= bk[0],
-          eld[o+25]= bk[1],
-          eld[o+26]= bk[2];
-        else
-          eld[o+24]= fr[0],
-          eld[o+25]= fr[1],
-          eld[o+26]= fr[2];
-        if( k&1 )
-          eld[o+28]= bk[0],
-          eld[o+29]= bk[1],
-          eld[o+30]= bk[2];
-        else
-          eld[o+28]= fr[0],
-          eld[o+29]= fr[1],
-          eld[o+30]= fr[2];
-      }
-  ct.putImageData(elm, 0, 0);
+  paintScreen();
   st= 0;
   z80interrupt();
 }
@@ -320,19 +233,19 @@ function mozrun(){
   }
 }
 
-function handleFileSelect(evt) {
-  evt.stopPropagation();
-  evt.preventDefault();
-  switch(evt.dataTransfer.files[0].name.slice(-3).toLowerCase()){
+function handleFileSelect(ev) {
+  ev.stopPropagation();
+  ev.preventDefault();
+  switch(ev.dataTransfer.files[0].name.slice(-3).toLowerCase()){
     case 'sna':
-      if( evt.dataTransfer.files[0].size != 0xc01b )
+      if( ev.dataTransfer.files[0].size != 0xc01b )
         return alert('Invalid SNA file');
       var reader= new FileReader();
       reader.onloadend = function(ev) {
         o= ev.target.result;
         rm(o);
       }
-      reader.readAsBinaryString(evt.dataTransfer.files[0]);
+      reader.readAsBinaryString(ev.dataTransfer.files[0]);
       break;
     case 'z80':
       var reader= new FileReader();
@@ -401,118 +314,128 @@ function handleFileSelect(evt) {
         }
         r7<<= 7;
       }
-      reader.readAsBinaryString(evt.dataTransfer.files[0]);
+      reader.readAsBinaryString(ev.dataTransfer.files[0]);
       break;
     default:
-      return alert(evt.dataTransfer.files[0].name+' has an invalid extension');
+      return alert(ev.dataTransfer.files[0].name+' has an invalid extension');
     case 'tap':
       var reader= new FileReader();
       reader.onloadend = function(ev) {
         game= ev.target.result;
         tp();
       }
-      reader.readAsBinaryString(evt.dataTransfer.files[0]);
+      reader.readAsBinaryString(ev.dataTransfer.files[0]);
   }
 }
 
-function handleDragOver(evt) {
-  evt.stopPropagation();
-  evt.preventDefault();
+function handleDragOver(ev) {
+  ev.stopPropagation();
+  ev.preventDefault();
 }
 
-function kdown(evt) {
-  var code= kc[evt.keyCode];
+function kdown(ev) {
+  var code= kc[ev.keyCode];
   if( code )
     if( code>0x7f )
       kb[code>>3 & 15]&=  ~(0x20 >> (code     & 7)),
       kb[code>>10]&=      ~(0x20 >> (code>>7  & 7));
     else
       kb[code>>3]&=       ~(0x20 >> (code     & 7));
-  else if( evt.keyCode==112 ) // F1
-    if( f1= ~f1 ){
-      if( trein==32000 )
-        clearInterval(interval);
-      else
-        node.onaudioprocess= audioprocess0;
-      dv.style.display= he.style.display= 'block';
-    }
-    else{
-      if( trein==32000 )
-        interval= setInterval(myrun, 20);
-      else
-        node.onaudioprocess= audioprocess;
-      dv.style.display= he.style.display= 'none';
-    }
-  else if( evt.keyCode==113 ) // F2
-    kc[9]^=  0x41^(0x05<<7 | 0x3c),
-    kc[37]^= 0x44^(0x05<<7 | 0x19),
-    kc[38]^= 0x42^(0x05<<7 | 0x22),
-    kc[39]^= 0x45^(0x05<<7 | 0x23),
-    kc[40]^= 0x43^(0x05<<7 | 0x21),
-    alert((localStorage.ft^= 2) & 2
-          ? 'Cursors enabled'
-          : 'Joystick enabled on Cursors + Tab'),
-    self.focus();
-  else if( evt.keyCode==114 ) // F3
-    localStorage.save= wm();
-  else if( evt.keyCode==115 ) // F4
-    rm(localStorage.save);
-  else if( evt.keyCode==116 ) // F5
-    return 1;
-  else if( evt.keyCode==118 ) // F7
-    localStorage.ft^= 8,
-    rotapal();
-  else if( evt.keyCode==119 ) // F8
-    pc= 0;
-  else if( evt.keyCode==120 ) // F9
-    cv.setAttribute('style', 'image-rendering:'+( (localStorage.ft^= 1) & 1
-                                                  ? 'optimizeSpeed'
-                                                  : '' )),
-    onresize(),
-    alert(localStorage.ft & 1
-          ? 'Nearest neighbor scaling'
-          : 'Bilinear scaling'),
-    self.focus();
-  else if( evt.keyCode==121 ){ // F10
-    o= wm();
-    t= new ArrayBuffer(o.length);
-    u= new Uint8Array(t, 0);
-    for ( j=0; j<o.length; j++ )
-      u[j]= o.charCodeAt(j);
-    j= new WebKitBlobBuilder(); 
-    j.append(t);
-    ir.src= webkitURL.createObjectURL(j.getBlob());
-    alert('Snapshot saved.\nRename the file (without extension) to .SNA.');
-    self.focus();
+  switch( ev.keyCode ){
+    case 112: // F1
+      if( f1= ~f1 ){
+        if( trein==32000 )
+          clearInterval(interval);
+        else
+          node.onaudioprocess= audioprocess0;
+        dv.style.display= he.style.display= 'block';
+      }
+      else{
+        if( trein==32000 )
+          interval= setInterval(myrun, 20);
+        else
+          node.onaudioprocess= audioprocess;
+        dv.style.display= he.style.display= 'none';
+      }
+      break;
+    case 113: // F2
+      kc[9]^=  0x41^(0x05<<7 | 0x3c);
+      kc[37]^= 0x44^(0x05<<7 | 0x19);
+      kc[38]^= 0x42^(0x05<<7 | 0x22);
+      kc[39]^= 0x45^(0x05<<7 | 0x23);
+      kc[40]^= 0x43^(0x05<<7 | 0x21);
+      alert((localStorage.ft^= 2) & 2
+            ? 'Cursors enabled'
+            : 'Joystick enabled on Cursors + Tab');
+      self.focus();
+      break;
+    case 114: // F3
+      localStorage.save= wm();
+      break;
+    case 115: // F4
+      rm(localStorage.save);
+      break;
+    case 116: // F5
+      return 1;
+    case 118: // F7
+      localStorage.ft^= 8;
+      rotapal();
+      break;
+    case 119: // F8
+      pc= 0;
+      break;
+    case 120: // F9
+      cv.setAttribute('style', 'image-rendering:'+( (localStorage.ft^= 1) & 1
+                                                    ? 'optimizeSpeed'
+                                                    : '' ));
+      onresize();
+      alert(localStorage.ft & 1
+            ? 'Nearest neighbor scaling'
+            : 'Bilinear scaling');
+      self.focus();
+      break;
+    case 121: // F10
+      o= wm();
+      t= new ArrayBuffer(o.length);
+      u= new Uint8Array(t, 0);
+      for ( j=0; j<o.length; j++ )
+        u[j]= o.charCodeAt(j);
+      j= new WebKitBlobBuilder(); 
+      j.append(t);
+      ir.src= webkitURL.createObjectURL(j.getBlob());
+      alert('Snapshot saved.\nRename the file (without extension) to .SNA.');
+      self.focus();
+      break;
+    case 122: // F11
+      return 1;
+    case 123: // F12
+      alert('Sound '+ ( (localStorage.ft^= 4) & 4
+                        ? 'en'
+                        : 'dis' ) +'abled');
+      self.focus();
   }
-  else if( evt.keyCode==122 ) // F11
-    return 1;
-  else if( evt.keyCode==123 ) // F12
-    localStorage.ft^= 4,
-    alert('Sound '+(localStorage.ft & 4?'en':'dis')+'abled'),
-    self.focus();
-  if( !evt.metaKey )
+  if( !ev.metaKey )
     return false;
 }
 
-function kup(evt) {
-  var code= kc[evt.keyCode];
+function kup(ev) {
+  var code= kc[ev.keyCode];
   if( code )
     if( code>0x7f )
       kb[code>>3 & 15]|=  0x20 >> (code     & 7),
       kb[code>>10]|=      0x20 >> (code>>7  & 7);
     else
       kb[code>>3]|=       0x20 >> (code     & 7);
-  if( !evt.metaKey )
+  if( !ev.metaKey )
     return false;
 }
 
-function kpress(evt) {
-  if( !evt.metaKey )
+function kpress(ev) {
+  if( !ev.metaKey )
     return false;
 }
 
-function onresize(evt) {
+function onresize(ev) {
   ratio= innerWidth / innerHeight;
   if( ratio>1.33 )
     cv.style.height= innerHeight - 50 + 'px',

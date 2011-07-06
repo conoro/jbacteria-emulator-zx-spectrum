@@ -1,4 +1,5 @@
 spectrum.js
+specs1.js
 spectrumse.js
 z80.js
 dom.js

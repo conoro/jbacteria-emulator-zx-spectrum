@@ -1,3 +1,4 @@
-spectrum_speed.js
+spectrum.js
+specs0.js
 z80.js
 dom.js
