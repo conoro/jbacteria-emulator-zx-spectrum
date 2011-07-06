@@ -247,6 +247,8 @@ function run() {
   st= 0;
   z80interrupt();
 
+  paintScreen();
+
   while(st < 4000)
 //cond(),
     r++,
@@ -254,7 +256,6 @@ function run() {
   vsync= 0;
   st= 0;
 
-  paintScreen();
   if (!(++flash & 15))
     titul(),
     time= nt;
