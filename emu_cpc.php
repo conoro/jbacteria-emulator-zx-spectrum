@@ -38,7 +38,7 @@
 ?>ifra=location.href.slice(-1)=='#';<?
 ?>if(k)<?
   ?>t++,<?
-  ?>ajax(location.href.slice(k,-ifra));<?
+  ?>ajax(location.href.substr(k,location.href.length-ifra));<?
 ?>ajax('_<?=$x?>');<?
 ?></script><?
 ?></html>

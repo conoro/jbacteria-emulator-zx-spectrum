@@ -73,11 +73,11 @@ function cb(b,f){
     init();
   }
 }
-function ajax(f,a){
+function ajax(f){
   var xhr=new XMLHttpRequest();
   xhr.onreadystatechange=function(){
     if(xhr&&xhr.readyState==4)
-      a(ie ? bin2arr(xhr.responseBody) : xhr.responseText, f);
+      cb(ie ? bin2arr(xhr.responseBody) : xhr.responseText, f);
     };
   xhr.open('GET',f,true);
   if (!ie)
@@ -92,11 +92,13 @@ function bin2arr(a) {
   return arr(a).replace(/[\s\S]/g, function(t){return v[t]}) + arrl(a);
 }
 k=location.href.indexOf('?')+1;
+ifra= location.href.slice(-1)=='#';
 if(k)
   l=location.href.substr(k).indexOf('/'),
   param= decodeURI(location.href.substr(k+l+1)),
+  ifra=location.href[k+l-1]=='#',
   t++,
-  ajax(location.href.substr(k,l),cb);
-ajax('_664',cb);
+  ajax(location.href.substr(k,l-ifra));
+ajax('_664');
 </script>
 </html>

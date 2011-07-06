@@ -308,8 +308,8 @@ function kdown(evt) {
     m[0]= rom[pc= 0];
   else if( evt.keyCode==120 ) // F9
     alert(localStorage.ft & 1
-          ? 'Nearest neighbor scaling'
-          : 'Bilinear scaling'),
+          ? 'Bilinear scaling'
+          : 'Nearest neighbor scaling'),
     cv.setAttribute('style', 'image-rendering:'+( (localStorage.ft^= 1) & 1
                                                   ? 'optimizeSpeed'
                                                   : '' )),
