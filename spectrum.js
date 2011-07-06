@@ -109,13 +109,7 @@ function run() {
     r++,
     g[m[pc++&0xffff]]();
   if( !(++flash & 15) )
-    put.title=  na
-              + parseInt( trein
-                        / ( (nt= new Date().getTime())
-                          - time
-                          )
-                        )
-              + '%',
+    titul(),
     time= nt;
   paintScreen();
   st= 0;
@@ -143,11 +137,20 @@ function init() {
   yl= 0x3a;
   i=  0x3f;
   sp= 0xff4a;
-  try{
-    put= top==self ? document : parent.document;
+  if( ifra ){
+    put= document.createElement('div');
+    put.style.width= '40px';
+    put.style.textAlign= 'right';
+    document.body.appendChild(put);
+    titul= function(){
+      put.innerHTML= parseInt(trein/((nt= new Date().getTime())-time))+'%';
+    }
   }
-  catch(error){
-    put= document;
+  else{
+    put= top==self ? document : parent.document;
+    titul= function(){
+      put.title= na+parseInt(trein/((nt= new Date().getTime())-time))+'%';
+    }
   }
   while( t < 0x30000 )
     eld[t++]= 0xff;
@@ -494,6 +497,8 @@ function wp(addr, val) {                // write port, only border color emulati
     document.body.style.backgroundColor=  'rgb('
                                         + pal[(bor= val)&7].toString()
                                         + ')';
+    if( ifra )
+      put.style.color= pal[bor&7][0]+pal[bor&7][1]+pal[bor&7][2]<300 ? '#fff' : '#000';
   }
 }
 

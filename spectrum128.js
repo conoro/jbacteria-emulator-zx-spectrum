@@ -127,15 +127,7 @@ function run() {
     r++,
     g[m[pc>>14&3][pc++&0x3fff]]();
   if( !(++flash & 15) )
-    put.title=  'jAmeba'
-              + suf
-              + ' '
-              + parseInt( trein
-                        / ( (nt= new Date().getTime())
-                          - time
-                          )
-                        )
-              + '%',
+    titul(),
     time= nt;
   paintScreen();
   st= 0;
@@ -218,7 +210,7 @@ function kdown(ev) {
       j= new WebKitBlobBuilder(); 
       j.append(t);
       ir.src= webkitURL.createObjectURL(j.getBlob());
-      alert('Snapshot saved.\nRename the file (without extension) to .'+(suf>'2'?'Z80':'SNA'));
+      alert('Snapshot saved.\nRename the file (without extension) to .'+(rom.length==4?'Z80':'SNA'));
       self.focus();
       break;
     case 122: // F11
@@ -254,6 +246,35 @@ function kdown(ev) {
    || code==(0x3c<<7|0x2d) )
     kb[0]|= 1;
   if( !ev.metaKey )
+    return false;
+}
+
+function kup(evt) {
+  var code= kc[evt.keyCode];
+  if( code==0x05 )
+    kc[186]= 0x3c<<7|0x2c,
+    kc[187]= 0x3c<<7|0x34,
+    kc[188]= 0x3c<<7|0x3a,
+    kc[189]= 0x3c<<7|0x32,
+    kc[190]= 0x3c<<7|0x3b,
+    kc[191]= 0x3c<<7|0x01,
+    kc[192]= 0x3c<<7|0x03,
+    kc[219]= 0x3c<<7|0x29,
+    kc[220]= 0x3c<<7|0x0b,
+    kc[221]= 0x3c<<7|0x2a,
+    kc[222]= 0x3c<<7|0x22;
+  if( code )
+    if( code>0x7f )
+      kb[code>>3 & 15]|=  0x20 >> (code     & 7),
+      kb[code>>10]|=      0x20 >> (code>>7  & 7);
+    else
+      kb[code>>3]|=       0x20 >> (code     & 7);
+  if( !evt.metaKey )
+    return false;
+}
+
+function kpress(evt) {
+  if( !evt.metaKey )
     return false;
 }
 

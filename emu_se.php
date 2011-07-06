@@ -23,6 +23,7 @@
   ?>if(xhr&&xhr.readyState==4)<?
     ?>cb(ie?bin2arr(xhr.responseBody):xhr.responseText);<?
 ?>};<?
+?>ifra=location.href.slice(-1)=='#';<?
 ?>xhr.open('GET','_<?=$x?>',true);<?
 ?>if(!ie)<?
   ?>xhr.overrideMimeType('text/plain;charset=x-user-defined');<?

@@ -74,11 +74,11 @@ function cb(b,f){
     init();
   }
 }
-function ajax(f,a){
+function ajax(f){
   var xhr=new XMLHttpRequest();
   xhr.onreadystatechange=function(){
     if(xhr&&xhr.readyState==4)
-      a(ie ? bin2arr(xhr.responseBody) : xhr.responseText, f);
+      cb(ie ? bin2arr(xhr.responseBody) : xhr.responseText, f);
     };
   xhr.open('GET',f,true);
   if (!ie)
@@ -86,16 +86,16 @@ function ajax(f,a){
   xhr.send(null);
 }
 function bin2arr(a) {
-  v= [];
-  for ( i= 0; i < 256; i++ )
-    for ( j= 0; j < 256; j++ )
-      v[String.fromCharCode(i | j<<8)]= String.fromCharCode(i, j);
-  return arr(a).replace(/[\s\S]/g, function(t){return v[t]}) + arrl(a);
+  return arr(a).replace(/[\s\S]/g,function(t){
+    v= t.charCodeAt(0);
+    return String.fromCharCode(v&0xff, v>>8);
+  }) + arrl(a);
 }
 k=location.href.indexOf('?')+1;
+ifra=location.href.slice(-1)=='#';
 if(k)
   t++,
-  ajax(location.href.substr(k),cb);
-ajax('_+3',cb);
+  ajax(location.href.substr(k,location.href.length-k-ifra));
+ajax('_+3');
 </script>
 </html>

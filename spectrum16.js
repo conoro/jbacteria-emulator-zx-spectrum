@@ -1,5 +1,3 @@
-na= 'jBacteria16 ';
-
 function init() {
   cv.setAttribute('style', 'image-rendering:'+( localStorage.ft & 1
                                                 ? 'optimizeSpeed'
@@ -21,11 +19,20 @@ function init() {
   yl= 0x3a;
   i=  0x3f;
   sp= 0x7f4b;
-  try{
-    put= top==self ? document : parent.document;
+  if( ifra ){
+    put= document.createElement('div');
+    put.style.width= '40px';
+    put.style.textAlign= 'right';
+    document.body.appendChild(put);
+    titul= function(){
+      put.innerHTML= parseInt(trein/((nt= new Date().getTime())-time))+'%';
+    }
   }
-  catch(error){
-    put= document;
+  else{
+    put= top==self ? document : parent.document;
+    titul= function(){
+      put.title= 'jBacteria16 '+parseInt(trein/((nt= new Date().getTime())-time))+'%';
+    }
   }
   while( t < 0x30000 )
     eld[t++]= 0xff;

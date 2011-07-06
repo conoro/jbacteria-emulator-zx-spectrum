@@ -82,13 +82,7 @@ function run() {
     r++,
     g[m[pc++]]();
   if ( !(++flash & 15) )
-    put.title=  'jTandyIII '
-              + parseInt( 52800
-                        / ( (nt= new Date().getTime())
-                          - time
-                          )
-                        )
-              + '%',
+    titul(),
     time= nt;
   t= -1;
   if( p236 & 4 )
@@ -153,11 +147,21 @@ function init() {
   yl= 0;
   i=  0;
   sp= 0;
-  try{
-    put= top==self ? document : parent.document;
+  if( ifra ){
+    put= document.createElement('div');
+    put.style.color= '#888';
+    put.style.width= '40px';
+    put.style.textAlign= 'right';
+    document.body.appendChild(put);
+    titul= function(){
+      put.innerHTML= parseInt(52800/((nt= new Date().getTime())-time))+'%';
+    }
   }
-  catch(error){
-    put= document;
+  else{
+    put= top==self ? document : parent.document;
+    titul= function(){
+      put.title= 'jTandyIII '+parseInt(52800/((nt= new Date().getTime())-time))+'%';
+    }
   }
   while( t < 0x60000 )
     eld[t++]= 0xff;

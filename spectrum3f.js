@@ -1,4 +1,3 @@
-suf= '3';
 rom= [[],[],[],[]]; //  rom= [new Uint8Array(16384),new Uint8Array(16384),new Uint8Array(16384),new Uint8Array(16384)];
 
 function init() {
@@ -27,11 +26,20 @@ function init() {
   yl= 0x3a;
   i=  0x3f;
   sp= 0xff46;
-  try{
-    put= top==self ? document : parent.document;
+  if( ifra ){
+    put= document.createElement('div');
+    put.style.width= '40px';
+    put.style.textAlign= 'right';
+    document.body.appendChild(put);
+    titul= function(){
+      put.innerHTML= parseInt(trein/((nt= new Date().getTime())-time))+'%';
+    }
   }
-  catch(error){
-    put= document;
+  else{
+    put= top==self ? document : parent.document;
+    titul= function(){
+      put.title= 'jAmeba3 '+parseInt(trein/((nt= new Date().getTime())-time))+'%';
+    }
   }
   while(t<0x30000)
     eld[t++]= 0xff;
@@ -157,6 +165,8 @@ function wp(addr, val) {                // write port, only border color emulati
     document.body.style.backgroundColor=  'rgb('
                                         + pal[(bor= val)&7].toString()
                                         + ')';
+    if( ifra )
+      put.style.color= pal[bor&7][0]+pal[bor&7][1]+pal[bor&7][2]<300 ? '#fff' : '#000';
   }
   else if( ~addr&0x0002 )   // xxxx xxxx xxxx xx0x
     if( addr&0x8000 )       // 1xxx xxxx xxxx xx0x
