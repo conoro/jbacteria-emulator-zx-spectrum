@@ -247,13 +247,19 @@ function run() {
   st= 0;
   z80interrupt();
 
-  paintScreen();
-
-  while(st < 4000)
+  while(st < 400)
 //cond(),
     r++,
     g[m[pc>>14&3][pc++&16383]]();
   vsync= 0;
+  st= 0;
+
+  paintScreen();
+
+  while(st < 3600)
+//cond(),
+    r++,
+    g[m[pc>>14&3][pc++&16383]]();
   st= 0;
 
   if (!(++flash & 15))
