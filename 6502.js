@@ -133,11 +133,6 @@ function bit(n, a){
     'f&=61|t&192|a&t';
 }
 
-function sta(n, a, b){
-  return 'st+='+n+a+
-    ';wb('+b+',a)';
-}
-
 p=[                           
 'st+=7;wb(--sp&255|256,pc>>8&255);'+                // 00 BRK
 'wb(--sp&255|256,pc&255);'+
@@ -302,47 +297,42 @@ nop(7),                                             // 7F illegal
 
 
 nop(2),                                             // 80 illegal
-sta(6, ';t=m[pc++&65535]+x&255',                    // 81 STA X, ind
-    'm[t]|m[t+1&255]<<8'),
+'st+=6;t=m[pc++&65535]+x&255;'+                     // 81 STA X, ind
+'wb(m[t]|m[t+1&255]<<8,a)',
 nop(2),                                             // 82 illegal
-nop(8),                                             // 83 illegal
-nop(3),                                             // 84 illegal
-ora(3, '', 'm[m[pc++&65535]]'),                     // 85 STA zpg
-aslm(5, 'm[u=m[pc++&65535]]'),                      // 06 ASL zpg
-nop(5),                                             // 07 illegal
-'st+=3;wb(sp++|256,f);'+                            // 08 PHP
-'sp&=255',
-ora(2, '', 'm[pc++&65535]'),                        // 09 ORA imm
-'st+=2;f=a>>7|f&124|sz[a=a<<1&255]',                // 0A ASLA
-nop(2),                                             // 0B illegal
-nop(4),                                             // 0C illegal
-ora(4, '', 'm[m[pc++&65535]|m[pc++&65535]<<8]'),    // 0D ORA abs
-aslm(6, 'm[u=m[pc++&65535]|m[pc++&65535]<<8]'),     // 0E ASL abs
-nop(6),                                             // 0F illegal
-jrc(~f&128),                                        // 10 BPL rel
-ora(5, ';t=m[pc++&65535];st+=(u=m[t]+y)>255',       // 11 ORA ind, Y
-    'm[u+(m[t+1&255]<<8)&65535]'),
-nop(2),                                             // 12 illegal
-nop(8),                                             // 13 illegal
-nop(4),                                             // 14 illegal
-ora(4, '', 'm[x+m[pc++&65535]&255]'),               // 15 ORA zpg, X
-aslm(6, 'm[u=x+m[pc++&65535]&255]'),                // 16 ASL zpg, X
-nop(6),                                             // 17 illegal
-'st+=2;f&=254',                                     // 18 CLC
-ora(4, 't=m[pc++&65535];st+=(t=m[t]+y)>255;',       // 19 ORA abs, Y
-    'm[t+(m[pc++&65535]<<8)&65535]'),
-nop(2),                                             // 1A illegal
-nop(7),                                             // 1B illegal
-nop(5),                                             // 1C illegal
-ora(5, 't=m[pc++&65535];st+=(t=m[t]+x)>255;',       // 1D ORA abs, X
-    'm[t+(m[pc++&65535]<<8)&65535]'),
-aslm(7,                                             // 1E ASL abs, X
-  'm[u=x+m[pc++&65535]+(m[pc++&65535]<<8)&65535]'),
-nop(7),                                             // 1F illegal
-'st+=6;t=pc+1&65535;'+                              // 20 JSR abs
-'pc=m[pc&65535]|m[t]<<8;'+
-'wb(--sp&255|256,t>>8);'+
-'wb((sp=sp-1&255)|256,t&255)',
+nop(6),                                             // 83 illegal
+'st+=3;wb(m[pc++&65535],y)',                        // 84 STY zpg
+'st+=3;wb(m[pc++&65535],a)',                        // 85 STA zpg
+'st+=3;wb(m[pc++&65535],x)',                        // 86 STX zpg
+nop(3),                                             // 87 illegal
+'st+=2;f=f&125|sz[y=y-1&255]',                      // 88 DEY
+nop(2),                                             // 89 illegal
+'st+=2;f=f&125|sz[a=x]',                            // 8A TXA
+nop(2),                                             // 8B illegal
+'st+=4;wb(m[pc++&65535]|m[pc++&65535]<<8],y)',      // 8C STY abs
+'st+=4;wb(m[pc++&65535]|m[pc++&65535]<<8],a)',      // 8D STA abs
+'st+=4;wb(m[pc++&65535]|m[pc++&65535]<<8],x)',      // 8E STX abs
+nop(4),                                             // 8F illegal
+jrc(~f&1),                                          // 90 BCC rel
+'st+=6;t=m[pc++&65535];'+                           // 91 STA ind, Y
+'wb(m[t]+y+(m[t+1&255]<<8)&65535,a)',
+nop(2),                                             // 92 illegal
+nop(6),                                             // 93 illegal
+'st+=4;wb(x+m[pc++&65535]&255,y)',                  // 94 STY zpg, X
+'st+=4;wb(x+m[pc++&65535]&255,a)',                  // 95 STA zpg, X
+'st+=4;wb(y+m[pc++&65535]&255,x)',                  // 96 STX zpg, Y
+nop(4),                                             // 97 illegal
+'st+=2;f=f&125|sz[a=y]',                            // 98 TYA
+'st+=5;'+                                           // 99 STA abs, Y
+'wb(m[pc++&65535]+y+(m[pc++&65535]<<8)&65535,a)',
+'st+=2;f=f&125|sz[sp=x]',                           // 9A TXS
+nop(5),                                             // 9B illegal
+nop(5),                                             // 9C illegal
+'st+=5;'+                                           // 9D STA abs, X
+'wb(m[pc++&65535]+x+(m[pc++&65535]<<8)&65535,a)',
+nop(5),                                             // 9E illegal
+nop(5),                                             // 9F illegal
+'st+=2;f=f&125|sz[y=m[pc++&65535]];'                // A0 LDY #
 and(6, ';t=m[pc++&65535]+x&255',                    // 21 AND X, ind
     'm[m[t]|m[t+1&255]<<8]'),
 nop(2),                                             // 22 illegal
