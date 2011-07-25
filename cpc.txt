@@ -35,11 +35,8 @@ b00236 A.D.S. - Advanced Destroyer Simulator         1990 Futura                
 c00131 A.P.B.                                        1989 Domark Software Ltd.               apb      run"disc     A\A.P.B. (E).dsk
 b00217 A320 - Disk 1A                                1988 Loriciels                          a320disk run"a320     A\A320 (F) - Disk 1A.dsk
 b00217 A320 - Disk 1B                                1988 Loriciels                          a320dis1 run"a320     A\A320 (F) - Disk 1B.dsk
-a00000 AM#01 - Xider - Side A                                                                am01xid               
-a00000 AM#01 - Xider - Side B                                                                am01xi1               
 a00000 AM#03 - Slalom (Tomy en el Slalom)                                                    am03sla               
 a00000 AM#05 - Cosmic Galactica                                                              am05cos               
-a00000 AM#06 - Beta 2515                                                                     am06bet               
 a00000 AM#07 - Transx                                                                        am07tra               
 a00000 AM#0x - Dirk                                                                          am0xdir               
 a00000 AM#0x - Feliz Navidad - Side A                                                        am0xfel               
