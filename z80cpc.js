@@ -52,95 +52,95 @@ function z80interrupt() {
         st++;
       case 0: 
         pc= 56;
-        st+= 12;
+        st+= 3;
         break;
       default:
         t= 255 | i << 8;
         pc= m[t>>14][t&16383] | m[++t>>14][t&16383] << 8;
-        st+=19;
+        st+= 5;
         break;
     }
   }
 }
 
 function nop(n){
-  return 'st+='+n;
+  return n-1?'st+='+n:'st++';
 }
 
 function inc(r) {
-  return 'st+=4;'+
+  return 'st++;'+
   'f=f&1|szi['+r+'='+r+'+1&255]';
 }
 
 function dec(r) {
-  return 'st+=4;'+
+  return 'st++;'+
   'f=f&1|szd['+r+'='+r+'-1&255]';
 }
 
 function incdecphl(n) {
-  return 'st+=11;'+
+  return 'st+=3;'+
   't=mw[t=h>>6][u=l|h<<8&16383]=m[t][u]'+n+'1&255;'+
   'f=f&1|sz'+(n=='+'?'i':'d')+'[t]';
 }
 
 function incdecpi(a, b) {
-  return 'st+=19;'+
+  return 'st+=5;'+
   't=(se[m[pc>>14&3][pc++&16383]]+('+a+'l|'+a+'h<<8))&65535;'+
   'f=f&1|sz'+(b=='+'?'i':'d')+'[mw[u=t>>14][t&=16383]=m[u][t]'+b+'1&255]';
 }
 
 function incw(a, b) {
-  return 'st+=6;'+
+  return 'st+=2;'+
   'if(++'+b+'>>8)'+
     b+'=0,'+
     a+'='+a+'+1&255';
 }
 
 function decw(a, b) {
-  return 'st+=6;'+
+  return 'st+=2;'+
   'if(!'+b+'--)'+
     b+'=255,'+
     a+'='+a+'-1&255';
 }
 
 function ldpr(a, b, r) {
-  return 'st+=7;'+
+  return 'st+=2;'+
   'mw['+a+'>>6]['+b+'|'+a+'<<8&16383]='+r;
 }
 
 function ldpri(a, b) {
-  return 'st+=15;'+
+  return 'st+=4;'+
   'mw[(t=(se[m[pc>>14&3][pc++&16383]]+('+b+'l|'+b+'h<<8))&65535)>>14][t&16383]='+a;
 }
 
 function ldrp(a, b, r) {
-  return 'st+=7;'+
+  return 'st+=2;'+
   r+'=m['+a+'>>6]['+b+'|'+a+'<<8&16383]';
 }
 
 function ldrpi(a, b) {
-  return 'st+=15;'+
+  return 'st+=4;'+
   a+'=m[(t=se[m[pc>>14&3][pc++&16383]]+('+b+'l|'+b+'h<<8))>>14&3][t&16383]';
 }
 
 function ldrrim(a, b) {
-  return 'st+=10;'+
+  return 'st+=3;'+
   b+'=m[pc>>14&3][pc++&16383];'+
   a+'=m[pc>>14&3][pc++&16383]';
 }
 
 function ldrim(r) {
-  return 'st+=7;'+
+  return 'st+=2;'+
   r+'=m[pc>>14&3][pc++&16383]';
 }
 
 function ldpin(r) {
-  return 'st+=15;'+
+  return 'st+=4;'+
   'mw[(t=(se[m[pc>>14&3][pc++&16383]]+('+r+'l|'+r+'h<<8))&65535)>>14][t&16383]=m[pc>>14&3][pc++&16383]';
 }
 
 function addrrrr(a, b, c, d) {
-  return 'st+=11;'+
+  return 'st+=3;'+
   't='+b+'+'+d+'+('+a+'+'+c+'<<8);'+
   'f=f&196|t>>16|t>>8&40|(t>>8^'+a+'^'+c+')&16;'+
   a+'=t>>8&255;'+
@@ -148,7 +148,7 @@ function addrrrr(a, b, c, d) {
 }
 
 function addisp(r) {
-  return 'st+=11;'+
+  return 'st+=3;'+
   't=sp+('+r+'l|'+r+'h<<8);'+
   'f=f&196|t>>16|t>>8&40|(t>>8^sp>>8^'+r+'h)&16;'+
   r+'h=t>>8&255;'+
@@ -156,16 +156,16 @@ function addisp(r) {
 }
 
 function jrc(c) {
-  return 'if('+c+')'+
-    'st+=7,'+
+  return 'st+=2;'+
+  'if('+c+')'+
     'pc++;'+
   'else '+
-    'st+=12,'+
+    'st++,'+
     'pc+=se[m[pc>>14&3][pc&16383]]+1'
 }
 
 function jpc(c) {
-  return 'st+=10;'+
+  return 'st+=3;'+
   'if('+c+')'+
     'pc+=2;'+
   'else '+
@@ -174,10 +174,10 @@ function jpc(c) {
 
 function callc(c) {
   return 'if('+c+')'+
-    'st+=10,'+
+    'st+=3,'+
     'pc+=2;'+
   'else '+
-    'st+=17,'+
+    'st+=5,'+
     't=pc+2,'+
     'pc=m[pc>>14&3][pc&16383]|m[pc+1>>14&3][pc+1&16383]<<8,'+
     'mw[--sp>>14&3][sp&16383]=t>>8&255,'+
@@ -188,9 +188,9 @@ function callc(c) {
 
 function retc(c) {
   return 'if('+c+')'+
-    'st+=5;'+
+    'st++;'+
   'else '+
-    'st+=11,'+
+    'st+=3,'+
     'pc=m[sp>>14][sp&16383]|m[sp+1>>14&3][sp+1&16383]<<8,'+
     'sp=sp+2&65535';
 }
@@ -214,65 +214,65 @@ function ldrrpnn(a, b, n) {
 }
 
 function ldrr(a, b, n){
-  return 'st+='+n+';'+
+  return (n-1?'st+='+n:'st++')+';'+
   a+'='+b;
 }
 
 function add(a, b, n){
-  return 'st+='+n+
+  return (n-1?'st+='+n:'st++')+
   ';f=a+'+a+';'+
   'f=f>>8|(f^a^'+b+')&16|((f^a)&(f^'+b+')&128)>>5|sz[a=f&255]';
 }
 
 function adc(a, b, n){
-  return 'st+='+n+
+  return (n-1?'st+='+n:'st++')+
   ';f=a+'+a+'+(f&1);'+
   'f=f>>8|(f^a^'+b+')&16|((f^a)&(f^'+b+')&128)>>5|sz[a=f&255]';
 }
 
 function sub(a, b, n){
-  return 'st+='+n+
+  return (n-1?'st+='+n:'st++')+
   ';f=a-'+a+';'+
   'f=f>>8&1|2|(f^a^'+b+')&16|((f^a)&(a^'+b+')&128)>>5|sz[a=f&255]';
 }
 
 function sbc(a, b, n){
-  return 'st+='+n+
+  return (n-1?'st+='+n:'st++')+
   ';f=a-'+a+'-(f&1);'+
   'f=f>>8&1|2|(f^a^'+b+')&16|((f^a)&(a^'+b+')&128)>>5|sz[a=f&255]';
 }
 
 function and(r, n){
-  return 'st+='+n+
+  return (n-1?'st+='+n:'st++')+
   ';f=16|szp[a&='+r+']';
 }
 
 function xoror(r, n){
-  return 'st+='+n+
+  return (n-1?'st+='+n:'st++')+
   ';f=szp[a'+r+']';
 }
 
 function cp(a, b, n){
-  return 'st+='+n+
+  return (n-1?'st+='+n:'st++')+
   ';f=a-'+a+';'+
   'f=f>>8&1|2|(f^a^'+b+')&16|((f^a)&(a^'+b+')&128)>>5|'+b+'&40|sz[f&255]&215';
 }
 
 function push(a, b){
-  return 'st+=11;'+
+  return 'st+=3;'+
   'mw[--sp>>14&3][sp&16383]='+a+';'+
   'mw[(sp=sp-1&65535)>>14][sp&16383]='+b;
 }
 
 function pop(a, b){
-  return 'st+=10;'+
+  return 'st+=3;'+
   b+'=m[sp>>14][sp&16383];'+
   a+'=m[sp+1>>14&3][sp+1&16383];'+
   'sp=sp+2&65535';
 }
 
 function rst(n){
-  return 'st+=11;'+
+  return 'st+=3;'+
   'mw[--sp>>14&3][sp&16383]=pc>>8&255;'+
   'mw[(sp=sp-1&65535)>>14][sp&16383]=pc&255;'+
 //  'wb(--sp&65535,pc>>8);'+
@@ -281,132 +281,132 @@ function rst(n){
 }
 
 function rlc(r){
-  return 'st+=8;'+
+  return 'st+=2;'+
   r+'='+r+'<<1&255|'+r+'>>7;'+
   'f='+r+'&1|szp['+r+']';
 }
 
 function rrc(r){
-  return 'st+=8;'+
+  return 'st+=2;'+
   r+'='+r+'>>1|'+r+'<<7&128;'+
   'f='+r+'>>7|szp['+r+']';
 }
 
 function rl(r){
-  return 'st+=8;'+
+  return 'st+=2;'+
   'j='+r+';'+
   r+'='+r+'<<1&255|f&1;'+
   'f=j>>7|szp['+r+']';
 }
 
 function rr(r){
-  return 'st+=8;'+
+  return 'st+=2;'+
   'j='+r+';'+
   r+'='+r+'>>1|f<<7&128;'+
   'f=j&1|szp['+r+']';
 }
 
 function sla(r){
-  return 'st+=8;'+
+  return 'st+=2;'+
   'f='+r+'>>7;'+
   r+'='+r+'<<1&255;'+
   'f|=szp['+r+']';
 }
 
 function sra(r){
-  return 'st+=8;'+
+  return 'st+=2;'+
   'f='+r+'&1;'+
   r+'='+r+'&128|'+r+'>>1;'+
   'f|=szp['+r+']';
 }
 
 function sll(r){
-  return 'st+=8;'+
+  return 'st+=2;'+
   'f='+r+'>>7;'+
   r+'='+r+'<<1&255|1;'+
   'f|=szp['+r+']';
 }
 
 function srl(r){
-  return 'st+=8;'+
+  return 'st+=2;'+
   'f='+r+'&1;'+
   r+'>>=1;'+
   'f|=szp['+r+']';
 }
 
 function bit(n, r){
-  return 'st+=8;'+
+  return 'st+=2;'+
   'f=f&1|'+r+'&40|('+r+'&'+n+'?16:84)'+(n&128 ? '|'+r+'&128' : '');
 }
 
 function biti(n){
-  return 'st+=5;'+
+  return 'st+=2;'+
   'f=f&1|u>>8&40|(t&'+n+'?16:84)'+(n&128 ? '|t&128' : '');
 }
 
 function bithl(n){
-  return 'st+=12;'+
+  return 'st+=3;'+
   'f=f&1|(t=m[h>>6][l|h<<8&16383])&40|(t&'+n+'?16:84)'+(n&128 ? '|t&128' : '');
 }
 
 function res(n, r){
-  return 'st+=8;'+
+  return 'st+=2;'+
   r+'&='+n;
 }
 
 function reshl(n){
-  return 'st+=15;'+
+  return 'st+=4;'+
   'mw[t=h>>6][u=l|h<<8&16383]=m[t][u]&'+n;
 }
 
 function set(n, r){
-  return 'st+=8;'+
+  return 'st+=2;'+
   r+'|='+n;
 }
 
 function sethl(n){
-  return 'st+=15;'+
+  return 'st+=4;'+
   'mw[t=h>>6][u=l|h<<8&16383]=m[t][u]|'+n;
 }
 
 function inr(r){
-  return 'st+=12;'+
+  return 'st+=4;'+
   r+'=rp(c|b<<8);'+
   'f=f&1|szp['+r+']';
 }
 
 function outr(r){
-  return 'st+=12;'+
+  return 'st+=4;'+
   'wp(c|b<<8,'+r+')';
 }
 
 function sbchlrr(a, b) {
-  return 'st+=15;'+
+  return 'st+=4;'+
   'f='+(a=='h'?'':'l-'+b+'+(h-'+a+'<<8)')+'-(f&1);'+
   'l=f&255;'+
   'f=f>>16&1|(f>>8^h^'+a+')&16|((f>>8^h)&(h^'+a+')&128)>>5|(h=f>>8&255)&168|(l|h?2:66)';
 }
 
 function adchlrr(a, b) {
-  return 'st+=15;'+
+  return 'st+=4;'+
   'f=l+'+b+'+(h+'+a+'<<8)+(f&1);'+
   'l=f&255;'+
   'f=f>>16|(f>>8^h^'+a+')&16|((f>>8^h)&(f>>8^'+a+')&128)>>5|(h=f>>8&255)&168|(l|h?0:64)';
 }
 
 function neg(){
-  return 'st+=8;'+
+  return 'st+=2;'+
   'f=(a?3:2)|(-a^a)&16|(-a&a&128)>>5|sz[a=-a&255]';
 }
 
 function ldair(r){
-  return 'st+=9;'+
+  return 'st+=3;'+
   'a='+r+';'+
   'f=f&1|sz[a]|iff<<2';
 }
 
 function ldid(i, r){
-  return 'st+=16;'+
+  return 'st+=5;'+
   't=mw[d>>6][e|d<<8&16383]=m[h>>6][l|h<<8&16383];'+
   'if(!c--)'+
     'c=255,'+
@@ -418,11 +418,11 @@ function ldid(i, r){
     'l='+(i?'0':'255')+','+
     'h=h'+(i?'+':'-')+'1&255;'+
   'f=f&193|(b|c?4:0)|(t+=a)&8|t<<4&32;'+
-  (r?';if(c|b)st+=5,pc-=2':'');
+  (r?';if(c|b)st++,pc-=2':'');
 }
 
 function cpid(i, r){
-  return 'st+=16;'+
+  return 'st+=4;'+
   't=a-(u=m[h>>6][l|h<<8&16383]);'+
   'if(!c--)'+
     'c=255,'+
@@ -434,11 +434,11 @@ function cpid(i, r){
   'if(f&16)'+
     't--;'+
   'f|=t&8|t<<4&32'+
-  (r?';if((f&68)==4)st+=5,pc-=2':'');
+  (r?';if((f&68)==4)st++,pc-=2':'');
 }
 
 function inid(i, r){
-  return 'st+=16;'+
+  return 'st+=5;'+
   't=mw[h>>6][l|h<<8&16383]=rp(c|b<<8);'+
   'b=b-1&255;'+
   'if('+(i?'++l>>8':'!l--')+')'+
@@ -446,11 +446,11 @@ function inid(i, r){
     'h=h'+(i?'+':'-')+'1&255;'+
   'u=t+c'+(i?'+':'-')+'1&255;'+
   'f=t>>6&2|(u<t?17:0)|par[u&7^b]|sz[b]'+
-  (r?';if(b)st+=5,pc-=2':'');
+  (r?';if(b)st++,pc-=2':'');
 }
 
 function otid(i, r){
-  return 'st+=16;'+
+  return 'st+=5;'+
   'wp(c|b<<8,t=m[h>>6][l|h<<8&16383]);'+
   'b=b-1&255;'+
   'if('+(i?'++l>>8':'!l--')+')'+
@@ -458,11 +458,11 @@ function otid(i, r){
     'h=h'+(i?'+':'-')+'1&255;'+
   'u=t+l&255;'+
   'f=t>>6&2|(u<t?17:0)|par[u&7^b]|sz[b]'+
-  (r?';if(b)st+=5,pc-=2':'');
+  (r?';if(b)st++,pc-=2':'');
 }
 
 function exspi(r){
-  return 'st+=19;'+
+  return 'st+=5;'+
   'v=m[t=sp>>14][u=sp&16383];'+
   'mw[t][u]='+r+'l;'+
   r+'l=v;'+
@@ -472,234 +472,234 @@ function exspi(r){
 }
 
 function ldsppci(a, b){
-  return 'st+='+(a=='sp'?6:4)+';'+
+  return (a=='sp'?'st+=2':'st++')+';'+
   a+'='+b+'l|'+b+'h<<8';
 }
 
 p=[
-nop(4),                   // NOP
+nop(1),                   // NOP
 ldrrim('b', 'c'),         // LD BC,nn
-ldpr('b', 'c', 'a'),      // LD (BC,A
+ldpr('b', 'c', 'a'),      // LD (BC),A
 incw('b', 'c'),           // INC BC
 inc('b'),                 // INC B
 dec('b'),                 // DEC B
 ldrim('b'),               // LD B,n
-'st+=4;a=a<<1&255|a>>7;f=f&196|a&41',// RLCA
-'st+=4;t=a;a=a_;a_=t;t=f;f=f_;f_=t',// EX AF,AF'
+'st++;a=a<<1&255|a>>7;f=f&196|a&41',// RLCA
+'st++;t=a;a=a_;a_=t;t=f;f=f_;f_=t',// EX AF,AF'
 addrrrr('h', 'l', 'b', 'c'),  // ADD HL,BC
 ldrp('b', 'c', 'a'),      // LD A,(BC)
 decw('b', 'c'),           // DEC BC
 inc('c'),                 // INC C
 dec('c'),                 // DEC C
 ldrim('c'),               // LD C,n
-'st+=4;f=f&196|a&1|a>>1&40;a=a>>1|a<<7&128',// RRCA
-'st+=8;if(b=b-1&255)st+=5,pc+=se[m[pc>>14&3][pc&16383]]+1;else pc++',// DJNZ
+'st++;f=f&196|a&1|a>>1&40;a=a>>1|a<<7&128',// RRCA
+'st+=3;if(b=b-1&255)st++,pc+=se[m[pc>>14&3][pc&16383]]+1;else pc++',// DJNZ
 ldrrim('d', 'e'),         // LD DE,nn
-ldpr('d', 'e', 'a'),      // LD (DE,A
+ldpr('d', 'e', 'a'),      // LD (DE),A
 incw('d', 'e'),           // INC DE
 inc('d'),                 // INC D
 dec('d'),                 // DEC D
 ldrim('d'),               // LD D,n
-'t=a;st+=4;a=a<<1&255|f&1;f=f&196|a&40|t>>7',// RLA
-'st+=12;pc+=se[m[pc>>14&3][pc&16383]]+1',// JR
+'t=a;st++;a=a<<1&255|f&1;f=f&196|a&40|t>>7',// RLA
+'st+=3;pc+=se[m[pc>>14&3][pc&16383]]+1',// JR
 addrrrr('h', 'l', 'd', 'e'),// ADD HL,DE
 ldrp('d', 'e', 'a'),      // LD A,(DE)
 decw('d', 'e'),           // DEC DE
 inc('e'),                 // INC E
 dec('e'),                 // DEC E
 ldrim('e'),               // LD E,n
-'st+=4;t=a;a=a>>1|f<<7&128;f=f&196|a&40|t&1',// RRA
+'st++;t=a;a=a>>1|f<<7&128;f=f&196|a&40|t&1',// RRA
 jrc('f&64'),              // JR NZ,s8
 ldrrim('h', 'l'),         // LD HL,nn
-ldpnnrr('h', 'l', 16),    // LD (nn,HL
+ldpnnrr('h', 'l', 5),     // LD (nn),HL
 incw('h', 'l'),           // INC HL
 inc('h'),                 // INC H
 dec('h'),                 // DEC H
 ldrim('h'),               // LD H,n
-'st+=4;u=f&16||(a&15)>9?6:0;if(f&1||a>153)u|=96;if(a>153)f|=1;f=f&2?f&1|2|((t=a-u)^a^u)&16|szp[a=t&255]:f&1|((t=a+u)^a^u)&16|szp[a=t&255]',//DAA
+'st++;u=f&16||(a&15)>9?6:0;if(f&1||a>153)u|=96;if(a>153)f|=1;f=f&2?f&1|2|((t=a-u)^a^u)&16|szp[a=t&255]:f&1|((t=a+u)^a^u)&16|szp[a=t&255]',// DAA
 jrc('~f&64'),             // JR Z,s8
 addrrrr('h', 'l', 'h', 'l'),  // ADD HL,HL
-ldrrpnn('h', 'l', 16),    // LD HL,(nn)
+ldrrpnn('h', 'l', 5),     // LD HL,(nn)
 decw('h', 'l'),           // DEC HL
 inc('l'),                 // INC L
 dec('l'),                 // DEC L
 ldrim('l'),               // LD L,n
-'st+=4;a^=255;f=f&197|a&40|18',// CPL
+'st++;a^=255;f=f&197|a&40|18',// CPL
 jrc('f&1'),               // JR NC,s8
-'st+=10;sp=m[pc>>14&3][pc++&16383]|m[pc>>14&3][pc++&16383]<<8',// LD SP,nn
-'st+=13;mw[(t=m[pc>>14&3][pc++&16383]|m[pc>>14&3][pc++&16383]<<8)>>14][t&16383]=a',// LD (nn),A
-'st+=6;sp=sp+1&65535',    // INC SP
+'st+=3;sp=m[pc>>14&3][pc++&16383]|m[pc>>14&3][pc++&16383]<<8',// LD SP,nn
+'st+=4;mw[(t=m[pc>>14&3][pc++&16383]|m[pc>>14&3][pc++&16383]<<8)>>14][t&16383]=a',// LD (nn),A
+'st+=2;sp=sp+1&65535',    // INC SP
 incdecphl('+'),           // INC (HL)
 incdecphl('-'),           // DEC (HL)
-'st+=10;mw[h>>6][l|h<<8&16383]=m[pc>>14&3][pc++&16383]',
-'st+=4;f=f&196|a&40|1',   // SCF
+'st+=3;mw[h>>6][l|h<<8&16383]=m[pc>>14&3][pc++&16383]', // LD (HL),N
+'st++;f=f&196|a&40|1',    // SCF
 jrc('~f&1'),              // JR C,s8
 addisp(''),               // ADD HL,SP
-'st+=13;a=m[(t=m[pc>>14&3][pc++&16383]|m[pc>>14&3][pc++&16383]<<8)>>14][t&16383]',// LD A,(nn)
-'st+=6;sp=sp-1&65535',    // DEC SP
+'st+=4;a=m[(t=m[pc>>14&3][pc++&16383]|m[pc>>14&3][pc++&16383]<<8)>>14][t&16383]',// LD A,(nn)
+'st+=2;sp=sp-1&65535',    // DEC SP
 inc('a'),                 // INC A
 dec('a'),                 // DEC A
 ldrim('a'),               // LD A,n
-'st+=4;f=f&196|(f&1?16:1)|a&40',// CCF
-nop(4),                   // LD B,B
-ldrr('b', 'c', 4),        // LD B,C
-ldrr('b', 'd', 4),        // LD B,D
-ldrr('b', 'e', 4),        // LD B,E
-ldrr('b', 'h', 4),        // LD B,H
-ldrr('b', 'l', 4),        // LD B,L
+'st++;f=f&196|(f&1?16:1)|a&40',// CCF
+nop(1),                   // LD B,B
+ldrr('b', 'c', 1),        // LD B,C
+ldrr('b', 'd', 1),        // LD B,D
+ldrr('b', 'e', 1),        // LD B,E
+ldrr('b', 'h', 1),        // LD B,H
+ldrr('b', 'l', 1),        // LD B,L
 ldrp('h', 'l', 'b'),      // LD B,(HL)
-ldrr('b', 'a', 4),        // LD B,C
-ldrr('c', 'b', 4),        // LD C,B
-nop(4),                   // LD C,C
-ldrr('c', 'd', 4),        // LD C,D
-ldrr('c', 'e', 4),        // LD C,E
-ldrr('c', 'h', 4),        // LD C,H
-ldrr('c', 'l', 4),        // LD C,L
+ldrr('b', 'a', 1),        // LD B,C
+ldrr('c', 'b', 1),        // LD C,B
+nop(1),                   // LD C,C
+ldrr('c', 'd', 1),        // LD C,D
+ldrr('c', 'e', 1),        // LD C,E
+ldrr('c', 'h', 1),        // LD C,H
+ldrr('c', 'l', 1),        // LD C,L
 ldrp('h', 'l', 'c'),      // LD C,(HL)
-ldrr('c', 'a', 4),        // LD C,A
-ldrr('d', 'b', 4),        // LD D,B
-ldrr('d', 'c', 4),        // LD D,C
-nop(4),                   // LD D,D
-ldrr('d', 'e', 4),        // LD D,E
-ldrr('d', 'h', 4),        // LD D,H
-ldrr('d', 'l', 4),        // LD D,L
+ldrr('c', 'a', 1),        // LD C,A
+ldrr('d', 'b', 1),        // LD D,B
+ldrr('d', 'c', 1),        // LD D,C
+nop(1),                   // LD D,D
+ldrr('d', 'e', 1),        // LD D,E
+ldrr('d', 'h', 1),        // LD D,H
+ldrr('d', 'l', 1),        // LD D,L
 ldrp('h', 'l', 'd'),      // LD D,(HL)
-ldrr('d', 'a', 4),        // LD D,A
-ldrr('e', 'b', 4),        // LD E,B
-ldrr('e', 'c', 4),        // LD E,C
-ldrr('e', 'd', 4),        // LD E,D
-nop(4),                   // LD E,E
-ldrr('e', 'h', 4),        // LD E,H
-ldrr('e', 'l', 4),        // LD E,L
+ldrr('d', 'a', 1),        // LD D,A
+ldrr('e', 'b', 1),        // LD E,B
+ldrr('e', 'c', 1),        // LD E,C
+ldrr('e', 'd', 1),        // LD E,D
+nop(1),                   // LD E,E
+ldrr('e', 'h', 1),        // LD E,H
+ldrr('e', 'l', 1),        // LD E,L
 ldrp('h', 'l', 'e'),      // LD E,(HL)
-ldrr('e', 'a', 4),        // LD E,A
-ldrr('h', 'b', 4),        // LD H,B
-ldrr('h', 'c', 4),        // LD H,C
-ldrr('h', 'd', 4),        // LD H,D
-ldrr('h', 'e', 4),        // LD H,E
-nop(4),                   // LD H,H
-ldrr('h', 'l', 4),        // LD H,L
+ldrr('e', 'a', 1),        // LD E,A
+ldrr('h', 'b', 1),        // LD H,B
+ldrr('h', 'c', 1),        // LD H,C
+ldrr('h', 'd', 1),        // LD H,D
+ldrr('h', 'e', 1),        // LD H,E
+nop(1),                   // LD H,H
+ldrr('h', 'l', 1),        // LD H,L
 ldrp('h', 'l', 'h'),      // LD H,(HL)
-ldrr('h', 'a', 4),        // LD H,A
-ldrr('l', 'b', 4),        // LD L,B
-ldrr('l', 'c', 4),        // LD L,C
-ldrr('l', 'd', 4),        // LD L,D
-ldrr('l', 'e', 4),        // LD L,E
-ldrr('l', 'h', 4),        // LD L,H
-nop(4),                   // LD L,L
+ldrr('h', 'a', 1),        // LD H,A
+ldrr('l', 'b', 1),        // LD L,B
+ldrr('l', 'c', 1),        // LD L,C
+ldrr('l', 'd', 1),        // LD L,D
+ldrr('l', 'e', 1),        // LD L,E
+ldrr('l', 'h', 1),        // LD L,H
+nop(1),                   // LD L,L
 ldrp('h', 'l', 'l'),      // LD L,(HL)
-ldrr('l', 'a', 4),        // LD L,A
-ldpr('h', 'l', 'b'),      // LD (HL,B
-ldpr('h', 'l', 'c'),      // LD (HL,C
-ldpr('h', 'l', 'd'),      // LD (HL,D
-ldpr('h', 'l', 'e'),      // LD (HL,E
-ldpr('h', 'l', 'h'),      // LD (HL,H
-ldpr('h', 'l', 'l'),      // LD (HL,L
-'st+=4;halted=1;pc--',    // HALT
-ldpr('h', 'l', 'a'),      // LD (HL,A
-ldrr('a', 'b', 4),        // LD A,B
-ldrr('a', 'c', 4),        // LD A,C
-ldrr('a', 'd', 4),        // LD A,D
-ldrr('a', 'e', 4),        // LD A,E
-ldrr('a', 'h', 4),        // LD A,H
-ldrr('a', 'l', 4),        // LD A,L
+ldrr('l', 'a', 1),        // LD L,A
+ldpr('h', 'l', 'b'),      // LD (HL),B
+ldpr('h', 'l', 'c'),      // LD (HL),C
+ldpr('h', 'l', 'd'),      // LD (HL),D
+ldpr('h', 'l', 'e'),      // LD (HL),E
+ldpr('h', 'l', 'h'),      // LD (HL),H
+ldpr('h', 'l', 'l'),      // LD (HL),L
+'st++;halted=1;pc--',     // HALT
+ldpr('h', 'l', 'a'),      // LD (HL),A
+ldrr('a', 'b', 1),        // LD A,B
+ldrr('a', 'c', 1),        // LD A,C
+ldrr('a', 'd', 1),        // LD A,D
+ldrr('a', 'e', 1),        // LD A,E
+ldrr('a', 'h', 1),        // LD A,H
+ldrr('a', 'l', 1),        // LD A,L
 ldrp('h', 'l', 'a'),      // LD A,(HL)
-nop(4),                   // LD A,A
-add('b', 'b', 4),         // ADD A,B
-add('c', 'c', 4),         // ADD A,C
-add('d', 'd', 4),         // ADD A,D
-add('e', 'e', 4),         // ADD A,E
-add('h', 'h', 4),         // ADD A,H
-add('l', 'l', 4),         // ADD A,L
-add('(t=m[h>>6][l|h<<8&16383])', 't', 7),// ADD A,(HL)
-add('a', 'a', 4),         // ADD A,A
-adc('b', 'b', 4),         // ADC A,B
-adc('c', 'c', 4),         // ADC A,C
-adc('d', 'd', 4),         // ADC A,D
-adc('e', 'e', 4),         // ADC A,E
-adc('h', 'h', 4),         // ADC A,H
-adc('l', 'l', 4),         // ADC A,L
-adc('(t=m[h>>6][l|h<<8&16383])', 't', 7),// ADC A,(HL)
-adc('a', 'a', 4),         // ADC A,A
-sub('b', 'b', 4),         // SUB A,B
-sub('c', 'c', 4),         // SUB A,C
-sub('d', 'd', 4),         // SUB A,D
-sub('e', 'e', 4),         // SUB A,E
-sub('h', 'h', 4),         // SUB A,H
-sub('l', 'l', 4),         // SUB A,L
-sub('(t=m[h>>6][l|h<<8&16383])', 't', 7),// SUB A,(HL)
-sub('a', 'a', 4),         // SUB A,A
-sbc('b', 'b', 4),         // SBC A,B
-sbc('c', 'c', 4),         // SBC A,C
-sbc('d', 'd', 4),         // SBC A,D
-sbc('e', 'e', 4),         // SBC A,E
-sbc('h', 'h', 4),         // SBC A,H
-sbc('l', 'l', 4),         // SBC A,L
-sbc('(t=m[h>>6][l|h<<8&16383])', 't', 7),// SBC A,(HL)
-sbc('a', 'a', 4),         // SBC A,A
-and('b', 4),              // AND B
-and('c', 4),              // AND C
-and('d', 4),              // AND D
-and('e', 4),              // AND E
-and('h', 4),              // AND H
-and('l', 4),              // AND L
-and('m[h>>6][l|h<<8&16383]', 7),      // AND (HL)
-and('a', 4),              // AND A
-xoror('^=b', 4),          // XOR B
-xoror('^=c', 4),          // XOR C
-xoror('^=d', 4),          // XOR D
-xoror('^=e', 4),          // XOR E
-xoror('^=h', 4),          // XOR H
-xoror('^=l', 4),          // XOR L
-xoror('^=m[h>>6][l|h<<8&16383]', 7),// XOR (HL)
-xoror('^=a', 4),          // XOR A
-xoror('|=b', 4),          // OR B
-xoror('|=c', 4),          // OR C
-xoror('|=d', 4),          // OR D
-xoror('|=e', 4),          // OR E
-xoror('|=h', 4),          // OR H
-xoror('|=l', 4),          // OR L
-xoror('|=m[h>>6][l|h<<8&16383]', 7),// OR (HL)
-xoror('|=a', 4),          // OR A
-cp('b', 'b', 4),          // CP B
-cp('c', 'c', 4),          // CP C
-cp('d', 'd', 4),          // CP D
-cp('e', 'e', 4),          // CP E
-cp('h', 'h', 4),          // CP H
-cp('l', 'l', 4),          // CP L
-cp('(t=m[h>>6][l|h<<8&16383])', 't', 7),// CP (HL)
-cp('a', 'a', 4),          // CP A
+nop(1),                   // LD A,A
+add('b', 'b', 1),         // ADD A,B
+add('c', 'c', 1),         // ADD A,C
+add('d', 'd', 1),         // ADD A,D
+add('e', 'e', 1),         // ADD A,E
+add('h', 'h', 1),         // ADD A,H
+add('l', 'l', 1),         // ADD A,L
+add('(t=m[h>>6][l|h<<8&16383])', 't', 2),// ADD A,(HL)
+add('a', 'a', 1),         // ADD A,A
+adc('b', 'b', 1),         // ADC A,B
+adc('c', 'c', 1),         // ADC A,C
+adc('d', 'd', 1),         // ADC A,D
+adc('e', 'e', 1),         // ADC A,E
+adc('h', 'h', 1),         // ADC A,H
+adc('l', 'l', 1),         // ADC A,L
+adc('(t=m[h>>6][l|h<<8&16383])', 't', 2),// ADC A,(HL)
+adc('a', 'a', 1),         // ADC A,A
+sub('b', 'b', 1),         // SUB A,B
+sub('c', 'c', 1),         // SUB A,C
+sub('d', 'd', 1),         // SUB A,D
+sub('e', 'e', 1),         // SUB A,E
+sub('h', 'h', 1),         // SUB A,H
+sub('l', 'l', 1),         // SUB A,L
+sub('(t=m[h>>6][l|h<<8&16383])', 't', 2),// SUB A,(HL)
+sub('a', 'a', 1),         // SUB A,A
+sbc('b', 'b', 1),         // SBC A,B
+sbc('c', 'c', 1),         // SBC A,C
+sbc('d', 'd', 1),         // SBC A,D
+sbc('e', 'e', 1),         // SBC A,E
+sbc('h', 'h', 1),         // SBC A,H
+sbc('l', 'l', 1),         // SBC A,L
+sbc('(t=m[h>>6][l|h<<8&16383])', 't', 2),// SBC A,(HL)
+sbc('a', 'a', 1),         // SBC A,A
+and('b', 1),              // AND B
+and('c', 1),              // AND C
+and('d', 1),              // AND D
+and('e', 1),              // AND E
+and('h', 1),              // AND H
+and('l', 1),              // AND L
+and('m[h>>6][l|h<<8&16383]', 2),      // AND (HL)
+and('a', 1),              // AND A
+xoror('^=b', 1),          // XOR B
+xoror('^=c', 1),          // XOR C
+xoror('^=d', 1),          // XOR D
+xoror('^=e', 1),          // XOR E
+xoror('^=h', 1),          // XOR H
+xoror('^=l', 1),          // XOR L
+xoror('^=m[h>>6][l|h<<8&16383]', 2),// XOR (HL)
+xoror('^=a', 1),          // XOR A
+xoror('|=b', 1),          // OR B
+xoror('|=c', 1),          // OR C
+xoror('|=d', 1),          // OR D
+xoror('|=e', 1),          // OR E
+xoror('|=h', 1),          // OR H
+xoror('|=l', 1),          // OR L
+xoror('|=m[h>>6][l|h<<8&16383]', 2),// OR (HL)
+xoror('|=a', 1),          // OR A
+cp('b', 'b', 1),          // CP B
+cp('c', 'c', 1),          // CP C
+cp('d', 'd', 1),          // CP D
+cp('e', 'e', 1),          // CP E
+cp('h', 'h', 1),          // CP H
+cp('l', 'l', 1),          // CP L
+cp('(t=m[h>>6][l|h<<8&16383])', 't', 2),// CP (HL)
+cp('a', 'a', 1),          // CP A
 retc('f&64'),             // RET NZ
 pop('b', 'c'),            // POP BC
 jpc('f&64'),              // JP NZ
-'st+=10;pc=m[pc>>14&3][pc&16383]|m[pc+1>>14&3][pc+1&16383]<<8',// JP nn
+'st+=3;pc=m[pc>>14&3][pc&16383]|m[pc+1>>14&3][pc+1&16383]<<8',// JP nn
 callc('f&64'),            // CALL NZ
 push('b', 'c'),           // PUSH BC
 add('(t=m[pc>>14&3][pc++&16383])', 't', 7),// ADD A,n
 rst(0),                   // RST 0x00
 retc('~f&64'),            // RET Z
-ret(10),                  // RET
+ret(3),                   // RET
 jpc('~f&64'),             // JP Z
 'r++;g[768+m[pc>>14&3][pc++&16383]]()',//op cb
 callc('~f&64'),           // CALL Z
-'st+=17;t=pc+2;pc=m[pc>>14&3][pc&16383]|m[pc+1>>14&3][pc+1&16383]<<8;mw[--sp>>14&3][sp&16383]=t>>8&255;mw[(sp=sp-1&65535)>>14][sp&16383]=t&255',// CALL NN
-//'st+=17;t=pc+2;pc=m[pc>>14&3][pc&16383]|m[pc+1>>14&3][pc+1&16383]<<8;wb(--sp&65535,t>>8);wb(sp=sp-1&65535,t)',// CALL NN
+'st+=5;t=pc+2;pc=m[pc>>14&3][pc&16383]|m[pc+1>>14&3][pc+1&16383]<<8;mw[--sp>>14&3][sp&16383]=t>>8&255;mw[(sp=sp-1&65535)>>14][sp&16383]=t&255',// CALL NN
+//'st+=5;t=pc+2;pc=m[pc>>14&3][pc&16383]|m[pc+1>>14&3][pc+1&16383]<<8;wb(--sp&65535,t>>8);wb(sp=sp-1&65535,t)',// CALL NN
 adc('(t=m[pc>>14&3][pc++&16383])', 't', 7),// ADC A,n
 rst(8),                   // RST 0x08
 retc('f&1'),              // RET NC
 pop('d', 'e'),            // POP DE
 jpc('f&1'),               // JP NC
-'st+=11;wp(m[pc>>14&3][pc++&16383]|a<<8,a)',// OUT (n),A
+'st+=3;wp(m[pc>>14&3][pc++&16383]|a<<8,a)',// OUT (n),A
 callc('f&1'),             // CALL NC
 push('d', 'e'),           // PUSH DE
 sub('(t=m[pc>>14&3][pc++&16383])', 't', 7),// SUB A,n
 rst(16),                  // RST 0x10
 retc('~f&1'),             // RET C
-'st+=4;t=b;b=b_;b_=t;t=c;c=c_;c_=t;t=d;d=d_;d_=t;t=e;e=e_;e_=t;t=h;h=h_;h_=t;t=l;l=l_;l_=t',
+'st++;t=b;b=b_;b_=t;t=c;c=c_;c_=t;t=d;d=d_;d_=t;t=e;e=e_;e_=t;t=h;h=h_;h_=t;t=l;l=l_;l_=t',// EXX
 jpc('~f&1'),              // JP C
-'st+=11;a=rp(m[pc>>14&3][pc++&16383]|a<<8)',// IN A,(n)
+'st+=3;a=rp(m[pc>>14&3][pc++&16383]|a<<8)',// IN A,(n)
 callc('~f&1'),            // CALL C
-'st+=4;r++;g[256+m[pc>>14&3][pc++&16383]]()',//op dd
+'st++;r++;g[256+m[pc>>14&3][pc++&16383]]()',//op dd
 sbc('(t=m[pc>>14&3][pc++&16383])', 't', 7),// SBC A,n
 rst(24),                  // RST 0x18
 retc('f&4'),              // RET PO
@@ -713,7 +713,7 @@ rst(32),                  // RST 0x20
 retc('~f&4'),             // RET PE
 ldsppci('pc', ''),        // JP (HL)
 jpc('~f&4'),              // JP PE
-'st+=4;t=d;d=h;h=t;t=e;e=l;l=t',// EX DE,HL
+'st++;t=d;d=h;h=t;t=e;e=l;l=t',// EX DE,HL
 callc('~f&4'),            // CALL PE
 'r++;g[1280+m[pc>>14&3][pc++&16383]]()',// op ed
 xoror('^=m[pc>>14&3][pc++&16383]', 7),// XOR A,n
@@ -721,7 +721,7 @@ rst(40),                  // RST 0x28
 retc('f&128'),            // RET P
 pop('a', 'f'),            // POP AF
 jpc('f&128'),             // JP P
-'st+=4;iff=0',            // DI
+'st++;iff=0',             // DI
 callc('f&128'),           // CALL P
 push('a', 'f'),           // PUSH AF
 xoror('|=m[pc>>14&3][pc++&16383]', 7),// OR A,n
@@ -729,235 +729,235 @@ rst(48),                  // RST 0x30
 retc('~f&128'),           // RET M
 ldsppci('sp', ''),        // LD SP,HL
 jpc('~f&128'),            // JP M
-'st+=4;iff=1',            // EI
+'st++;iff=1',             // EI
 callc('~f&128'),          // CALL M
-'st+=4;r++;g[512+m[pc>>14&3][pc++&16383]]()',// op fd
+'st++;r++;g[512+m[pc>>14&3][pc++&16383]]()',// op fd
 cp('(t=m[pc>>14&3][pc++&16383])', 't', 7),// CP A,n
 rst(56),                  // RST 0x38
 
-nop(4),                   // NOP
+nop(1),                   // NOP
 ldrrim('b', 'c'),         // LD BC,nn
-ldpr('b', 'c', 'a'),      // LD (BC,A
+ldpr('b', 'c', 'a'),      // LD (BC),A
 incw('b', 'c'),           // INC BC
 inc('b'),                 // INC B
 dec('b'),                 // DEC B
 ldrim('b'),               // LD B,n
-'st+=4;a=a<<1&255|a>>7;f=f&196|a&41',
-'st+=4;t=a;a=a_;a_=t;t=f;f=f_;f_=t',// EX AF,AF'
+'st++;a=a<<1&255|a>>7;f=f&196|a&41',// RLCA
+'st++;t=a;a=a_;a_=t;t=f;f=f_;f_=t',// EX AF,AF'
 addrrrr('xh', 'xl', 'b', 'c'),  // ADD IX,BC
 ldrp('b', 'c', 'a'),      // LD A,(BC)
 decw('b', 'c'),           // DEC BC
 inc('c'),                 // INC C
 dec('c'),                 // DEC C
 ldrim('c'),               // LD C,n
-'st+=4;f=f&196|a&1|a>>1&40;a=a>>1|a<<7&128',
-'st+=8;if(b=b-1&255)st+=5,pc+=se[m[pc>>14&3][pc&16383]]+1;else pc++',
+'st++;f=f&196|a&1|a>>1&40;a=a>>1|a<<7&128',// RRCA
+'st+=3;if(b=b-1&255)st++,pc+=se[m[pc>>14&3][pc&16383]]+1;else pc++',// DJNZ
 ldrrim('d', 'e'),         // LD DE,nn
-ldpr('d', 'e', 'a'),      // LD (DE,A
+ldpr('d', 'e', 'a'),      // LD (DE),A
 incw('d', 'e'),           // INC DE
 inc('d'),                 // INC D
 dec('d'),                 // DEC D
 ldrim('d'),               // LD D,n
-'t=a;st+=4;a=a<<1&255|f&1;f=f&196|a&40|t>>7',
-'st+=12;pc+=se[m[pc>>14&3][pc&16383]]+1',
+'t=a;st++;a=a<<1&255|f&1;f=f&196|a&40|t>>7',// RLA
+'st+=3;pc+=se[m[pc>>14&3][pc&16383]]+1',// JR
 addrrrr('xh', 'xl', 'd', 'e'), // ADD IX,DE
 ldrp('d', 'e', 'a'),      // LD A,(DE)
 decw('d', 'e'),           // DEC DE
 inc('e'),                 // INC E
 dec('e'),                 // DEC E
 ldrim('e'),               // LD E,n
-'st+=4;t=a;a=a>>1|f<<7&128;f=f&196|a&40|t&1',
+'st++;t=a;a=a>>1|f<<7&128;f=f&196|a&40|t&1',// RRA
 jrc('f&64'),              // JR NZ,s8
 ldrrim('xh', 'xl'),       // LD IX,nn
-ldpnnrr('xh', 'xl', 16),  // LD (nn,IX
+ldpnnrr('xh', 'xl', 5),   // LD (nn),IX
 incw('xh', 'xl'),         // INC IX
 inc('xh'),                // INC IXH
 dec('xh'),                // DEC IXH
 ldrim('xh'),              // LD IXH,n
-'st+=4;u=f&16||(a&15)>9?6:0;if(f&1||a>153)u|=96;if(a>153)f|=1;f=f&2?f&1|2|((t=a-u)^a^u)&16|szp[a=t&255]:f&1|((t=a+u)^a^u)&16|szp[a=t&255]',
+'st++;u=f&16||(a&15)>9?6:0;if(f&1||a>153)u|=96;if(a>153)f|=1;f=f&2?f&1|2|((t=a-u)^a^u)&16|szp[a=t&255]:f&1|((t=a+u)^a^u)&16|szp[a=t&255]',// DAA
 jrc('~f&64'),             // JR Z,s8
 addrrrr('xh', 'xl', 'xh', 'xl'),  // ADD IX,IX
-ldrrpnn('xh', 'xl', 16),  // LD IX,(nn)
+ldrrpnn('xh', 'xl', 5),   // LD IX,(nn)
 decw('xh', 'xl'),         // DEC IX
 inc('xl'),                // INC IXL
 dec('xl'),                // DEC IXL
 ldrim('xl'),              // LD IXL,n
-'st+=4;a^=255;f=f&197|a&40|18',
+'st++;a^=255;f=f&197|a&40|18',// CPL
 jrc('f&1'),               // JR NC,s8
-'st+=10;sp=m[pc>>14&3][pc++&16383]|m[pc>>14&3][pc++&16383]<<8',
-'st+=13;mw[(t=m[pc>>14&3][pc++&16383]|m[pc>>14&3][pc++&16383]<<8)>>14][t&16383]=a',
-'st+=6;sp=sp+1&65535',
+'st+=3;sp=m[pc>>14&3][pc++&16383]|m[pc>>14&3][pc++&16383]<<8',// LD SP,nn
+'st+=4;mw[(t=m[pc>>14&3][pc++&16383]|m[pc>>14&3][pc++&16383]<<8)>>14][t&16383]=a',// LD (nn),A
+'st+=2;sp=sp+1&65535',    // INC SP
 incdecpi('x', '+'),       // INC (IX+d)
 incdecpi('x', '-'),       // DEC (IX+d)
-ldpin('x'),               // LD (IX+d,n
-'st+=4;f=f&196|a&40|1',
+ldpin('x'),               // LD (IX+d),n
+'st++;f=f&196|a&40|1',    // SCF
 jrc('~f&1'),              // JR C,s8
 addisp('x'),              // ADD IX,SP
-'st+=13;a=m[(t=m[pc>>14&3][pc++&16383]|m[pc>>14&3][pc++&16383]<<8)>>14][t&16383]',
-'st+=6;sp=sp-1&65535',
+'st+=4;a=m[(t=m[pc>>14&3][pc++&16383]|m[pc>>14&3][pc++&16383]<<8)>>14][t&16383]',// LD A,(nn)
+'st+=2;sp=sp-1&65535',    // DEC SP
 inc('a'),                 // INC A
 dec('a'),                 // DEC A
 ldrim('a'),            // LD A,n
-'st+=4;f=f&196|(f&1?16:1)|a&40',
-nop(4),                   // LD B,B
-ldrr('b', 'c', 4),        // LD B,C
-ldrr('b', 'd', 4),        // LD B,D
-ldrr('b', 'e', 4),        // LD B,E
-ldrr('b', 'xh', 4),       // LD B,IXH
-ldrr('b', 'xl', 4),       // LD B,IXL
+'st++;f=f&196|(f&1?16:1)|a&40',// CCF
+nop(1),                   // LD B,B
+ldrr('b', 'c', 1),        // LD B,C
+ldrr('b', 'd', 1),        // LD B,D
+ldrr('b', 'e', 1),        // LD B,E
+ldrr('b', 'xh', 1),       // LD B,IXH
+ldrr('b', 'xl', 1),       // LD B,IXL
 ldrpi('b', 'x'),          // LD B,(IX+d)
-ldrr('b', 'a', 4),        // LD B,C
-ldrr('c', 'b', 4),        // LD C,B
-nop(4),                   // LD C,C
-ldrr('c', 'd', 4),        // LD C,D
-ldrr('c', 'e', 4),        // LD C,E
-ldrr('c', 'xh', 4),       // LD C,IXH
-ldrr('c', 'xl', 4),       // LD C,IXL
+ldrr('b', 'a', 1),        // LD B,C
+ldrr('c', 'b', 1),        // LD C,B
+nop(1),                   // LD C,C
+ldrr('c', 'd', 1),        // LD C,D
+ldrr('c', 'e', 1),        // LD C,E
+ldrr('c', 'xh', 1),       // LD C,IXH
+ldrr('c', 'xl', 1),       // LD C,IXL
 ldrpi('c', 'x'),          // LD C,(IX+d)
-ldrr('c', 'a', 4),        // LD C,A
-ldrr('d', 'b', 4),        // LD D,B
-ldrr('d', 'c', 4),        // LD D,C
-nop(4),                   // LD D,D
-ldrr('d', 'e', 4),        // LD D,E
-ldrr('d', 'xh', 4),       // LD D,IXH
-ldrr('d', 'xl', 4),       // LD D,IXL
+ldrr('c', 'a', 1),        // LD C,A
+ldrr('d', 'b', 1),        // LD D,B
+ldrr('d', 'c', 1),        // LD D,C
+nop(1),                   // LD D,D
+ldrr('d', 'e', 1),        // LD D,E
+ldrr('d', 'xh', 1),       // LD D,IXH
+ldrr('d', 'xl', 1),       // LD D,IXL
 ldrpi('d', 'x'),          // LD D,(IX+d)
-ldrr('d', 'a', 4),        // LD D,A
-ldrr('e', 'b', 4),        // LD E,B
-ldrr('e', 'c', 4),        // LD E,C
-ldrr('e', 'd', 4),        // LD E,D
-nop(4),                   // LD E,E
-ldrr('e', 'xh', 4),       // LD E,IXH
-ldrr('e', 'xl', 4),       // LD E,IXL
+ldrr('d', 'a', 1),        // LD D,A
+ldrr('e', 'b', 1),        // LD E,B
+ldrr('e', 'c', 1),        // LD E,C
+ldrr('e', 'd', 1),        // LD E,D
+nop(1),                   // LD E,E
+ldrr('e', 'xh', 1),       // LD E,IXH
+ldrr('e', 'xl', 1),       // LD E,IXL
 ldrpi('e', 'x'),          // LD E,(IX+d)
-ldrr('e', 'a', 4),        // LD E,A
-ldrr('xh', 'b', 4),       // LD IXH,B
-ldrr('xh', 'c', 4),       // LD IXH,C
-ldrr('xh', 'd', 4),       // LD IXH,D
-ldrr('xh', 'e', 4),       // LD IXH,E
-nop(4),                   // LD IXH,IXH
-ldrr('xh', 'xl', 4),      // LD IXH,IXL
+ldrr('e', 'a', 1),        // LD E,A
+ldrr('xh', 'b', 1),       // LD IXH,B
+ldrr('xh', 'c', 1),       // LD IXH,C
+ldrr('xh', 'd', 1),       // LD IXH,D
+ldrr('xh', 'e', 1),       // LD IXH,E
+nop(1),                   // LD IXH,IXH
+ldrr('xh', 'xl', 1),      // LD IXH,IXL
 ldrpi('h', 'x'),          // LD H,(IX+d)
-ldrr('xh', 'a', 4),       // LD IXH,A
-ldrr('xl', 'b', 4),       // LD IXL,B
-ldrr('xl', 'c', 4),       // LD IXL,C
-ldrr('xl', 'd', 4),       // LD IXL,D
-ldrr('xl', 'e', 4),       // LD IXL,E
-ldrr('xl', 'xh', 4),      // LD IXL,IXH
-nop(4),                   // LD IXL,IXL
+ldrr('xh', 'a', 1),       // LD IXH,A
+ldrr('xl', 'b', 1),       // LD IXL,B
+ldrr('xl', 'c', 1),       // LD IXL,C
+ldrr('xl', 'd', 1),       // LD IXL,D
+ldrr('xl', 'e', 1),       // LD IXL,E
+ldrr('xl', 'xh', 1),      // LD IXL,IXH
+nop(1),                   // LD IXL,IXL
 ldrpi('l', 'x'),          // LD L,(IX+d)
-ldrr('xl', 'a', 4),       // LD IXL,A
-ldpri('b', 'x'),          // LD (IX+d,B
-ldpri('c', 'x'),          // LD (IX+d,C
-ldpri('d', 'x'),          // LD (IX+d,D
-ldpri('e', 'x'),          // LD (IX+d,E
-ldpri('h', 'x'),          // LD (IX+d,H
-ldpri('l', 'x'),          // LD (IX+d,L
-'st+=4;halted=1;pc--',
-ldpri('a', 'x'),          // LD (IX+d,A
-ldrr('a', 'b', 4),        // LD A,B
-ldrr('a', 'c', 4),        // LD A,C
-ldrr('a', 'd', 4),        // LD A,D
-ldrr('a', 'e', 4),        // LD A,E
-ldrr('a', 'xh', 4),       // LD A,IXH
-ldrr('a', 'xl', 4),       // LD A,IXL
+ldrr('xl', 'a', 1),       // LD IXL,A
+ldpri('b', 'x'),          // LD (IX+d),B
+ldpri('c', 'x'),          // LD (IX+d),C
+ldpri('d', 'x'),          // LD (IX+d),D
+ldpri('e', 'x'),          // LD (IX+d),E
+ldpri('h', 'x'),          // LD (IX+d),H
+ldpri('l', 'x'),          // LD (IX+d),L
+'st++;halted=1;pc--',     // HALT
+ldpri('a', 'x'),          // LD (IX+d),A
+ldrr('a', 'b', 1),        // LD A,B
+ldrr('a', 'c', 1),        // LD A,C
+ldrr('a', 'd', 1),        // LD A,D
+ldrr('a', 'e', 1),        // LD A,E
+ldrr('a', 'xh', 1),       // LD A,IXH
+ldrr('a', 'xl', 1),       // LD A,IXL
 ldrpi('a', 'x'),          // LD A,(IX+d)
-nop(4),                   // LD A,A
-add('b', 'b', 4),         // ADD A,B
-add('c', 'c', 4),         // ADD A,C
-add('d', 'd', 4),         // ADD A,D
-add('e', 'e', 4),         // ADD A,E
-add('xh', 'xh', 4),       // ADD A,IXH
-add('xl', 'xl', 4),       // ADD A,IXL
-add('(t=m[(u=se[m[pc>>14&3][pc++&16383]]+(xl|xh<<8))>>14&3][u&16383])', 't', 15),// ADD A,(IX+d)
-add('a', 'a', 4),         // ADD A,A
-adc('b', 'b', 4),         // ADC A,B
-adc('c', 'c', 4),         // ADC A,C
-adc('d', 'd', 4),         // ADC A,D
-adc('e', 'e', 4),         // ADC A,E
-adc('xh', 'xh', 4),       // ADC A,IXH
-adc('xl', 'xl', 4),       // ADC A,IXL
-adc('(t=m[(u=se[m[pc>>14&3][pc++&16383]]+(xl|xh<<8))>>14&3][u&16383])', 't', 15),// ADC A,(IX+d)
-adc('a', 'a', 4),         // ADC A,A
-sub('b', 'b', 4),         // SUB A,B
-sub('c', 'c', 4),         // SUB A,C
-sub('d', 'd', 4),         // SUB A,D
-sub('e', 'e', 4),         // SUB A,E
-sub('xh', 'xh', 4),       // SUB A,IXH
-sub('xl', 'xl', 4),       // SUB A,IXL
-sub('(t=m[(u=se[m[pc>>14&3][pc++&16383]]+(xl|xh<<8))>>14&3][u&16383])', 't', 15),// SUB A,(IX+d)
-sub('a', 'a', 4),         // SUB A,A
-sbc('b', 'b', 4),         // SBC A,B
-sbc('c', 'c', 4),         // SBC A,C
-sbc('d', 'd', 4),         // SBC A,D
-sbc('e', 'e', 4),         // SBC A,E
-sbc('xh', 'xh', 4),       // SBC A,IXH
-sbc('xl', 'xl', 4),       // SBC A,IXL
-sbc('(t=m[(u=se[m[pc>>14&3][pc++&16383]]+(xl|xh<<8))>>14&3][u&16383])', 't', 15),// SBC A,(IX+d)
-sbc('a', 'a', 4),         // SBC A,A
-and('b', 4),              // AND B
-and('c', 4),              // AND C
-and('d', 4),              // AND D
-and('e', 4),              // AND E
-and('xh', 4),             // AND IXH
-and('xl', 4),             // AND IXL
-and('m[(u=se[m[pc>>14&3][pc++&16383]]+(xl|xh<<8))>>14&3][u&16383]', 15),// AND (IX+d)
-and('a', 4),              // AND A
-xoror('^=b', 4),          // XOR B
-xoror('^=c', 4),          // XOR C
-xoror('^=d', 4),          // XOR D
-xoror('^=e', 4),          // XOR E
-xoror('^=xh', 4),         // XOR IXH
-xoror('^=xl', 4),         // XOR IXL
-xoror('^=m[(u=se[m[pc>>14&3][pc++&16383]]+(xl|xh<<8))>>14&3][u&16383]', 15),// XOR (IX+d)
-xoror('^=a', 4),          // XOR A
-xoror('|=b', 4),          // OR B
-xoror('|=c', 4),          // OR C
-xoror('|=d', 4),          // OR D
-xoror('|=e', 4),          // OR E
-xoror('|=xh', 4),         // OR IXH
-xoror('|=xl', 4),         // OR IXL
-xoror('|=m[(u=se[m[pc>>14&3][pc++&16383]]+(xl|xh<<8))>>14&3][u&16383]', 15),// OR (IX+d)
-xoror('|=a', 4),          // OR A
-cp('b', 'b', 4),          // CP B
-cp('c', 'c', 4),          // CP C
-cp('d', 'd', 4),          // CP D
-cp('e', 'e', 4),          // CP E
-cp('xh', 'xh', 4),        // CP IXH
-cp('xl', 'xl', 4),        // CP IXL
-cp('(t=m[(u=se[m[pc>>14&3][pc++&16383]]+(xl|xh<<8))>>14&3][u&16383])', 't', 15),// CP (IX+d)
-cp('a', 'a', 4),          // CP A
+nop(1),                   // LD A,A
+add('b', 'b', 1),         // ADD A,B
+add('c', 'c', 1),         // ADD A,C
+add('d', 'd', 1),         // ADD A,D
+add('e', 'e', 1),         // ADD A,E
+add('xh', 'xh', 1),       // ADD A,IXH
+add('xl', 'xl', 1),       // ADD A,IXL
+add('(t=m[(u=se[m[pc>>14&3][pc++&16383]]+(xl|xh<<8))>>14&3][u&16383])', 't', 4),// ADD A,(IX+d)
+add('a', 'a', 1),         // ADD A,A
+adc('b', 'b', 1),         // ADC A,B
+adc('c', 'c', 1),         // ADC A,C
+adc('d', 'd', 1),         // ADC A,D
+adc('e', 'e', 1),         // ADC A,E
+adc('xh', 'xh', 1),       // ADC A,IXH
+adc('xl', 'xl', 1),       // ADC A,IXL
+adc('(t=m[(u=se[m[pc>>14&3][pc++&16383]]+(xl|xh<<8))>>14&3][u&16383])', 't', 4),// ADC A,(IX+d)
+adc('a', 'a', 1),         // ADC A,A
+sub('b', 'b', 1),         // SUB A,B
+sub('c', 'c', 1),         // SUB A,C
+sub('d', 'd', 1),         // SUB A,D
+sub('e', 'e', 1),         // SUB A,E
+sub('xh', 'xh', 1),       // SUB A,IXH
+sub('xl', 'xl', 1),       // SUB A,IXL
+sub('(t=m[(u=se[m[pc>>14&3][pc++&16383]]+(xl|xh<<8))>>14&3][u&16383])', 't', 4),// SUB A,(IX+d)
+sub('a', 'a', 1),         // SUB A,A
+sbc('b', 'b', 1),         // SBC A,B
+sbc('c', 'c', 1),         // SBC A,C
+sbc('d', 'd', 1),         // SBC A,D
+sbc('e', 'e', 1),         // SBC A,E
+sbc('xh', 'xh', 1),       // SBC A,IXH
+sbc('xl', 'xl', 1),       // SBC A,IXL
+sbc('(t=m[(u=se[m[pc>>14&3][pc++&16383]]+(xl|xh<<8))>>14&3][u&16383])', 't', 4),// SBC A,(IX+d)
+sbc('a', 'a', 1),         // SBC A,A
+and('b', 1),              // AND B
+and('c', 1),              // AND C
+and('d', 1),              // AND D
+and('e', 1),              // AND E
+and('xh', 1),             // AND IXH
+and('xl', 1),             // AND IXL
+and('m[(u=se[m[pc>>14&3][pc++&16383]]+(xl|xh<<8))>>14&3][u&16383]', 4),// AND (IX+d)
+and('a', 1),              // AND A
+xoror('^=b', 1),          // XOR B
+xoror('^=c', 1),          // XOR C
+xoror('^=d', 1),          // XOR D
+xoror('^=e', 1),          // XOR E
+xoror('^=xh', 1),         // XOR IXH
+xoror('^=xl', 1),         // XOR IXL
+xoror('^=m[(u=se[m[pc>>14&3][pc++&16383]]+(xl|xh<<8))>>14&3][u&16383]', 4),// XOR (IX+d)
+xoror('^=a', 1),          // XOR A
+xoror('|=b', 1),          // OR B
+xoror('|=c', 1),          // OR C
+xoror('|=d', 1),          // OR D
+xoror('|=e', 1),          // OR E
+xoror('|=xh', 1),         // OR IXH
+xoror('|=xl', 1),         // OR IXL
+xoror('|=m[(u=se[m[pc>>14&3][pc++&16383]]+(xl|xh<<8))>>14&3][u&16383]', 4),// OR (IX+d)
+xoror('|=a', 1),          // OR A
+cp('b', 'b', 1),          // CP B
+cp('c', 'c', 1),          // CP C
+cp('d', 'd', 1),          // CP D
+cp('e', 'e', 1),          // CP E
+cp('xh', 'xh', 1),        // CP IXH
+cp('xl', 'xl', 1),        // CP IXL
+cp('(t=m[(u=se[m[pc>>14&3][pc++&16383]]+(xl|xh<<8))>>14&3][u&16383])', 't', 4),// CP (IX+d)
+cp('a', 'a', 1),          // CP A
 retc('f&64'),             // RET NZ
 pop('b', 'c'),            // POP BC
 jpc('f&64'),              // JP NZ
-'st+=10;pc=m[pc>>14&3][pc&16383]|m[pc+1>>14&3][pc+1&16383]<<8',
+'st+=3;pc=m[pc>>14&3][pc&16383]|m[pc+1>>14&3][pc+1&16383]<<8',// JP nn
 callc('f&64'),            // CALL NZ
 push('b', 'c'),           // PUSH BC
 add('(t=m[pc>>14&3][pc++&16383])', 't', 7),// ADD A,n
 rst(0),                   // RST 0x00
 retc('~f&64'),            // RET Z
-ret(10),                  // RET
+ret(3),                   // RET
 jpc('~f&64'),             // JP Z
-'st+=11;t=m[(u=se[m[pc>>14&3][pc++&16383]]+(xl|xh<<8))>>14&3][u&16383];g[1024+m[pc>>14&3][pc++&16383]]()',//op cb
+'st+=3;t=m[(u=se[m[pc>>14&3][pc++&16383]]+(xl|xh<<8))>>14&3][u&16383];g[1024+m[pc>>14&3][pc++&16383]]()',//op cb
 callc('~f&64'),           // CALL Z
-'st+=17;t=pc+2;pc=m[pc>>14&3][pc&16383]|m[pc+1>>14&3][pc+1&16383]<<8;mw[--sp>>14&3][sp&16383]=t>>8&255;mw[(sp=sp-1&65535)>>14][sp&16383]=t&255',// CALL NN
-//'st+=17;t=pc+2;pc=m[pc>>14&3][pc&16383]|m[pc+1>>14&3][pc+1&16383]<<8;wb(--sp&65535,t>>8);wb(sp=sp-1&65535,t)',// CALL NN
+'st+=5;t=pc+2;pc=m[pc>>14&3][pc&16383]|m[pc+1>>14&3][pc+1&16383]<<8;mw[--sp>>14&3][sp&16383]=t>>8&255;mw[(sp=sp-1&65535)>>14][sp&16383]=t&255',// CALL NN
+//'st+=5;t=pc+2;pc=m[pc>>14&3][pc&16383]|m[pc+1>>14&3][pc+1&16383]<<8;wb(--sp&65535,t>>8);wb(sp=sp-1&65535,t)',// CALL NN
 adc('(t=m[pc>>14&3][pc++&16383])', 't', 7),// ADC A,n
 rst(8),                   // RST 0x08
 retc('f&1'),              // RET NC
 pop('d', 'e'),            // POP DE
 jpc('f&1'),               // JP NC
-'st+=11;wp(m[pc>>14&3][pc++&16383]|a<<8,a)',
+'st+=3;wp(m[pc>>14&3][pc++&16383]|a<<8,a)',// OUT (n),A
 callc('f&1'),             // CALL NC
 push('d', 'e'),           // PUSH DE
 sub('(t=m[pc>>14&3][pc++&16383])', 't', 7),// SUB A,n
 rst(16),                  // RST 0x10
 retc('~f&1'),             // RET C
-'st+=4;t=b;b=b_;b_=t;t=c;c=c_;c_=t;t=d;d=d_;d_=t;t=e;e=e_;e_=t;t=h;h=h_;h_=t;t=l;l=l_;l_=t',
+'st++;t=b;b=b_;b_=t;t=c;c=c_;c_=t;t=d;d=d_;d_=t;t=e;e=e_;e_=t;t=h;h=h_;h_=t;t=l;l=l_;l_=t',// EXX
 jpc('~f&1'),              // JP C
-'st+=11;a=rp(m[pc>>14&3][pc++&16383]|a<<8)',
+'st+=3;a=rp(m[pc>>14&3][pc++&16383]|a<<8)',// IN A,(n)
 callc('~f&1'),            // CALL C
-nop(4),                   // op dd
+nop(1),                   // op dd
 sbc('(t=m[pc>>14&3][pc++&16383])', 't', 7),// SBC A,n
 rst(24),                  // RST 0x18
 retc('f&4'),              // RET PO
@@ -971,7 +971,7 @@ rst(32),                  // RST 0x20
 retc('~f&4'),             // RET PE
 ldsppci('pc', 'x'),       // JP (IX)
 jpc('~f&4'),              // JP PE
-'st+=4;t=d;d=h;h=t;t=e;e=l;l=t',
+'st++;t=d;d=h;h=t;t=e;e=l;l=t',// EX DE,HL
 callc('~f&4'),            // CALL PE
 'r++;g[1280+m[pc>>14&3][pc++&16383]]()', //op ed
 xoror('^=m[pc>>14&3][pc++&16383]', 7),// XOR A,n
@@ -979,7 +979,7 @@ rst(40),                  // RST 0x28
 retc('f&128'),            // RET P
 pop('a', 'f'),            // POP AF
 jpc('f&128'),             // JP P
-'st+=4;iff=0',
+'st++;iff=0',             // DI
 callc('f&128'),           // CALL P
 push('a', 'f'),           // PUSH AF
 xoror('|=m[pc>>14&3][pc++&16383]', 7),// OR A,n
@@ -987,77 +987,77 @@ rst(48),                  // RST 0x30
 retc('~f&128'),           // RET M
 ldsppci('sp', 'x'),       // LD SP,IX
 jpc('~f&128'),            // JP M
-'st+=4;iff=1',
+'st++;iff=1',             // EI
 callc('~f&128'),          // CALL M
-nop(4),                   // op fd
+nop(1),                   // op fd
 cp('(t=m[pc>>14&3][pc++&16383])', 't', 7),// CP A,n
 rst(56),                  // RST 0x38
 
-nop(4),                   // NOP
+nop(1),                   // NOP
 ldrrim('b', 'c'),         // LD BC,nn
-ldpr('b', 'c', 'a'),      // LD (BC,A
+ldpr('b', 'c', 'a'),      // LD (BC),A
 incw('b', 'c'),           // INC BC
 inc('b'),                 // INC B
 dec('b'),                 // DEC B
 ldrim('b'),               // LD B,n
-'st+=4;a=a<<1&255|a>>7;f=f&196|a&41',
-'st+=4;t=a;a=a_;a_=t;t=f;f=f_;f_=t',// EX AF,AF'
+'st++;a=a<<1&255|a>>7;f=f&196|a&41',// RLCA
+'st++;t=a;a=a_;a_=t;t=f;f=f_;f_=t',// EX AF,AF'
 addrrrr('yh', 'yl', 'b', 'c'),  // ADD IY,BC
 ldrp('b', 'c', 'a'),      // LD A,(BC)
 decw('b', 'c'),           // DEC BC
 inc('c'),                 // INC C
 dec('c'),                 // DEC C
 ldrim('c'),               // LD C,n
-'st+=4;f=f&196|a&1|a>>1&40;a=a>>1|a<<7&128',
-'st+=8;if(b=b-1&255)st+=5,pc+=se[m[pc>>14&3][pc&16383]]+1;else pc++',
+'st++;f=f&196|a&1|a>>1&40;a=a>>1|a<<7&128',// RRCA
+'st+=3;if(b=b-1&255)st++,pc+=se[m[pc>>14&3][pc&16383]]+1;else pc++',// DJNZ
 ldrrim('d', 'e'),         // LD DE,nn
-ldpr('d', 'e', 'a'),      // LD (DE,A
+ldpr('d', 'e', 'a'),      // LD (DE),A
 incw('d', 'e'),           // INC DE
 inc('d'),                 // INC D
 dec('d'),                 // DEC D
 ldrim('d'),               // LD D,n
-'t=a;st+=4;a=a<<1&255|f&1;f=f&196|a&40|t>>7',
-'st+=12;pc+=se[m[pc>>14&3][pc&16383]]+1',
+'t=a;st++;a=a<<1&255|f&1;f=f&196|a&40|t>>7',// RLA
+'st+=3;pc+=se[m[pc>>14&3][pc&16383]]+1',// JR
 addrrrr('yh', 'yl', 'd', 'e'), // ADD IY,DE
 ldrp('d', 'e', 'a'),      // LD A,(DE)
 decw('d', 'e'),           // DEC DE
 inc('e'),                 // INC E
 dec('e'),                 // DEC E
 ldrim('e'),               // LD E,n
-'st+=4;t=a;a=a>>1|f<<7&128;f=f&196|a&40|t&1',
+'st++;t=a;a=a>>1|f<<7&128;f=f&196|a&40|t&1',// RRA
 jrc('f&64'),              // JR NZ,s8
 ldrrim('yh', 'yl'),       // LD IY,nn
-ldpnnrr('yh', 'yl', 16),  // LD (nn,IY
+ldpnnrr('yh', 'yl', 5),   // LD (nn),IY
 incw('yh', 'yl'),         // INC IY
 inc('yh'),                // INC IYH
 dec('yh'),                // DEC IYH
 ldrim('yh'),              // LD IYH,n
-'st+=4;u=f&16||(a&15)>9?6:0;if(f&1||a>153)u|=96;if(a>153)f|=1;f=f&2?f&1|2|((t=a-u)^a^u)&16|szp[a=t&255]:f&1|((t=a+u)^a^u)&16|szp[a=t&255]',
+'st++;u=f&16||(a&15)>9?6:0;if(f&1||a>153)u|=96;if(a>153)f|=1;f=f&2?f&1|2|((t=a-u)^a^u)&16|szp[a=t&255]:f&1|((t=a+u)^a^u)&16|szp[a=t&255]',// DAA
 jrc('~f&64'),             // JR Z,s8
 addrrrr('yh', 'yl', 'yh', 'yl'),  // ADD IY,IY
-ldrrpnn('yh', 'yl', 16),  // LD IY,(nn)
+ldrrpnn('yh', 'yl', 5),   // LD IY,(nn)
 decw('yh', 'yl'),         // DEC IY
 inc('yl'),                // INC IYL
 dec('yl'),                // DEC IYL
 ldrim('yl'),              // LD IYL,n
-'st+=4;a^=255;f=f&197|a&40|18',
+'st++;a^=255;f=f&197|a&40|18',// CPL
 jrc('f&1'),               // JR NC,s8
-'st+=10;sp=m[pc>>14&3][pc++&16383]|m[pc>>14&3][pc++&16383]<<8',
-'st+=13;mw[(t=m[pc>>14&3][pc++&16383]|m[pc>>14&3][pc++&16383]<<8)>>14][t&16383]=a',
-'st+=6;sp=sp+1&65535',
+'st+=3;sp=m[pc>>14&3][pc++&16383]|m[pc>>14&3][pc++&16383]<<8',// LD SP,nn
+'st+=4;mw[(t=m[pc>>14&3][pc++&16383]|m[pc>>14&3][pc++&16383]<<8)>>14][t&16383]=a',// LD (nn),A
+'st+=2;sp=sp+1&65535',    // INC SP
 incdecpi('y', '+'),       // INC (IY+d)
 incdecpi('y', '-'),       // DEC (IY+d)
-ldpin('y'),               // LD (IY+d,n
-'st+=4;f=f&196|a&40|1',
+ldpin('y'),               // LD (IY+d),n
+'st++;f=f&196|a&40|1',    // SCF
 jrc('~f&1'),              // JR C,s8
 addisp('y'),              // ADD IY,SP
-'st+=13;a=m[(t=m[pc>>14&3][pc++&16383]|m[pc>>14&3][pc++&16383]<<8)>>14][t&16383]',
-'st+=6;sp=sp-1&65535',
+'st+=4;a=m[(t=m[pc>>14&3][pc++&16383]|m[pc>>14&3][pc++&16383]<<8)>>14][t&16383]',// LD A,(nn)
+'st+=2;sp=sp-1&65535',    // DEC SP
 inc('a'),                 // INC A
 dec('a'),                 // DEC A
 ldrim('a'),            // LD A,n
-'st+=4;f=f&196|(f&1?16:1)|a&40',
-nop(4),                   // LD B,B
+'st++;f=f&196|(f&1?16:1)|a&40',// CCF
+nop(1),                   // LD B,B
 ldrr('b', 'c', 4),        // LD B,C
 ldrr('b', 'd', 4),        // LD B,D
 ldrr('b', 'e', 4),        // LD B,E
@@ -1066,7 +1066,7 @@ ldrr('b', 'yl', 4),       // LD B,IYL
 ldrpi('b', 'y'),          // LD B,(IY+d)
 ldrr('b', 'a', 4),        // LD B,C
 ldrr('c', 'b', 4),        // LD C,B
-nop(4),                   // LD C,C
+nop(1),                   // LD C,C
 ldrr('c', 'd', 4),        // LD C,D
 ldrr('c', 'e', 4),        // LD C,E
 ldrr('c', 'yh', 4),       // LD C,IYH
@@ -1075,7 +1075,7 @@ ldrpi('c', 'y'),          // LD C,(IY+d)
 ldrr('c', 'a', 4),        // LD C,A
 ldrr('d', 'b', 4),        // LD D,B
 ldrr('d', 'c', 4),        // LD D,C
-nop(4),                   // LD D,D
+nop(1),                   // LD D,D
 ldrr('d', 'e', 4),        // LD D,E
 ldrr('d', 'yh', 4),       // LD D,IYH
 ldrr('d', 'yl', 4),       // LD D,IYL
@@ -1084,7 +1084,7 @@ ldrr('d', 'a', 4),        // LD D,A
 ldrr('e', 'b', 4),        // LD E,B
 ldrr('e', 'c', 4),        // LD E,C
 ldrr('e', 'd', 4),        // LD E,D
-nop(4),                   // LD E,E
+nop(1),                   // LD E,E
 ldrr('e', 'yh', 4),       // LD E,IYH
 ldrr('e', 'yl', 4),       // LD E,IYL
 ldrpi('e', 'y'),          // LD E,(IY+d)
@@ -1093,7 +1093,7 @@ ldrr('yh', 'b', 4),       // LD IYH,B
 ldrr('yh', 'c', 4),       // LD IYH,C
 ldrr('yh', 'd', 4),       // LD IYH,D
 ldrr('yh', 'e', 4),       // LD IYH,E
-nop(4),                   // LD IYH,IYH
+nop(1),                   // LD IYH,IYH
 ldrr('yh', 'yl', 4),      // LD IYH,IYL
 ldrpi('h', 'y'),          // LD H,(IY+d)
 ldrr('yh', 'a', 4),       // LD IYH,A
@@ -1102,17 +1102,17 @@ ldrr('yl', 'c', 4),       // LD IYL,C
 ldrr('yl', 'd', 4),       // LD IYL,D
 ldrr('yl', 'e', 4),       // LD IYL,E
 ldrr('yl', 'yh', 4),      // LD IYL,IYH
-nop(4),                   // LD IYL,IYL
+nop(1),                   // LD IYL,IYL
 ldrpi('l', 'y'),          // LD L,(IY+d)
 ldrr('yl', 'a', 4),       // LD IYL,A
-ldpri('b', 'y'),          // LD (IY+d,B
-ldpri('c', 'y'),          // LD (IY+d,C
-ldpri('d', 'y'),          // LD (IY+d,D
-ldpri('e', 'y'),          // LD (IY+d,E
-ldpri('h', 'y'),          // LD (IY+d,H
-ldpri('l', 'y'),          // LD (IY+d,L
-'st+=4;halted=1;pc--',
-ldpri('a', 'y'),          // LD (IY+d,A
+ldpri('b', 'y'),          // LD (IY+d),B
+ldpri('c', 'y'),          // LD (IY+d),C
+ldpri('d', 'y'),          // LD (IY+d),D
+ldpri('e', 'y'),          // LD (IY+d),E
+ldpri('h', 'y'),          // LD (IY+d),H
+ldpri('l', 'y'),          // LD (IY+d),L
+'st++;halted=1;pc--',     // HALT
+ldpri('a', 'y'),          // LD (IY+d),A
 ldrr('a', 'b', 4),        // LD A,B
 ldrr('a', 'c', 4),        // LD A,C
 ldrr('a', 'd', 4),        // LD A,D
@@ -1120,7 +1120,7 @@ ldrr('a', 'e', 4),        // LD A,E
 ldrr('a', 'yh', 4),       // LD A,IYH
 ldrr('a', 'yl', 4),       // LD A,IYL
 ldrpi('a', 'y'),          // LD A,(IY+d)
-nop(4),                   // LD A,A
+nop(1),                   // LD A,A
 add('b', 'b', 4),         // ADD A,B
 add('c', 'c', 4),         // ADD A,C
 add('d', 'd', 4),         // ADD A,D
@@ -1188,34 +1188,34 @@ cp('a', 'a', 4),          // CP A
 retc('f&64'),             // RET NZ
 pop('b', 'c'),            // POP BC
 jpc('f&64'),              // JP NZ
-'st+=10;pc=m[pc>>14&3][pc&16383]|m[pc+1>>14&3][pc+1&16383]<<8',
+'st+=3;pc=m[pc>>14&3][pc&16383]|m[pc+1>>14&3][pc+1&16383]<<8',// JP nn
 callc('f&64'),            // CALL NZ
 push('b', 'c'),           // PUSH BC
 add('(t=m[pc>>14&3][pc++&16383])', 't', 7),// ADD A,n
 rst(0),                   // RST 0x00
 retc('~f&64'),            // RET Z
-ret(10),                  // RET
+ret(3),                   // RET
 jpc('~f&64'),             // JP Z
-'st+=11;t=m[(u=se[m[pc>>14&3][pc++&16383]]+(yl|yh<<8))>>14&3][u&16383];g[1024+m[pc>>14&3][pc++&16383]]()',//op cb   abcd >>14&&3
+'st+=3;t=m[(u=se[m[pc>>14&3][pc++&16383]]+(yl|yh<<8))>>14&3][u&16383];g[1024+m[pc>>14&3][pc++&16383]]()',//op cb   abcd >>14&&3
 callc('~f&64'),           // CALL Z
-'st+=17;t=pc+2;pc=m[pc>>14&3][pc&16383]|m[pc+1>>14&3][pc+1&16383]<<8;mw[--sp>>14&3][sp&16383]=t>>8&255;mw[(sp=sp-1&65535)>>14][sp&16383]=t&255',// CALL NN
-//'st+=17;t=pc+2;pc=m[pc>>14&3][pc&16383]|m[pc+1>>14&3][pc+1&16383]<<8;wb(--sp&65535,t>>8);wb(sp=sp-1&65535,t)',// CALL NN
+'st+=5;t=pc+2;pc=m[pc>>14&3][pc&16383]|m[pc+1>>14&3][pc+1&16383]<<8;mw[--sp>>14&3][sp&16383]=t>>8&255;mw[(sp=sp-1&65535)>>14][sp&16383]=t&255',// CALL NN
+//'st+=5;t=pc+2;pc=m[pc>>14&3][pc&16383]|m[pc+1>>14&3][pc+1&16383]<<8;wb(--sp&65535,t>>8);wb(sp=sp-1&65535,t)',// CALL NN
 adc('(t=m[pc>>14&3][pc++&16383])', 't', 7),// ADC A,n
 rst(8),                   // RST 0x08
 retc('f&1'),              // RET NC
 pop('d', 'e'),            // POP DE
 jpc('f&1'),               // JP NC
-'st+=11;wp(m[pc>>14&3][pc++&16383]|a<<8,a)',
+'st+=3;wp(m[pc>>14&3][pc++&16383]|a<<8,a)',// OUT (n),A
 callc('f&1'),             // CALL NC
 push('d', 'e'),           // PUSH DE
 sub('(t=m[pc>>14&3][pc++&16383])', 't', 7),// SUB A,n
 rst(16),                  // RST 0x10
 retc('~f&1'),             // RET C
-'st+=4;t=b;b=b_;b_=t;t=c;c=c_;c_=t;t=d;d=d_;d_=t;t=e;e=e_;e_=t;t=h;h=h_;h_=t;t=l;l=l_;l_=t',
+'st++;t=b;b=b_;b_=t;t=c;c=c_;c_=t;t=d;d=d_;d_=t;t=e;e=e_;e_=t;t=h;h=h_;h_=t;t=l;l=l_;l_=t',// EXX
 jpc('~f&1'),              // JP C
-'st+=11;a=rp(m[pc>>14&3][pc++&16383]|a<<8)',
+'st+=3;a=rp(m[pc>>14&3][pc++&16383]|a<<8)',// IN A,(n)
 callc('~f&1'),            // CALL C
-nop(4),                   // op dd
+nop(1),                   // op dd
 sbc('(t=m[pc>>14&3][pc++&16383])', 't', 7),// SBC A,n
 rst(24),                  // RST 0x18
 retc('f&4'),              // RET PO
@@ -1229,7 +1229,7 @@ rst(32),                  // RST 0x20
 retc('~f&4'),             // RET PE
 ldsppci('pc', 'y'),       // JP (IY)
 jpc('~f&4'),              // JP PE
-'st+=4;t=d;d=h;h=t;t=e;e=l;l=t',
+'st++;t=d;d=h;h=t;t=e;e=l;l=t',// EX DE,HL
 callc('~f&4'),            // CALL PE
 'r++;g[1280+m[pc>>14&3][pc++&16383]]()',// op ed
 xoror('^=m[pc>>14&3][pc++&16383]', 7),// XOR A,n
@@ -1237,7 +1237,7 @@ rst(40),                  // RST 0x28
 retc('f&128'),            // RET P
 pop('a', 'f'),            // POP AF
 jpc('f&128'),             // JP P
-'st+=4;iff=0',
+'st++;iff=0',             // DI
 callc('f&128'),           // CALL P
 push('a', 'f'),           // PUSH AF
 xoror('|=m[pc>>14&3][pc++&16383]', 7),// OR A,n
@@ -1245,9 +1245,9 @@ rst(48),                  // RST 0x30
 retc('~f&128'),           // RET M
 ldsppci('sp', 'y'),       // LD SP,IY
 jpc('~f&128'),            // JP M
-'st+=4;iff=1',
+'st++;iff=1',             // EI
 callc('~f&128'),          // CALL M
-nop(4),                   // op fd
+nop(1),                   // op fd
 cp('(t=m[pc>>14&3][pc++&16383])', 't', 7),// CP A,n
 rst(56),                  // RST 0x38
 
@@ -1257,7 +1257,7 @@ rlc('d'),                 // RLC D
 rlc('e'),                 // RLC E
 rlc('h'),                 // RLC H
 rlc('l'),                 // RLC L
-'st+=15;v=m[t=h>>6][u=l|h<<8&16383];'+rlc('v')+';mw[t][u]=v', // RLC (HL)
+'st+=4;v=m[t=h>>6][u=l|h<<8&16383];'+rlc('v')+';mw[t][u]=v', // RLC (HL)
 rlc('a'),                 // RLC A
 rrc('b'),                 // RRC B
 rrc('c'),                 // RRC C
@@ -1265,7 +1265,7 @@ rrc('d'),                 // RRC D
 rrc('e'),                 // RRC E
 rrc('h'),                 // RRC H
 rrc('l'),                 // RRC L
-'st+=15;v=m[t=h>>6][u=l|h<<8&16383];'+rrc('v')+';mw[t][u]=v',
+'st+=4;v=m[t=h>>6][u=l|h<<8&16383];'+rrc('v')+';mw[t][u]=v',
 rrc('a'),                 // RRC A
 rl('b'),                  // RL B
 rl('c'),                  // RL C
@@ -1273,7 +1273,7 @@ rl('d'),                  // RL D
 rl('e'),                  // RL E
 rl('h'),                  // RL H
 rl('l'),                  // RL L
-'st+=15;v=m[t=h>>6][u=l|h<<8&16383];'+rl('v')+';mw[t][u]=v',
+'st+=4;v=m[t=h>>6][u=l|h<<8&16383];'+rl('v')+';mw[t][u]=v',
 rl('a'),                  // RL A
 rr('b'),                  // RR B
 rr('c'),                  // RR C
@@ -1281,7 +1281,7 @@ rr('d'),                  // RR D
 rr('e'),                  // RR E
 rr('h'),                  // RR H
 rr('l'),                  // RR L
-'st+=15;v=m[t=h>>6][u=l|h<<8&16383];'+rr('v')+';mw[t][u]=v',
+'st+=4;v=m[t=h>>6][u=l|h<<8&16383];'+rr('v')+';mw[t][u]=v',
 rr('a'),                  // RR A
 sla('b'),                 // SLA B
 sla('c'),                 // SLA C
@@ -1289,7 +1289,7 @@ sla('d'),                 // SLA D
 sla('e'),                 // SLA E
 sla('h'),                 // SLA H
 sla('l'),                 // SLA L
-'st+=15;v=m[t=h>>6][u=l|h<<8&16383];'+sla('v')+';mw[t][u]=v',
+'st+=4;v=m[t=h>>6][u=l|h<<8&16383];'+sla('v')+';mw[t][u]=v',
 sla('a'),                 // SLA A
 sra('b'),                 // SRA B
 sra('c'),                 // SRA C
@@ -1297,7 +1297,7 @@ sra('d'),                 // SRA D
 sra('e'),                 // SRA E
 sra('h'),                 // SRA H
 sra('l'),                 // SRA L
-'st+=15;v=m[t=h>>6][u=l|h<<8&16383];'+sra('v')+';mw[t][u]=v',
+'st+=4;v=m[t=h>>6][u=l|h<<8&16383];'+sra('v')+';mw[t][u]=v',
 sra('a'),                 // SRA A
 sll('b'),                 // SLL B
 sll('c'),                 // SLL C
@@ -1305,7 +1305,7 @@ sll('d'),                 // SLL D
 sll('e'),                 // SLL E
 sll('h'),                 // SLL H
 sll('l'),                 // SLL L
-'st+=15;v=m[t=h>>6][u=l|h<<8&16383];'+sll('v')+';mw[t][u]=v',
+'st+=4;v=m[t=h>>6][u=l|h<<8&16383];'+sll('v')+';mw[t][u]=v',
 sll('a'),                 // SLL A
 srl('b'),                 // SRL B
 srl('c'),                 // SRL C
@@ -1313,7 +1313,7 @@ srl('d'),                 // SRL D
 srl('e'),                 // SRL E
 srl('h'),                 // SRL H
 srl('l'),                 // SRL L
-'st+=15;v=m[t=h>>6][u=l|h<<8&16383];'+srl('v')+';mw[t][u]=v',
+'st+=4;v=m[t=h>>6][u=l|h<<8&16383];'+srl('v')+';mw[t][u]=v',
 srl('a'),                 // SRL A
 bit(1,'b'),              // BIT 0,B
 bit(1,'c'),              // BIT 0,C
@@ -1765,263 +1765,263 @@ set(128,'t')+';l=mw[u>>14][u&16383]=t',// LD L,SET 7,(IY+d)
 set(128,'t')+';mw[u>>14][u&16383]=t',  // SET 7,(IY+d)
 set(128,'t')+';a=mw[u>>14][u&16383]=t',// LD A,SET 7,(IY+d)
 
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
 inr('b'),                 // IN B,(C)
 outr('b'),                // OUT (C,B
 sbchlrr('b', 'c'),        // SBC HL,BC
-ldpnnrr('b', 'c', 20),    // LD (NN,BC
+ldpnnrr('b', 'c', 6),     // LD (NN),BC
 neg(),                    // NEG
-ret(14),                  // RETN
-'st+=8;im=0',             // IM 0
-ldrr('i', 'a', 9),        // LD I,A
+ret(4),                   // RETN
+'st+=2;im=0',             // IM 0
+ldrr('i', 'a', 2),        // LD I,A
 inr('c'),                 // IN C,(C)
 outr('c'),                // OUT (C,C
 adchlrr('b', 'c'),        // ADC HL,BC
-ldrrpnn('b', 'c', 20),    // LD BC,(NN)
+ldrrpnn('b', 'c', 6),     // LD BC,(NN)
 neg(),                    // NEG
-ret(14),                  // RETI
-'st+=8;im=0',             // IM 0
-ldrr('r=r7', 'a', 9),     // LD R,A
+ret(4),                   // RETI
+'st+=2;im=0',             // IM 0
+ldrr('r=r7', 'a', 2),     // LD R,A
 inr('d'),                 // IN D,(C)
 outr('d'),                // OUT (C,D
 sbchlrr('d', 'e'),        // SBC HL,DE
-ldpnnrr('d', 'e', 20),    // LD (NN,DE
+ldpnnrr('d', 'e', 6),     // LD (NN),DE
 neg(),                    // NEG
-ret(14),                  // RETN
-'st+=8;im=1',             // IM 1
+ret(4),                   // RETN
+'st+=2;im=1',             // IM 1
 ldair('i'),               // LD A,I
 inr('e'),                 // IN E,(C)
 outr('e'),                // OUT (C,E
 adchlrr('d', 'e'),        // ADC HL,DE
-ldrrpnn('d', 'e', 20),    // LD DE,(NN)
+ldrrpnn('d', 'e', 6),     // LD DE,(NN)
 neg(),                    // NEG
-ret(14),                  // RETI
-'st+=8;im=2',             // IM 2
+ret(4),                   // RETI
+'st+=2;im=2',             // IM 2
 ldair('r&127|r7&128'),    // LD A,R
 inr('h'),                 // IN H,(C)
 outr('h'),                // OUT (C,H
 sbchlrr('h', 'l'),        // SBC HL,HL
-ldpnnrr('h', 'l', 20),    // LD (NN,HL
+ldpnnrr('h', 'l', 6),     // LD (NN),HL
 neg(),                    // NEG
-ret(14),                  // RETN
-'st+=8;im=0',             // IM 0
-'st+=18;v=m[t=h>>6][u=l|h<<8&16383];mw[t][u]=a<<4&240|v>>4;a=a&240|v&15;f=f&1|szp[a]',// RRD
+ret(4),                   // RETN
+'st+=2;im=0',             // IM 0
+'st+=5;v=m[t=h>>6][u=l|h<<8&16383];mw[t][u]=a<<4&240|v>>4;a=a&240|v&15;f=f&1|szp[a]',// RRD
 inr('l'),                 // IN L,(C)
 outr('l'),                // OUT (C,L
 adchlrr('h', 'l'),        // ADC HL,HL
-ldrrpnn('h', 'l', 20),    // LD HL,(NN)
+ldrrpnn('h', 'l', 6),     // LD HL,(NN)
 neg(),                    // NEG
-ret(14),                  // RETI
-'st+=8;im=0',             // IM 0
-'st+=18;v=m[t=h>>6][u=l|h<<8&16383];mw[t][u]=v<<4&240|a&15;a=a&240|v>>4;f=f&1|szp[a]',// RLD
+ret(4),                   // RETI
+'st+=2;im=0',             // IM 0
+'st+=5;v=m[t=h>>6][u=l|h<<8&16383];mw[t][u]=v<<4&240|a&15;a=a&240|v>>4;f=f&1|szp[a]',// RLD
 inr('t'),                 // IN X,(C)
-outr('0'),                // OUT (C,X
-'st+=15;f=(l|h<<8)-sp-(f&1);l=f&255;f=f>>16&1|(f>>8^sp>>8^h)&16|((f>>8^h)&(h^sp>>8)&128)>>5|(h=f>>8&255)&168|(l|h?2:66)',// SBC HL,SP
-'st+=20;mw[(t=m[pc>>14&3][pc++&16383]|m[pc>>14&3][pc++&16383]<<8)>>14][t&16383]=sp&255;mw[t+1>>14&3][t+1&16383]=sp>>8',// LD (NN),SP
-//'st+=20;wb(t=m[pc>>14&3][pc++&16383]|m[pc>>14&3][pc++&16383]<<8,sp);wb(t+1&65535,sp>>8)',
+outr('0'),                // OUT (C),X
+'st+=4;f=(l|h<<8)-sp-(f&1);l=f&255;f=f>>16&1|(f>>8^sp>>8^h)&16|((f>>8^h)&(h^sp>>8)&128)>>5|(h=f>>8&255)&168|(l|h?2:66)',// SBC HL,SP
+'st+=6;mw[(t=m[pc>>14&3][pc++&16383]|m[pc>>14&3][pc++&16383]<<8)>>14][t&16383]=sp&255;mw[t+1>>14&3][t+1&16383]=sp>>8',// LD (NN),SP
+//'st+=6;wb(t=m[pc>>14&3][pc++&16383]|m[pc>>14&3][pc++&16383]<<8,sp);wb(t+1&65535,sp>>8)',
 neg(),                    // NEG
-ret(14),                  // RETN
-'st+=8;im=1',             // IM 1
-nop(8),                   // NOP
+ret(4),                   // RETN
+'st+=2;im=1',             // IM 1
+nop(2),                   // NOP
 inr('a'),                 // IN A,(C)
-outr('a'),                // OUT (C,A
-'st+=15;f=(l|h<<8)+sp+(f&1);t=h>>3&17|sp>>10&34|f>>9&68;h=f>>8&255;l=f&255;f=f>>16|ova[t>>4]|h&168|hca[t&7]|(l|h?0:64)',
-'st+=20;sp=m[(t=m[pc>>14&3][pc++&16383]|m[pc>>14&3][pc++&16383]<<8)>>14][t&16383]|m[t+1>>14&3][t+1&16383]<<8',
+outr('a'),                // OUT (C),A
+'st+=4;f=(l|h<<8)+sp+(f&1);t=h>>3&17|sp>>10&34|f>>9&68;h=f>>8&255;l=f&255;f=f>>16|ova[t>>4]|h&168|hca[t&7]|(l|h?0:64)',// ADC HL,SP
+'st+=6;sp=m[(t=m[pc>>14&3][pc++&16383]|m[pc>>14&3][pc++&16383]<<8)>>14][t&16383]|m[t+1>>14&3][t+1&16383]<<8',// LD SP,(NN)
 neg(),                    // NEG
-ret(14),                  // RETI
-'st+=8;im=2',             // IM 2
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
+ret(4),                   // RETI
+'st+=2;im=2',             // IM 2
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
 ldid(1, 0),               // LDI
 cpid(1, 0),               // CPI
 inid(1, 0),               // INI
 otid(1, 0),               // OUTI
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
 ldid(0, 0),               // LDD
 cpid(0, 0),               // CPD
 inid(0, 0),               // IND
 otid(0, 0),               // OUTD
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
 ldid(1, 1),               // LDIR
 cpid(1, 1),               // CPIR
 inid(1, 1),               // INIR
 otid(1, 1),               // OTIR
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
 ldid(0, 1),               // LDDR
 cpid(0, 1),               // CPDR
 inid(0, 1),               // INDR
 otid(0, 1),               // OTDR
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
 'loadblock()',            // tape loader trap
-nop(8),                   // NOP
-nop(8),                   // NOP
-nop(8),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
+nop(2),                   // NOP
 ];
 
 g= [];

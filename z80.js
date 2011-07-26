@@ -669,7 +669,7 @@ cp('h', 'h', 4),          // CP H
 cp('l', 'l', 4),          // CP L
 cp('(t=m[l|h<<8])', 't', 7),// CP (HL)
 cp('a', 'a', 4),          // CP A
-'if(f&64)st+=5;else st+=11,pc=m[sp]|m[sp+1&65535]<<8,sp=sp+2&65535',// RET NZ
+retc('f&64'),             // RET NZ
 pop('b', 'c'),            // POP BC
 jpc('f&64'),              // JP NZ
 'st+=10;pc=m[pc&65535]|m[pc+1&65535]<<8',// JP nn
@@ -927,7 +927,7 @@ cp('xh', 'xh', 4),        // CP IXH
 cp('xl', 'xl', 4),        // CP IXL
 cp('(t=m[(se[m[pc++&65535]]+(xl|xh<<8))&65535])', 't', 15),// CP (IX+d)
 cp('a', 'a', 4),          // CP A
-'if(f&64)st+=5;else st+=11,pc=m[sp]|m[sp+1&65535]<<8,sp=sp+2&65535',
+retc('f&64'),             // RET NZ
 pop('b', 'c'),            // POP BC
 jpc('f&64'),              // JP NZ
 'st+=10;pc=m[pc&65535]|m[pc+1&65535]<<8',
@@ -1185,7 +1185,7 @@ cp('yh', 'yh', 4),        // CP IYH
 cp('yl', 'yl', 4),        // CP IYL
 cp('(t=m[(se[m[pc++&65535]]+(yl|yh<<8))&65535])', 't', 15),// CP (IY+d)
 cp('a', 'a', 4),          // CP A
-'if(f&64)st+=5;else st+=11,pc=m[sp]|m[sp+1&65535]<<8,sp=sp+2&65535',
+retc('f&64'),             // RET NZ
 pop('b', 'c'),            // POP BC
 jpc('f&64'),              // JP NZ
 'st+=10;pc=m[pc&65535]|m[pc+1&65535]<<8',
@@ -1888,7 +1888,7 @@ ret(14),                  // RETN
 nop(8),                   // NOP
 inr('a'),                 // IN A,(C)
 outr('a'),                // OUT (C,A
-'st+=11;f=(l|h<<8)+sp+(f&1);l=f&255;f=f>>16|(f>>8^sp>>8^h)&16|((f^h<<8)&(f^sp)&32768)>>13|(h=f>>8&255)&168|(l|h?0:64)',// ADC HL,SP
+'st+=15;f=(l|h<<8)+sp+(f&1);l=f&255;f=f>>16|(f>>8^sp>>8^h)&16|((f^h<<8)&(f^sp)&32768)>>13|(h=f>>8&255)&168|(l|h?0:64)',// ADC HL,SP
 'st+=20;sp=m[t=m[pc++&65535]|m[pc++&65535]<<8]|m[t+1&65535]<<8',// LD SP,(NN)
 neg(),                    // NEG
 ret(14),                  // RETI
