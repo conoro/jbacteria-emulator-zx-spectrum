@@ -3,6 +3,6 @@ j664.js
 screen1.js
 out664s1.js
 ay.js
-z80p.js
+z80cpc.js
 fdc.js
 dom_cpc.js

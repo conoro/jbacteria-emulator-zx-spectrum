@@ -226,28 +226,28 @@ pal= [[110, 125, 107], // 13 #40
 
 function run() {
   for (vs= 0; vs<5; vs++){
-    while(st < 10000) // 4000000MHz/50Hz= 80000cycles/frame*0.75= 60000/6=10000
+    while(st < 3328)
 //cond(),
       r++,
       g[m[pc>>14&3][pc++&16383]]();
     st= 0;
     z80interrupt();
   }
-  while(st < 10000-4400)
+  while(st < 3328-200)
 //cond(),
     r++,
     g[m[pc>>14&3][pc++&16383]]();
   st= 0;
   vsync= 1;
 
-  while(st < 400)
+  while(st < 100)
 //cond(),
     r++,
     g[m[pc>>14&3][pc++&16383]]();
   st= 0;
   z80interrupt();
 
-  while(st < 400)
+  while(st < 100)
 //cond(),
     r++,
     g[m[pc>>14&3][pc++&16383]]();
@@ -255,12 +255,6 @@ function run() {
   st= 0;
 
   paintScreen();
-
-  while(st < 3600)
-//cond(),
-    r++,
-    g[m[pc>>14&3][pc++&16383]]();
-  st= 0;
 
   if (!(++flash & 15))
     titul(),

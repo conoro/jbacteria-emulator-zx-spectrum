@@ -3,6 +3,6 @@ j6128.js
 screen1_6128.js
 out6128s1.js
 ay.js
-z80p.js
+z80cpc.js
 fdc.js
 dom_cpc.js
