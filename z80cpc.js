@@ -252,7 +252,7 @@ function xoror(r, n){
   ';f=szp[a'+r+']';
 }
 
-function cp(a, b, n){
+function cpp(a, b, n){
   return (n-1?'st+='+n:'st++')+
   ';f=a-'+a+';'+
   'f=f>>8&1|2|(f^a^'+b+')&16|((f^a)&(a^'+b+')&128)>>5|'+b+'&40|sz[f&255]&215';
@@ -451,8 +451,8 @@ function inid(i, r){
 
 function otid(i, r){
   return 'st+=5;'+
-  'wp(c|b<<8,t=m[h>>6][l|h<<8&16383]);'+
   'b=b-1&255;'+
+  'wp(c|b<<8,t=m[h>>6][l|h<<8&16383]);'+
   'if('+(i?'++l>>8':'!l--')+')'+
     'l='+(i?'0':'255')+','+
     'h=h'+(i?'+':'-')+'1&255;'+
@@ -661,14 +661,14 @@ xoror('|=h', 1),          // OR H
 xoror('|=l', 1),          // OR L
 xoror('|=m[h>>6][l|h<<8&16383]', 2),// OR (HL)
 xoror('|=a', 1),          // OR A
-cp('b', 'b', 1),          // CP B
-cp('c', 'c', 1),          // CP C
-cp('d', 'd', 1),          // CP D
-cp('e', 'e', 1),          // CP E
-cp('h', 'h', 1),          // CP H
-cp('l', 'l', 1),          // CP L
-cp('(t=m[h>>6][l|h<<8&16383])', 't', 2),// CP (HL)
-cp('a', 'a', 1),          // CP A
+cpp('b', 'b', 1),         // CP B
+cpp('c', 'c', 1),         // CP C
+cpp('d', 'd', 1),         // CP D
+cpp('e', 'e', 1),         // CP E
+cpp('h', 'h', 1),         // CP H
+cpp('l', 'l', 1),         // CP L
+cpp('(t=m[h>>6][l|h<<8&16383])', 't', 2),// CP (HL)
+cpp('a', 'a', 1),         // CP A
 retc('f&64'),             // RET NZ
 pop('b', 'c'),            // POP BC
 jpc('f&64'),              // JP NZ
@@ -732,7 +732,7 @@ jpc('~f&128'),            // JP M
 'st++;iff=1',             // EI
 callc('~f&128'),          // CALL M
 'st++;r++;g[512+m[pc>>14&3][pc++&16383]]()',// op fd
-cp('(t=m[pc>>14&3][pc++&16383])', 't', 7),// CP A,n
+cpp('(t=m[pc>>14&3][pc++&16383])', 't', 7),// CP A,n
 rst(56),                  // RST 0x38
 
 nop(1),                   // NOP
@@ -919,14 +919,14 @@ xoror('|=xh', 1),         // OR IXH
 xoror('|=xl', 1),         // OR IXL
 xoror('|=m[(u=se[m[pc>>14&3][pc++&16383]]+(xl|xh<<8))>>14&3][u&16383]', 4),// OR (IX+d)
 xoror('|=a', 1),          // OR A
-cp('b', 'b', 1),          // CP B
-cp('c', 'c', 1),          // CP C
-cp('d', 'd', 1),          // CP D
-cp('e', 'e', 1),          // CP E
-cp('xh', 'xh', 1),        // CP IXH
-cp('xl', 'xl', 1),        // CP IXL
-cp('(t=m[(u=se[m[pc>>14&3][pc++&16383]]+(xl|xh<<8))>>14&3][u&16383])', 't', 4),// CP (IX+d)
-cp('a', 'a', 1),          // CP A
+cpp('b', 'b', 1),         // CP B
+cpp('c', 'c', 1),         // CP C
+cpp('d', 'd', 1),         // CP D
+cpp('e', 'e', 1),         // CP E
+cpp('xh', 'xh', 1),       // CP IXH
+cpp('xl', 'xl', 1),       // CP IXL
+cpp('(t=m[(u=se[m[pc>>14&3][pc++&16383]]+(xl|xh<<8))>>14&3][u&16383])', 't', 4),// CP (IX+d)
+cpp('a', 'a', 1),         // CP A
 retc('f&64'),             // RET NZ
 pop('b', 'c'),            // POP BC
 jpc('f&64'),              // JP NZ
@@ -990,7 +990,7 @@ jpc('~f&128'),            // JP M
 'st++;iff=1',             // EI
 callc('~f&128'),          // CALL M
 nop(1),                   // op fd
-cp('(t=m[pc>>14&3][pc++&16383])', 't', 7),// CP A,n
+cpp('(t=m[pc>>14&3][pc++&16383])', 't', 7),// CP A,n
 rst(56),                  // RST 0x38
 
 nop(1),                   // NOP
@@ -1177,14 +1177,14 @@ xoror('|=yh', 4),         // OR IYH
 xoror('|=yl', 4),         // OR IYL
 xoror('|=m[(u=se[m[pc>>14&3][pc++&16383]]+(yl|yh<<8))>>14&3][u&16383]', 15),// OR (IY+d)
 xoror('|=a', 4),          // OR A
-cp('b', 'b', 4),          // CP B
-cp('c', 'c', 4),          // CP C
-cp('d', 'd', 4),          // CP D
-cp('e', 'e', 4),          // CP E
-cp('yh', 'yh', 4),        // CP IYH
-cp('yl', 'yl', 4),        // CP IYL
-cp('(t=m[(u=se[m[pc>>14&3][pc++&16383]]+(yl|yh<<8))>>14&3][u&16383])', 't', 15),// CP (IY+d)
-cp('a', 'a', 4),          // CP A
+cpp('b', 'b', 4),         // CP B
+cpp('c', 'c', 4),         // CP C
+cpp('d', 'd', 4),         // CP D
+cpp('e', 'e', 4),         // CP E
+cpp('yh', 'yh', 4),       // CP IYH
+cpp('yl', 'yl', 4),       // CP IYL
+cpp('(t=m[(u=se[m[pc>>14&3][pc++&16383]]+(yl|yh<<8))>>14&3][u&16383])', 't', 15),// CP (IY+d)
+cpp('a', 'a', 4),         // CP A
 retc('f&64'),             // RET NZ
 pop('b', 'c'),            // POP BC
 jpc('f&64'),              // JP NZ
@@ -1248,7 +1248,7 @@ jpc('~f&128'),            // JP M
 'st++;iff=1',             // EI
 callc('~f&128'),          // CALL M
 nop(1),                   // op fd
-cp('(t=m[pc>>14&3][pc++&16383])', 't', 7),// CP A,n
+cpp('(t=m[pc>>14&3][pc++&16383])', 't', 7),// CP A,n
 rst(56),                  // RST 0x38
 
 rlc('b'),                 // RLC B

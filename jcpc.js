@@ -225,37 +225,39 @@ pal= [[110, 125, 107], // 13 #40
       [0, 152, 0]];
 
 function run() {
-  for (vs= 0; vs<5; vs++){
-    while(st < 3328)
+  paintScreen();
+  vsync= 1;
+  while(st < 128) // 2 scanlines
+//cond(),
+    r++,
+    g[m[pc>>14&3][pc++&16383]]();
+  st-= 128;
+  z80interrupt();
+  while(st < 896) // 14 scanlines
+//cond(),
+    r++,
+    g[m[pc>>14&3][pc++&16383]]();
+  st-= 896;
+  vsync= 0;
+  while(st < 2432) // 38 scanlines
+//cond(),
+    r++,
+    g[m[pc>>14&3][pc++&16383]]();
+  st-= 2432;
+  z80interrupt();
+  for (vs= 0; vs<4; vs++){
+    while(st < 3328) // 4*52 scanlines
 //cond(),
       r++,
       g[m[pc>>14&3][pc++&16383]]();
-    st= 0;
+    st-= 3328;
     z80interrupt();
   }
-  while(st < 3328-200)
+  while(st < 3200) // 50 scanlines
 //cond(),
     r++,
     g[m[pc>>14&3][pc++&16383]]();
-  st= 0;
-  vsync= 1;
-
-  while(st < 100)
-//cond(),
-    r++,
-    g[m[pc>>14&3][pc++&16383]]();
-  st= 0;
-  z80interrupt();
-
-  while(st < 100)
-//cond(),
-    r++,
-    g[m[pc>>14&3][pc++&16383]]();
-  vsync= 0;
-  st= 0;
-
-  paintScreen();
-
+  st-= 3200;
   if (!(++flash & 15))
     titul(),
     time= nt;
