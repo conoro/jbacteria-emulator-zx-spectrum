@@ -14,7 +14,7 @@ function init() {
   ay= envc= envx= ay13= noic= noir= tons= 0;
   ayr= [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         0, 0, 0]; // last 3 values for tone counter
-  f1= st= time= flash= 0;
+  cp= f1= st= time= flash= 0;
   if( localStorage.ft==undefined )
     localStorage.ft= 4;
   z80init();
