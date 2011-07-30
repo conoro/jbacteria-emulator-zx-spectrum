@@ -58,9 +58,9 @@ function init() {
     }
   }
   for (r= 0; r < 49152; r++)        // fill memory
-    rom[r>>14][r&16383]= emul.charCodeAt(0x18015+r) & 255;
+    rom[r>>14][r&16383]= emul.charCodeAt(0x30045+r) & 255;
   for (j= 0; j < 65536; j++)        // fill memory
-    mw[j>>14][j&16383]= emul.charCodeAt(0x18015+r++) & 255;
+    mw[j>>14][j&16383]= emul.charCodeAt(0x30045+r++) & 255;
   for (j= 0; j < param.length; j++)        // fill memory
     mw[j+0xac8a>>14][j+0xac8a&16383]= param.charCodeAt(j);
   m[0]= rom[0];

@@ -15,7 +15,7 @@
   ?>else <?
     ?>game=a;<?
   ?>if(!t--)<?
-    ?>this.eval(emul.substr(<?=0x18015+$y?>));<?
+    ?>this.eval(emul.substr(<?=0x30045+$y?>));<?
 ?>}<?
 ?>function ajax(f){<?
   ?>var xhr=new XMLHttpRequest();<?

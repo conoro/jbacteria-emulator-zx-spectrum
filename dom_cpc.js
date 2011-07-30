@@ -28,13 +28,8 @@ eld= (elm= (ct= he.getContext('2d')).getImageData(0,0,512,384)).data;
 ir= document.createElement('iframe');
 ir.setAttribute('style','display:none');
 document.body.appendChild(ir);
-while(t<98303)
-  a= emul.charCodeAt(++t+21) >> 4,
-  eld[u++]= emul.charCodeAt(3*a) & 255,
-  eld[u++]= emul.charCodeAt(3*a+1) & 255,
-  eld[u++]= emul.charCodeAt(3*a+2) & 255,
-  eld[u++]= a ? 255 : 55,
-  a= emul.charCodeAt(t+21) & 15,
+while(t<196607)
+  a= emul.charCodeAt(++t+69) & 255,
   eld[u++]= emul.charCodeAt(3*a) & 255,
   eld[u++]= emul.charCodeAt(3*a+1) & 255,
   eld[u++]= emul.charCodeAt(3*a+2) & 255,
