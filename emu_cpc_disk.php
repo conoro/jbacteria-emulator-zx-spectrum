@@ -35,13 +35,12 @@
 ?>})+arrl(a);<?
 ?>}<?
 ?>k=location.href.indexOf('?')+1;<?
-?>ifra=location.href.slice(-1)=='#';<?
+?>ifra= location.href.slice(-1)=='#';<?
 ?>if(k)<?
   ?>l=location.href.substr(k).indexOf('/'),<?
-  ?>param= decodeURI(location.href.substr(k+l+1)),<?
-  ?>ifra=location.href[k+l-1]=='#',<?
+  ?>param=decodeURI(ifra?location.href.slice(k+l+1,-1):location.href.slice(k+l+1)),<?
   ?>t++,<?
-  ?>ajax('games/'+location.href.substr(k,l-ifra));<?
+  ?>ajax('games/'+location.href.substr(k,l));<?
 ?>ajax('_<?=$x?>');<?
 ?></script><?
 ?></html>
