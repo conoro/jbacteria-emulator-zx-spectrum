@@ -377,8 +377,12 @@ function audioprocess(e){
   data2= e.outputBuffer.getChannelData(1);
   j= 0;
   if( localStorage.ft & 4 )
-    while( j<1024 ) // 48000/1024= 46.875  60000/1024= 58.59
-      data1[j++]= data2[j]= (aystep()+aystep()+aystep())/3;
+    while( j<1024 ) // 48000/1024= 46.875  19968/1024= 19.5. 19.5/4=5
+      aymute(),
+      aymute(),
+      aymute(),
+      aymute(),
+      data1[j++]= data2[j]= aystep();
   else
     while( j<1024 )
       data1[j++]= data2[j]= 0;
@@ -388,7 +392,7 @@ function mozrun(){
   run();
   if( localStorage.ft & 4 ){
     j= 0;
-    while( j<2500 )
+    while( j<4992 )
       data[j++]= aystep();
     audioOutput.mozWriteAudio(data);
   }

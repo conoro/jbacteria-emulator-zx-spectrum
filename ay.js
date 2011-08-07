@@ -16,6 +16,26 @@ function aystep() {
     noir= ((~(noir>>3 ^ noiv) & 1) << 16) | noir >> 1;
   return (cstep(0) + cstep(1) + cstep(2)) / 3;
 }
+function aymute() {
+  if( ++envc >= (ayr[11]<<1 | ayr[12]<<9) ){
+    envc= 0;
+    if( envx >> 4 && ~ay13 & 1 )
+      envx= 0,
+      ay13^= ay13<<1 & 4;
+  }
+  if( ++noic >= ayr[6]<<1 )
+    noic= 0,
+    noir= ((~(noir>>3 ^ (noir & 0x01)) & 1) << 16) | noir >> 1;
+  if( ++ayr[16] >= (ayr[0] | ayr[1]<<8) )
+    ayr[16]= 0,
+    tons^= 1;
+  if( ++ayr[17] >= (ayr[2] | ayr[3]<<8) )
+    ayr[17]= 0,
+    tons^= 2;
+  if( ++ayr[18] >= (ayr[4] | ayr[5]<<8) )
+    ayr[18]= 0,
+    tons^= 4;
+}
 function cstep(ch) {
   if( ++ayr[ch+16] >= (ayr[ch<<1] | ayr[1|ch<<1]<<8) )
     ayr[ch+16]= 0,

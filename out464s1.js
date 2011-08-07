@@ -97,8 +97,11 @@ function init() {
     if( typeof Audio == 'function'
      && (audioOutput= new Audio())
      && typeof audioOutput.mozSetup == 'function' ){
-      audioOutput.mozSetup(1, 187500); // 187500/3750= 50  60000/3750= 16
-      myrun= mozrun;
+      try{
+        audioOutput.mozSetup(1, 249600); // 249600/4992= 50  19968/4992= 4
+        myrun= mozrun;
+      }
+      catch (e){}
       interval= setInterval(myrun, 20);
     }
     else
