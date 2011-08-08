@@ -392,7 +392,10 @@ function mozrun(){
   run();
   if( localStorage.ft & 4 ){
     j= 0;
-    while( j<4992 )
+    while( j<1248 )
+      aymute(),
+      aymute(),
+      aymute(),
       data[j++]= aystep();
     audioOutput.mozWriteAudio(data);
   }

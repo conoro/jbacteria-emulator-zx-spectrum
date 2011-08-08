@@ -98,7 +98,7 @@ function init() {
      && (audioOutput= new Audio())
      && typeof audioOutput.mozSetup == 'function' ){
       try{
-        audioOutput.mozSetup(1, 249600); // 249600/4992= 50  19968/4992= 4
+        audioOutput.mozSetup(1, 62400); // 62400/1248= 50  19968/1248= 16.  16/4= 4
         myrun= mozrun;
       }
       catch (e){}
