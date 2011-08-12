@@ -83,9 +83,12 @@ function init() {
     if( typeof Audio == 'function'
      && (audioOutput= new Audio())
      && typeof audioOutput.mozSetup == 'function' ){
-      paso= 70908/2048; // 221600/4432= 50  70908/4432= 16
-      audioOutput.mozSetup(1, 221600);
-      myrun= mozrun;
+      try{
+        audioOutput.mozSetup(1, 55400);
+        myrun= mozrun;
+      }
+      catch (e){}
+      paso= 70908/1108; // 55400/1108= 50  70908/1108= 16*4
       interval= setInterval(myrun, 20);
     }
     else
@@ -109,7 +112,10 @@ function audioprocess(e){
   data2= e.outputBuffer.getChannelData(1);
   if( localStorage.ft & 4 )
     while( j<1024 ){ // 48000/1024= 46.875  70908/1024= 69.24
-      data1[j++]= data2[j]= (aystep()+aystep()+aystep()+aystep()+sample)/5;
+      aymute();
+      aymute();
+      aymute();
+      data1[j++]= data2[j]= (aystep()+sample)/2;
       play+= paso;
       if( play > vb[playp] && playp<vbp )
         playp++,
@@ -124,7 +130,10 @@ function mozrun(){
   vbp= play= playp= j= 0;
   run();
   if( localStorage.ft & 4 ){
-    while( j<4432 ){
+    while( j<1108 ){
+      aymute();
+      aymute();
+      aymute();
       data[j++]= (aystep()+sample)/2;
       play+= paso;
       if( play > vb[playp] && playp<vbp )
