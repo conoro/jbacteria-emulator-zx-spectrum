@@ -105,10 +105,11 @@ function audioprocess0(e){
 }
 
 function audioprocess(e){
-  vbp= play= playp= j= 0;
+  vbp= play= playp= 0;
   run();
   data1= e.outputBuffer.getChannelData(0);
   data2= e.outputBuffer.getChannelData(1);
+  j= 0;
   if( localStorage.ft & 4 )
     while( j<1024 ){ // 48000/1024= 46.875  70908/1024= 69.24
       aymute();
@@ -126,9 +127,10 @@ function audioprocess(e){
 }
 
 function mozrun(){
-  vbp= play= playp= j= 0;
+  vbp= play= playp= 0;
   run();
   if( localStorage.ft & 4 ){
+    j= 0;
     while( j<1108 ){
       aymute();
       aymute();

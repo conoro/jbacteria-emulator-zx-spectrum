@@ -130,7 +130,7 @@ function run() {
     titul(),
     time= nt;
   paintScreen();
-  st= 0;
+  st-= 70908;
   z80interrupt();
 }
 

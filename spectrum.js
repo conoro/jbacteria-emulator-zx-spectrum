@@ -112,7 +112,7 @@ function run() {
     titul(),
     time= nt;
   paintScreen();
-  st= 0;
+  st-= 69888;
   z80interrupt();
 }
 
@@ -207,10 +207,11 @@ function audioprocess0(e){
 }
 
 function audioprocess(e){
-  vbp= play= playp= j= 0;
+  vbp= play= playp= 0;
   run();
   data1= e.outputBuffer.getChannelData(0);
   data2= e.outputBuffer.getChannelData(1);
+  j= 0;
   if( localStorage.ft & 4 )
     while( j < 1024 ){
       data1[j++]= data2[j]= sample;
@@ -225,9 +226,10 @@ function audioprocess(e){
 }
 
 function mozrun(){
-  vbp= play= playp= j= 0;
+  vbp= play= playp= 0;
   run();
   if( localStorage.ft & 4 ){
+    j= 0;
     while( j < 2048 ){
       data[j++]= sample;
       play+= paso;
