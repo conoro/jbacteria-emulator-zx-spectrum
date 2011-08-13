@@ -13,8 +13,7 @@ lut1= [];
 data= [];
 m= [];                                 // memory
 mw= [[],[],[],[]];        // [new Uint8Array(16384),new Uint8Array(16384),new Uint8Array(16384),new Uint8Array(16384), new Uint8Array(16384),new Uint8Array(16384),new Uint8Array(16384),new Uint8Array(16384)]
-kb= [255,255,255,255,255,255,255,255,
-     255,255,255,255,255,255,255,255]; // keyboard state
+kb= [255,255,255,255,255,255,255,255,255,255]; // keyboard state
 kc= [255,255,255,255,255,255,255,255,      // keyboard codes
     0x97,// 8 del qwerty backspace
     localStorage.ft & 2
