@@ -11,36 +11,16 @@ function init() {
   t= localStorage.ft>>3;
   rotapal();
   onresize();
-  ay= envc= envx= ay13= noic= noir= tons= 0;
+  pbc= bp= ci= ap= io= vsync= ay= envc= envx= ay13= noic= noir= tons= cp= ga= f1= st= time= flash= 0;
   ayr= [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         0, 0, 0]; // last 3 values for tone counter
-  cp= ga= f1= st= time= flash= 0;
   if( localStorage.ft==undefined )
     localStorage.ft= 4;
   z80init();
   fdcinit();
-  d= r= r7= pc= iff= halted= 0;
+  d= r= r7= pc= iff= halted= f= c= b_= b= h= l= h_= l_= e= d_= e_= f_= a_= xh= xl= yh= yl= i= im= 0;
   a= 0x0d;
-  f= 0x0;
-  b= 0;
-  c= 0;
-  b_= 0;
   c_= 0x89;
-  h= 0;
-  l= 0;
-  h_= 0;
-  l_= 0;
-  e= 0;
-  d_= 0;
-  e_= 0;
-  f_= 0;
-  a_= 0;
-  xh= 0;
-  xl= 0;
-  yh= 0;
-  yl= 0;
-  i= 0;
-  im= 0;
   sp= 0xbfec;
   if( ifra ){
     put= document.createElement('div');
