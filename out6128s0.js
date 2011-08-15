@@ -26,7 +26,7 @@ function init() {
   t= localStorage.ft>>3;
   rotapal();
   onresize();
-  pbc= bp= ci= ap= io= vsync= ay= envc= envx= ay13= noic= noir= tons= cp= ga= f1= st= time= flash= 0;
+  pbc= frc= bp= ci= ap= io= vsync= ay= envc= envx= ay13= noic= noir= tons= cp= ga= f1= f3= f4= st= time= flash= 0;
   ayr= [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         0, 0, 0]; // last 3 values for tone counter
   if( localStorage.ft==undefined )

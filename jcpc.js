@@ -252,6 +252,17 @@ function run() {
     r++,
     g[m[pc>>14&3][pc++&16383]]();
   st-= 3200;
+
+  for ( t= 0; t<80; t++ )
+    if( (kb[t>>3] ^ ks[t>>3]) & (1 << (t&7)) )
+      pb[pbc++]= frc | t<<8,
+      frc= 0;
+  if( ++frc == 255 )
+    pb[pbc++]= frc,
+    frc= 1;
+  for ( t= 0; t<10; t++ )
+    ks[t]= kb[t];
+
   if (!(++flash & 15))
     titul(),
     time= nt;
@@ -295,13 +306,28 @@ function kdown(ev) {
       self.focus();
       break;
     case 114: // F3
+      f3++,
       localStorage.save= wm();
       break;
     case 115: // F4
+      f4++,
       rm(localStorage.save);
       break;
     case 116: // F5
       return 1;
+    case 117: // F6
+      if( trein==32000 )
+        clearInterval(interval);
+      else
+        node.onaudioprocess= audioprocess0;
+      t= String.fromCharCode(f3)+String.fromCharCode(f4)+location.href+String.fromCharCode(255);
+      while( pbc )
+        t+= String.fromCharCode(pb[--pbc]);
+      ajax('record.php', t);
+ console.log(pb);
+      document.body.style.backgroundColor= '#fff';
+      document.body.innerHTML= 'Please wait...';
+      break;
     case 118: // F7
       localStorage.ft= +localStorage.ft+8 % 24;
       t= 1;

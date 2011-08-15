@@ -21,7 +21,9 @@ function cb(b,f){
     emul=b;
   else
     game=b;
-  if(!t--){
+  if(f=='record.php')
+    document.body.innerHTML=game;
+  else if(!t--){
     document.body.style.margin= 0;
     pt= document.createElement('select');
     pt.setAttribute('onchange','tapep=this.value;tapei=this.selectedIndex');
@@ -67,16 +69,16 @@ function cb(b,f){
     init();
   }
 }
-function ajax(f){
+function ajax(f,g){
   var xhr=new XMLHttpRequest();
   xhr.onreadystatechange=function(){
     if(xhr&&xhr.readyState==4)
       cb(ie ? bin2arr(xhr.responseBody) : xhr.responseText, f);
     };
-  xhr.open('GET',f,true);
+  xhr.open('POST',f,true);
   if (!ie)
     xhr.overrideMimeType('text/plain;charset=x-user-defined');
-  xhr.send(null);
+  xhr.send(g);
 }
 function bin2arr(a) {
   return arr(a).replace(/[\s\S]/g,function(t){
