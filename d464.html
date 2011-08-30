@@ -15,14 +15,15 @@
 <script type="text/vbscript" src="ie.vbscript"></script>
 <![endif]-->
 <script type="text/javascript">
-game=t=u=0;
+pb= []; // playback
+pbc=game=t=u=0;
 function cb(b,f){
   if(f[0]=='_')
     emul=b;
   else
     game=b;
   if(f=='record.php')
-    document.body.innerHTML=game;
+    document.write(game);
   else if(!t--){
     document.body.style.margin= 0;
     pt= document.createElement('select');
@@ -68,6 +69,19 @@ function cb(b,f){
     eld= (elm= (ct= cv.getContext('2d')).getImageData(0,0,1,1)).data;
     init();
   }
+  else if ( game.charCodeAt(0)!=29 ){
+    io=game.indexOf('\0');
+    ci=game.length;
+    frc=bp=io+1;
+    while(bp<ci)
+      if((game.charCodeAt(--ci) & 255) != 255)
+        bp++;
+    while(ci<game.length)
+      ap=game.charCodeAt(ci++) & 255,
+      pb[pbc++]= ap==255 ? ap : ap | game.charCodeAt(frc++)<<8;
+    alert(pb);
+    ajax('games/'+game.substr(0, io));
+  }
 }
 function ajax(f,g){
   var xhr=new XMLHttpRequest();
@@ -90,7 +104,7 @@ k=location.href.indexOf('?')+1;
 ifra=location.href.slice(-1)=='#';
 if(k)
   t++,
-  ajax(location.href.substr(k,location.href.length-k-ifra));
+  ajax((location.href.substr(location.href.length-ifra-4)=='.rec'?'recorded/':'games/')+location.href.substr(k,location.href.length-k-ifra));
 ajax('_464');
 </script>
 </html>

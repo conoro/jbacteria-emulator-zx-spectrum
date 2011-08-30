@@ -1,5 +1,5 @@
 AddDefaultCharset utf-8
-AddType text/plain;charset=utf-8 .tap .dsk .cmd
+AddType text/plain;charset=utf-8 .tap .dsk .cmd .rec
 AddEncoding deflate deflate
 Options SymLinksIfOwnerMatch MultiViews
 ExpiresActive On

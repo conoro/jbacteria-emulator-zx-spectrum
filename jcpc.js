@@ -6,7 +6,6 @@ lut1= [];
 data= [];
 m= [];                                 // memory
 mw= [[],[],[],[]];        // [new Uint8Array(16384),new Uint8Array(16384),new Uint8Array(16384),new Uint8Array(16384), new Uint8Array(16384),new Uint8Array(16384),new Uint8Array(16384),new Uint8Array(16384)]
-pb= []; // playback
 kb= [255,255,255,255,255,255,255,255,255,255]; // keyboard state
 ks= [255,255,255,255,255,255,255,255,255,255]; // keyboard state playback
 kc= [255,255,255,255,255,255,255,255,      // keyboard codes
@@ -253,16 +252,19 @@ function run() {
     g[m[pc>>14&3][pc++&16383]]();
   st-= 3200;
 
-  for ( t= 0; t<80; t++ )
-    if( (kb[t>>3] ^ ks[t>>3]) & (1 << (t&7)) )
-      pb[pbc++]= frc | t<<8,
-      frc= 0;
-  if( ++frc == 255 )
-    pb[pbc++]= frc,
-    frc= 1;
-  for ( t= 0; t<10; t++ )
-    ks[t]= kb[t];
-
+  if( rep ){
+  }
+  else{
+    for ( t= 0; t<80; t++ )
+      if( (kb[t>>3] ^ ks[t>>3]) & (1 << (t&7)) )
+        pb[pbc++]= frc | t<<8,
+        frc= 0;
+    if( ++frc == 255 )
+      pb[pbc++]= frc,
+      frc= 1;
+    for ( t= 0; t<10; t++ )
+      ks[t]= kb[t];
+  }
   if (!(++flash & 15))
     titul(),
     time= nt;
@@ -324,9 +326,7 @@ function kdown(ev) {
       while( pbc )
         t+= String.fromCharCode(pb[--pbc]);
       ajax('record.php', t);
- console.log(pb);
-      document.body.style.backgroundColor= '#fff';
-      document.body.innerHTML= 'Please wait...';
+      document.documentElement.innerHTML= 'Please wait...';
       break;
     case 118: // F7
       localStorage.ft= +localStorage.ft+8 % 24;
