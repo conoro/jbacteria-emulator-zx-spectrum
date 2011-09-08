@@ -252,7 +252,17 @@ function run() {
     g[m[pc>>14&3][pc++&16383]]();
   st-= 3200;
 
-  if( rep ){
+  if( gl ){
+    if( !frc-- ){
+      do{
+        t= pb[pbc]>>8;
+        if( (pb[pbc]&255)!=255 )
+          ks[t>>3]^= 1 << (t&7);
+        frc= pb[--pbc]&255;
+      } while( !(frc&255) )
+      frc--;
+    }
+    gl= pbc;
   }
   else{
     for ( t= 0; t<80; t++ )

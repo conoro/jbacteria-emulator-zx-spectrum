@@ -28,14 +28,25 @@ function init() {
     document.body.appendChild(put);
     titul= function(){
       put.innerHTML= parseInt(trein/((nt= new Date().getTime())-time))+'%';
+      if( gl )
+        tim.innerHTML= pbc;
     }
   }
   else{
     put= top==self ? document : parent.document;
     titul= function(){
       put.title= 'Roland464 '+parseInt(trein/((nt= new Date().getTime())-time))+'%';
+      if( gl )
+        tim.innerHTML= pbc;
     }
   }
+  if( gl )
+    tim= document.createElement('div'),
+    tim.style.position= 'absolute',
+    tim.style.top= '0',
+    tim.style.width= '60px',
+    tim.style.textAlign= 'right',
+    document.body.appendChild(tim);
   for (r= 0; r < 32768; r++)        // fill memory
     rom[r>>14][r&16383]= emul.charCodeAt(0x30045+r) & 255;
   for (j= 0; j < 65536; j++)        // fill memory
@@ -109,6 +120,8 @@ function wp(addr, val) {
           document.body.style.backgroundColor= 'rgb('+pl[16].toString()+')';
           if( ifra )
             put.style.color= pl[16][0]+pl[16][1]+pl[16][2]<300 ? '#fff' : '#000';
+          if( gl )
+            tim.style.color= pl[16][0]+pl[16][1]+pl[16][2]<300 ? '#fff' : '#000';
         }
       }
       else{ //select pen

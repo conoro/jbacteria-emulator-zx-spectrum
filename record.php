@@ -68,8 +68,8 @@ while( file_exists($file= 'recorded/'.
   if( ++$num2&15 == 0 )
     $num++;
 $url.= '?'.$b64;
-file_put_contents('caca.txt', $param."\0".strrev($frames.$keys));
-file_put_contents($file, gzdeflate($param."\0".strrev($frames.$keys)));
+file_put_contents('caca.txt', $param."\0".$keys.$frames);
+file_put_contents($file, gzdeflate($param."\0".$keys.$frames));
 ?><pre style="text-align:center;font-size:20px">The recorded gameplay is located at:
 <a href="<?=$url?>"><?=$url?></a>
 

@@ -16,7 +16,7 @@
 <![endif]-->
 <script type="text/javascript">
 pb= []; // playback
-pbc=game=t=u=0;
+gl=pbc=game=t=u=0;
 function cb(b,f){
   if(f[0]=='_')
     emul=b;
@@ -70,17 +70,17 @@ function cb(b,f){
     init();
   }
   else if ( game.charCodeAt(0)!=29 ){
-    io=game.indexOf('\0');
+    gl=game.indexOf('\0');
     ci=game.length;
-    frc=bp=io+1;
+    frc=bp=gl+1;
     while(bp<ci)
       if((game.charCodeAt(--ci) & 255) != 255)
         bp++;
     while(ci<game.length)
       ap=game.charCodeAt(ci++) & 255,
       pb[pbc++]= ap==255 ? ap : ap | game.charCodeAt(frc++)<<8;
-    alert(pb);
-    ajax('games/'+game.substr(0, io));
+    pb[pbc++]= 0;
+    ajax('games/'+game.substr(0, gl));
   }
 }
 function ajax(f,g){
@@ -102,9 +102,10 @@ function bin2arr(a) {
 }
 k=location.href.indexOf('?')+1;
 ifra=location.href.slice(-1)=='#';
+//alert(location.href.substr(location.href.length-ifra-4,4));
 if(k)
   t++,
-  ajax((location.href.substr(location.href.length-ifra-4)=='.rec'?'recorded/':'games/')+location.href.substr(k,location.href.length-k-ifra));
+  ajax((location.href.substr(location.href.length-ifra-4,4)=='.rec'?'recorded/':'games/')+location.href.substr(k,location.href.length-k-ifra));
 ajax('_464');
 </script>
 </html>

@@ -136,7 +136,7 @@ function rp(addr) {
       if(addr&0x0100) //xxxx0x01 ... 8255 port B
         j&= io & 0x02 ? 0x7e | vsync : bp;
       else //xxxx0x00 ... 8255 port A
-        j&= (ay==14 ? kb[cp&0x0f] : ayr[ay]) & (io & 0x10 ? 0xff : ap);
+        j&= (ay==14 ? ks[cp&0x0f] : ayr[ay]) & (io & 0x10 ? 0xff : ap);
     }
   }
   return j;

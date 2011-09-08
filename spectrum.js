@@ -1,6 +1,6 @@
 na= 'jBacteria ';
-m= [];
-vm= [];
+m= bytes(65536);
+vm= bytes(6144);
 vb= [];
 data= [];
 kb= [0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff]; // keyboard state
@@ -102,6 +102,18 @@ pal= [[  0,   0,   0],
       [179, 179, 179],
       [226, 226, 226],
       [255, 255, 255]];
+
+function bytes(a) {
+  try{
+    return new Uint8Array(a);
+  }
+  catch (b){
+    var c = Array(a), d = a;
+    while (d > 0)
+      c[--d]= 0;
+    return c;
+  }
+}
 
 function run() {
   while( st < 69888 )                       // execute z80 instructions during a frame

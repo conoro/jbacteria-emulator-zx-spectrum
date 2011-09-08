@@ -548,7 +548,7 @@ ldrr('b', 'e', 4),        // LD B,E
 ldrr('b', 'h', 4),        // LD B,H
 ldrr('b', 'l', 4),        // LD B,L
 ldrp('h', 'l', 'b'),      // LD B,(HL)
-ldrr('b', 'a', 4),        // LD B,C
+ldrr('b', 'a', 4),        // LD B,A
 ldrr('c', 'b', 4),        // LD C,B
 nop(4),                   // LD C,C
 ldrr('c', 'd', 4),        // LD C,D
@@ -705,7 +705,7 @@ rst(24),                  // RST 0x18
 retc('f&4'),              // RET PO
 pop('h', 'l'),            // POP HL
 jpc('f&4'),               // JP PO
-exspi(''),                // EX (SP),IY
+exspi(''),                // EX (SP),HL
 callc('f&4'),             // CALL PO
 push('h', 'l'),           // PUSH HL
 and('m[pc++&65535]', 7),  // AND A,n
