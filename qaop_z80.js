@@ -338,11 +338,6 @@ function Z80(t) {
         Fb |= -129,
         Fa = Fa & -17 | ~Fr & 16
     }
-    function scf_ccf(b) {
-        Fa &= -17,
-        Fb = Fb & 128 | (b >> 4 ^ Fr) & 16,
-        Ff = 256 ^ b | Ff & 128 | a & 40
-    }
     function imm16() {
         var a = t.get16(pc);
         pc = pc + 2 & 65535,
@@ -358,16 +353,16 @@ function Z80(t) {
     function add16(b, a) {
         var h = b + a;
         Ff = Ff & 128 | h >> 8 & 296,
-        Fa &= -17,
-        Fb = Fb & 128 | ((h ^ b ^ a) >> 8 ^ Fr) & 16,
+//        Fa &= -17,
+        Fb = Fb & 128 | ((h ^ b ^ a) >> 8 ^ Fr ^ Fa) & 16,
         mp = b + 1,
         t.time += 7;
         return h & 65535
     }
     function rot(b) {
         Ff = Ff & 215 | b & 296,
-        Fb &= 128,
-        Fa = Fa & -17 | Fr & 16,
+        Fb = Fb & 128 | ( Fa ^ Fr ) & 16,
+//        Fa = Fa & -17 | Fr & 16,
         a = b & 255
     }
     function f_szh0n0p(a) {
@@ -384,10 +379,10 @@ function Z80(t) {
                 a
     }
     function cp(d) {
-        var b = (Fa = a) - d;
+        Fr = (Fa = a) - d;
         Fb = ~d,
-        Ff = b & -41 | d & 40,
-        Fr = b & 255
+        Ff = Fr & -41 | d & 40,
+        Fr &= 255
     }
     function pop() {
         var b = t.get16(sp);
@@ -450,7 +445,7 @@ function Z80(t) {
         var c = Fr ^ b;
         a |= h & 2,
         a |= (c ^ d ^ h) & 16,
-        Fa & -256
+        Fa & 256
             ? b = 154020 >> ((Fr ^ Fr >> 4) & 15)
             : b = (c & (d ^ Fr)) >> 5;
         return a | b & 4
@@ -636,7 +631,7 @@ function Z80(t) {
         function () { // 19 // ADD HL, DE
             hl = add16(hl, d << 8 | e)
         },
-        function () { // 1A // LD DE, nn
+        function () { // 1A // LD A, (DE)
             var b = d << 8 | e;
             mp = b + 1,
             a = t.get(b),
@@ -744,7 +739,9 @@ function Z80(t) {
             t.time += 3
         },
         function () { // 37 // SCF
-            scf_ccf(0)
+//            Fa &= -17,
+            Fb = Fb & 128 | (Fa ^ Fr) & 16,
+            Ff = 256 | Ff & 128 | a & 40
         },
         function () { // 38 // JR C
             Ff & 256 ? jr() : imm8()
@@ -772,7 +769,8 @@ function Z80(t) {
             a = imm8()
         },
         function () { // 3F // CCF
-            scf_ccf(Ff & 256)
+            Fb = Fb & 128 | (Ff >> 4 ^ Fr ^ Fa) & 16,
+            Ff = ~Ff & 256 | Ff & 128 | a & 40
         },
         nop,          // 40 // LD B, B
         function () { // 41 // LD B, C
@@ -1062,7 +1060,7 @@ function Z80(t) {
             t.time += 3
         },
         function () { // 9F // SBC A, A
-            Fb = ~ (Fa = a), a = Fr = (Ff = (Ff >> 8 & 1 ^ 1) - 1) & 255
+            Fb = ~ (Fa = a), a = Fr = (Ff = Ff & 256 /-256) & 255;
         },
         function () { // A0 // AND B
             Fa = ~ (a = Ff = Fr = a & b),
@@ -1186,7 +1184,9 @@ function Z80(t) {
             t.time += 3
         },
         function () { // BF // CP A
-            cp(a)
+            Fr = 0,
+            Fb = ~(Fa = a),
+            Ff = a & 40
         },
         function () { // C0 // RET NZ
             t.time++,
