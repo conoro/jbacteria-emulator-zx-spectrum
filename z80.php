@@ -59,6 +59,14 @@ function z80interrupt() {
   }
 }
 
+function f() {
+  return fa & 256
+      ? ff & 168 | ff >> 8 & 1 | !fr << 6 | fb >> 8 & 2 | (fr ^ fa ^ fb ^ fb >> 8) & 16
+        | 154020 >> ((fr ^ fr >> 4) & 15) & 4
+      : ff & 168 | ff >> 8 & 1 | !fr << 6 | fb >> 8 & 2 | (fr ^ fa ^ fb ^ fb >> 8) & 16
+        | ((fr ^ fa) & (fr ^ fb)) >> 5 & 4;
+}
+
 <?
 $mp= 1;
 
@@ -265,22 +273,22 @@ function ldrr($a, $b, $n){
   $a.'='.$b;
 }
 
-function add($a, $b, $n){
+function add($a, $n){
   return 'st+='.$n.
   ';a=fr=(ff=(fa=a)+(fb='.$a.'))&255';
 }
 
-function adc($a, $b, $n){
+function adc($a, $n){
   return 'st+='.$n.
   ';a=fr=(ff=(fa=a)+(fb='.$a.')+(ff>>8&1))&255';
 }
 
-function sub($a, $b, $n){
+function sub($a, $n){
   return 'st+='.$n.
   ';a=fr=(ff=(fa=a)+(fb=~'.$a.')+1)&255';
 }
 
-function sbc($a, $b, $n){
+function sbc($a, $n){
   return 'st+='.$n.
   ';a=fr=(ff=(fa=a)+(fb=~'.$a.')+(ff>>8&1^1))&255';
 }
@@ -295,9 +303,9 @@ function xoror($r, $n){
   ';fa=(ff=fr=a'.$r.')|256;fb=0';
 }
 
-function cp($a, $b, $n){
+function cp($a, $n){
   return 'st+='.$n.
-  ';fr=(fa=a)-'.$a.';fb=~'.$b.';ff=fr&-41|'.$b.'&40;fr&=255';
+  ';fr=(fa=a)-'.$a.';fb=~'.$a.';ff=fr&-41|'.$a.'&40;fr&=255';
 }
 
 function push($a, $b){
@@ -310,6 +318,16 @@ function pop($a, $b){
   return 'st+=10;'.
   $b.'=m[sp];'.
   $a.'=m[sp+1&65535];'.
+  'sp=sp+2&65535';
+}
+
+function popaf(){
+  return 'st+=10;'.
+  't=m[sp];'.
+  'fr=~t&64;'.
+  'ff=t|=t<<8;'.
+  'fa=255&(fb=t&-129|(t&4)<<5);'.
+  'a=m[sp+1&65535];'.
   'sp=sp+2&65535';
 }
 
@@ -512,8 +530,8 @@ function inid($i, $r){
   'b=b-1&255;'.
   ($mp?($i?'++mp;':'--mp;'):'').
   'u=t+(c'.($i?'+':'-').'1&255);'.
-  ($r?'b&&(st+=5,'.($mp?'mp=--pc,--pc)':'pc-=2)'):'').
-  ');fb=u&7^b;'.
+  ($r?'b&&(st+=5,'.($mp?'mp=--pc,--pc);':'pc-=2);'):'').
+  'fb=u&7^b;'.
   'ff=b|(u&=256);'.
   'fa=(fr=b)^128;'.
   'fb=4928640>>((fb^fb>>4)&15);'.
@@ -528,8 +546,8 @@ function otid($i, $r){
   ($mp?($i?'++mp;':'--mp;'):'').
   '++l==256&&(l=0,h=h+1&255);'.
   'u=t+l;'.
-  ($r?'b&&(st+=5,'.($mp?'mp=--pc,--pc)':'pc-=2)'):'').
-  ');fb=u&7^b;'.
+  ($r?'b&&(st+=5,'.($mp?'mp=--pc,--pc);':'pc-=2);'):'').
+  'fb=u&7^b;'.
   'ff=b|(u&=256);'.
   'fa=(fr=b)^128;'.
   'fb=4928640>>((fb^fb>>4)&15);'.
@@ -747,13 +765,13 @@ a(xoror('|=h', 4));                                         // b4 // OR H
 a(xoror('|=l', 4));                                         // b5 // OR L
 a(xoror('|=m[l|h<<8]', 7));                                 // b6 // OR (HL)
 a('fa=(ff=fr=a)|256;fb=0');                                 // b7 // OR A
-a(cp('b', 'b', 4));                                         // b8 // CP B
-a(cp('c', 'c', 4));                                         // b9 // CP C
-a(cp('d', 'd', 4));                                         // ba // CP D
-a(cp('e', 'e', 4));                                         // bb // CP E
-a(cp('h', 'h', 4));                                         // bc // CP H
-a(cp('l', 'l', 4));                                         // bd // CP L
-a(cp('(t=m[l|h<<8])', 't', 7));                             // be // CP (HL)
+a(cp('b', 4));                                              // b8 // CP B
+a(cp('c', 4));                                              // b9 // CP C
+a(cp('d', 4));                                              // ba // CP D
+a(cp('e', 4));                                              // bb // CP E
+a(cp('h', 4));                                              // bc // CP H
+a(cp('l', 4));                                              // bd // CP L
+a('t=m[l|h<<8];'.cp('t', 7));                               // be // CP (HL)
 a('fr=0;fb=~(fa=a);ff=a&40');                               // bf // CP A
 a(retc('fr'));                                              // c0 // RET NZ
 a(pop('b', 'c'));                                           // c1 // POP BC
@@ -791,28 +809,28 @@ a(callci('ff&256'));                                        // dc // CALL C
 a('st+=4;r++;g[256+m[pc++&65535]]()');                      // dd // OP dd
 a(sbc('m[pc++&65535]', 7));                                 // de // SBC A,n
 a(rst(24));                                                 // df // RST 0x18
-a(retc('fa&256?38505>>((fr^fr>>4)&15)&1:(fr^fa)&(fr^fb)&128');//e0// RET PO
+a(retc('fa&256?38505>>((fr^fr>>4)&15)&1:(fr^fa)&(fr^fb)&128'));//e0//RET PO
 a(pop('h', 'l'));                                           // e1 // POP HL
-a(jpc('fa&256?38505>>((fr^fr>>4)&15)&1:(fr^fa)&(fr^fb)&128');//e2 // JP PO
+a(jpc('fa&256?38505>>((fr^fr>>4)&15)&1:(fr^fa)&(fr^fb)&128'));//e2// JP PO
 a(exspi(''));                                               // e3 // EX (SP));HL
-a(callc('fa&256?38505>>((fr^fr>>4)&15)&1:(fr^fa)&(fr^fb)&128');//e4//CALL PO
+a(callc('fa&256?38505>>((fr^fr>>4)&15)&1:(fr^fa)&(fr^fb)&128'));//e4//CALL PO
 a(push('h', 'l'));                                          // e5 // PUSH HL
 a(anda('m[pc++&65535]', 7));                                // e6 // AND A,n
 a(rst(32));                                                 // e7 // RST 0x20
-a(retci('fa&256?38505>>((fr^fr>>4)&15)&1:(fr^fa)&(fr^fb)&128');//e8//RET PE
+a(retci('fa&256?38505>>((fr^fr>>4)&15)&1:(fr^fa)&(fr^fb)&128'));//e8//RET PE
 a(ldsppci('pc', ''));                                       // e9 // JP (HL)
-a(jpci('fa&256?38505>>((fr^fr>>4)&15)&1:(fr^fa)&(fr^fb)&128');//ea// JP PE
+a(jpci('fa&256?38505>>((fr^fr>>4)&15)&1:(fr^fa)&(fr^fb)&128'));//ea//JP PE
 a('st+=4;t=d;d=h;h=t;t=e;e=l;l=t');                         // eb // EX DE,HL
-a(callci('fa&256?38505>>((fr^fr>>4)&15)&1:(fr^fa)&(fr^fb)&128');//ec//CALL PE
+a(callci('fa&256?38505>>((fr^fr>>4)&15)&1:(fr^fa)&(fr^fb)&128'));//ec//CALL PE
 a('r++;g[1280+m[pc++&65535]]()');                           // ed // op ed
 a(xoror('^=m[pc++&65535]', 7));                             // ee // XOR A,n
 a(rst(40));                                                 // ef // RST 0x28
 a(retci('ff&128'));                                         // f0 // RET P
-a(pop('a', 'f'));                                           // f1 // POP AF
+a(popaf());                                                 // f1 // POP AF
 a(jpci('ff&128'));                                          // f2 // JP P
 a('st+=4;iff=0');                                           // f3 // DI
 a(callci('ff&128'));                                        // f4 // CALL P
-a(push('a', 'f'));                                          // f5 // PUSH AF
+a(push('a', 'f()'));                                        // f5 // PUSH AF
 a(xoror('|=m[pc++&65535]', 7));                             // f6 // OR A,n
 a(rst(48));                                                 // f7 // RST 0x30
 a(retc('ff&128'));                                          // f8 // RET M
@@ -821,7 +839,7 @@ a(jpc('ff&128'));                                           // fa // JP M
 a('st+=4;iff=1');                                           // fb // EI
 a(callc('ff&128'));                                         // fc // CALL M
 a('st+=4;r++;g[512+m[pc++&65535]]()');                      // fd // op fd
-a(cp('(t=m[pc++&65535])', 't', 7));                         // fe // CP A,n
+a('t=m[pc++&65535];'.cp('t', 7));                           // fe // CP A,n
 a(rst(56));                                                 // ff // RST 0x38
 
 a(nop(4));                                                  // 00 // NOP
@@ -1016,13 +1034,13 @@ a(xoror('|=xh', 4));                                        // b4 // OR IXH
 a(xoror('|=xl', 4));                                        // b5 // OR IXL
 a(xoror('|=m[((m[pc++&65535]^128)-128+(xl|xh<<8))&65535]', 15));// b6 // OR (IX+d)
 a('fa=(ff=fr=a)|256;fb=0');                                 // b7 // OR A
-a(cp('b', 'b', 4));                                         // b8 // CP B
-a(cp('c', 'c', 4));                                         // b9 // CP C
-a(cp('d', 'd', 4));                                         // ba // CP D
-a(cp('e', 'e', 4));                                         // bb // CP E
-a(cp('xh', 'xh', 4));                                       // bc // CP IXH
-a(cp('xl', 'xl', 4));                                       // bd // CP IXL
-a(cp('(t=m[((m[pc++&65535]^128)-128+(xl|xh<<8))&65535])', 't', 15));//be// CP (IX+d)
+a(cp('b', 4));                                              // b8 // CP B
+a(cp('c', 4));                                              // b9 // CP C
+a(cp('d', 4));                                              // ba // CP D
+a(cp('e', 4));                                              // bb // CP E
+a(cp('xh', 4));                                             // bc // CP IXH
+a(cp('xl', 4));                                             // bd // CP IXL
+a('t=m[((m[pc++&65535]^128)-128+(xl|xh<<8))&65535];'.cp('t', 15));//be//CP (IX+d)
 a('fr=0;fb=~(fa=a);ff=a&40');                               // bf // CP A
 a(retc('fr'));                                              // c0 // RET NZ
 a(pop('b', 'c'));                                           // c1 // POP BC
@@ -1060,28 +1078,28 @@ a(callci('ff&256'));                                        // dc // CALL C
 a(nop(4));                                                  // dd // op dd
 a(sbc('m[pc++&65535]', 7));                                 // de // SBC A,n
 a(rst(24));                                                 // df // RST 0x18
-a(retc('fa&256?38505>>((fr^fr>>4)&15)&1:(fr^fa)&(fr^fb)&128');//e0// RET PO
+a(retc('fa&256?38505>>((fr^fr>>4)&15)&1:(fr^fa)&(fr^fb)&128'));//e0//RET PO
 a(pop('xh', 'xl'));                                         // e1 // POP IX
-a(jpc('fa&256?38505>>((fr^fr>>4)&15)&1:(fr^fa)&(fr^fb)&128');//e2 // JP PO
+a(jpc('fa&256?38505>>((fr^fr>>4)&15)&1:(fr^fa)&(fr^fb)&128'));//e2 //JP PO
 a(exspi('x'));                                              // e3 // EX (SP),IX
-a(callc('fa&256?38505>>((fr^fr>>4)&15)&1:(fr^fa)&(fr^fb)&128');//e4//CALL PO
+a(callc('fa&256?38505>>((fr^fr>>4)&15)&1:(fr^fa)&(fr^fb)&128'));//e4//CALL PO
 a(push('xh', 'xl'));                                        // e5 // PUSH IX
 a(anda('m[pc++&65535]', 7));                                // e6 // AND A,n
 a(rst(32));                                                 // e7 // RST 0x20
-a(retci('fa&256?38505>>((fr^fr>>4)&15)&1:(fr^fa)&(fr^fb)&128');//e8//RET PE
+a(retci('fa&256?38505>>((fr^fr>>4)&15)&1:(fr^fa)&(fr^fb)&128'));//e8//RET PE
 a(ldsppci('pc', 'x'));                                      // e9 // JP (IX)
-a(jpci('fa&256?38505>>((fr^fr>>4)&15)&1:(fr^fa)&(fr^fb)&128');//ea// JP PE
+a(jpci('fa&256?38505>>((fr^fr>>4)&15)&1:(fr^fa)&(fr^fb)&128'));//ea//JP PE
 a('st+=4;t=d;d=h;h=t;t=e;e=l;l=t');                         // eb // EX DE,HL
-a(callci('fa&256?38505>>((fr^fr>>4)&15)&1:(fr^fa)&(fr^fb)&128');//ec//CALL PE
+a(callci('fa&256?38505>>((fr^fr>>4)&15)&1:(fr^fa)&(fr^fb)&128'));//ec//CALL PE
 a('r++;g[1280+m[pc++&65535]]()');                           // ed // op ed
 a(xoror('^=m[pc++&65535]', 7));                             // ee // XOR A,n
 a(rst(40));                                                 // ef // RST 0x28
 a(retci('ff&128'));                                         // f0 // RET P
-a(pop('a', 'f'));                                           // f1 // POP AF
+a(popaf());                                                 // f1 // POP AF
 a(jpci('ff&128'));                                          // f2 // JP P
 a('st+=4;iff=0');                                           // f3 // DI
 a(callci('ff&128'));                                        // f4 // CALL P
-a(push('a', 'f'));                                          // f5 // PUSH AF
+a(push('a', 'f()'));                                        // f5 // PUSH AF
 a(xoror('|=m[pc++&65535]', 7));                             // f6 // OR A,n
 a(rst(48));                                                 // f7 // RST 0x30
 a(retc('ff&128'));                                          // f8 // RET M
@@ -1090,7 +1108,7 @@ a(jpc('ff&128'));                                           // fa // JP M
 a('st+=4;iff=1');                                           // fb // EI
 a(callc('ff&128'));                                         // fc // CALL M
 a(nop(4));                                                  // 01 // op fd
-a(cp('(t=m[pc++&65535])', 't', 7));                         // fe // CP A,n
+a('t=m[pc++&65535];'.cp('t', 7));                           // fe // CP A,n
 a(rst(56));                                                 // ff // RST 0x38
 
 a(nop(4));                                                  // 00 // NOP
@@ -1236,7 +1254,7 @@ a(add('e', 4));                                             // 83 // ADD A,E
 a(add('yh', 4));                                            // 84 // ADD A,IYH
 a(add('yl', 4));                                            // 85 // ADD A,IYL
 a(add('m[((m[pc++&65535]^128)-128+(yl|yh<<8))&65535]', 15));// 86 // ADD A,(IY+d)
-a(a=fr=(ff=2*(fa=fb=a))&255');                              // 87 // ADD A,A
+a('a=fr=(ff=2*(fa=fb=a))&255');                             // 87 // ADD A,A
 a(adc('b', 4));                                             // 88 // ADC A,B
 a(adc('c', 4));                                             // 89 // ADC A,C
 a(adc('d', 4));                                             // 8a // ADC A,D
@@ -1285,13 +1303,13 @@ a(xoror('|=yh', 4));                                        // b4 // OR IYH
 a(xoror('|=yl', 4));                                        // b5 // OR IYL
 a(xoror('|=m[((m[pc++&65535]^128)-128+(yl|yh<<8))&65535]', 15));//b6//OR (IY+d)
 a('fa=(ff=fr=a)|256;fb=0');                                 // b7 // OR A
-a(cp('b', 'b', 4));                                         // b8 // CP B
-a(cp('c', 'c', 4));                                         // b9 // CP C
-a(cp('d', 'd', 4));                                         // ba // CP D
-a(cp('e', 'e', 4));                                         // bb // CP E
-a(cp('yh', 'yh', 4));                                       // bc // CP IYH
-a(cp('yl', 'yl', 4));                                       // bd // CP IYL
-a(cp('(t=m[((m[pc++&65535]^128)-128+(yl|yh<<8))&65535])', 't', 15));//be// CP (IY+d)
+a(cp('b', 4));                                              // b8 // CP B
+a(cp('c', 4));                                              // b9 // CP C
+a(cp('d', 4));                                              // ba // CP D
+a(cp('e', 4));                                              // bb // CP E
+a(cp('yh', 4));                                             // bc // CP IYH
+a(cp('yl', 4));                                             // bd // CP IYL
+a('t=m[((m[pc++&65535]^128)-128+(yl|yh<<8))&65535];'.cp('t', 15));//be//CP (IY+d)
 a('fr=0;fb=~(fa=a);ff=a&40');                               // bf // CP A
 a(retc('fr'));                                              // c0 // RET NZ
 a(pop('b', 'c'));                                           // c1 // POP BC
@@ -1329,28 +1347,28 @@ a(callci('ff&256'));                                        // dc // CALL C
 a(nop(4));                                                  // dd // op dd
 a(sbc('m[pc++&65535]', 7));                                 // de // SBC A,n
 a(rst(24));                                                 // df // RST 0x18
-a(retc('fa&256?38505>>((fr^fr>>4)&15)&1:(fr^fa)&(fr^fb)&128');//e0// RET PO
+a(retc('fa&256?38505>>((fr^fr>>4)&15)&1:(fr^fa)&(fr^fb)&128'));//e0//RET PO
 a(pop('yh', 'yl'));                                         // e1 // POP IY
-a(jpc('fa&256?38505>>((fr^fr>>4)&15)&1:(fr^fa)&(fr^fb)&128');//e2 // JP PO
+a(jpc('fa&256?38505>>((fr^fr>>4)&15)&1:(fr^fa)&(fr^fb)&128'));//e2 //JP PO
 a(exspi('y'));                                              // e3 // EX (SP),IY
-a(callc('fa&256?38505>>((fr^fr>>4)&15)&1:(fr^fa)&(fr^fb)&128');//e4//CALL PO
+a(callc('fa&256?38505>>((fr^fr>>4)&15)&1:(fr^fa)&(fr^fb)&128'));//e4//CALL PO
 a(push('yh', 'yl'));                                        // e5 // PUSH IY
 a(anda('m[pc++&65535]', 7));                                // e6 // AND A,n
 a(rst(32));                                                 // e7 // RST 0x20
-a(retci('fa&256?38505>>((fr^fr>>4)&15)&1:(fr^fa)&(fr^fb)&128');//e8//RET PE
+a(retci('fa&256?38505>>((fr^fr>>4)&15)&1:(fr^fa)&(fr^fb)&128'));//e8//RET PE
 a(ldsppci('pc', 'y'));                                      // e9 // JP (IY)
-a(jpci('fa&256?38505>>((fr^fr>>4)&15)&1:(fr^fa)&(fr^fb)&128');//ea// JP PE
+a(jpci('fa&256?38505>>((fr^fr>>4)&15)&1:(fr^fa)&(fr^fb)&128'));//ea//JP PE
 a('st+=4;t=d;d=h;h=t;t=e;e=l;l=t');                         // eb // EX DE,HL
-a(callci('fa&256?38505>>((fr^fr>>4)&15)&1:(fr^fa)&(fr^fb)&128');//ec//CALL PE
+a(callci('fa&256?38505>>((fr^fr>>4)&15)&1:(fr^fa)&(fr^fb)&128'));//ec//CALL PE
 a('r++;g[1280+m[pc++&65535]]()');                           // ed // op ed
 a(xoror('^=m[pc++&65535]', 7));                             // ee // XOR A,n
 a(rst(40));                                                 // ef // RST 0x28
 a(retci('ff&128'));                                         // f0 // RET P
-a(pop('a', 'f'));                                           // f1 // POP AF
+a(popaf());                                                 // f1 // POP AF
 a(jpci('ff&128'));                                          // f2 // JP P
 a('st+=4;iff=0');                                           // f3 // DI
 a(callci('ff&128'));                                        // f4 // CALL P
-a(push('a', 'f'));                                          // f5 // PUSH AF
+a(push('a', 'f()'));                                        // f5 // PUSH AF
 a(xoror('|=m[pc++&65535]', 7));                             // f6 // OR A,n
 a(rst(48));                                                 // f7 // RST 0x30
 a(retc('ff&128'));                                          // f8 // RET M
@@ -1359,7 +1377,7 @@ a(jpc('ff&128'));                                           // fa // JP M
 a('st+=4;iff=1');                                           // fb // EI
 a(callc('ff&128'));                                         // fc // CALL M
 a(nop(4));                                                  // 01 // op fd
-a(cp('(t=m[pc++&65535])', 't', 7));                         // fe // CP A,n
+a('t=m[pc++&65535];'.cp('t', 7));                           // fe // CP A,n
 a(rst(56));                                                 // ff // RST 0x38
 
 a(rlc('b'));                                                // 00 // RLC B
@@ -2015,14 +2033,13 @@ a('st+=15;'.                                                // 72 // SBC HL,SP
   'l=t&255');
 a('st+=20;'.                                                // 73 // LD (NN),SP
   'wb('.($mp?'mp':'t').'=m[pc++&65535]|m[pc++&65535]<<8,sp&255);'.
-  'wb('.($mp?'mp=mp':'t').'+1&65535,sp>>8)';
+  'wb('.($mp?'mp=mp':'t').'+1&65535,sp>>8)');
 a(neg());                                                   // 74 // NEG
 a(ret(14));                                                 // 75 // RETN
 a('st+=8;im=1');                                            // 76 // IM 1
 a(nop(8));                                                  // 77 // NOP
 a(inr('a'));                                                // 78 // IN A,(C)
 a(outr('a'));                                               // 79 // OUT (C),A
-            
 a('st+=15;'.                                                // 7a // ADC HL,SP
   't=('.($mp?'mp=':'').'l|h<<8)+sp+(ff>>8&1);'.
   ($mp?'++mp;':'').
@@ -2031,7 +2048,7 @@ a('st+=15;'.                                                // 7a // ADC HL,SP
   'fb=sp>>8;'.
   'h=t>>8&255;'.
   'fr=fb|t<<8;'.
-  'l=t&255';
+  'l=t&255');
                                                             // 7b // LD SP,(NN)
 a('st+=20;sp=m[t=m[pc++&65535]|m[pc++&65535]<<8]|m['.($mp?'mp=':'').'t+1&65535]<<8');
 a(neg());                                                   // 7c // NEG

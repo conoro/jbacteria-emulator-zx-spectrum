@@ -140,9 +140,10 @@ function init() {
     rotapal();
   sample= 0;
   z80init();
-  a= b= c= d= f= h= l= a_= b_= c_= d_= e_= h_= l_= r= r7= pc= iff= im= halted= t= u= 0;
+  a= b= c= d= h= l= fa= fb= fr= ff= r7=
+  a_=b_=c_=d_=h_=l_=fa_=fb_=fr_=e_= r= pc= iff= im= halted= t= u= 0;
   e=  0x11;
-  f_= 0x01;
+  ff_= 0x100;
   xh= 0x5c;
   xl= 0xe2;
   yh= 0x5c;
