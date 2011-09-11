@@ -154,10 +154,12 @@ function addrrrr($a, $b, $c, $d) {
   $b.'=t&255';
 }
 
-function addisp($r) { //abcd
+function addisp($r) {
   return 'st+=11;'.
   't=sp+('.$r.'l|'.$r.'h<<8);'.
-  'f=f&196|t>>16|t>>8&40|(t>>8^sp>>8^'.$r.'h)&16;'.
+  'ff=ff&128|t>>8&296;'.
+  'fb=fb&128|(t>>8^sp>>8^'.$r.'h^fr^fa)&16;'.
+  ($mp?'mp='.$b.'+1+('.$a.'<<8);':'');
   $r.'h=t>>8&255;'.
   $r.'l=t&255';
 }
@@ -461,10 +463,11 @@ function neg(){
   'a=fr=(ff=(fb=~a)+1)&255;fa=0';
 }
 
-function ldair($r){ //abcd
+function ldair($r){
   return 'st+=9;'.
-  'a='.$r.';'.
-  'f=f&1|sz[a]|iff<<2';
+  'ff=ff&-256|(a='.$r.');'.
+  'fr=+!!'.$r.';'.
+  'fa=fb=iff<<7&128';
 }
 
 function ldid($i, $r){
