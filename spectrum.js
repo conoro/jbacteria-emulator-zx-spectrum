@@ -117,7 +117,7 @@ function bytes(a) {
 
 function run() {
   while( st < 69888 )                       // execute z80 instructions during a frame
-//cond(),
+cond(),
     r++,
     g[m[pc++&0xffff]]();
   if( !(++flash & 15) )
@@ -139,7 +139,6 @@ function init() {
   if ( localStorage.ft & 8 )
     rotapal();
   sample= 0;
-  z80init();
   a= b= c= d= h= l= fa= fb= fr= ff= r7=
   a_=b_=c_=d_=h_=l_=fa_=fb_=fr_=e_= r= pc= iff= im= halted= t= u= 0;
   e=  0x11;
@@ -534,7 +533,7 @@ function rm(o) {
   d_= o.charCodeAt(j++);
   c_= o.charCodeAt(j++);
   b_= o.charCodeAt(j++);
-  f_= o.charCodeAt(j++);
+  setf_(o.charCodeAt(j++));
   a_= o.charCodeAt(j++);
   l= o.charCodeAt(j++);
   h= o.charCodeAt(j++);
@@ -548,7 +547,7 @@ function rm(o) {
   xh= o.charCodeAt(j++);
   iff= o.charCodeAt(j++)>>2 & 1;
   r= r7= o.charCodeAt(j++);
-  f= o.charCodeAt(j++);
+  setf(o.charCodeAt(j++));
   a= o.charCodeAt(j++);
   sp= o.charCodeAt(j++) | o.charCodeAt(j++)<<8;
   im= o.charCodeAt(j++);
@@ -561,8 +560,18 @@ function rm(o) {
 function wm() {
   wb(sp-1 & 0xffff, pc>>8 & 0xff);
   wb(sp-2 & 0xffff, pc    & 0xff);
-  t= String.fromCharCode(i, l_, h_, e_, d_, c_, b_, f_, a_, l, h, e, d, c, b, yl, yh,
-                         xl, xh, iff<<2, r, f, a, sp-2&0xff, sp-2>>8, im&3, bor);
+  t= String.fromCharCode(i, l_, h_, e_, d_, c_, b_);
+  j= f();
+  u=ff_;ff_=ff;ff=u;
+  u=fr_;fr_=fr;fr=u;
+  u=fa_;fa_=fa;fa=u;
+  u=fb_;fb_=fb;fb=u;
+  t+=String.fromCharCode( f(), a_, l, h, e, d, c, b, yl, yh, xl, xh, iff<<2, r,
+                          j, a, sp-2&0xff, sp-2>>8, im&3, bor); // 0x15
+  u=ff_;ff_=ff;ff=u;
+  u=fr_;fr_=fr;fr=u;
+  u=fa_;fa_=fa;fa=u;
+  u=fb_;fb_=fb;fb=u;
   for ( j= 0x4000
       ; j < 0x10000
       ; j++ )
@@ -597,7 +606,7 @@ function loadblock() {
       ; j++ )
     wb(xl | xh << 8, game.charCodeAt(tapep++) & 0xff),
     g[0x123]();
-  f_= 0x6d;
+  setf_(0x6d);
   a= d= e= 0;
   pc= 0x5e0;                           // exit address
   tapep++;
