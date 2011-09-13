@@ -1,7 +1,6 @@
 caca= 0;//0x10000000;
 function cond() {
-  if(caca/*++==0x30014*/)
-    generateSnap();
+  caca && caca++==0x15 && generateSnap();
 }
 
 function generateSnap() {
@@ -22,75 +21,39 @@ function hex(n){
   var h= '0123456789ABCDEF';
   return h[n>>12]+h[n>>8&15]+h[n>>4&15]+h[n&15];
 }
-/*
+
 function rm(o) {
-  j= 17;
-  f= o.charCodeAt(j++);
-  a= o.charCodeAt(j++);
-  c= o.charCodeAt(j++);
-  b= o.charCodeAt(j++);
-  e= o.charCodeAt(j++);
-  d= o.charCodeAt(j++);
-  l= o.charCodeAt(j++);
-  h= o.charCodeAt(j++);
-  r= o.charCodeAt(j++);
+//caca= 1;
+m[0x056c]= 0xcd;
+m[0x056d]= 0xe7;
+  j= 0;
   i= o.charCodeAt(j++);
-  iff= o.charCodeAt(j++)&1;
-  j++;
-  xl= o.charCodeAt(j++);
-  xh= o.charCodeAt(j++);
-  yl= o.charCodeAt(j++);
-  yh= o.charCodeAt(j++);
-  sp= o.charCodeAt(j++)|o.charCodeAt(j++)<<8;
-  pc= o.charCodeAt(j++)|o.charCodeAt(j++)<<8;
-  im= o.charCodeAt(j++);
-  f_= o.charCodeAt(j++);
-  a_= o.charCodeAt(j++);
-  c_= o.charCodeAt(j++);
-  b_= o.charCodeAt(j++);
-  e_= o.charCodeAt(j++);
-  d_= o.charCodeAt(j++);
   l_= o.charCodeAt(j++);
   h_= o.charCodeAt(j++);
-  ga= o.charCodeAt(j++);
-
-  gc= [o.charCodeAt(j++), o.charCodeAt(j++), o.charCodeAt(j++), o.charCodeAt(j++),
-       o.charCodeAt(j++), o.charCodeAt(j++), o.charCodeAt(j++), o.charCodeAt(j++),
-       o.charCodeAt(j++), o.charCodeAt(j++), o.charCodeAt(j++), o.charCodeAt(j++),
-       o.charCodeAt(j++), o.charCodeAt(j++), o.charCodeAt(j++), o.charCodeAt(j++),
-       o.charCodeAt(j++)];
-  for (t= 0; t < 17; t++)
-    pl[t]= pal[gc[t]];
-  ap= o.charCodeAt(j++);
-  gm= ap&3;
-  rb= o.charCodeAt(j++);
-  mw[0]= ram[rb==2 ? 4 : 0],
-  m[1]= mw[1]= ram[rb ? (rb==2 ? 5 : rb) : 1],
-  m[2]= mw[2]= ram[rb==2 ? 6 : 2],
-  mw[3]= ram[rb && rb<4 ? 7 : 3];
-  m[0]= ap&4 ? mw[0] : rom[0];
-  ci= o.charCodeAt(j++);
-  cr= [o.charCodeAt(j++), o.charCodeAt(j++), o.charCodeAt(j++), o.charCodeAt(j++),
-       o.charCodeAt(j++), o.charCodeAt(j++), o.charCodeAt(j++), o.charCodeAt(j++),
-       o.charCodeAt(j++), o.charCodeAt(j++), o.charCodeAt(j++), o.charCodeAt(j++),
-       o.charCodeAt(j++), o.charCodeAt(j++), o.charCodeAt(j++), o.charCodeAt(j++),
-       o.charCodeAt(j++), o.charCodeAt(j++)];
-  rs= o.charCodeAt(j++)==7 ? 2 : 1;
-  m[3]= ap&8 ? mw[3] : rom[rs];
-console.log(ap, rb, m[0]==ram[0], m[1]==ram[7], m[2]==ram[2], m[3]==ram[3]);
-  ap= o.charCodeAt(j++);
-  bp= o.charCodeAt(j++);
-  cp= o.charCodeAt(j++);
-  o.charCodeAt(j++);
-  ay= o.charCodeAt(j++);
-  ayr= [o.charCodeAt(j++), o.charCodeAt(j++), o.charCodeAt(j++), o.charCodeAt(j++),
-       o.charCodeAt(j++), o.charCodeAt(j++), o.charCodeAt(j++), o.charCodeAt(j++),
-       o.charCodeAt(j++), o.charCodeAt(j++), o.charCodeAt(j++), o.charCodeAt(j++),
-       o.charCodeAt(j++), o.charCodeAt(j++), o.charCodeAt(j++), o.charCodeAt(j++)];
-  j+= 149;
-  for (t= 0; t < 131072; t++)
-    ram[t>>14][t&16383]= o.charCodeAt(j++);
-  onresize();
-  caca= 0;
+  e_= o.charCodeAt(j++);
+  d_= o.charCodeAt(j++);
+  c_= o.charCodeAt(j++);
+  b_= o.charCodeAt(j++);
+  setf_(o.charCodeAt(j++));
+  a_= o.charCodeAt(j++);
+  l= o.charCodeAt(j++);
+  h= o.charCodeAt(j++);
+  e= o.charCodeAt(j++);
+  d= o.charCodeAt(j++);
+  c= o.charCodeAt(j++);
+  b= o.charCodeAt(j++);
+  yl= o.charCodeAt(j++);
+  yh= o.charCodeAt(j++);
+  xl= o.charCodeAt(j++);
+  xh= o.charCodeAt(j++);
+  iff= o.charCodeAt(j++)>>2 & 1;
+  r= r7= o.charCodeAt(j++);
+  setf(o.charCodeAt(j++));
+  a= o.charCodeAt(j++);
+  sp= o.charCodeAt(j++) | o.charCodeAt(j++)<<8;
+  im= o.charCodeAt(j++);
+  wp(0,o.charCodeAt(j++));
+  while( j < 0xc01b )
+    m[j+0x3fe5]= o.charCodeAt(j++);
+  g[0xc9]();
 }
-*/
