@@ -1,6 +1,6 @@
 caca= 0;//0x10000000;
 function cond() {
-  caca && caca++==0x15 && generateSnap();
+  caca && caca++==0x57 && generateSnap();
 }
 
 function generateSnap() {
@@ -23,9 +23,9 @@ function hex(n){
 }
 
 function rm(o) {
-//caca= 1;
-m[0x056c]= 0xcd;
-m[0x056d]= 0xe7;
+caca= 1;
+//m[0x056c]= 0xcd;
+//m[0x056d]= 0xe7;
   j= 0;
   i= o.charCodeAt(j++);
   l_= o.charCodeAt(j++);

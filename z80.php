@@ -71,7 +71,7 @@ function incdecphl($n) {
 function incdecpi($a, $b) {
   return 'st+=19;'.
   'fa=m[t=((m[pc++&65535]^128)-128+('.$a.'l|'.$a.'h<<8))&65535];'.
-  'ff=ff&256|(fr=fa+(fb='.($n=='+'?'':'-').'1)&255);'.
+  'ff=ff&256|(fr=fa+(fb='.($b=='+'?'':'-').'1)&255);'.
   'wb(t,fr)';
 }
 
@@ -181,22 +181,24 @@ function jpci($c) {
 }
 
 function callc($c) {
+  global $mp;
   return 'if('.$c.')'.
     'st+=10,'.
     'pc+=2;'.
   'else '.
     'st+=17,'.
     't=pc+2,'.
-    'pc=m[pc&65535]|m[pc+1&65535]<<8,'.
+    ($mp?'mp=':'').'pc=m[pc&65535]|m[pc+1&65535]<<8,'.
     'wb(--sp&65535,t>>8&255),'.
     'wb(sp=sp-1&65535,t&255)';
 }
 
 function callci($c) {
+  global $mp;
   return 'if('.$c.')'.
     'st+=17,'.
     't=pc+2,'.
-    'pc=m[pc&65535]|m[pc+1&65535]<<8,'.
+    ($mp?'mp=':'').'pc=m[pc&65535]|m[pc+1&65535]<<8,'.
     'wb(--sp&65535,t>>8&255),'.
     'wb(sp=sp-1&65535,t&255);'.
   'else '.
@@ -371,22 +373,24 @@ function srl($r){
 
 function bit($n, $r){
   return 'st+=8;'.
-  'ff=ff&-256|'.$r.'&40|('.$r.'&='.$n.');'.
-  'fa=~(fr='.$r.');'.
+  'ff=ff&-256|'.$r.'&40|(fr='.$r.'&'.$n.');'.
+  'fa=~fr;'.
   'fb=0';
 }
 
 function biti($n){
+  global $mp;
   return 'st+=5;'.
-  'ff=ff&-256|mp>>8&40|(t&='.$n.');'.
+  'ff=ff&-256|'.($mp?'mp>>8&40|-41&':'').'(t&='.$n.');'.
   'fa=~(fr=t);'.
   'fb=0';
 }
 
 function bithl($n){
+  global $mp;
   return 'st+=12;'.
   't=m[l|h<<8];'.
-  'ff=ff&-256|mp>>8&40|(t&='.$n.');'.
+  'ff=ff&-256|'.($mp?'mp>>8&40|-41&':'').'(t&='.$n.');'.
   'fa=~(fr=t);'.
   'fb=0';
 }
@@ -490,7 +494,7 @@ function cpid($i, $r){
   'fr=u&127|u>>7;'.
   'fb=~(t|128);'.
   'fa=a&127;'.
-  'b|c&&(fa|=fb&128'.
+  'b|c&&(fa|=128,fb|=128'.
   ($r ? ',u&&(st+=5,'.($mp?'mp=--pc,--pc)':'pc-=2)') : '').
   ');ff=ff&-256|u&-41;'.
   '(u^t^a)&16&&u--;'.
@@ -501,7 +505,8 @@ function inid($i, $r){
   global $mp;
   return 'st+=16;'.
   'wb(l|h<<8,t=rp('.($mp?'mp=':'').'c|b<<8));'.
-  '++l==256&&(l=0,h=h+1&255);'.
+  ($i ? '++l==256&&(l=0,h=h+1&255);'
+      : '--l<0&&(h=h-1&(l=255));').
   'b=b-1&255;'.
   ($mp?($i?'++mp;':'--mp;'):'').
   'u=t+(c'.($i?'+':'-').'1&255);'.
@@ -519,7 +524,8 @@ function otid($i, $r){
   'b=b-1&255;'.
   'wp('.($mp?'mp=':'').'c|b<<8,t=m[l|h<<8]);'.
   ($mp?($i?'++mp;':'--mp;'):'').
-  '++l==256&&(l=0,h=h+1&255);'.
+  ($i ? '++l==256&&(l=0,h=h+1&255);'
+      : '--l<0&&(h=h-1&(l=255));').
   'u=t+l;'.
   ($r?'b&&(st+=5,'.($mp?'mp=--pc,--pc);':'pc-=2);'):'').
   'fb=u&7^b;'.
@@ -800,19 +806,19 @@ a(callci('fa&256?38505>>((fr^fr>>4)&15)&1:(fr^fa)&(fr^fb)&128'));//ec//CALL PE
 a('r++;g[1280+m[pc++&65535]]()');                           // ed // op ed
 a(xoror('^=m[pc++&65535]', 7));                             // ee // XOR A,n
 a(rst(40));                                                 // ef // RST 0x28
-a(retci('ff&128'));                                         // f0 // RET P
+a(retc('ff&128'));                                          // f0 // RET P
 a(popaf());                                                 // f1 // POP AF
-a(jpci('ff&128'));                                          // f2 // JP P
+a(jpc('ff&128'));                                           // f2 // JP P
 a('st+=4;iff=0');                                           // f3 // DI
-a(callci('ff&128'));                                        // f4 // CALL P
+a(callc('ff&128'));                                         // f4 // CALL P
 a(push('a', 'f()'));                                        // f5 // PUSH AF
 a(xoror('|=m[pc++&65535]', 7));                             // f6 // OR A,n
 a(rst(48));                                                 // f7 // RST 0x30
-a(retc('ff&128'));                                          // f8 // RET M
+a(retci('ff&128'));                                         // f8 // RET M
 a(ldsppci('sp', ''));                                       // f9 // LD SP,HL
-a(jpc('ff&128'));                                           // fa // JP M
+a(jpci('ff&128'));                                          // fa // JP M
 a('st+=4;iff=1');                                           // fb // EI
-a(callc('ff&128'));                                         // fc // CALL M
+a(callci('ff&128'));                                        // fc // CALL M
 a('st+=4;r++;g[512+m[pc++&65535]]()');                      // fd // op fd
 a('t=m[pc++&65535];'.cp('t', 7));                           // fe // CP A,n
 a(rst(56));                                                 // ff // RST 0x38
@@ -1069,19 +1075,19 @@ a(callci('fa&256?38505>>((fr^fr>>4)&15)&1:(fr^fa)&(fr^fb)&128'));//ec//CALL PE
 a('r++;g[1280+m[pc++&65535]]()');                           // ed // op ed
 a(xoror('^=m[pc++&65535]', 7));                             // ee // XOR A,n
 a(rst(40));                                                 // ef // RST 0x28
-a(retci('ff&128'));                                         // f0 // RET P
+a(retc('ff&128'));                                          // f0 // RET P
 a(popaf());                                                 // f1 // POP AF
-a(jpci('ff&128'));                                          // f2 // JP P
+a(jpc('ff&128'));                                           // f2 // JP P
 a('st+=4;iff=0');                                           // f3 // DI
-a(callci('ff&128'));                                        // f4 // CALL P
+a(callc('ff&128'));                                         // f4 // CALL P
 a(push('a', 'f()'));                                        // f5 // PUSH AF
 a(xoror('|=m[pc++&65535]', 7));                             // f6 // OR A,n
 a(rst(48));                                                 // f7 // RST 0x30
-a(retc('ff&128'));                                          // f8 // RET M
+a(retci('ff&128'));                                         // f8 // RET M
 a(ldsppci('sp', 'x'));                                      // f9 // LD SP,IX
-a(jpc('ff&128'));                                           // fa // JP M
+a(jpci('ff&128'));                                          // fa // JP M
 a('st+=4;iff=1');                                           // fb // EI
-a(callc('ff&128'));                                         // fc // CALL M
+a(callci('ff&128'));                                        // fc // CALL M
 a(nop(4));                                                  // 01 // op fd
 a('t=m[pc++&65535];'.cp('t', 7));                           // fe // CP A,n
 a(rst(56));                                                 // ff // RST 0x38
@@ -1338,19 +1344,19 @@ a(callci('fa&256?38505>>((fr^fr>>4)&15)&1:(fr^fa)&(fr^fb)&128'));//ec//CALL PE
 a('r++;g[1280+m[pc++&65535]]()');                           // ed // op ed
 a(xoror('^=m[pc++&65535]', 7));                             // ee // XOR A,n
 a(rst(40));                                                 // ef // RST 0x28
-a(retci('ff&128'));                                         // f0 // RET P
+a(retc('ff&128'));                                          // f0 // RET P
 a(popaf());                                                 // f1 // POP AF
-a(jpci('ff&128'));                                          // f2 // JP P
+a(jpc('ff&128'));                                           // f2 // JP P
 a('st+=4;iff=0');                                           // f3 // DI
-a(callci('ff&128'));                                        // f4 // CALL P
+a(callc('ff&128'));                                         // f4 // CALL P
 a(push('a', 'f()'));                                        // f5 // PUSH AF
 a(xoror('|=m[pc++&65535]', 7));                             // f6 // OR A,n
 a(rst(48));                                                 // f7 // RST 0x30
-a(retc('ff&128'));                                          // f8 // RET M
+a(retci('ff&128'));                                         // f8 // RET M
 a(ldsppci('sp', 'y'));                                      // f9 // LD SP,IY
-a(jpc('ff&128'));                                           // fa // JP M
+a(jpci('ff&128'));                                          // fa // JP M
 a('st+=4;iff=1');                                           // fb // EI
-a(callc('ff&128'));                                         // fc // CALL M
+a(callci('ff&128'));                                        // fc // CALL M
 a(nop(4));                                                  // 01 // op fd
 a('t=m[pc++&65535];'.cp('t', 7));                           // fe // CP A,n
 a(rst(56));                                                 // ff // RST 0x38
@@ -1612,70 +1618,70 @@ a(set(128,'l'));                                            // fd // SET 7,L
 a(sethl(128));                                              // fe // SET 7,(HL)
 a(set(128,'a'));                                            // ff // SET 7,A
 
-a(rlc('t').';wb(mp,b=t)');                                   // 00 // LD B,RLC(IY+d)
-a(rlc('t').';wb(mp,c=t)');                                   // 01 // LD C,RLC(IY+d)
-a(rlc('t').';wb(mp,d=t)');                                   // 02 // LD D,RLC(IY+d)
-a(rlc('t').';wb(mp,e=t)');                                   // 03 // LD E,RLC(IY+d)
-a(rlc('t').';wb(mp,h=t)');                                   // 04 // LD H,RLC(IY+d)
-a(rlc('t').';wb(mp,l=t)');                                   // 05 // LD L,RLC(IY+d)
-a(rlc('t').';wb(mp,t)');                                     // 06 // RLC(IY+d)
-a(rlc('t').';wb(mp,a=t)');                                   // 07 // LD A,RLC(IY+d)
-a(rrc('t').';wb(mp,b=t)');                                   // 08 // LD B,RRC(IY+d)
-a(rrc('t').';wb(mp,c=t)');                                   // 09 // LD C,RRC(IY+d)
-a(rrc('t').';wb(mp,d=t)');                                   // 0a // LD D,RRC(IY+d)
-a(rrc('t').';wb(mp,e=t)');                                   // 0b // LD E,RRC(IY+d)
-a(rrc('t').';wb(mp,h=t)');                                   // 0c // LD H,RRC(IY+d)
-a(rrc('t').';wb(mp,l=t)');                                   // 0d // LD L,RRC(IY+d)
-a(rrc('t').';wb(mp,t)');                                     // 0e // RRC(IY+d)
-a(rrc('t').';wb(mp,a=t)');                                   // 0f // LD A,RRC(IY+d)
-a(rl('t').';wb(mp,b=t)');                                    // 10 // LD B,RL(IY+d)
-a(rl('t').';wb(mp,c=t)');                                    // 11 // LD C,RL(IY+d)
-a(rl('t').';wb(mp,d=t)');                                    // 12 // LD D,RL(IY+d)
-a(rl('t').';wb(mp,e=t)');                                    // 13 // LD E,RL(IY+d)
-a(rl('t').';wb(mp,h=t)');                                    // 14 // LD H,RL(IY+d)
-a(rl('t').';wb(mp,l=t)');                                    // 15 // LD L,RL(IY+d)
-a(rl('t').';wb(mp,t)');                                      // 16 // RL(IY+d)
-a(rl('t').';wb(mp,a=t)');                                    // 17 // LD A,RR(IY+d)
-a(rr('t').';wb(mp,b=t)');                                    // 18 // LD B,RR(IY+d)
-a(rr('t').';wb(mp,c=t)');                                    // 19 // LD C,RR(IY+d)
-a(rr('t').';wb(mp,d=t)');                                    // 1a // LD D,RR(IY+d)
-a(rr('t').';wb(mp,e=t)');                                    // 1b // LD E,RR(IY+d)
-a(rr('t').';wb(mp,h=t)');                                    // 1c // LD H,RR(IY+d)
-a(rr('t').';wb(mp,l=t)');                                    // 1d // LD L,RR(IY+d)
-a(rr('t').';wb(mp,t)');                                      // 1e // RR(IY+d)
-a(rr('t').';wb(mp,a=t)');                                    // 1f // LD A,RR(IY+d)
-a(sla('t').';wb(mp,b=t)');                                   // 20 // LD B,SLA(IY+d)
-a(sla('t').';wb(mp,c=t)');                                   // 21 // LD C,SLA(IY+d)
-a(sla('t').';wb(mp,d=t)');                                   // 22 // LD D,SLA(IY+d)
-a(sla('t').';wb(mp,e=t)');                                   // 23 // LD E,SLA(IY+d)
-a(sla('t').';wb(mp,h=t)');                                   // 24 // LD H,SLA(IY+d)
-a(sla('t').';wb(mp,l=t)');                                   // 25 // LD L,SLA(IY+d)
-a(sla('t').';wb(mp,t)');                                     // 26 // SLA(IY+d)
-a(sla('t').';wb(mp,a=t)');                                   // 27 // LD A,SLA(IY+d)
-a(sra('t').';wb(mp,b=t)');                                   // 28 // LD B,SRA(IY+d)
-a(sra('t').';wb(mp,c=t)');                                   // 29 // LD C,SRA(IY+d)
-a(sra('t').';wb(mp,d=t)');                                   // 2a // LD D,SRA(IY+d)
-a(sra('t').';wb(mp,e=t)');                                   // 2b // LD E,SRA(IY+d)
-a(sra('t').';wb(mp,h=t)');                                   // 2c // LD H,SRA(IY+d)
-a(sra('t').';wb(mp,l=t)');                                   // 2d // LD L,SRA(IY+d)
-a(sra('t').';wb(mp,t)');                                     // 2e // SRA(IY+d)
-a(sra('t').';wb(mp,a=t)');                                   // 2f // LD A,SRA(IY+d)
-a(sll('t').';wb(mp,b=t)');                                   // 30 // LD B,SLL(IY+d)
-a(sll('t').';wb(mp,c=t)');                                   // 31 // LD C,SLL(IY+d)
-a(sll('t').';wb(mp,d=t)');                                   // 32 // LD D,SLL(IY+d)
-a(sll('t').';wb(mp,e=t)');                                   // 33 // LD E,SLL(IY+d)
-a(sll('t').';wb(mp,h=t)');                                   // 34 // LD H,SLL(IY+d)
-a(sll('t').';wb(mp,l=t)');                                   // 35 // LD L,SLL(IY+d)
-a(sll('t').';wb(mp,t)');                                     // 36 // SLL(IY+d)
-a(sll('t').';wb(mp,a=t)');                                   // 37 // LD A,SLL(IY+d)
-a(srl('t').';wb(mp,b=t)');                                   // 38 // LD B,SRL(IY+d)
-a(srl('t').';wb(mp,c=t)');                                   // 39 // LD C,SRL(IY+d)
-a(srl('t').';wb(mp,d=t)');                                   // 3a // LD D,SRL(IY+d)
-a(srl('t').';wb(mp,e=t)');                                   // 3b // LD E,SRL(IY+d)
-a(srl('t').';wb(mp,h=t)');                                   // 3c // LD H,SRL(IY+d)
-a(srl('t').';wb(mp,l=t)');                                   // 3d // LD L,SRL(IY+d)
-a(srl('t').';wb(mp,t)');                                     // 3e // SRL(IY+d)
-a(srl('t').';wb(mp,a=t)');                                   // 3f // LD A,SRL(IY+d)
+a(rlc('t').';wb(mp,b=t)');                                  // 00 // LD B,RLC(IY+d)
+a(rlc('t').';wb(mp,c=t)');                                  // 01 // LD C,RLC(IY+d)
+a(rlc('t').';wb(mp,d=t)');                                  // 02 // LD D,RLC(IY+d)
+a(rlc('t').';wb(mp,e=t)');                                  // 03 // LD E,RLC(IY+d)
+a(rlc('t').';wb(mp,h=t)');                                  // 04 // LD H,RLC(IY+d)
+a(rlc('t').';wb(mp,l=t)');                                  // 05 // LD L,RLC(IY+d)
+a(rlc('t').';wb(mp,t)');                                    // 06 // RLC(IY+d)
+a(rlc('t').';wb(mp,a=t)');                                  // 07 // LD A,RLC(IY+d)
+a(rrc('t').';wb(mp,b=t)');                                  // 08 // LD B,RRC(IY+d)
+a(rrc('t').';wb(mp,c=t)');                                  // 09 // LD C,RRC(IY+d)
+a(rrc('t').';wb(mp,d=t)');                                  // 0a // LD D,RRC(IY+d)
+a(rrc('t').';wb(mp,e=t)');                                  // 0b // LD E,RRC(IY+d)
+a(rrc('t').';wb(mp,h=t)');                                  // 0c // LD H,RRC(IY+d)
+a(rrc('t').';wb(mp,l=t)');                                  // 0d // LD L,RRC(IY+d)
+a(rrc('t').';wb(mp,t)');                                    // 0e // RRC(IY+d)
+a(rrc('t').';wb(mp,a=t)');                                  // 0f // LD A,RRC(IY+d)
+a(rl('t').';wb(mp,b=t)');                                   // 10 // LD B,RL(IY+d)
+a(rl('t').';wb(mp,c=t)');                                   // 11 // LD C,RL(IY+d)
+a(rl('t').';wb(mp,d=t)');                                   // 12 // LD D,RL(IY+d)
+a(rl('t').';wb(mp,e=t)');                                   // 13 // LD E,RL(IY+d)
+a(rl('t').';wb(mp,h=t)');                                   // 14 // LD H,RL(IY+d)
+a(rl('t').';wb(mp,l=t)');                                   // 15 // LD L,RL(IY+d)
+a(rl('t').';wb(mp,t)');                                     // 16 // RL(IY+d)
+a(rl('t').';wb(mp,a=t)');                                   // 17 // LD A,RR(IY+d)
+a(rr('t').';wb(mp,b=t)');                                   // 18 // LD B,RR(IY+d)
+a(rr('t').';wb(mp,c=t)');                                   // 19 // LD C,RR(IY+d)
+a(rr('t').';wb(mp,d=t)');                                   // 1a // LD D,RR(IY+d)
+a(rr('t').';wb(mp,e=t)');                                   // 1b // LD E,RR(IY+d)
+a(rr('t').';wb(mp,h=t)');                                   // 1c // LD H,RR(IY+d)
+a(rr('t').';wb(mp,l=t)');                                   // 1d // LD L,RR(IY+d)
+a(rr('t').';wb(mp,t)');                                     // 1e // RR(IY+d)
+a(rr('t').';wb(mp,a=t)');                                   // 1f // LD A,RR(IY+d)
+a(sla('t').';wb(mp,b=t)');                                  // 20 // LD B,SLA(IY+d)
+a(sla('t').';wb(mp,c=t)');                                  // 21 // LD C,SLA(IY+d)
+a(sla('t').';wb(mp,d=t)');                                  // 22 // LD D,SLA(IY+d)
+a(sla('t').';wb(mp,e=t)');                                  // 23 // LD E,SLA(IY+d)
+a(sla('t').';wb(mp,h=t)');                                  // 24 // LD H,SLA(IY+d)
+a(sla('t').';wb(mp,l=t)');                                  // 25 // LD L,SLA(IY+d)
+a(sla('t').';wb(mp,t)');                                    // 26 // SLA(IY+d)
+a(sla('t').';wb(mp,a=t)');                                  // 27 // LD A,SLA(IY+d)
+a(sra('t').';wb(mp,b=t)');                                  // 28 // LD B,SRA(IY+d)
+a(sra('t').';wb(mp,c=t)');                                  // 29 // LD C,SRA(IY+d)
+a(sra('t').';wb(mp,d=t)');                                  // 2a // LD D,SRA(IY+d)
+a(sra('t').';wb(mp,e=t)');                                  // 2b // LD E,SRA(IY+d)
+a(sra('t').';wb(mp,h=t)');                                  // 2c // LD H,SRA(IY+d)
+a(sra('t').';wb(mp,l=t)');                                  // 2d // LD L,SRA(IY+d)
+a(sra('t').';wb(mp,t)');                                    // 2e // SRA(IY+d)
+a(sra('t').';wb(mp,a=t)');                                  // 2f // LD A,SRA(IY+d)
+a(sll('t').';wb(mp,b=t)');                                  // 30 // LD B,SLL(IY+d)
+a(sll('t').';wb(mp,c=t)');                                  // 31 // LD C,SLL(IY+d)
+a(sll('t').';wb(mp,d=t)');                                  // 32 // LD D,SLL(IY+d)
+a(sll('t').';wb(mp,e=t)');                                  // 33 // LD E,SLL(IY+d)
+a(sll('t').';wb(mp,h=t)');                                  // 34 // LD H,SLL(IY+d)
+a(sll('t').';wb(mp,l=t)');                                  // 35 // LD L,SLL(IY+d)
+a(sll('t').';wb(mp,t)');                                    // 36 // SLL(IY+d)
+a(sll('t').';wb(mp,a=t)');                                  // 37 // LD A,SLL(IY+d)
+a(srl('t').';wb(mp,b=t)');                                  // 38 // LD B,SRL(IY+d)
+a(srl('t').';wb(mp,c=t)');                                  // 39 // LD C,SRL(IY+d)
+a(srl('t').';wb(mp,d=t)');                                  // 3a // LD D,SRL(IY+d)
+a(srl('t').';wb(mp,e=t)');                                  // 3b // LD E,SRL(IY+d)
+a(srl('t').';wb(mp,h=t)');                                  // 3c // LD H,SRL(IY+d)
+a(srl('t').';wb(mp,l=t)');                                  // 3d // LD L,SRL(IY+d)
+a(srl('t').';wb(mp,t)');                                    // 3e // SRL(IY+d)
+a(srl('t').';wb(mp,a=t)');                                  // 3f // LD A,SRL(IY+d)
 a(biti(1));                                                 // 40 // BIT 0,(IY+d)
 a(biti(1));                                                 // 41 // BIT 0,(IY+d)
 a(biti(1));                                                 // 42 // BIT 0,(IY+d)
