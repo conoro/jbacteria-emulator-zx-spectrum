@@ -1,11 +1,21 @@
+<?
+$mp= 1;
+$pag= 1;
+?>
+
 function z80interrupt() {
   if(iff){
     if(halted)
       pc++,
       halted= 0;
     iff= 0;
+<?if($pag){?>
+    mw[sp-1>>14&3][sp-1&16383]= pc >> 8 & 255;
+    mw[(sp=sp-2&65535)>>14][sp&16383]= pc & 255;
+<?}else{?>
     wb(sp-1&65535, pc >> 8 & 255);
     wb(sp=sp-2&65535, pc & 255);
+<?}?>
     r++;
     switch(im) {
       case 1:
@@ -15,7 +25,12 @@ function z80interrupt() {
         st+= 12;
         break;
       default:
+<?if($pag){?>
+        t= 255 | i << 8;
+        pc= m[t>>14][t&16383] | m[++t>>14][t&16383] << 8;
+<?}else{?>
         pc= m[t= 255 | i << 8] | m[++t&65535] << 8;
+<?}?>
         st+= 19;
     }
   }
@@ -42,7 +57,6 @@ function setf_(a) {
 }
 
 <?
-$mp= 1;
 
 function a($a){
   echo 'function(){'.$a."},\n";
@@ -62,17 +76,26 @@ function dec($r) {
 }
 
 function incdecphl($n) {
+  global $pag;
   return 'st+=11;'.
-  'fa=m[t=l|h<<8];'.
-  'ff=ff&256|(fr=fa+(fb='.($n=='+'?'':'-').'1)&255);'.
-  'wb(t,fr)';
+  ($pag
+    ? 'fa=m[t=h>>6][u=l|h<<8&16383];'.
+      'ff=ff&256|(mw[t][u]=fr=fa+(fb='.($n=='+'?'':'-').'1)&255)'
+    : 'fa=m[t=l|h<<8];'.
+      'ff=ff&256|(fr=fa+(fb='.($n=='+'?'':'-').'1)&255);'.
+      'wb(t,fr)');
 }
 
 function incdecpi($a, $b) {
+  global $pag;
   return 'st+=19;'.
-  'fa=m[t=((m[pc++&65535]^128)-128+('.$a.'l|'.$a.'h<<8))&65535];'.
-  'ff=ff&256|(fr=fa+(fb='.($b=='+'?'':'-').'1)&255);'.
-  'wb(t,fr)';
+  ($pag
+    ? 't=((m[pc++&65535]^128)-128+('.$a.'l|'.$a.'h<<8))&65535;'.
+      'fa=m[u=t>>14][t&=16383];'.
+      'ff=ff&256|(mw[u][t]=fr=fa+(fb='.($b=='+'?'':'-').'1)&255)'
+    : 'fa=m[t=((m[pc++&65535]^128)-128+('.$a.'l|'.$a.'h<<8))&65535];'.
+      'ff=ff&256|(fr=fa+(fb='.($b=='+'?'':'-').'1)&255);'.
+      'wb(t,fr)');
 }
 
 function incw($a, $b) {
@@ -89,42 +112,66 @@ function decw($a, $b) {
 }
 
 function ldpr($a, $b, $r) {
-  global $mp;
+  global $mp, $pag;
   return  'st+=7;'.
-          'wb('.$b.'|'.$a.'<<8,'.$r.')'.
+          ($pag
+            ? 'mw['.$a.'>>6]['.$b.'|'.$a.'<<8&16383]='.$r
+            : 'wb('.$b.'|'.$a.'<<8,'.$r.')').
           ($mp?';mp='.$b.'+1&255|a<<8':'');
 }
 
 function ldpri($a, $b) {
+  global $pag;
   return 'st+=15;'.
-  'wb(((m[pc++&65535]^128)-128+('.$b.'l|'.$b.'h<<8))&65535,'.$a.')';
+          ($pag
+            ? 't=((m[pc>>14&3][pc++&16383]^128)-128+('.$b.'l|'.$b.'h<<8))&65535;'.
+              'mw[t>>14][t&16383]='.$a
+            : 'wb(((m[pc++&65535]^128)-128+('.$b.'l|'.$b.'h<<8))&65535,'.$a.')');
 }
 
 function ldrp($a, $b, $r, $t) {
+  global $pag;
   return 'st+=7;'.
-          $r.'=m['.($t?'mp=':'').$b.'|'.$a.'<<8]'.
+          ($pag
+            ? $r.'=m['.($t?'(mp='.$b.'|'.$a.'<<8)>>14][mp':$b.'>>6]['.$b.'|'.$a.'<<8').'&16383]'
+            : $r.'=m['.($t?'mp=':'').$b.'|'.$a.'<<8]').
           ($t?';++mp':'');
 }
 
 function ldrpi($a, $b) {
+  global $pag;
   return 'st+=15;'.
-  $a.'=m[((m[pc++&65535]^128)-128+('.$b.'l|'.$b.'h<<8))&65535]';
+          ($pag
+            ? 't=((m[pc>>14&3][pc++&16383]^128)-128+('.$b.'l|'.$b.'h<<8))&65535;'.
+              $a.'=m[t>>14][t&16383]'
+            : $a.'=m[((m[pc++&65535]^128)-128+('.$b.'l|'.$b.'h<<8))&65535]');
 }
 
 function ldrrim($a, $b) {
+  global $pag;
   return 'st+=10;'.
-  $b.'=m[pc++&65535];'.
-  $a.'=m[pc++&65535]';
+          ($pag
+            ? $b.'=m[pc>>14&3][pc++&16383];'.
+              $a.'=m[pc>>14&3][pc++&16383]'
+            : $b.'=m[pc++&65535];'.
+              $a.'=m[pc++&65535]');
 }
 
 function ldrim($r) {
+  global $pag;
   return 'st+=7;'.
-  $r.'=m[pc++&65535]';
+          ($pag
+            ? $r.'=m[pc>>14&3][pc++&16383]'
+            : $r.'=m[pc++&65535]');
 }
 
 function ldpin($r) {
+  global $pag;
   return 'st+=15;'.
-  'wb(((m[pc++&65535]^128)-128+('.$r.'l|'.$r.'h<<8))&65535, m[pc++&65535])';
+          ($pag
+            ? 't=((m[pc>>14&3][pc++&16383]^128)-128+('.$b.'l|'.$b.'h<<8))&65535;'.
+              'mw[t>>14][t&16383]=m[pc>>14&3][pc++&16383]'
+            : 'wb(((m[pc++&65535]^128)-128+('.$r.'l|'.$r.'h<<8))&65535, m[pc++&65535])');
 }
 
 function addrrrr($a, $b, $c, $d) {
@@ -147,104 +194,141 @@ function addisp($r) {
 }
 
 function jrc($c) {
+  global $pag;
   return 'if('.$c.')'.
     'st+=7,'.
     'pc++;'.
   'else '.
     'st+=12,'.
-    'pc+=(m[pc&65535]^128)-127';
+($pag
+  ? 'pc+=(m[pc>>14&3][pc++&16383]^128)-127'
+  : 'pc+=(m[pc&65535]^128)-127');
 }
 
 function jrci($c) {
+  global $pag;
   return 'if('.$c.')'.
     'st+=12,'.
-    'pc+=(m[pc&65535]^128)-127;'.
+($pag
+  ? 'pc+=(m[pc>>14&3][pc++&16383]^128)-127;'
+  : 'pc+=(m[pc&65535]^128)-127;').
   'else '.
     'st+=7,'.
     'pc++';
 }
 
 function jpc($c) {
+  global $pag;
   return 'st+=10;'.
   'if('.$c.')'.
     'pc+=2;'.
   'else '.
-    'pc=m[pc&65535]|m[pc+1&65535]<<8';
+($pag
+  ? 'pc=m[pc>>14&3][pc&16383]|m[pc+1>>14&3][pc+1&16383]<<8'
+  : 'pc=m[pc&65535]|m[pc+1&65535]<<8');
 }
 
 function jpci($c) {
+  global $pag;
   return 'st+=10;'.
   'if('.$c.')'.
-    'pc=m[pc&65535]|m[pc+1&65535]<<8;'.
+($pag
+  ? 'pc=m[pc>>14&3][pc&16383]|m[pc+1>>14&3][pc+1&16383]<<8'
+  : 'pc=m[pc&65535]|m[pc+1&65535]<<8').
   'else '.
     'pc+=2';
 }
 
 function callc($c) {
-  global $mp;
+  global $mp, $pag;
   return 'if('.$c.')'.
     'st+=10,'.
     'pc+=2;'.
   'else '.
     'st+=17,'.
     't=pc+2,'.
-    ($mp?'mp=':'').'pc=m[pc&65535]|m[pc+1&65535]<<8,'.
+    ($mp?'mp=':'').
+($pag
+  ? 'pc=m[pc>>14&3][pc&16383]|m[pc+1>>14&3][pc+1&16383]<<8,'.
+    'mw[--sp>>14&3][sp&16383]=t>>8&255,'.
+    'mw[(sp=sp-1&65535)>>14][sp&16383]=t&255'
+  : 'pc=m[pc&65535]|m[pc+1&65535]<<8,'.
     'wb(--sp&65535,t>>8&255),'.
-    'wb(sp=sp-1&65535,t&255)';
+    'wb(sp=sp-1&65535,t&255)');
 }
 
 function callci($c) {
-  global $mp;
+  global $mp, $pag;
   return 'if('.$c.')'.
     'st+=17,'.
     't=pc+2,'.
-    ($mp?'mp=':'').'pc=m[pc&65535]|m[pc+1&65535]<<8,'.
+    ($mp?'mp=':'').
+($pag
+  ? 'pc=m[pc>>14&3][pc&16383]|m[pc+1>>14&3][pc+1&16383]<<8,'.
+    'mw[--sp>>14&3][sp&16383]=t>>8&255,'.
+    'mw[(sp=sp-1&65535)>>14][sp&16383]=t&255;'
+  : 'pc=m[pc&65535]|m[pc+1&65535]<<8,'.
     'wb(--sp&65535,t>>8&255),'.
-    'wb(sp=sp-1&65535,t&255);'.
+    'wb(sp=sp-1&65535,t&255);').
   'else '.
     'st+=10,'.
     'pc+=2';
 }
 
 function retc($c) {
-  global $mp;
+  global $mp, $pag;
   return 'if('.$c.')'.
     'st+=5;'.
   'else '.
     'st+=11,'.
-    ($mp?'mp=':'').'pc=m[sp]|m[sp+1&65535]<<8,'.
+    ($mp?'mp=':'').
+($pag
+  ? 'pc=m[sp>>14][sp&16383]|m[sp+1>>14&3][sp+1&16383]<<8,'
+  : 'pc=m[sp]|m[sp+1&65535]<<8,').
     'sp=sp+2&65535';
 }
 
 function retci($c) {
-  global $mp;
+  global $mp, $pag;
   return 'if('.$c.')'.
     'st+=11,'.
-    ($mp?'mp=':'').'pc=m[sp]|m[sp+1&65535]<<8,'.
+    ($mp?'mp=':'').
+($pag
+  ? 'pc=m[sp>>14][sp&16383]|m[sp+1>>14&3][sp+1&16383]<<8,'
+  : 'pc=m[sp]|m[sp+1&65535]<<8,').
     'sp=sp+2&65535;'.
   'else '.
     'st+=5';
 }
 
 function ret($n){
-  global $mp;
+  global $mp, $pag;
   return 'st+='.$n.';'.
-  ($mp?'mp=':'').'pc=m[sp]|m[sp+1&65535]<<8;'.
+  ($mp?'mp=':'').
+($pag
+  ? 'pc=m[sp>>14][sp&16383]|m[sp+1>>14&3][sp+1&16383]<<8,'
+  : 'pc=m[sp]|m[sp+1&65535]<<8,').
   'sp=sp+2&65535';
 }
 
 function ldpnnrr($a, $b, $n) {
-  global $mp;
+  global $mp, $pag;
   return 'st+='.$n.';'.
-  'wb('.($mp?'mp':'t').'=m[pc++&65535]|m[pc++&65535]<<8,'.$b.');'.
-  'wb('.($mp?'mp=mp':'t').'+1&65535,'.$a.')';
+($pag
+  ? 'mw[(t=m[pc>>14&3][pc++&16383]|m[pc>>14&3][pc++&16383]<<8)>>14][t&16383]='.$b.';'.
+    'mw['.($mp?'(mp=t+1)>>14&3][mp':'t+1>>14&3][t+1').'&16383]='.$a
+  : 'wb(t=m[pc++&65535]|m[pc++&65535]<<8,'.$b.');'.
+    'wb('.($mp?'mp=':'').'t+1&65535,'.$a.')');
 }
 
 function ldrrpnn($a, $b, $n) {
-  global $mp;
+  global $mp, $pag;
   return 'st+='.$n.';'.
-  $b.'=m[t=m[pc++&65535]|m[pc++&65535]<<8];'.
-  $a.'=m['.($mp?'mp=':'').'t+1&65535]';
+($pag
+  ? $b.'=m[(t=m[pc>>14&3][pc++&16383]|m[pc>>14&3][pc++&16383]<<8)>>14][t&16383];'.
+    $a.'=m['.($mp?'(mp=t+1)>>14&3][mp':'t+1>>14&3][t+1').'&16383]'
+  : $b.'=m[t=m[pc++&65535]|m[pc++&65535]<<8];'.
+    $a.'=m['.($mp?'mp=':'').'t+1&65535]');
 }
 
 function ldrr($a, $b, $n){
@@ -288,15 +372,23 @@ function cp($a, $n){
 }
 
 function push($a, $b){
+  global $pag;
   return 'st+=11;'.
-  'wb(--sp&65535,'.$a.');'.
-  'wb(sp=sp-1&65535,'.$b.')';
+($pag
+  ? 'mw[--sp>>14&3][sp&16383]='.$a.';'.
+    'mw[(sp=sp-1&65535)>>14][sp&16383]='.$b
+  : 'wb(--sp&65535,'.$a.');'.
+    'wb(sp=sp-1&65535,'.$b.')');
 }
 
 function pop($a, $b){
+  global $pag;
   return 'st+=10;'.
-  $b.'=m[sp];'.
-  $a.'=m[sp+1&65535];'.
+($pag
+  ? $b.'=m[sp>>14][sp&16383];'.
+    $a.'=m[sp+1>>14&3][sp+1&16383];'
+  : $b.'=m[sp];'.
+    $a.'=m[sp+1&65535];').
   'sp=sp+2&65535';
 }
 
@@ -721,7 +813,7 @@ a(sbc('e', 4));                                             // 9b // SBC A,E
 a(sbc('h', 4));                                             // 9c // SBC A,H
 a(sbc('l', 4));                                             // 9d // SBC A,L
 a(sbc('m[l|h<<8]', 7));                                     // 9e // SBC A,(HL)
-a('fb=~(fa=a);a=fr=(ff=ff&256/-256)&255');                  // 9f // SBC A,A
+a('fb=~(fa=a);a=fr=(ff=(ff&256)/-256)&255');                // 9f // SBC A,A
 a(anda('b', 4));                                            // a0 // AND B
 a(anda('c', 4));                                            // a1 // AND C
 a(anda('d', 4));                                            // a2 // AND D
@@ -990,7 +1082,7 @@ a(sbc('e', 4));                                             // 9b // SBC A,E
 a(sbc('xh', 4));                                            // 9c // SBC A,IXH
 a(sbc('xl', 4));                                            // 9d // SBC A,IXL
 a(sbc('m[((m[pc++&65535]^128)-128+(xl|xh<<8))&65535]', 15));// 9e // SBC A,(IX+d)
-a('fb=~(fa=a);a=fr=(ff=ff&256/-256)&255');                  // 9f // SBC A,A
+a('fb=~(fa=a);a=fr=(ff=(ff&256)/-256)&255');                // 9f // SBC A,A
 a(anda('b', 4));                                            // a0 // AND B
 a(anda('c', 4));                                            // a1 // AND C
 a(anda('d', 4));                                            // a2 // AND D
@@ -1259,7 +1351,7 @@ a(sbc('e', 4));                                             // 9b // SBC A,E
 a(sbc('yh', 4));                                            // 9c // SBC A,IYH
 a(sbc('yl', 4));                                            // 9d // SBC A,IYL
 a(sbc('m[((m[pc++&65535]^128)-128+(yl|yh<<8))&65535]', 15));// 9e // SBC A,(IY+d)
-a('fb=~(fa=a);a=fr=(ff=ff&256/-256)&255');                  // 9f // SBC A,A
+a('fb=~(fa=a);a=fr=(ff=(ff&256)/-256)&255');                // 9f // SBC A,A
 a(anda('b', 4));                                            // a0 // AND B
 a(anda('c', 4));                                            // a1 // AND C
 a(anda('d', 4));                                            // a2 // AND D

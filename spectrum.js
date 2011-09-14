@@ -1,6 +1,6 @@
 na= 'jBacteria ';
 m= bytes(65536);
-vm= bytes(6144);
+vm= [];
 vb= [];
 data= [];
 kb= [0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff]; // keyboard state
@@ -117,7 +117,7 @@ function bytes(a) {
 
 function run() {
   while( st < 69888 )                       // execute z80 instructions during a frame
-cond(),
+//cond(),
     r++,
     g[m[pc++&0xffff]]();
   if( !(++flash & 15) )

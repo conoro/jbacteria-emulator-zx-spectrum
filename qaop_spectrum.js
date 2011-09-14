@@ -154,6 +154,7 @@ function Spectrum() {
             return b.putImageData(W, d, e);
         var f = h(a),
             g = h(a ^ a - 1);
+//console.log(f, g);
         b.putImageData(W, d, e, borderchar * 8, X * (8 * g + borderlines), 256, X * 8 * (f - g + 1))
     }
     function update_screen() {

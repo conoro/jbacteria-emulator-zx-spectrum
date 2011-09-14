@@ -1,6 +1,6 @@
 caca= 0;//0x10000000;
 function cond() {
-  caca && caca++==0x57 && generateSnap();
+  caca && caca++==0x1fd2 && generateSnap();
 }
 
 function generateSnap() {
