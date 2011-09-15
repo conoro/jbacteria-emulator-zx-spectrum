@@ -1151,7 +1151,7 @@ c('o8b');                                                   // 8b // ADC A,E
 a(adc('xh', 4));                                            // 8c // ADC A,IXH
 a(adc('xl', 4));                                            // 8d // ADC A,IXL
 a(adc($pag                                                  // 8e // ADC A,(IX+d)
-  ? 'm[(t=((m[pc>>14&3][pc++&16383]^128)-128+(xl|xh<<8)))>>14&3][t&16383]'
+  ? 'm[(t=(m[pc>>14&3][pc++&16383]^128)-128+(xl|xh<<8))>>14&3][t&16383]'
   : 'm[((m[pc++&65535]^128)-128+(xl|xh<<8))&65535]', 15));
 c('o8f');                                                   // 8f // ADC A,A
 c('o90');                                                   // 90 // SUB A,B
@@ -1161,7 +1161,7 @@ c('o93');                                                   // 93 // SUB A,E
 a(sub('xh', 4));                                            // 94 // SUB A,IXH
 a(sub('xl', 4));                                            // 95 // SUB A,IXL
 a(sub($pag                                                  // 96 // SUB A,(IX+d)
-  ? 'm[(t=((m[pc>>14&3][pc++&16383]^128)-128+(xl|xh<<8)))>>14&3][t&16383]'
+  ? 'm[(t=(m[pc>>14&3][pc++&16383]^128)-128+(xl|xh<<8))>>14&3][t&16383]'
   : 'm[((m[pc++&65535]^128)-128+(xl|xh<<8))&65535]', 15));
 c('o97');                                                   // 97 // SUB A,A
 c('o98');                                                   // 98 // SBC A,B
@@ -1171,7 +1171,7 @@ c('o9b');                                                   // 9b // SBC A,E
 a(sbc('xh', 4));                                            // 9c // SBC A,IXH
 a(sbc('xl', 4));                                            // 9d // SBC A,IXL
 a(sbc($pag                                                  // 9e // SBC A,(IX+d)
-  ? 'm[(t=((m[pc>>14&3][pc++&16383]^128)-128+(xl|xh<<8)))>>14&3][t&16383]'
+  ? 'm[(t=(m[pc>>14&3][pc++&16383]^128)-128+(xl|xh<<8))>>14&3][t&16383]'
   : 'm[((m[pc++&65535]^128)-128+(xl|xh<<8))&65535]', 15));
 c('o9f');                                                   // 9f // SBC A,A
 c('oa0');                                                   // a0 // AND B
@@ -1181,7 +1181,7 @@ c('oa3');                                                   // a3 // AND E
 a(anda('xh', 4));                                           // a4 // AND IXH
 a(anda('xl', 4));                                           // a5 // AND IXL
 a(anda($pag                                                 // a6 // AND (IX+d)
-  ? 'm[(t=((m[pc>>14&3][pc++&16383]^128)-128+(xl|xh<<8)))>>14&3][t&16383]'
+  ? 'm[(t=(m[pc>>14&3][pc++&16383]^128)-128+(xl|xh<<8))>>14&3][t&16383]'
   : 'm[((m[pc++&65535]^128)-128+(xl|xh<<8))&65535]', 15));
 c('oa7');                                                   // a7 // AND A
 c('oa8');                                                   // a8 // XOR B
@@ -1191,7 +1191,7 @@ c('oab');                                                   // ab // XOR E
 a(xoror('^=xh', 4));                                        // ac // XOR IXH
 a(xoror('^=xl', 4));                                        // ad // XOR IXL
 a(xoror($pag                                                // ae // XOR (IX+d)
-  ? '^=m[(t=((m[pc>>14&3][pc++&16383]^128)-128+(xl|xh<<8)))>>14&3][t&16383]'
+  ? '^=m[(t=(m[pc>>14&3][pc++&16383]^128)-128+(xl|xh<<8))>>14&3][t&16383]'
   : '^=m[((m[pc++&65535]^128)-128+(xl|xh<<8))&65535]', 15));
 c('oaf');                                                   // af // XOR A
 c('ob0');                                                   // b0 // OR B
@@ -1201,7 +1201,7 @@ c('ob3');                                                   // b3 // OR E
 a(xoror('|=xh', 4));                                        // b4 // OR IXH
 a(xoror('|=xl', 4));                                        // b5 // OR IXL
 a(xoror($pag                                                // b6 // OR (IX+d)
-  ? '|=m[(t=((m[pc>>14&3][pc++&16383]^128)-128+(xl|xh<<8)))>>14&3][t&16383]'
+  ? '|=m[(t=(m[pc>>14&3][pc++&16383]^128)-128+(xl|xh<<8))>>14&3][t&16383]'
   : '|=m[((m[pc++&65535]^128)-128+(xl|xh<<8))&65535]', 15));
 c('ob7');                                                   // b7 // OR A
 c('ob8');                                                   // b8 // CP B
@@ -1211,7 +1211,7 @@ c('obb');                                                   // bb // CP E
 a(cp('xh', 4));                                             // bc // CP IXH
 a(cp('xl', 4));                                             // bd // CP IXL
 a(($pag                                                     // be // CP (IX+d)
-  ? 't=m[(t=((m[pc>>14&3][pc++&16383]^128)-128+(xl|xh<<8)))>>14&3][t&16383];'
+  ? 't=m[(t=(m[pc>>14&3][pc++&16383]^128)-128+(xl|xh<<8))>>14&3][t&16383];'
   : 't=m[((m[pc++&65535]^128)-128+(xl|xh<<8))&65535];').cp('t', 15));
 c('obf');                                                   // bf // CP A
 c('oc0');                                                   // c0 // RET NZ
@@ -1907,70 +1907,70 @@ a(srl('t').($pag?';h=mw[mp>>14][mp&16383]=t':';wb(mp,h=t)'));//3c // LD H,SRL(IY
 a(srl('t').($pag?';l=mw[mp>>14][mp&16383]=t':';wb(mp,l=t)'));//3d // LD L,SRL(IY+d)
 a(srl('t').($pag?';mw[mp>>14][mp&16383]=t':';wb(mp,t)'));   // 3e // SRL(IY+d)
 a(srl('t').($pag?';a=mw[mp>>14][mp&16383]=t':';wb(mp,a=t)'));//3f // LD A,SRL(IY+d)
-a(biti(1));                                                 // 40 // BIT 0,(IY+d)
-a(biti(1));                                                 // 41 // BIT 0,(IY+d)
-a(biti(1));                                                 // 42 // BIT 0,(IY+d)
-a(biti(1));                                                 // 43 // BIT 0,(IY+d)
-a(biti(1));                                                 // 44 // BIT 0,(IY+d)
-a(biti(1));                                                 // 45 // BIT 0,(IY+d)
-a(biti(1));                                                 // 46 // BIT 0,(IY+d)
-a(biti(1));                                                 // 47 // BIT 0,(IY+d)
-a(biti(2));                                                 // 48 // BIT 1,(IY+d)
-a(biti(2));                                                 // 49 // BIT 1,(IY+d)
-a(biti(2));                                                 // 4a // BIT 1,(IY+d)
-a(biti(2));                                                 // 4b // BIT 1,(IY+d)
-a(biti(2));                                                 // 4c // BIT 1,(IY+d)
-a(biti(2));                                                 // 4d // BIT 1,(IY+d)
-a(biti(2));                                                 // 4e // BIT 1,(IY+d)
-a(biti(2));                                                 // 4f // BIT 1,(IY+d)
-a(biti(4));                                                 // 50 // BIT 2,(IY+d)
-a(biti(4));                                                 // 51 // BIT 2,(IY+d)
-a(biti(4));                                                 // 52 // BIT 2,(IY+d)
-a(biti(4));                                                 // 53 // BIT 2,(IY+d)
-a(biti(4));                                                 // 54 // BIT 2,(IY+d)
-a(biti(4));                                                 // 55 // BIT 2,(IY+d)
-a(biti(4));                                                 // 56 // BIT 2,(IY+d)
-a(biti(4));                                                 // 57 // BIT 2,(IY+d)
-a(biti(8));                                                 // 58 // BIT 3,(IY+d)
-a(biti(8));                                                 // 59 // BIT 3,(IY+d)
-a(biti(8));                                                 // 5a // BIT 3,(IY+d)
-a(biti(8));                                                 // 5b // BIT 3,(IY+d)
-a(biti(8));                                                 // 5c // BIT 3,(IY+d)
-a(biti(8));                                                 // 5d // BIT 3,(IY+d)
-a(biti(8));                                                 // 5e // BIT 3,(IY+d)
-a(biti(8));                                                 // 5f // BIT 3,(IY+d)
-a(biti(16));                                                // 60 // BIT 4,(IY+d)
-a(biti(16));                                                // 61 // BIT 4,(IY+d)
-a(biti(16));                                                // 62 // BIT 4,(IY+d)
-a(biti(16));                                                // 63 // BIT 4,(IY+d)
-a(biti(16));                                                // 64 // BIT 4,(IY+d)
-a(biti(16));                                                // 65 // BIT 4,(IY+d)
-a(biti(16));                                                // 66 // BIT 4,(IY+d)
-a(biti(16));                                                // 67 // BIT 4,(IY+d)
-a(biti(32));                                                // 68 // BIT 5,(IY+d)
-a(biti(32));                                                // 69 // BIT 5,(IY+d)
-a(biti(32));                                                // 6a // BIT 5,(IY+d)
-a(biti(32));                                                // 6b // BIT 5,(IY+d)
-a(biti(32));                                                // 6c // BIT 5,(IY+d)
-a(biti(32));                                                // 6d // BIT 5,(IY+d)
-a(biti(32));                                                // 6e // BIT 5,(IY+d)
-a(biti(32));                                                // 7f // BIT 5,(IY+d)
-a(biti(64));                                                // 70 // BIT 6,(IY+d)
-a(biti(64));                                                // 71 // BIT 6,(IY+d)
-a(biti(64));                                                // 72 // BIT 6,(IY+d)
-a(biti(64));                                                // 73 // BIT 6,(IY+d)
-a(biti(64));                                                // 74 // BIT 6,(IY+d)
-a(biti(64));                                                // 75 // BIT 6,(IY+d)
-a(biti(64));                                                // 76 // BIT 6,(IY+d)
-a(biti(64));                                                // 77 // BIT 6,(IY+d)
-a(biti(128));                                               // 78 // BIT 7,(IY+d)
-a(biti(128));                                               // 79 // BIT 7,(IY+d)
-a(biti(128));                                               // 7a // BIT 7,(IY+d)
-a(biti(128));                                               // 7b // BIT 7,(IY+d)
-a(biti(128));                                               // 7c // BIT 7,(IY+d)
-a(biti(128));                                               // 7d // BIT 7,(IY+d)
-a(biti(128));                                               // 7e // BIT 7,(IY+d)
-a(biti(128));                                               // 7f // BIT 7,(IY+d)
+b('p40', biti(1));                                          // 40 // BIT 0,(IY+d)
+c('p40');                                                   // 41 // BIT 0,(IY+d)
+c('p40');                                                   // 42 // BIT 0,(IY+d)
+c('p40');                                                   // 43 // BIT 0,(IY+d)
+c('p40');                                                   // 44 // BIT 0,(IY+d)
+c('p40');                                                   // 45 // BIT 0,(IY+d)
+c('p40');                                                   // 46 // BIT 0,(IY+d)
+c('p40');                                                   // 47 // BIT 0,(IY+d)
+b('p48', biti(2));                                          // 48 // BIT 1,(IY+d)
+c('p48');                                                   // 49 // BIT 1,(IY+d)
+c('p48');                                                   // 4a // BIT 1,(IY+d)
+c('p48');                                                   // 4b // BIT 1,(IY+d)
+c('p48');                                                   // 4c // BIT 1,(IY+d)
+c('p48');                                                   // 4d // BIT 1,(IY+d)
+c('p48');                                                   // 4e // BIT 1,(IY+d)
+c('p48');                                                   // 4f // BIT 1,(IY+d)
+b('p50', biti(4));                                          // 50 // BIT 2,(IY+d)
+c('p50');                                                   // 51 // BIT 2,(IY+d)
+c('p50');                                                   // 52 // BIT 2,(IY+d)
+c('p50');                                                   // 53 // BIT 2,(IY+d)
+c('p50');                                                   // 54 // BIT 2,(IY+d)
+c('p50');                                                   // 55 // BIT 2,(IY+d)
+c('p50');                                                   // 56 // BIT 2,(IY+d)
+c('p50');                                                   // 57 // BIT 2,(IY+d)
+b('p58', biti(8));                                          // 58 // BIT 3,(IY+d)
+c('p58');                                                   // 59 // BIT 3,(IY+d)
+c('p58');                                                   // 5a // BIT 3,(IY+d)
+c('p58');                                                   // 5b // BIT 3,(IY+d)
+c('p58');                                                   // 5c // BIT 3,(IY+d)
+c('p58');                                                   // 5d // BIT 3,(IY+d)
+c('p58');                                                   // 5e // BIT 3,(IY+d)
+c('p58');                                                   // 5f // BIT 3,(IY+d)
+b('p60', biti(16));                                         // 60 // BIT 4,(IY+d)
+c('p60');                                                   // 61 // BIT 4,(IY+d)
+c('p60');                                                   // 62 // BIT 4,(IY+d)
+c('p60');                                                   // 63 // BIT 4,(IY+d)
+c('p60');                                                   // 64 // BIT 4,(IY+d)
+c('p60');                                                   // 65 // BIT 4,(IY+d)
+c('p60');                                                   // 66 // BIT 4,(IY+d)
+c('p60');                                                   // 67 // BIT 4,(IY+d)
+b('p68', biti(32));                                         // 68 // BIT 5,(IY+d)
+c('p68');                                                   // 69 // BIT 5,(IY+d)
+c('p68');                                                   // 6a // BIT 5,(IY+d)
+c('p68');                                                   // 6b // BIT 5,(IY+d)
+c('p68');                                                   // 6c // BIT 5,(IY+d)
+c('p68');                                                   // 6d // BIT 5,(IY+d)
+c('p68');                                                   // 6e // BIT 5,(IY+d)
+c('p68');                                                   // 7f // BIT 5,(IY+d)
+b('p70', biti(64));                                         // 70 // BIT 6,(IY+d)
+c('p70');                                                   // 71 // BIT 6,(IY+d)
+c('p70');                                                   // 72 // BIT 6,(IY+d)
+c('p70');                                                   // 73 // BIT 6,(IY+d)
+c('p70');                                                   // 74 // BIT 6,(IY+d)
+c('p70');                                                   // 75 // BIT 6,(IY+d)
+c('p70');                                                   // 76 // BIT 6,(IY+d)
+c('p70');                                                   // 77 // BIT 6,(IY+d)
+b('p78', biti(128));                                        // 78 // BIT 7,(IY+d)
+c('p78');                                                   // 79 // BIT 7,(IY+d)
+c('p78');                                                   // 7a // BIT 7,(IY+d)
+c('p78');                                                   // 7b // BIT 7,(IY+d)
+c('p78');                                                   // 7c // BIT 7,(IY+d)
+c('p78');                                                   // 7d // BIT 7,(IY+d)
+c('p78');                                                   // 7e // BIT 7,(IY+d)
+c('p78');                                                   // 7f // BIT 7,(IY+d)
 a(res(254,'t').($pag?';b=mw[mp>>14][mp&16383]=t':';wb(mp,b=t)'));//80//LD B,RES 0,(IY+d)
 a(res(254,'t').($pag?';c=mw[mp>>14][mp&16383]=t':';wb(mp,c=t)'));//81//LD C,RES 0,(IY+d)
 a(res(254,'t').($pag?';d=mw[mp>>14][mp&16383]=t':';wb(mp,d=t)'));//82//LD D,RES 0,(IY+d)
@@ -2100,109 +2100,109 @@ a(set(128,'t').($pag?';l=mw[mp>>14][mp&16383]=t':';wb(mp,l=t)'));//fd//LD L,SET 
 a(set(128,'t').($pag?';mw[mp>>14][mp&16383]=t':';wb(mp,t)'));//fe // SET 7,(IY+d)
 a(set(128,'t').($pag?';a=mw[mp>>14][mp&16383]=t':';wb(mp,a=t)'));//ff//LD A,SET 7,(IY+d)
 
-a(nop(8));                                                  // 00 // NOP
-a(nop(8));                                                  // 01 // NOP
-a(nop(8));                                                  // 02 // NOP
-a(nop(8));                                                  // 03 // NOP
-a(nop(8));                                                  // 04 // NOP
-a(nop(8));                                                  // 05 // NOP
-a(nop(8));                                                  // 06 // NOP
-a(nop(8));                                                  // 07 // NOP
-a(nop(8));                                                  // 08 // NOP
-a(nop(8));                                                  // 09 // NOP
-a(nop(8));                                                  // 0a // NOP
-a(nop(8));                                                  // 0b // NOP
-a(nop(8));                                                  // 0c // NOP
-a(nop(8));                                                  // 0d // NOP
-a(nop(8));                                                  // 0e // NOP
-a(nop(8));                                                  // 0f // NOP
-a(nop(8));                                                  // 10 // NOP
-a(nop(8));                                                  // 11 // NOP
-a(nop(8));                                                  // 12 // NOP
-a(nop(8));                                                  // 13 // NOP
-a(nop(8));                                                  // 14 // NOP
-a(nop(8));                                                  // 15 // NOP
-a(nop(8));                                                  // 16 // NOP
-a(nop(8));                                                  // 17 // NOP
-a(nop(8));                                                  // 18 // NOP
-a(nop(8));                                                  // 19 // NOP
-a(nop(8));                                                  // 1a // NOP
-a(nop(8));                                                  // 1b // NOP
-a(nop(8));                                                  // 1c // NOP
-a(nop(8));                                                  // 1d // NOP
-a(nop(8));                                                  // 1e // NOP
-a(nop(8));                                                  // 1f // NOP
-a(nop(8));                                                  // 20 // NOP
-a(nop(8));                                                  // 21 // NOP
-a(nop(8));                                                  // 22 // NOP
-a(nop(8));                                                  // 23 // NOP
-a(nop(8));                                                  // 24 // NOP
-a(nop(8));                                                  // 25 // NOP
-a(nop(8));                                                  // 26 // NOP
-a(nop(8));                                                  // 27 // NOP
-a(nop(8));                                                  // 28 // NOP
-a(nop(8));                                                  // 29 // NOP
-a(nop(8));                                                  // 2a // NOP
-a(nop(8));                                                  // 2b // NOP
-a(nop(8));                                                  // 2c // NOP
-a(nop(8));                                                  // 2d // NOP
-a(nop(8));                                                  // 2e // NOP
-a(nop(8));                                                  // 2f // NOP
-a(nop(8));                                                  // 30 // NOP
-a(nop(8));                                                  // 31 // NOP
-a(nop(8));                                                  // 32 // NOP
-a(nop(8));                                                  // 33 // NOP
-a(nop(8));                                                  // 34 // NOP
-a(nop(8));                                                  // 35 // NOP
-a(nop(8));                                                  // 36 // NOP
-a(nop(8));                                                  // 37 // NOP
-a(nop(8));                                                  // 38 // NOP
-a(nop(8));                                                  // 39 // NOP
-a(nop(8));                                                  // 3a // NOP
-a(nop(8));                                                  // 3b // NOP
-a(nop(8));                                                  // 3c // NOP
-a(nop(8));                                                  // 3d // NOP
-a(nop(8));                                                  // 3e // NOP
-a(nop(8));                                                  // 3f // NOP
+b('p00', nop(8));                                           // 00 // NOP
+c('p00');                                                   // 01 // NOP
+c('p00');                                                   // 02 // NOP
+c('p00');                                                   // 03 // NOP
+c('p00');                                                   // 04 // NOP
+c('p00');                                                   // 05 // NOP
+c('p00');                                                   // 06 // NOP
+c('p00');                                                   // 07 // NOP
+c('p00');                                                   // 08 // NOP
+c('p00');                                                   // 09 // NOP
+c('p00');                                                   // 0a // NOP
+c('p00');                                                   // 0b // NOP
+c('p00');                                                   // 0c // NOP
+c('p00');                                                   // 0d // NOP
+c('p00');                                                   // 0e // NOP
+c('p00');                                                   // 0f // NOP
+c('p00');                                                   // 10 // NOP
+c('p00');                                                   // 11 // NOP
+c('p00');                                                   // 12 // NOP
+c('p00');                                                   // 13 // NOP
+c('p00');                                                   // 14 // NOP
+c('p00');                                                   // 15 // NOP
+c('p00');                                                   // 16 // NOP
+c('p00');                                                   // 17 // NOP
+c('p00');                                                   // 18 // NOP
+c('p00');                                                   // 19 // NOP
+c('p00');                                                   // 1a // NOP
+c('p00');                                                   // 1b // NOP
+c('p00');                                                   // 1c // NOP
+c('p00');                                                   // 1d // NOP
+c('p00');                                                   // 1e // NOP
+c('p00');                                                   // 1f // NOP
+c('p00');                                                   // 20 // NOP
+c('p00');                                                   // 21 // NOP
+c('p00');                                                   // 22 // NOP
+c('p00');                                                   // 23 // NOP
+c('p00');                                                   // 24 // NOP
+c('p00');                                                   // 25 // NOP
+c('p00');                                                   // 26 // NOP
+c('p00');                                                   // 27 // NOP
+c('p00');                                                   // 28 // NOP
+c('p00');                                                   // 29 // NOP
+c('p00');                                                   // 2a // NOP
+c('p00');                                                   // 2b // NOP
+c('p00');                                                   // 2c // NOP
+c('p00');                                                   // 2d // NOP
+c('p00');                                                   // 2e // NOP
+c('p00');                                                   // 2f // NOP
+c('p00');                                                   // 30 // NOP
+c('p00');                                                   // 31 // NOP
+c('p00');                                                   // 32 // NOP
+c('p00');                                                   // 33 // NOP
+c('p00');                                                   // 34 // NOP
+c('p00');                                                   // 35 // NOP
+c('p00');                                                   // 36 // NOP
+c('p00');                                                   // 37 // NOP
+c('p00');                                                   // 38 // NOP
+c('p00');                                                   // 39 // NOP
+c('p00');                                                   // 3a // NOP
+c('p00');                                                   // 3b // NOP
+c('p00');                                                   // 3c // NOP
+c('p00');                                                   // 3d // NOP
+c('p00');                                                   // 3e // NOP
+c('p00');                                                   // 3f // NOP
 a(inr('b'));                                                // 40 // IN B,(C)
 a(outr('b'));                                               // 41 // OUT (C),B
 a(sbchlrr('b', 'c'));                                       // 42 // SBC HL,BC
 a(ldpnnrr('b', 'c', 20));                                   // 43 // LD (NN),BC
-a(neg());                                                   // 44 // NEG
-a(ret(14));                                                 // 45 // RETN
-a('st+=8;im=0');                                            // 46 // IM 0
+b('o44', neg());                                            // 44 // NEG
+b('o45', ret(14));                                          // 45 // RETN
+b('o46', 'st+=8;im=0');                                     // 46 // IM 0
 a(ldrr('i', 'a', 9));                                       // 47 // LD I,A
 a(inr('c'));                                                // 48 // IN C,(C)
 a(outr('c'));                                               // 49 // OUT (C),C
 a(adchlrr('b', 'c'));                                       // 4a // ADC HL,BC
 a(ldrrpnn('b', 'c', 20));                                   // 4b // LD BC,(NN)
-a(neg());                                                   // 4c // NEG
-a(ret(14));                                                 // 4d // RETI
-a('st+=8;im=0');                                            // 4e // IM 0
+c('o44');                                                   // 4c // NEG
+c('o45');                                                   // 4d // RETI
+c('o46');                                                   // 4e // IM 0
 a(ldrr('r=r7', 'a', 9));                                    // 4f // LD R,A
 a(inr('d'));                                                // 50 // IN D,(C)
 a(outr('d'));                                               // 51 // OUT (C),D
 a(sbchlrr('d', 'e'));                                       // 52 // SBC HL,DE
 a(ldpnnrr('d', 'e', 20));                                   // 53 // LD (NN),DE
-a(neg());                                                   // 54 // NEG
-a(ret(14));                                                 // 55 // RETN
-a('st+=8;im=1');                                            // 56 // IM 1
+c('o44');                                                   // 54 // NEG
+c('o45');                                                   // 55 // RETN
+b('o56', 'st+=8;im=1');                                     // 56 // IM 1
 a(ldair('i'));                                              // 57 // LD A,I
 a(inr('e'));                                                // 58 // IN E,(C)
 a(outr('e'));                                               // 59 // OUT (C),E
 a(adchlrr('d', 'e'));                                       // 5a // ADC HL,DE
 a(ldrrpnn('d', 'e', 20));                                   // 5b // LD DE,(NN)
-a(neg());                                                   // 5c // NEG
-a(ret(14));                                                 // 5d // RETI
-a('st+=8;im=2');                                            // 5e // IM 2
+c('o44');                                                   // 5c // NEG
+c('o45');                                                   // 5d // RETI
+b('o5e', 'st+=8;im=2');                                     // 5e // IM 2
 a(ldair('(r&127|r7&128)'));                                 // 5f // LD A,R
 a(inr('h'));                                                // 60 // IN H,(C)
 a(outr('h'));                                               // 61 // OUT (C),H
 a(sbchlrr('h', 'l'));                                       // 62 // SBC HL,HL
 a(ldpnnrr('h', 'l', 20));                                   // 63 // LD (NN),HL
-a(neg());                                                   // 64 // NEG
-a(ret(14));                                                 // 65 // RETN
-a('st+=8;im=0');                                            // 66 // IM 0
+c('o44');                                                   // 64 // NEG
+c('o45');                                                   // 65 // RETN
+c('o46');                                                   // 66 // IM 0
 a('st+=18;'.                                                // 67 // RRD
 ($pag
   ? 't=m[u='.($mp?'(mp=l|h<<8)>>14][v=mp':'h>>6][v=l|h<<8').'&16383]|a<<8;'.
@@ -2222,9 +2222,9 @@ a(inr('l'));                                                // 68 // IN L,(C)
 a(outr('l'));                                               // 69 // OUT (C),L
 a(adchlrr('h', 'l'));                                       // 6a // ADC HL,HL
 a(ldrrpnn('h', 'l', 20));                                   // 6b // LD HL,(NN)
-a(neg());                                                   // 6c // NEG
-a(ret(14));                                                 // 6d // RETI
-a('st+=8;im=0');                                            // 6e // IM 0
+c('o44');                                                   // 6c // NEG
+c('o45');                                                   // 6d // RETI
+c('o46');                                                   // 6e // IM 0
 a('st+=18;'.                                                // 6f // RLD
 ($pag
   ? 't=m[u='.($mp?'(mp=l|h<<8)>>14][v=mp':'h>>6][v=l|h<<8').'&16383]<<4|a&15;'.
@@ -2257,10 +2257,10 @@ a('st+=20;'.                                                // 73 // LD (NN),SP
     'mw[++mp>>14][mp&16383]=sp>>8'
   : 'wb('.($mp?'mp':'t').'=m[pc++&65535]|m[pc++&65535]<<8,sp&255);'.
     'wb('.($mp?'mp=mp':'t').'+1&65535,sp>>8)'));
-a(neg());                                                   // 74 // NEG
-a(ret(14));                                                 // 75 // RETN
-a('st+=8;im=1');                                            // 76 // IM 1
-a(nop(8));                                                  // 77 // NOP
+c('o44');                                                   // 74 // NEG
+c('o45');                                                   // 75 // RETN
+c('o56');                                                   // 76 // IM 1
+c('p00');                                                   // 77 // NOP
 a(inr('a'));                                                // 78 // IN A,(C)
 a(outr('a'));                                               // 79 // OUT (C),A
 a('st+=15;'.                                                // 7a // ADC HL,SP
@@ -2276,137 +2276,137 @@ a('st+=20;'.                                                // 7b // LD SP,(NN)
 ($pag
   ? 'sp=m[(mp=m[pc>>14&3][pc++&16383]|m[pc>>14&3][pc++&16383]<<8)>>14][mp&16383]|m[++mp>>14][mp&16383]<<8'
   : 'sp=m[t=m[pc++&65535]|m[pc++&65535]<<8]|m['.($mp?'mp=':'').'t+1&65535]<<8'));
-a(neg());                                                   // 7c // NEG
-a(ret(14));                                                 // 7d // RETI
-a('st+=8;im=2');                                            // 7e // IM 2
-a(nop(8));                                                  // 7f // NOP
-a(nop(8));                                                  // 80 // NOP
-a(nop(8));                                                  // 81 // NOP
-a(nop(8));                                                  // 82 // NOP
-a(nop(8));                                                  // 83 // NOP
-a(nop(8));                                                  // 84 // NOP
-a(nop(8));                                                  // 85 // NOP
-a(nop(8));                                                  // 86 // NOP
-a(nop(8));                                                  // 87 // NOP
-a(nop(8));                                                  // 88 // NOP
-a(nop(8));                                                  // 89 // NOP
-a(nop(8));                                                  // 8a // NOP
-a(nop(8));                                                  // 8b // NOP
-a(nop(8));                                                  // 8c // NOP
-a(nop(8));                                                  // 8d // NOP
-a(nop(8));                                                  // 8e // NOP
-a(nop(8));                                                  // 8f // NOP
-a(nop(8));                                                  // 90 // NOP
-a(nop(8));                                                  // 91 // NOP
-a(nop(8));                                                  // 92 // NOP
-a(nop(8));                                                  // 93 // NOP
-a(nop(8));                                                  // 94 // NOP
-a(nop(8));                                                  // 95 // NOP
-a(nop(8));                                                  // 96 // NOP
-a(nop(8));                                                  // 97 // NOP
-a(nop(8));                                                  // 98 // NOP
-a(nop(8));                                                  // 99 // NOP
-a(nop(8));                                                  // 9a // NOP
-a(nop(8));                                                  // 9b // NOP
-a(nop(8));                                                  // 9c // NOP
-a(nop(8));                                                  // 9d // NOP
-a(nop(8));                                                  // 9e // NOP
-a(nop(8));                                                  // 9f // NOP
+c('o44');                                                   // 7c // NEG
+c('o45');                                                   // 7d // RETI
+c('o5e');                                                   // 7e // IM 2
+c('p00');                                                   // 7f // NOP
+c('p00');                                                   // 80 // NOP
+c('p00');                                                   // 81 // NOP
+c('p00');                                                   // 82 // NOP
+c('p00');                                                   // 83 // NOP
+c('p00');                                                   // 84 // NOP
+c('p00');                                                   // 85 // NOP
+c('p00');                                                   // 86 // NOP
+c('p00');                                                   // 87 // NOP
+c('p00');                                                   // 88 // NOP
+c('p00');                                                   // 89 // NOP
+c('p00');                                                   // 8a // NOP
+c('p00');                                                   // 8b // NOP
+c('p00');                                                   // 8c // NOP
+c('p00');                                                   // 8d // NOP
+c('p00');                                                   // 8e // NOP
+c('p00');                                                   // 8f // NOP
+c('p00');                                                   // 90 // NOP
+c('p00');                                                   // 91 // NOP
+c('p00');                                                   // 92 // NOP
+c('p00');                                                   // 93 // NOP
+c('p00');                                                   // 94 // NOP
+c('p00');                                                   // 95 // NOP
+c('p00');                                                   // 96 // NOP
+c('p00');                                                   // 97 // NOP
+c('p00');                                                   // 98 // NOP
+c('p00');                                                   // 99 // NOP
+c('p00');                                                   // 9a // NOP
+c('p00');                                                   // 9b // NOP
+c('p00');                                                   // 9c // NOP
+c('p00');                                                   // 9d // NOP
+c('p00');                                                   // 9e // NOP
+c('p00');                                                   // 9f // NOP
 a(ldid(1, 0));                                              // a0 // LDI
 a(cpid(1, 0));                                              // a1 // CPI
 a(inid(1, 0));                                              // a2 // INI
 a(otid(1, 0));                                              // a3 // OUTI
-a(nop(8));                                                  // a4 // NOP
-a(nop(8));                                                  // a5 // NOP
-a(nop(8));                                                  // a6 // NOP
-a(nop(8));                                                  // a7 // NOP
+c('p00');                                                   // a4 // NOP
+c('p00');                                                   // a5 // NOP
+c('p00');                                                   // a6 // NOP
+c('p00');                                                   // a7 // NOP
 a(ldid(0, 0));                                              // a8 // LDD
 a(cpid(0, 0));                                              // a9 // CPD
 a(inid(0, 0));                                              // aa // IND
 a(otid(0, 0));                                              // ab // OUTD
-a(nop(8));                                                  // ac // NOP
-a(nop(8));                                                  // ad // NOP
-a(nop(8));                                                  // ae // NOP
-a(nop(8));                                                  // af // NOP
+c('p00');                                                   // ac // NOP
+c('p00');                                                   // ad // NOP
+c('p00');                                                   // ae // NOP
+c('p00');                                                   // af // NOP
 a(ldid(1, 1));                                              // b0 // LDIR
 a(cpid(1, 1));                                              // b1 // CPIR
 a(inid(1, 1));                                              // b2 // INIR
 a(otid(1, 1));                                              // b3 // OTIR
-a(nop(8));                                                  // b4 // NOP
-a(nop(8));                                                  // b5 // NOP
-a(nop(8));                                                  // b6 // NOP
-a(nop(8));                                                  // b7 // NOP
+c('p00');                                                   // b4 // NOP
+c('p00');                                                   // b5 // NOP
+c('p00');                                                   // b6 // NOP
+c('p00');                                                   // b7 // NOP
 a(ldid(0, 1));                                              // b8 // LDDR
 a(cpid(0, 1));                                              // b9 // CPDR
 a(inid(0, 1));                                              // ba // INDR
 a(otid(0, 1));                                              // bb // OTDR
-a(nop(8));                                                  // bc // NOP
-a(nop(8));                                                  // bd // NOP
-a(nop(8));                                                  // be // NOP
-a(nop(8));                                                  // bf // NOP
-a(nop(8));                                                  // c0 // NOP
-a(nop(8));                                                  // c1 // NOP
-a(nop(8));                                                  // c2 // NOP
-a(nop(8));                                                  // c3 // NOP
-a(nop(8));                                                  // c4 // NOP
-a(nop(8));                                                  // c5 // NOP
-a(nop(8));                                                  // c6 // NOP
-a(nop(8));                                                  // c7 // NOP
-a(nop(8));                                                  // c8 // NOP
-a(nop(8));                                                  // c9 // NOP
-a(nop(8));                                                  // ca // NOP
-a(nop(8));                                                  // cb // NOP
-a(nop(8));                                                  // cc // NOP
-a(nop(8));                                                  // cd // NOP
-a(nop(8));                                                  // ce // NOP
-a(nop(8));                                                  // cf // NOP
-a(nop(8));                                                  // d0 // NOP
-a(nop(8));                                                  // d1 // NOP
-a(nop(8));                                                  // d2 // NOP
-a(nop(8));                                                  // d3 // NOP
-a(nop(8));                                                  // d4 // NOP
-a(nop(8));                                                  // d5 // NOP
-a(nop(8));                                                  // d6 // NOP
-a(nop(8));                                                  // d7 // NOP
-a(nop(8));                                                  // d8 // NOP
-a(nop(8));                                                  // d9 // NOP
-a(nop(8));                                                  // da // NOP
-a(nop(8));                                                  // db // NOP
-a(nop(8));                                                  // dc // NOP
-a(nop(8));                                                  // dd // NOP
-a(nop(8));                                                  // de // NOP
-a(nop(8));                                                  // df // NOP
-a(nop(8));                                                  // e0 // NOP
-a(nop(8));                                                  // e1 // NOP
-a(nop(8));                                                  // e2 // NOP
-a(nop(8));                                                  // e3 // NOP
-a(nop(8));                                                  // e4 // NOP
-a(nop(8));                                                  // e5 // NOP
-a(nop(8));                                                  // e6 // NOP
-a(nop(8));                                                  // e7 // NOP
-a(nop(8));                                                  // e8 // NOP
-a(nop(8));                                                  // e9 // NOP
-a(nop(8));                                                  // ea // NOP
-a(nop(8));                                                  // eb // NOP
-a(nop(8));                                                  // ec // NOP
-a(nop(8));                                                  // ed // NOP
-a(nop(8));                                                  // ee // NOP
-a(nop(8));                                                  // ef // NOP
-a(nop(8));                                                  // f0 // NOP
-a(nop(8));                                                  // f1 // NOP
-a(nop(8));                                                  // f2 // NOP
-a(nop(8));                                                  // f3 // NOP
-a(nop(8));                                                  // f4 // NOP
-a(nop(8));                                                  // f5 // NOP
-a(nop(8));                                                  // f6 // NOP
-a(nop(8));                                                  // f7 // NOP
-a(nop(8));                                                  // f8 // NOP
-a(nop(8));                                                  // f9 // NOP
-a(nop(8));                                                  // fa // NOP
-a(nop(8));                                                  // fb // NOP
+c('p00');                                                   // bc // NOP
+c('p00');                                                   // bd // NOP
+c('p00');                                                   // be // NOP
+c('p00');                                                   // bf // NOP
+c('p00');                                                   // c0 // NOP
+c('p00');                                                   // c1 // NOP
+c('p00');                                                   // c2 // NOP
+c('p00');                                                   // c3 // NOP
+c('p00');                                                   // c4 // NOP
+c('p00');                                                   // c5 // NOP
+c('p00');                                                   // c6 // NOP
+c('p00');                                                   // c7 // NOP
+c('p00');                                                   // c8 // NOP
+c('p00');                                                   // c9 // NOP
+c('p00');                                                   // ca // NOP
+c('p00');                                                   // cb // NOP
+c('p00');                                                   // cc // NOP
+c('p00');                                                   // cd // NOP
+c('p00');                                                   // ce // NOP
+c('p00');                                                   // cf // NOP
+c('p00');                                                   // d0 // NOP
+c('p00');                                                   // d1 // NOP
+c('p00');                                                   // d2 // NOP
+c('p00');                                                   // d3 // NOP
+c('p00');                                                   // d4 // NOP
+c('p00');                                                   // d5 // NOP
+c('p00');                                                   // d6 // NOP
+c('p00');                                                   // d7 // NOP
+c('p00');                                                   // d8 // NOP
+c('p00');                                                   // d9 // NOP
+c('p00');                                                   // da // NOP
+c('p00');                                                   // db // NOP
+c('p00');                                                   // dc // NOP
+c('p00');                                                   // dd // NOP
+c('p00');                                                   // de // NOP
+c('p00');                                                   // df // NOP
+c('p00');                                                   // e0 // NOP
+c('p00');                                                   // e1 // NOP
+c('p00');                                                   // e2 // NOP
+c('p00');                                                   // e3 // NOP
+c('p00');                                                   // e4 // NOP
+c('p00');                                                   // e5 // NOP
+c('p00');                                                   // e6 // NOP
+c('p00');                                                   // e7 // NOP
+c('p00');                                                   // e8 // NOP
+c('p00');                                                   // e9 // NOP
+c('p00');                                                   // ea // NOP
+c('p00');                                                   // eb // NOP
+c('p00');                                                   // ec // NOP
+c('p00');                                                   // ed // NOP
+c('p00');                                                   // ee // NOP
+c('p00');                                                   // ef // NOP
+c('p00');                                                   // f0 // NOP
+c('p00');                                                   // f1 // NOP
+c('p00');                                                   // f2 // NOP
+c('p00');                                                   // f3 // NOP
+c('p00');                                                   // f4 // NOP
+c('p00');                                                   // f5 // NOP
+c('p00');                                                   // f6 // NOP
+c('p00');                                                   // f7 // NOP
+c('p00');                                                   // f8 // NOP
+c('p00');                                                   // f9 // NOP
+c('p00');                                                   // fa // NOP
+c('p00');                                                   // fb // NOP
 a('loadblock()');                                           // fc // tape loader trap
-a(nop(8));                                                  // fd // NOP
-a(nop(8));                                                  // fe // NOP
-a(nop(8));                                                  // ff // NOP
+c('p00');                                                   // fd // NOP
+c('p00');                                                   // fe // NOP
+c('p00');                                                   // ff // NOP
 ?>
 ];
