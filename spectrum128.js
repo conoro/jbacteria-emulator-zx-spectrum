@@ -148,7 +148,7 @@ function words(a) {
 
 function run() {
   while(st < 70908)
-//cond(),
+cond(),
     r++,
     g[m[pc>>14&3][pc++&0x3fff]]();
   if( !(++flash & 15) )
@@ -353,7 +353,7 @@ function loadblock() {
     mw[xh>>6][xl | xh<<8 & 0x3fff]= game.charCodeAt(tapep++) & 0xff,
     g[0x123]();
   setf_(0x6d);  //abcd
-  f_=0x6d;
+//  f_=0x6d;
   a= d= e= 0;
   pc= 0x5e0;                           // exit address
   tapep++;

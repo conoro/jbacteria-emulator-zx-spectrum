@@ -14,7 +14,7 @@ function init() {
   if ( localStorage.ft & 8 )
     rotapal();
   sample= 0;
-//z80init();f=0; //abcd
+//z80init();f=f_=0; //abcd
   pag= 1;
   a= b= c= d= h= l= fa= fb= fr= ff= r7=
   a_=b_=c_=d_=h_=l_=fa_=fb_=fr_=e_= r= pc= iff= im= halted= t= u= 0;
@@ -60,6 +60,8 @@ function init() {
     tp(),
     pc= 0x56c;
   wp(0x7ffd, game ? 16 : 0);
+//rom[1][0x056c]=0xcd;
+//rom[1][0x056d]=0xe7;
   document.ondragover= handleDragOver;
   document.ondrop= handleFileSelect;
   document.onkeydown= kdown;          // key event handling
@@ -232,6 +234,7 @@ function rm(o) {
   xh= o.charCodeAt(j++);
   iff= o.charCodeAt(j++)>>2 & 1;
   r= r7= o.charCodeAt(j++);
+console.log(r7&128);
   setf(o.charCodeAt(j++));
   a= o.charCodeAt(j++);
   sp= o.charCodeAt(j++) | o.charCodeAt(j++)<<8;
@@ -265,8 +268,9 @@ function rm(o) {
 }
 
 function wm() {
+// abcd
   t= String.fromCharCode(i, l_, h_, e_, d_, c_, b_, f_(), a_, l, h, e, d, c, b, yl, yh,
-                         xl, xh, iff<<2, r, f(), a, sp&255, sp>>8, im&3,  bor);
+                         xl, xh, iff<<2, r&127|r7&128, f(), a, sp&255, sp>>8, im&3,  bor);
   for ( j= 0x4000
       ; j < 0x10000
       ; j++ )

@@ -185,6 +185,8 @@ function init() {
   if( game )                               // emulate LOAD ""
     tp(),
     pc= 0x56c;
+m[0x056c]=0xcd;
+m[0x056d]=0xe7;
   document.ondragover= handleDragOver;
   document.ondrop= handleFileSelect;
   document.onkeydown= kdown;          // key event handling
@@ -573,7 +575,7 @@ function wm() {
   wb(sp-1 & 0xffff, pc>>8 & 0xff);
   wb(sp-2 & 0xffff, pc    & 0xff);
   t= String.fromCharCode(i, l_, h_, e_, d_, c_, b_, f_(), a_, l, h, e, d, c, b, yl, yh,
-                         xl, xh, iff<<2, r, f(), a, sp-2&0xff, sp-2>>8, im&3, bor); // 0x15
+                         xl, xh, iff<<2, r&127|r7&128, f(), a, sp-2&0xff, sp-2>>8, im&3, bor); // 0x15
   for ( j= 0x4000
       ; j < 0x10000
       ; j++ )
