@@ -1,9 +1,10 @@
 m= [];                                 // memory
 mw= [];                                // write access memory
-vm= [];/*new Uint8Array(256)*/         // video memory
-vb= [];/*new Uint8Array(0x1b00)*/         // video buffer
+vm= words(6144);                       // video memory
+vb= [];
 data= [];
-ram= [[],[],[],[],[],[],[],[],[]];        // [new Uint8Array(16384),new Uint8Array(16384),new Uint8Array(16384),new Uint8Array(16384), new Uint8Array(16384),new Uint8Array(16384),new Uint8Array(16384),new Uint8Array(16384)]
+ram= [bytes(16384), bytes(16384), bytes(16384), bytes(16384),
+      bytes(16384), bytes(16384), bytes(16384), bytes(16384), bytes(16384)];
 kb= [0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff]; // keyboard state
 kc= [0,0,0,0,0,0,0,0,      // keyboard codes
     0x05<<7|0x25, // 8 backspace
@@ -120,6 +121,30 @@ pal= [[  0,   0,   0],
       [179, 179, 179],
       [226, 226, 226],
       [255, 255, 255]];
+
+function bytes(a) {
+  try{
+    return new Uint8Array(a);
+  }
+  catch (b){
+    var c = Array(a), d = a;
+    while (d)
+      c[--d]= 0;
+    return c;
+  }
+}
+
+function words(a) {
+  try{
+    return new Uint16Array(a);
+  }
+  catch (b){
+    var c = Array(a), d = a;
+    while (d)
+      c[--d]= 0;
+    return c;
+  }
+}
 
 function run() {
   while(st < 70908)
@@ -327,7 +352,8 @@ function loadblock() {
       ; j++ )
     mw[xh>>6][xl | xh<<8 & 0x3fff]= game.charCodeAt(tapep++) & 0xff,
     g[0x123]();
-  f_= 0x6d;
+  setf_(0x6d);  //abcd
+  f_=0x6d;
   a= d= e= 0;
   pc= 0x5e0;                           // exit address
   tapep++;

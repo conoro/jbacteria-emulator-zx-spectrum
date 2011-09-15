@@ -1,6 +1,6 @@
 na= 'jBacteria ';
 m= bytes(65536);
-vm= [];
+vm= words(6144);
 vb= [];
 data= [];
 kb= [0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff]; // keyboard state
@@ -109,7 +109,19 @@ function bytes(a) {
   }
   catch (b){
     var c = Array(a), d = a;
-    while (d > 0)
+    while (d)
+      c[--d]= 0;
+    return c;
+  }
+}
+
+function words(a) {
+  try{
+    return new Uint16Array(a);
+  }
+  catch (b){
+    var c = Array(a), d = a;
+    while (d)
       c[--d]= 0;
     return c;
   }
@@ -560,18 +572,8 @@ function rm(o) {
 function wm() {
   wb(sp-1 & 0xffff, pc>>8 & 0xff);
   wb(sp-2 & 0xffff, pc    & 0xff);
-  t= String.fromCharCode(i, l_, h_, e_, d_, c_, b_);
-  j= f();
-  u=ff_;ff_=ff;ff=u;
-  u=fr_;fr_=fr;fr=u;
-  u=fa_;fa_=fa;fa=u;
-  u=fb_;fb_=fb;fb=u;
-  t+=String.fromCharCode( f(), a_, l, h, e, d, c, b, yl, yh, xl, xh, iff<<2, r,
-                          j, a, sp-2&0xff, sp-2>>8, im&3, bor); // 0x15
-  u=ff_;ff_=ff;ff=u;
-  u=fr_;fr_=fr;fr=u;
-  u=fa_;fa_=fa;fa=u;
-  u=fb_;fb_=fb;fb=u;
+  t= String.fromCharCode(i, l_, h_, e_, d_, c_, b_, f_(), a_, l, h, e, d, c, b, yl, yh,
+                         xl, xh, iff<<2, r, f(), a, sp-2&0xff, sp-2>>8, im&3, bor); // 0x15
   for ( j= 0x4000
       ; j < 0x10000
       ; j++ )

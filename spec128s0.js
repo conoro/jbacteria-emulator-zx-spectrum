@@ -1,14 +1,17 @@
 function paintScreen(){
+  var dxmin= 32,
+      dxmax= 0,
+      dymin= 24,
+      dymax= 0;
   t= -1;
-  while(t++ < 0x2ff){
+  while( t++ < 0x2ff )
     for ( col= scree[t+0x1800]
         , bk= pal[col    & 7
                 | col>>3 & 8]
-        , fr= pal[col>>3 & 15]
-        , co= 0
-        , dx= t<<3 & 0xff
-        , dy= t>>5 << 3
-        , o=  dy<<10
+        , fo= pal[col>>3 & 15]
+        , dx= t & 0x1f
+        , dy= t>>5
+        , o=  dy<<13
             | t<<5 & 0x3ff
         , u=  t    & 0xff 
             | t<<3 & 0x1800
@@ -23,77 +26,75 @@ function paintScreen(){
               : scree[u]
         , vm[u] != (col | k<<8) ){
         vm[u]= col | k<<8;
+        dx<dxmin && (dxmin= dx);
+        dx>dxmax && (dxmax= dx);
+        dy<dymin && (dymin= dy);
+        dy>dymax && (dymax= dy);
         if( k&128 )
           eld[o  ]= bk[0],
           eld[o+1]= bk[1],
           eld[o+2]= bk[2];
         else
-          eld[o  ]= fr[0],
-          eld[o+1]= fr[1],
-          eld[o+2]= fr[2];
+          eld[o  ]= fo[0],
+          eld[o+1]= fo[1],
+          eld[o+2]= fo[2];
         if( k&64 )
           eld[o+4]= bk[0],
           eld[o+5]= bk[1],
           eld[o+6]= bk[2];
         else
-          eld[o+4]= fr[0],
-          eld[o+5]= fr[1],
-          eld[o+6]= fr[2];
+          eld[o+4]= fo[0],
+          eld[o+5]= fo[1],
+          eld[o+6]= fo[2];
         if( k&32 )
           eld[o+8 ]= bk[0],
           eld[o+9 ]= bk[1],
           eld[o+10]= bk[2];
         else
-          eld[o+8 ]= fr[0],
-          eld[o+9 ]= fr[1],
-          eld[o+10]= fr[2];
+          eld[o+8 ]= fo[0],
+          eld[o+9 ]= fo[1],
+          eld[o+10]= fo[2];
         if( k&16 )
           eld[o+12]= bk[0],
           eld[o+13]= bk[1],
           eld[o+14]= bk[2];
         else
-          eld[o+12]= fr[0],
-          eld[o+13]= fr[1],
-          eld[o+14]= fr[2];
+          eld[o+12]= fo[0],
+          eld[o+13]= fo[1],
+          eld[o+14]= fo[2];
         if( k&8 )
           eld[o+16]= bk[0],
           eld[o+17]= bk[1],
           eld[o+18]= bk[2];
         else
-          eld[o+16]= fr[0],
-          eld[o+17]= fr[1],
-          eld[o+18]= fr[2];
+          eld[o+16]= fo[0],
+          eld[o+17]= fo[1],
+          eld[o+18]= fo[2];
         if( k&4 )
           eld[o+20]= bk[0],
           eld[o+21]= bk[1],
           eld[o+22]= bk[2];
         else
-          eld[o+20]= fr[0],
-          eld[o+21]= fr[1],
-          eld[o+22]= fr[2];
+          eld[o+20]= fo[0],
+          eld[o+21]= fo[1],
+          eld[o+22]= fo[2];
         if( k&2 )
           eld[o+24]= bk[0],
           eld[o+25]= bk[1],
           eld[o+26]= bk[2];
         else
-          eld[o+24]= fr[0],
-          eld[o+25]= fr[1],
-          eld[o+26]= fr[2];
+          eld[o+24]= fo[0],
+          eld[o+25]= fo[1],
+          eld[o+26]= fo[2];
         if( k&1 )
           eld[o+28]= bk[0],
           eld[o+29]= bk[1],
           eld[o+30]= bk[2];
         else
-          eld[o+28]= fr[0],
-          eld[o+29]= fr[1],
-          eld[o+30]= fr[2];
+          eld[o+28]= fo[0],
+          eld[o+29]= fo[1],
+          eld[o+30]= fo[2];
       }
-      else{
-        if(n>co)
-          ct.putImageData(elm, 0, 0, dx-1, dy+co-1, 10, n-co+2);
-        co= n+1;
-      }
-    if(n>co)
-      ct.putImageData(elm, 0, 0, dx-1, dy+co-1, 10, n-co+2);
-  }
+  dymax >= dymin &&
+    ct.putImageData(elm, 0, 0, (dxmin<<3)-1, (dymin<<3)-1, (dxmax-dxmin+1<<3)+2, (dymax-dymin+1<<3)+2);
 }

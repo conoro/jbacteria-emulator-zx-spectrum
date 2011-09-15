@@ -1,6 +1,6 @@
 <?
-$mp= 1;
-$pag= 1;
+$mp= $_GET['m'];
+$pag= $_GET['p'];
 ?>
 
 function z80interrupt() {
@@ -42,6 +42,14 @@ function f() {
         | 154020 >> ((fr ^ fr >> 4) & 15) & 4
       : ff & 168 | ff >> 8 & 1 | !fr << 6 | fb >> 8 & 2 | (fr ^ fa ^ fb ^ fb >> 8) & 16
         | ((fr ^ fa) & (fr ^ fb)) >> 5 & 4;
+}
+
+function f_() {
+  return fa_ & 256
+      ? ff_ & 168 | ff_ >> 8 & 1 | !fr_ << 6 | fb_ >> 8 & 2 | (fr_ ^ fa_ ^ fb_ ^ fb_ >> 8) & 16
+        | 154020 >> ((fr_ ^ fr_ >> 4) & 15) & 4
+      : ff_ & 168 | ff_ >> 8 & 1 | !fr_ << 6 | fb_ >> 8 & 2 | (fr_ ^ fa_ ^ fb_ ^ fb_ >> 8) & 16
+        | ((fr_ ^ fa_) & (fr_ ^ fb_)) >> 5 & 4;
 }
 
 function setf(a) {
@@ -90,7 +98,7 @@ function incdecpi($a, $b) {
   global $pag;
   return 'st+=19;'.
   ($pag
-    ? 't=((m[pc++&65535]^128)-128+('.$a.'l|'.$a.'h<<8))&65535;'.
+    ? 't=((m[pc>>14&3][pc++&16383]^128)-128+('.$a.'l|'.$a.'h<<8))&65535;'.
       'fa=m[u=t>>14][t&=16383];'.
       'ff=ff&256|(mw[u][t]=fr=fa+(fb='.($b=='+'?'':'-').'1)&255)'
     : 'fa=m[t=((m[pc++&65535]^128)-128+('.$a.'l|'.$a.'h<<8))&65535];'.
@@ -133,7 +141,7 @@ function ldrp($a, $b, $r, $t) {
   global $pag;
   return 'st+=7;'.
           ($pag
-            ? $r.'=m['.($t?'(mp='.$b.'|'.$a.'<<8)>>14][mp':$b.'>>6]['.$b.'|'.$a.'<<8').'&16383]'
+            ? $r.'=m['.($t?'(mp='.$b.'|'.$a.'<<8)>>14][mp':$a.'>>6]['.$b.'|'.$a.'<<8').'&16383]'
             : $r.'=m['.($t?'mp=':'').$b.'|'.$a.'<<8]').
           ($t?';++mp':'');
 }
@@ -169,7 +177,7 @@ function ldpin($r) {
   global $pag;
   return 'st+=15;'.
           ($pag
-            ? 't=((m[pc>>14&3][pc++&16383]^128)-128+('.$b.'l|'.$b.'h<<8))&65535;'.
+            ? 't=((m[pc>>14&3][pc++&16383]^128)-128+('.$r.'l|'.$r.'h<<8))&65535;'.
               'mw[t>>14][t&16383]=m[pc>>14&3][pc++&16383]'
             : 'wb(((m[pc++&65535]^128)-128+('.$r.'l|'.$r.'h<<8))&65535, m[pc++&65535])');
 }
@@ -188,7 +196,7 @@ function addisp($r) {
   't=sp+('.$r.'l|'.$r.'h<<8);'.
   'ff=ff&128|t>>8&296;'.
   'fb=fb&128|(t>>8^sp>>8^'.$r.'h^fr^fa)&16;'.
-  ($mp?'mp='.$b.'+1+('.$a.'<<8);':'');
+  ($mp?'mp='.$r.'l+1+('.$r.'h<<8);':'').
   $r.'h=t>>8&255;'.
   $r.'l=t&255';
 }
@@ -233,8 +241,8 @@ function jpci($c) {
   return 'st+=10;'.
   'if('.$c.')'.
 ($pag
-  ? 'pc=m[pc>>14&3][pc&16383]|m[pc+1>>14&3][pc+1&16383]<<8'
-  : 'pc=m[pc&65535]|m[pc+1&65535]<<8').
+  ? 'pc=m[pc>>14&3][pc&16383]|m[pc+1>>14&3][pc+1&16383]<<8;'
+  : 'pc=m[pc&65535]|m[pc+1&65535]<<8;').
   'else '.
     'pc+=2';
 }
@@ -306,8 +314,8 @@ function ret($n){
   return 'st+='.$n.';'.
   ($mp?'mp=':'').
 ($pag
-  ? 'pc=m[sp>>14][sp&16383]|m[sp+1>>14&3][sp+1&16383]<<8,'
-  : 'pc=m[sp]|m[sp+1&65535]<<8,').
+  ? 'pc=m[sp>>14][sp&16383]|m[sp+1>>14&3][sp+1&16383]<<8;'
+  : 'pc=m[sp]|m[sp+1&65535]<<8;').
   'sp=sp+2&65535';
 }
 
@@ -392,14 +400,14 @@ function pop($a, $b){
   'sp=sp+2&65535';
 }
 
-function popaf($a, $b){
+function popaf(){
   global $pag;
   return 'st+=10;'.
 ($pag
   ? 'setf(m[sp>>14][sp&16383]);'.
-    $a.'=m[sp+1>>14&3][sp+1&16383];'
+    'a=m[sp+1>>14&3][sp+1&16383];'
   : 'setf(m[sp]);'.
-    $a.'=m[sp+1&65535];').
+    'a=m[sp+1&65535];').
   'sp=sp+2&65535';
 }
 
@@ -410,7 +418,7 @@ function rst($n){
   ? 'mw[--sp>>14&3][sp&16383]=pc>>8&255;'.
     'mw[(sp=sp-1&65535)>>14][sp&16383]=pc&255;'
   : 'wb(--sp&65535,pc>>8&255);'.
-    'wb(sp=sp-1&65535,pc&255);');
+    'wb(sp=sp-1&65535,pc&255);').
   ($mp?'mp=':'').'pc='.$n;
 }
 
@@ -627,8 +635,7 @@ function inid($i, $r){
   'fb=u&7^b;'.
   'ff=b|(u&=256);'.
   'fa=(fr=b)^128;'.
-  'fb=4928640>>((fb^fb>>4)&15);'.
-  'fb=(fb^b)&128|u>>4|(t&128)<<2';
+  'fb=(4928640>>((fb^fb>>4)&15)^b)&128|u>>4|(t&128)<<2';
 }
 
 function otid($i, $r){
@@ -646,8 +653,7 @@ function otid($i, $r){
   'fb=u&7^b;'.
   'ff=b|(u&=256);'.
   'fa=(fr=b)^128;'.
-  'fb=4928640>>((fb^fb>>4)&15);'.
-  'fb=(fb^b)&128|u>>4|(t&128)<<2';
+  'fb=(4928640>>((fb^fb>>4)&15)^b)&128|u>>4|(t&128)<<2';
 }
 
 function exspi($r){
@@ -841,7 +847,7 @@ a(add('e', 4));                                             // 83 // ADD A,E
 a(add('h', 4));                                             // 84 // ADD A,H
 a(add('l', 4));                                             // 85 // ADD A,L
 a(add($pag?'m[h>>6][l|h<<8&16383]':'m[l|h<<8]', 7));        // 86 // ADD A,(HL)
-a('a=fr=(ff=2*(fa=fb=a))&255');                             // 87 // ADD A,A
+a('st+=4;a=fr=(ff=2*(fa=fb=a))&255');                       // 87 // ADD A,A
 a(adc('b', 4));                                             // 88 // ADC A,B
 a(adc('c', 4));                                             // 89 // ADC A,C
 a(adc('d', 4));                                             // 8a // ADC A,D
@@ -849,7 +855,7 @@ a(adc('e', 4));                                             // 8b // ADC A,E
 a(adc('h', 4));                                             // 8c // ADC A,H
 a(adc('l', 4));                                             // 8d // ADC A,L
 a(adc($pag?'m[h>>6][l|h<<8&16383]':'m[l|h<<8]', 7));        // 8e // ADC A,(HL)
-a('a=fr=(ff=2*(fa=fb=a)+(ff>>8&1))&255');                   // 8f // ADC A,A
+a('st+=4;a=fr=(ff=2*(fa=fb=a)+(ff>>8&1))&255');             // 8f // ADC A,A
 a(sub('b', 4));                                             // 90 // SUB A,B
 a(sub('c', 4));                                             // 91 // SUB A,C
 a(sub('d', 4));                                             // 92 // SUB A,D
@@ -857,7 +863,7 @@ a(sub('e', 4));                                             // 93 // SUB A,E
 a(sub('h', 4));                                             // 94 // SUB A,H
 a(sub('l', 4));                                             // 95 // SUB A,L
 a(sub($pag?'m[h>>6][l|h<<8&16383]':'m[l|h<<8]', 7));        // 96 // SUB A,(HL)
-a('fb=~(fa=a);a=fr=ff=0');                                  // 97 // SUB A,A
+a('st+=4;fb=~(fa=a);a=fr=ff=0');                            // 97 // SUB A,A
 a(sbc('b', 4));                                             // 98 // SBC A,B
 a(sbc('c', 4));                                             // 99 // SBC A,C
 a(sbc('d', 4));                                             // 9a // SBC A,D
@@ -865,7 +871,7 @@ a(sbc('e', 4));                                             // 9b // SBC A,E
 a(sbc('h', 4));                                             // 9c // SBC A,H
 a(sbc('l', 4));                                             // 9d // SBC A,L
 a(sbc($pag?'m[h>>6][l|h<<8&16383]':'m[l|h<<8]', 7));        // 9e // SBC A,(HL)
-a('fb=~(fa=a);a=fr=(ff=(ff&256)/-256)&255');                // 9f // SBC A,A
+a('st+=4;fb=~(fa=a);a=fr=(ff=(ff&256)/-256)&255');          // 9f // SBC A,A
 a(anda('b', 4));                                            // a0 // AND B
 a(anda('c', 4));                                            // a1 // AND C
 a(anda('d', 4));                                            // a2 // AND D
@@ -873,7 +879,7 @@ a(anda('e', 4));                                            // a3 // AND E
 a(anda('h', 4));                                            // a4 // AND H
 a(anda('l', 4));                                            // a5 // AND L
 a(anda($pag?'m[h>>6][l|h<<8&16383]':'m[l|h<<8]', 7));       // a6 // AND (HL)
-a('fa=~(ff=fr=a);fb=0');                                    // a7 // AND A
+a('st+=4;fa=~(ff=fr=a);fb=0');                              // a7 // AND A
 a(xoror('^=b', 4));                                         // a8 // XOR B
 a(xoror('^=c', 4));                                         // a9 // XOR C
 a(xoror('^=d', 4));                                         // aa // XOR D
@@ -881,7 +887,7 @@ a(xoror('^=e', 4));                                         // ab // XOR E
 a(xoror('^=h', 4));                                         // ac // XOR H
 a(xoror('^=l', 4));                                         // ad // XOR L
 a(xoror($pag?'^=m[h>>6][l|h<<8&16383]':'^=m[l|h<<8]', 7));  // ae // XOR (HL)
-a('a=ff=fr=fb=0;fa=256');                                   // af // XOR A
+a('st+=4;a=ff=fr=fb=0;fa=256');                             // af // XOR A
 a(xoror('|=b', 4));                                         // b0 // OR B
 a(xoror('|=c', 4));                                         // b1 // OR C
 a(xoror('|=d', 4));                                         // b2 // OR D
@@ -889,7 +895,7 @@ a(xoror('|=e', 4));                                         // b3 // OR E
 a(xoror('|=h', 4));                                         // b4 // OR H
 a(xoror('|=l', 4));                                         // b5 // OR L
 a(xoror($pag?'|=m[h>>6][l|h<<8&16383]':'|=m[l|h<<8]', 7));  // b6 // OR (HL)
-a('fa=(ff=fr=a)|256;fb=0');                                 // b7 // OR A
+a('st+=4;fa=(ff=fr=a)|256;fb=0');                           // b7 // OR A
 a(cp('b', 4));                                              // b8 // CP B
 a(cp('c', 4));                                              // b9 // CP C
 a(cp('d', 4));                                              // ba // CP D
@@ -897,7 +903,7 @@ a(cp('e', 4));                                              // bb // CP E
 a(cp('h', 4));                                              // bc // CP H
 a(cp('l', 4));                                              // bd // CP L
 a('t=m['.($pag?'h>>6][l|h<<8&16383':'l|h<<8').'];'.cp('t',7));//be// CP (HL)
-a('fr=0;fb=~(fa=a);ff=a&40');                               // bf // CP A
+a('st+=4;fr=0;fb=~(fa=a);ff=a&40');                         // bf // CP A
 a(retci('fr'));                                             // c0 // RET NZ
 a(pop('b', 'c'));                                           // c1 // POP BC
 a(jpci('fr'));                                              // c2 // JP NZ
@@ -913,7 +919,7 @@ a(rst(0));                                                  // c7 // RST 0x00
 a(retc('fr'));                                              // c8 // RET Z
 a(ret(10));                                                 // c9 // RET
 a(jpc('fr'));                                               // ca // JP Z
-a('r++;g[768+m['.$pag ? 'pc>>14&3][pc++&16383'              // cb // op cb
+a('r++;g[768+m['.($pag? 'pc>>14&3][pc++&16383'              // cb // op cb
                       : 'pc++&65535').']]()');
 a(callc('fr'));                                             // cc // CALL Z
 a('st+=17;'.                                                // cd // CALL NN
@@ -947,7 +953,7 @@ a(jpci('ff&256'));                                          // da // JP C
 a('st+=11;'.                                                // db // IN A,(n)
 ($pag
   ? 'a=rp('.($mp?'mp=':'').'m[pc>>14&3][pc++&16383]|a<<8)'
-  ? 'a=rp('.($mp?'mp=':'').'m[pc++&65535]|a<<8)').
+  : 'a=rp('.($mp?'mp=':'').'m[pc++&65535]|a<<8)').
   ($mp?';++mp':''));
 a(callci('ff&256'));                                        // dc // CALL C
 a('st+=4;r++;g[256+m['.($pag ? 'pc>>14&3][pc++&16383'       // dd // OP dd
@@ -1243,7 +1249,7 @@ a(ret(10));                                                 // c9 // RET
 a(jpc('fr'));                                               // ca // JP Z
 a('st+=11;'.                                                // cb // op ddcb
 ($pag
-  ? 't=m[mp=((m[pc>>14&3][pc++&16383]^128)-128+(xl|xh<<8))&65535];'.
+  ? 't=m[(mp=((m[pc>>14&3][pc++&16383]^128)-128+(yl|yh<<8))&65535)>>14][mp&16383];'.
     'g[1024+m[pc>>14&3][pc++&16383]]()'
   : 't=m[mp=((m[pc++&65535]^128)-128+(xl|xh<<8))&65535];'.
     'g[1024+m[pc++&65535]]()'));
@@ -1279,7 +1285,7 @@ a(jpci('ff&256'));                                          // da // JP C
 a('st+=11;'.                                                // db // IN A,(n)
 ($pag
   ? 'a=rp('.($mp?'mp=':'').'m[pc>>14&3][pc++&16383]|a<<8)'
-  ? 'a=rp('.($mp?'mp=':'').'m[pc++&65535]|a<<8)').
+  : 'a=rp('.($mp?'mp=':'').'m[pc++&65535]|a<<8)').
   ($mp?';++mp':''));
 a(callci('ff&256'));                                        // dc // CALL C
 a(nop(4));                                                  // dd // op dd
@@ -1483,7 +1489,7 @@ a(add('e', 4));                                             // 83 // ADD A,E
 a(add('yh', 4));                                            // 84 // ADD A,IYH
 a(add('yl', 4));                                            // 85 // ADD A,IYL
 a(add($pag                                                  // 86 // ADD A,(IY+d)
-  ? 'm[((m[pc>>14&3][pc++&16383]^128)-128+(yl|yh<<8))&65535]'
+  ? 'm[(u=(m[pc>>14&3][pc++&16383]^128)-128+(yl|yh<<8))>>14&3][u&16383]'
   : 'm[((m[pc++&65535]^128)-128+(yl|yh<<8))&65535]', 15));
 a('a=fr=(ff=2*(fa=fb=a))&255');                             // 87 // ADD A,A
 a(adc('b', 4));                                             // 88 // ADC A,B
@@ -1493,7 +1499,7 @@ a(adc('e', 4));                                             // 8b // ADC A,E
 a(adc('yh', 4));                                            // 8c // ADC A,IYH
 a(adc('yl', 4));                                            // 8d // ADC A,IYL
 a(adc($pag                                                  // 8e // ADC A,(IY+d)
-  ? 'm[((m[pc>>14&3][pc++&16383]^128)-128+(yl|yh<<8))&65535]'
+  ? 'm[(u=(m[pc>>14&3][pc++&16383]^128)-128+(yl|yh<<8))>>14&3][u&16383]'
   : 'm[((m[pc++&65535]^128)-128+(yl|yh<<8))&65535]', 15));
 a('a=fr=(ff=2*(fa=fb=a)+(ff>>8&1))&255');                   // 8f // ADC A,A
 a(sub('b', 4));                                             // 90 // SUB A,B
@@ -1503,7 +1509,7 @@ a(sub('e', 4));                                             // 93 // SUB A,E
 a(sub('yh', 4));                                            // 94 // SUB A,IYH
 a(sub('yl', 4));                                            // 95 // SUB A,IYL
 a(sub($pag                                                  // 96 // SUB A,(IY+d)
-  ? 'm[((m[pc>>14&3][pc++&16383]^128)-128+(yl|yh<<8))&65535]'
+  ? 'm[(u=(m[pc>>14&3][pc++&16383]^128)-128+(yl|yh<<8))>>14&3][u&16383]'
   : 'm[((m[pc++&65535]^128)-128+(yl|yh<<8))&65535]', 15));
 a('fb=~(fa=a);a=fr=ff=0');                                  // 97 // SUB A,A
 a(sbc('b', 4));                                             // 98 // SBC A,B
@@ -1513,7 +1519,7 @@ a(sbc('e', 4));                                             // 9b // SBC A,E
 a(sbc('yh', 4));                                            // 9c // SBC A,IYH
 a(sbc('yl', 4));                                            // 9d // SBC A,IYL
 a(sbc($pag                                                  // 9e // SBC A,(IY+d)
-  ? 'm[((m[pc>>14&3][pc++&16383]^128)-128+(yl|yh<<8))&65535]'
+  ? 'm[(u=(m[pc>>14&3][pc++&16383]^128)-128+(yl|yh<<8))>>14&3][u&16383]'
   : 'm[((m[pc++&65535]^128)-128+(yl|yh<<8))&65535]', 15));
 a('fb=~(fa=a);a=fr=(ff=(ff&256)/-256)&255');                // 9f // SBC A,A
 a(anda('b', 4));                                            // a0 // AND B
@@ -1523,7 +1529,7 @@ a(anda('e', 4));                                            // a3 // AND E
 a(anda('yh', 4));                                           // a4 // AND IYH
 a(anda('yl', 4));                                           // a5 // AND IYL
 a(anda($pag                                                 // a6 // AND (IY+d)
-  ? 'm[((m[pc>>14&3][pc++&16383]^128)-128+(yl|yh<<8))&65535]'
+  ? 'm[(u=(m[pc>>14&3][pc++&16383]^128)-128+(yl|yh<<8))>>14&3][u&16383]'
   : 'm[((m[pc++&65535]^128)-128+(yl|yh<<8))&65535]', 15));
 a('fa=~(ff=fr=a);fb=0');                                    // a7 // AND A
 a(xoror('^=b', 4));                                         // a8 // XOR B
@@ -1533,7 +1539,7 @@ a(xoror('^=e', 4));                                         // ab // XOR E
 a(xoror('^=yh', 4));                                        // ac // XOR IYH
 a(xoror('^=yl', 4));                                        // ad // XOR IYL
 a(xoror($pag                                                // ae // XOR (IY+d)
-  ? '^=m[((m[pc>>14&3][pc++&16383]^128)-128+(yl|yh<<8))&65535]'
+  ? '^=m[(u=(m[pc>>14&3][pc++&16383]^128)-128+(yl|yh<<8))>>14&3][u&16383]'
   : '^=m[((m[pc++&65535]^128)-128+(yl|yh<<8))&65535]', 15));
 a('a=ff=fr=fb=0;fa=256');                                   // af // XOR A
 a(xoror('|=b', 4));                                         // b0 // OR B
@@ -1543,7 +1549,7 @@ a(xoror('|=e', 4));                                         // b3 // OR E
 a(xoror('|=yh', 4));                                        // b4 // OR IYH
 a(xoror('|=yl', 4));                                        // b5 // OR IYL
 a(xoror($pag                                                // b6 // OR (IY+d)
-  ? '|=m[((m[pc>>14&3][pc++&16383]^128)-128+(yl|yh<<8))&65535]'
+  ? '|=m[(u=(m[pc>>14&3][pc++&16383]^128)-128+(yl|yh<<8))>>14&3][u&16383]'
   : '|=m[((m[pc++&65535]^128)-128+(yl|yh<<8))&65535]', 15));
 a('fa=(ff=fr=a)|256;fb=0');                                 // b7 // OR A
 a(cp('b', 4));                                              // b8 // CP B
@@ -1553,8 +1559,8 @@ a(cp('e', 4));                                              // bb // CP E
 a(cp('yh', 4));                                             // bc // CP IYH
 a(cp('yl', 4));                                             // bd // CP IYL
 a(($pag                                                     // be // CP (IY+d)
-  ? 't=m[((m[pc>>14&3][pc++&16383]^128)-128+(yl|yh<<8))&65535];'
-  : 'm[((m[pc++&65535]^128)-128+(yl|yh<<8))&65535];').cp('t', 15));
+  ? 't=m[(u=(m[pc>>14&3][pc++&16383]^128)-128+(yl|yh<<8))>>14&3][u&16383];'
+  : 't=m[((m[pc++&65535]^128)-128+(yl|yh<<8))&65535];').cp('t', 15));
 a('fr=0;fb=~(fa=a);ff=a&40');                               // bf // CP A
 a(retci('fr'));                                             // c0 // RET NZ
 a(pop('b', 'c'));                                           // c1 // POP BC
@@ -1573,7 +1579,7 @@ a(ret(10));                                                 // c9 // RET
 a(jpc('fr'));                                               // ca // JP Z
 a('st+=11;'.                                                // cb // op fdcb
 ($pag
-  ? 't=m[mp=((m[pc>>14&3][pc++&16383]^128)-128+(yl|yh<<8))&65535];'.
+  ? 't=m[(mp=((m[pc>>14&3][pc++&16383]^128)-128+(yl|yh<<8))&65535)>>14][mp&16383];'.
     'g[1024+m[pc>>14&3][pc++&16383]]()'
   : 't=m[mp=((m[pc++&65535]^128)-128+(yl|yh<<8))&65535];'.
     'g[1024+m[pc++&65535]]()'));
@@ -1609,7 +1615,7 @@ a(jpci('ff&256'));                                          // da // JP C
 a('st+=11;'.                                                // db // IN A,(n)
 ($pag
   ? 'a=rp('.($mp?'mp=':'').'m[pc>>14&3][pc++&16383]|a<<8)'
-  ? 'a=rp('.($mp?'mp=':'').'m[pc++&65535]|a<<8)').
+  : 'a=rp('.($mp?'mp=':'').'m[pc++&65535]|a<<8)').
   ($mp?';++mp':''));
 a(callci('ff&256'));                                        // dc // CALL C
 a(nop(4));                                                  // dd // op dd
@@ -1681,7 +1687,7 @@ a(rl('h'));                                                 // 14 // RL H
 a(rl('l'));                                                 // 15 // RL L
 a('st+=15;'.                                                // 16 // RL (HL)
 ($pag
-  ? 'v=m[t=h>>6][u=l|h<<8&16383];'+rl('v')+';mw[t][u]=v'
+  ? 'v=m[t=h>>6][u=l|h<<8&16383];'.rl('v').';mw[t][u]=v'
   : 't=l|h<<8;u=m[t];'.rl('u').';wb(t,u)'));
 a(rl('a'));                                                 // 17 // RL A
 a(rr('b'));                                                 // 18 // RR B
@@ -1692,7 +1698,7 @@ a(rr('h'));                                                 // 1c // RR H
 a(rr('l'));                                                 // 1d // RR L
 a('st+=15;'.                                                // 1e // RR (HL)
 ($pag
-  ? 'v=m[t=h>>6][u=l|h<<8&16383];'+rr('v')+';mw[t][u]=v'
+  ? 'v=m[t=h>>6][u=l|h<<8&16383];'.rr('v').';mw[t][u]=v'
   : 't=l|h<<8;u=m[t];'.rr('u').';wb(t,u)'));
 a(rr('a'));                                                 // 1f // RR A
 a(sla('b'));                                                // 20 // SLA B
@@ -1703,7 +1709,7 @@ a(sla('h'));                                                // 24 // SLA H
 a(sla('l'));                                                // 25 // SLA L
 a('st+=15;'.                                                // 26 // SLA (HL)
 ($pag
-  ? 'v=m[t=h>>6][u=l|h<<8&16383];'+sla('v')+';mw[t][u]=v'
+  ? 'v=m[t=h>>6][u=l|h<<8&16383];'.sla('v').';mw[t][u]=v'
   : 't=l|h<<8;u=m[t];'.sla('u').';wb(t,u)'));
 a(sla('a'));                                                // 27 // SLA A
 a(sra('b'));                                                // 28 // SRA B
@@ -1714,7 +1720,7 @@ a(sra('h'));                                                // 2c // SRA H
 a(sra('l'));                                                // 2d // SRA L
 a('st+=15;'.                                                // 2e // SRA (HL)
 ($pag
-  ? 'v=m[t=h>>6][u=l|h<<8&16383];'+sra('v')+';mw[t][u]=v'
+  ? 'v=m[t=h>>6][u=l|h<<8&16383];'.sra('v').';mw[t][u]=v'
   : 't=l|h<<8;u=m[t];'.sra('u').';wb(t,u)'));
 a(sra('a'));                                                // 2f // SRA A
 a(sll('b'));                                                // 30 // SLL B
@@ -1725,7 +1731,7 @@ a(sll('h'));                                                // 34 // SLL H
 a(sll('l'));                                                // 35 // SLL L
 a('st+=15;'.                                                // 36 // SLL (HL)
 ($pag
-  ? 'v=m[t=h>>6][u=l|h<<8&16383];'+sll('v')+';mw[t][u]=v'
+  ? 'v=m[t=h>>6][u=l|h<<8&16383];'.sll('v').';mw[t][u]=v'
   : 't=l|h<<8;u=m[t];'.sll('u').';wb(t,u)'));
 a(sll('a'));                                                // 37 // SLL A
 a(srl('b'));                                                // 38 // SRL B
@@ -1736,7 +1742,7 @@ a(srl('h'));                                                // 3c // SRL H
 a(srl('l'));                                                // 3d // SRL L
 a('st+=15;'.                                                // 3e // SRL (HL)
 ($pag
-  ? 'v=m[t=h>>6][u=l|h<<8&16383];'+srl('v')+';mw[t][u]=v'
+  ? 'v=m[t=h>>6][u=l|h<<8&16383];'.srl('v').';mw[t][u]=v'
   : 't=l|h<<8;u=m[t];'.srl('u').';wb(t,u)'));
 a(srl('a'));                                                // 3f // SRL A
 a(bit(1,'b'));                                              // 40 // BIT 0,B
@@ -2060,134 +2066,134 @@ a(biti(128));                                               // 7c // BIT 7,(IY+d
 a(biti(128));                                               // 7d // BIT 7,(IY+d)
 a(biti(128));                                               // 7e // BIT 7,(IY+d)
 a(biti(128));                                               // 7f // BIT 7,(IY+d)
-a(res(254,'t').';wb(mp,b=t)');                              // 80 // LD B,RES 0,(IY+d)
-a(res(254,'t').';wb(mp,c=t)');                              // 81 // LD C,RES 0,(IY+d)
-a(res(254,'t').';wb(mp,d=t)');                              // 82 // LD D,RES 0,(IY+d)
-a(res(254,'t').';wb(mp,e=t)');                              // 83 // LD E,RES 0,(IY+d)
-a(res(254,'t').';wb(mp,h=t)');                              // 84 // LD H,RES 0,(IY+d)
-a(res(254,'t').';wb(mp,l=t)');                              // 85 // LD L,RES 0,(IY+d)
-a(res(254,'t').';wb(mp,t)');                                // 86 // RES 0,(IY+d)
-a(res(254,'t').';wb(mp,a=t)');                              // 87 // LD A,RES 0,(IY+d)
-a(res(253,'t').';wb(mp,b=t)');                              // 88 // LD B,RES 1,(IY+d)
-a(res(253,'t').';wb(mp,c=t)');                              // 89 // LD C,RES 1,(IY+d)
-a(res(253,'t').';wb(mp,d=t)');                              // 8a // LD D,RES 1,(IY+d)
-a(res(253,'t').';wb(mp,e=t)');                              // 8b // LD E,RES 1,(IY+d)
-a(res(253,'t').';wb(mp,h=t)');                              // 8c // LD H,RES 1,(IY+d)
-a(res(253,'t').';wb(mp,l=t)');                              // 8d // LD L,RES 1,(IY+d)
-a(res(253,'t').';wb(mp,t)');                                // 8e // RES 1,(IY+d)
-a(res(253,'t').';wb(mp,a=t)');                              // 8f // LD A,RES 1,(IY+d)
-a(res(251,'t').';wb(mp,b=t)');                              // 90 // LD B,RES 2,(IY+d)
-a(res(251,'t').';wb(mp,c=t)');                              // 91 // LD C,RES 2,(IY+d)
-a(res(251,'t').';wb(mp,d=t)');                              // 92 // LD D,RES 2,(IY+d)
-a(res(251,'t').';wb(mp,e=t)');                              // 93 // LD E,RES 2,(IY+d)
-a(res(251,'t').';wb(mp,h=t)');                              // 94 // LD H,RES 2,(IY+d)
-a(res(251,'t').';wb(mp,l=t)');                              // 95 // LD L,RES 2,(IY+d)
-a(res(251,'t').';wb(mp,t)');                                // 96 // RES 2,(IY+d)
-a(res(251,'t').';wb(mp,a=t)');                              // 97 // LD A,RES 2,(IY+d)
-a(res(247,'t').';wb(mp,b=t)');                              // 98 // LD B,RES 3,(IY+d)
-a(res(247,'t').';wb(mp,c=t)');                              // 99 // LD C,RES 3,(IY+d)
-a(res(247,'t').';wb(mp,d=t)');                              // 9a // LD D,RES 3,(IY+d)
-a(res(247,'t').';wb(mp,e=t)');                              // 9b // LD E,RES 3,(IY+d)
-a(res(247,'t').';wb(mp,h=t)');                              // 9c // LD H,RES 3,(IY+d)
-a(res(247,'t').';wb(mp,l=t)');                              // 9d // LD L,RES 3,(IY+d)
-a(res(247,'t').';wb(mp,t)');                                // 9e // RES 3,(IY+d)
-a(res(247,'t').';wb(mp,a=t)');                              // 9f // LD A,RES 3,(IY+d)
-a(res(239,'t').';wb(mp,b=t)');                              // a0 // LD B,RES 4,(IY+d)
-a(res(239,'t').';wb(mp,c=t)');                              // a1 // LD C,RES 4,(IY+d)
-a(res(239,'t').';wb(mp,d=t)');                              // a2 // LD D,RES 4,(IY+d)
-a(res(239,'t').';wb(mp,e=t)');                              // a3 // LD E,RES 4,(IY+d)
-a(res(239,'t').';wb(mp,h=t)');                              // a4 // LD H,RES 4,(IY+d)
-a(res(239,'t').';wb(mp,l=t)');                              // a5 // LD L,RES 4,(IY+d)
-a(res(239,'t').';wb(mp,t)');                                // a6 // RES 4,(IY+d)
-a(res(239,'t').';wb(mp,a=t)');                              // a7 // LD A,RES 4,(IY+d)
-a(res(223,'t').';wb(mp,b=t)');                              // a8 // LD B,RES 5,(IY+d)
-a(res(223,'t').';wb(mp,c=t)');                              // a9 // LD C,RES 5,(IY+d)
-a(res(223,'t').';wb(mp,d=t)');                              // aa // LD D,RES 5,(IY+d)
-a(res(223,'t').';wb(mp,e=t)');                              // ab // LD E,RES 5,(IY+d)
-a(res(223,'t').';wb(mp,h=t)');                              // ac // LD H,RES 5,(IY+d)
-a(res(223,'t').';wb(mp,l=t)');                              // ad // LD L,RES 5,(IY+d)
-a(res(223,'t').';wb(mp,t)');                                // ae // RES 5,(IY+d)
-a(res(223,'t').';wb(mp,a=t)');                              // af // LD A,RES 5,(IY+d)
-a(res(191,'t').';wb(mp,b=t)');                              // b0 // LD B,RES 6,(IY+d)
-a(res(191,'t').';wb(mp,c=t)');                              // b1 // LD C,RES 6,(IY+d)
-a(res(191,'t').';wb(mp,d=t)');                              // b2 // LD D,RES 6,(IY+d)
-a(res(191,'t').';wb(mp,e=t)');                              // b3 // LD E,RES 6,(IY+d)
-a(res(191,'t').';wb(mp,h=t)');                              // b4 // LD H,RES 6,(IY+d)
-a(res(191,'t').';wb(mp,l=t)');                              // b5 // LD L,RES 6,(IY+d)
-a(res(191,'t').';wb(mp,t)');                                // b6 // RES 6,(IY+d)
-a(res(191,'t').';wb(mp,a=t)');                              // b7 // LD A,RES 6,(IY+d)
-a(res(127,'t').';wb(mp,b=t)');                              // b8 // LD B,RES 7,(IY+d)
-a(res(127,'t').';wb(mp,c=t)');                              // b9 // LD C,RES 7,(IY+d)
-a(res(127,'t').';wb(mp,d=t)');                              // ba // LD D,RES 7,(IY+d)
-a(res(127,'t').';wb(mp,e=t)');                              // bb // LD E,RES 7,(IY+d)
-a(res(127,'t').';wb(mp,h=t)');                              // bc // LD H,RES 7,(IY+d)
-a(res(127,'t').';wb(mp,l=t)');                              // bd // LD L,RES 7,(IY+d)
-a(res(127,'t').';wb(mp,t)');                                // be // RES 7,(IY+d)
-a(res(127,'t').';wb(mp,a=t)');                              // bf // LD A,RES 7,(IY+d)
-a(set(1,'t').';wb(mp,b=t)');                                // c0 // LD B,SET 0,(IY+d)
-a(set(1,'t').';wb(mp,c=t)');                                // c1 // LD C,SET 0,(IY+d)
-a(set(1,'t').';wb(mp,d=t)');                                // c2 // LD D,SET 0,(IY+d)
-a(set(1,'t').';wb(mp,e=t)');                                // c3 // LD E,SET 0,(IY+d)
-a(set(1,'t').';wb(mp,h=t)');                                // c4 // LD H,SET 0,(IY+d)
-a(set(1,'t').';wb(mp,l=t)');                                // c5 // LD L,SET 0,(IY+d)
-a(set(1,'t').';wb(mp,t)');                                  // c6 // SET 0,(IY+d)
-a(set(1,'t').';wb(mp,a=t)');                                // c7 // LD A,SET 0,(IY+d)
-a(set(2,'t').';wb(mp,b=t)');                                // c8 // LD B,SET 1,(IY+d)
-a(set(2,'t').';wb(mp,c=t)');                                // c9 // LD C,SET 1,(IY+d)
-a(set(2,'t').';wb(mp,d=t)');                                // ca // LD D,SET 1,(IY+d)
-a(set(2,'t').';wb(mp,e=t)');                                // cb // LD E,SET 1,(IY+d)
-a(set(2,'t').';wb(mp,h=t)');                                // cc // LD H,SET 1,(IY+d)
-a(set(2,'t').';wb(mp,l=t)');                                // cd // LD L,SET 1,(IY+d)
-a(set(2,'t').';wb(mp,t)');                                  // ce // SET 1,(IY+d)
-a(set(2,'t').';wb(mp,a=t)');                                // cf // LD A,SET 1,(IY+d)
-a(set(4,'t').';wb(mp,b=t)');                                // d0 // LD B,SET 2,(IY+d)
-a(set(4,'t').';wb(mp,c=t)');                                // d1 // LD C,SET 2,(IY+d)
-a(set(4,'t').';wb(mp,d=t)');                                // d2 // LD D,SET 2,(IY+d)
-a(set(4,'t').';wb(mp,e=t)');                                // d3 // LD E,SET 2,(IY+d)
-a(set(4,'t').';wb(mp,h=t)');                                // d4 // LD H,SET 2,(IY+d)
-a(set(4,'t').';wb(mp,l=t)');                                // d5 // LD L,SET 2,(IY+d)
-a(set(4,'t').';wb(mp,t)');                                  // d6 // SET 2,(IY+d)
-a(set(4,'t').';wb(mp,a=t)');                                // d7 // LD A,SET 2,(IY+d)
-a(set(8,'t').';wb(mp,b=t)');                                // d8 // LD B,SET 3,(IY+d)
-a(set(8,'t').';wb(mp,c=t)');                                // d9 // LD C,SET 3,(IY+d)
-a(set(8,'t').';wb(mp,d=t)');                                // da // LD D,SET 3,(IY+d)
-a(set(8,'t').';wb(mp,e=t)');                                // db // LD E,SET 3,(IY+d)
-a(set(8,'t').';wb(mp,h=t)');                                // dc // LD H,SET 3,(IY+d)
-a(set(8,'t').';wb(mp,l=t)');                                // dd // LD L,SET 3,(IY+d)
-a(set(8,'t').';wb(mp,t)');                                  // de // SET 3,(IY+d)
-a(set(8,'t').';wb(mp,a=t)');                                // df // LD A,SET 3,(IY+d)
-a(set(16,'t').';wb(mp,b=t)');                               // e0 // LD B,SET 4,(IY+d)
-a(set(16,'t').';wb(mp,c=t)');                               // e1 // LD C,SET 4,(IY+d)
-a(set(16,'t').';wb(mp,d=t)');                               // e2 // LD D,SET 4,(IY+d)
-a(set(16,'t').';wb(mp,e=t)');                               // e3 // LD E,SET 4,(IY+d)
-a(set(16,'t').';wb(mp,h=t)');                               // e4 // LD H,SET 4,(IY+d)
-a(set(16,'t').';wb(mp,l=t)');                               // e5 // LD L,SET 4,(IY+d)
-a(set(16,'t').';wb(mp,t)');                                 // e6 // SET 4,(IY+d)
-a(set(16,'t').';wb(mp,a=t)');                               // e7 // LD A,SET 4,(IY+d)
-a(set(32,'t').';wb(mp,b=t)');                               // e8 // LD B,SET 5,(IY+d)
-a(set(32,'t').';wb(mp,c=t)');                               // e9 // LD C,SET 5,(IY+d)
-a(set(32,'t').';wb(mp,d=t)');                               // ea // LD D,SET 5,(IY+d)
-a(set(32,'t').';wb(mp,e=t)');                               // eb // LD E,SET 5,(IY+d)
-a(set(32,'t').';wb(mp,h=t)');                               // ec // LD H,SET 5,(IY+d)
-a(set(32,'t').';wb(mp,l=t)');                               // ed // LD L,SET 5,(IY+d)
-a(set(32,'t').';wb(mp,t)');                                 // ee // SET 5,(IY+d)
-a(set(32,'t').';wb(mp,a=t)');                               // ef // LD A,SET 5,(IY+d)
-a(set(64,'t').';wb(mp,b=t)');                               // f0 // LD B,SET 6,(IY+d)
-a(set(64,'t').';wb(mp,c=t)');                               // f1 // LD C,SET 6,(IY+d)
-a(set(64,'t').';wb(mp,d=t)');                               // f2 // LD D,SET 6,(IY+d)
-a(set(64,'t').';wb(mp,e=t)');                               // f3 // LD E,SET 6,(IY+d)
-a(set(64,'t').';wb(mp,h=t)');                               // f4 // LD H,SET 6,(IY+d)
-a(set(64,'t').';wb(mp,l=t)');                               // f5 // LD L,SET 6,(IY+d)
-a(set(64,'t').';wb(mp,t)');                                 // f6 // SET 6,(IY+d)
-a(set(64,'t').';wb(mp,a=t)');                               // f7 // LD A,SET 6,(IY+d)
-a(set(128,'t').';wb(mp,b=t)');                              // f8 // LD B,SET 7,(IY+d)
-a(set(128,'t').';wb(mp,c=t)');                              // f9 // LD C,SET 7,(IY+d)
-a(set(128,'t').';wb(mp,d=t)');                              // fa // LD D,SET 7,(IY+d)
-a(set(128,'t').';wb(mp,e=t)');                              // fb // LD E,SET 7,(IY+d)
-a(set(128,'t').';wb(mp,h=t)');                              // fc // LD H,SET 7,(IY+d)
-a(set(128,'t').';wb(mp,l=t)');                              // fd // LD L,SET 7,(IY+d)
-a(set(128,'t').';wb(mp,t)');                                // fe // SET 7,(IY+d)
-a(set(128,'t').';wb(mp,a=t)');                              // ff // LD A,SET 7,(IY+d)
+a(res(254,'t').($pag?';b=mw[mp>>14][mp&16383]=t':';wb(mp,b=t)'));//80//LD B,RES 0,(IY+d)
+a(res(254,'t').($pag?';c=mw[mp>>14][mp&16383]=t':';wb(mp,c=t)'));//81//LD C,RES 0,(IY+d)
+a(res(254,'t').($pag?';d=mw[mp>>14][mp&16383]=t':';wb(mp,d=t)'));//82//LD D,RES 0,(IY+d)
+a(res(254,'t').($pag?';e=mw[mp>>14][mp&16383]=t':';wb(mp,e=t)'));//83//LD E,RES 0,(IY+d)
+a(res(254,'t').($pag?';h=mw[mp>>14][mp&16383]=t':';wb(mp,h=t)'));//84//LD H,RES 0,(IY+d)
+a(res(254,'t').($pag?';l=mw[mp>>14][mp&16383]=t':';wb(mp,l=t)'));//85//LD L,RES 0,(IY+d)
+a(res(254,'t').($pag?';mw[mp>>14][mp&16383]=t':';wb(mp,t)'));//86 // RES 0,(IY+d)
+a(res(254,'t').($pag?';a=mw[mp>>14][mp&16383]=t':';wb(mp,a=t)'));//87//LD A,RES 0,(IY+d)
+a(res(253,'t').($pag?';b=mw[mp>>14][mp&16383]=t':';wb(mp,b=t)'));//88//LD B,RES 1,(IY+d)
+a(res(253,'t').($pag?';c=mw[mp>>14][mp&16383]=t':';wb(mp,c=t)'));//89//LD C,RES 1,(IY+d)
+a(res(253,'t').($pag?';d=mw[mp>>14][mp&16383]=t':';wb(mp,d=t)'));//8a//LD D,RES 1,(IY+d)
+a(res(253,'t').($pag?';e=mw[mp>>14][mp&16383]=t':';wb(mp,e=t)'));//8b//LD E,RES 1,(IY+d)
+a(res(253,'t').($pag?';h=mw[mp>>14][mp&16383]=t':';wb(mp,h=t)'));//8c//LD H,RES 1,(IY+d)
+a(res(253,'t').($pag?';l=mw[mp>>14][mp&16383]=t':';wb(mp,l=t)'));//8d//LD L,RES 1,(IY+d)
+a(res(253,'t').($pag?';mw[mp>>14][mp&16383]=t':';wb(mp,t)'));//8e // RES 1,(IY+d)
+a(res(253,'t').($pag?';a=mw[mp>>14][mp&16383]=t':';wb(mp,a=t)'));//8f//LD A,RES 1,(IY+d)
+a(res(251,'t').($pag?';b=mw[mp>>14][mp&16383]=t':';wb(mp,b=t)'));//90//LD B,RES 2,(IY+d)
+a(res(251,'t').($pag?';c=mw[mp>>14][mp&16383]=t':';wb(mp,c=t)'));//91//LD C,RES 2,(IY+d)
+a(res(251,'t').($pag?';d=mw[mp>>14][mp&16383]=t':';wb(mp,d=t)'));//92//LD D,RES 2,(IY+d)
+a(res(251,'t').($pag?';e=mw[mp>>14][mp&16383]=t':';wb(mp,e=t)'));//93//LD E,RES 2,(IY+d)
+a(res(251,'t').($pag?';h=mw[mp>>14][mp&16383]=t':';wb(mp,h=t)'));//94//LD H,RES 2,(IY+d)
+a(res(251,'t').($pag?';l=mw[mp>>14][mp&16383]=t':';wb(mp,l=t)'));//95//LD L,RES 2,(IY+d)
+a(res(251,'t').($pag?';mw[mp>>14][mp&16383]=t':';wb(mp,t)'));//96 // RES 2,(IY+d)
+a(res(251,'t').($pag?';a=mw[mp>>14][mp&16383]=t':';wb(mp,a=t)'));//97//LD A,RES 2,(IY+d)
+a(res(247,'t').($pag?';b=mw[mp>>14][mp&16383]=t':';wb(mp,b=t)'));//98//LD B,RES 3,(IY+d)
+a(res(247,'t').($pag?';c=mw[mp>>14][mp&16383]=t':';wb(mp,c=t)'));//99//LD C,RES 3,(IY+d)
+a(res(247,'t').($pag?';d=mw[mp>>14][mp&16383]=t':';wb(mp,d=t)'));//9a//LD D,RES 3,(IY+d)
+a(res(247,'t').($pag?';e=mw[mp>>14][mp&16383]=t':';wb(mp,e=t)'));//9b//LD E,RES 3,(IY+d)
+a(res(247,'t').($pag?';h=mw[mp>>14][mp&16383]=t':';wb(mp,h=t)'));//9c//LD H,RES 3,(IY+d)
+a(res(247,'t').($pag?';l=mw[mp>>14][mp&16383]=t':';wb(mp,l=t)'));//9d//LD L,RES 3,(IY+d)
+a(res(247,'t').($pag?';mw[mp>>14][mp&16383]=t':';wb(mp,t)'));//9e // RES 3,(IY+d)
+a(res(247,'t').($pag?';a=mw[mp>>14][mp&16383]=t':';wb(mp,a=t)'));//9f//LD A,RES 3,(IY+d)
+a(res(239,'t').($pag?';b=mw[mp>>14][mp&16383]=t':';wb(mp,b=t)'));//a0//LD B,RES 4,(IY+d)
+a(res(239,'t').($pag?';c=mw[mp>>14][mp&16383]=t':';wb(mp,c=t)'));//a1//LD C,RES 4,(IY+d)
+a(res(239,'t').($pag?';d=mw[mp>>14][mp&16383]=t':';wb(mp,d=t)'));//a2//LD D,RES 4,(IY+d)
+a(res(239,'t').($pag?';e=mw[mp>>14][mp&16383]=t':';wb(mp,e=t)'));//a3//LD E,RES 4,(IY+d)
+a(res(239,'t').($pag?';h=mw[mp>>14][mp&16383]=t':';wb(mp,h=t)'));//a4//LD H,RES 4,(IY+d)
+a(res(239,'t').($pag?';l=mw[mp>>14][mp&16383]=t':';wb(mp,l=t)'));//a5//LD L,RES 4,(IY+d)
+a(res(239,'t').($pag?';mw[mp>>14][mp&16383]=t':';wb(mp,t)'));//a6 // RES 4,(IY+d)
+a(res(239,'t').($pag?';a=mw[mp>>14][mp&16383]=t':';wb(mp,a=t)'));//a7//LD A,RES 4,(IY+d)
+a(res(223,'t').($pag?';b=mw[mp>>14][mp&16383]=t':';wb(mp,b=t)'));//a8//LD B,RES 5,(IY+d)
+a(res(223,'t').($pag?';c=mw[mp>>14][mp&16383]=t':';wb(mp,c=t)'));//a9//LD C,RES 5,(IY+d)
+a(res(223,'t').($pag?';d=mw[mp>>14][mp&16383]=t':';wb(mp,d=t)'));//aa//LD D,RES 5,(IY+d)
+a(res(223,'t').($pag?';e=mw[mp>>14][mp&16383]=t':';wb(mp,e=t)'));//ab//LD E,RES 5,(IY+d)
+a(res(223,'t').($pag?';h=mw[mp>>14][mp&16383]=t':';wb(mp,h=t)'));//ac//LD H,RES 5,(IY+d)
+a(res(223,'t').($pag?';l=mw[mp>>14][mp&16383]=t':';wb(mp,l=t)'));//ad//LD L,RES 5,(IY+d)
+a(res(223,'t').($pag?';mw[mp>>14][mp&16383]=t':';wb(mp,t)'));//ae // RES 5,(IY+d)
+a(res(223,'t').($pag?';a=mw[mp>>14][mp&16383]=t':';wb(mp,a=t)'));//af//LD A,RES 5,(IY+d)
+a(res(191,'t').($pag?';b=mw[mp>>14][mp&16383]=t':';wb(mp,b=t)'));//a0//LD B,RES 6,(IY+d)
+a(res(191,'t').($pag?';c=mw[mp>>14][mp&16383]=t':';wb(mp,c=t)'));//b1//LD C,RES 6,(IY+d)
+a(res(191,'t').($pag?';d=mw[mp>>14][mp&16383]=t':';wb(mp,d=t)'));//b2//LD D,RES 6,(IY+d)
+a(res(191,'t').($pag?';e=mw[mp>>14][mp&16383]=t':';wb(mp,e=t)'));//b3//LD E,RES 6,(IY+d)
+a(res(191,'t').($pag?';h=mw[mp>>14][mp&16383]=t':';wb(mp,h=t)'));//b4//LD H,RES 6,(IY+d)
+a(res(191,'t').($pag?';l=mw[mp>>14][mp&16383]=t':';wb(mp,l=t)'));//b5//LD L,RES 6,(IY+d)
+a(res(191,'t').($pag?';mw[mp>>14][mp&16383]=t':';wb(mp,t)'));//b6 // RES 6,(IY+d)
+a(res(191,'t').($pag?';a=mw[mp>>14][mp&16383]=t':';wb(mp,a=t)'));//b7//LD A,RES 6,(IY+d)
+a(res(127,'t').($pag?';b=mw[mp>>14][mp&16383]=t':';wb(mp,b=t)'));//b8//LD B,RES 7,(IY+d)
+a(res(127,'t').($pag?';c=mw[mp>>14][mp&16383]=t':';wb(mp,c=t)'));//b9//LD C,RES 7,(IY+d)
+a(res(127,'t').($pag?';d=mw[mp>>14][mp&16383]=t':';wb(mp,d=t)'));//ba//LD D,RES 7,(IY+d)
+a(res(127,'t').($pag?';e=mw[mp>>14][mp&16383]=t':';wb(mp,e=t)'));//bb//LD E,RES 7,(IY+d)
+a(res(127,'t').($pag?';h=mw[mp>>14][mp&16383]=t':';wb(mp,h=t)'));//bc//LD H,RES 7,(IY+d)
+a(res(127,'t').($pag?';l=mw[mp>>14][mp&16383]=t':';wb(mp,l=t)'));//bd//LD L,RES 7,(IY+d)
+a(res(127,'t').($pag?';mw[mp>>14][mp&16383]=t':';wb(mp,t)'));//be // RES 7,(IY+d)
+a(res(127,'t').($pag?';a=mw[mp>>14][mp&16383]=t':';wb(mp,a=t)'));//bf//LD A,RES 7,(IY+d)
+a(set(1,'t').($pag?';b=mw[mp>>14][mp&16383]=t':';wb(mp,b=t)'));//c0//LD B,SET 0,(IY+d)
+a(set(1,'t').($pag?';c=mw[mp>>14][mp&16383]=t':';wb(mp,c=t)'));//c1//LD C,SET 0,(IY+d)
+a(set(1,'t').($pag?';d=mw[mp>>14][mp&16383]=t':';wb(mp,d=t)'));//c2//LD D,SET 0,(IY+d)
+a(set(1,'t').($pag?';e=mw[mp>>14][mp&16383]=t':';wb(mp,e=t)'));//c3//LD E,SET 0,(IY+d)
+a(set(1,'t').($pag?';h=mw[mp>>14][mp&16383]=t':';wb(mp,h=t)'));//c4//LD H,SET 0,(IY+d)
+a(set(1,'t').($pag?';l=mw[mp>>14][mp&16383]=t':';wb(mp,l=t)'));//c5//LD L,SET 0,(IY+d)
+a(set(1,'t').($pag?';mw[mp>>14][mp&16383]=t':';wb(mp,t)')); // c6 // SET 0,(IY+d)
+a(set(1,'t').($pag?';a=mw[mp>>14][mp&16383]=t':';wb(mp,a=t)'));//c7//LD A,SET 0,(IY+d)
+a(set(2,'t').($pag?';b=mw[mp>>14][mp&16383]=t':';wb(mp,b=t)'));//c8//LD B,SET 1,(IY+d)
+a(set(2,'t').($pag?';c=mw[mp>>14][mp&16383]=t':';wb(mp,c=t)'));//c9//LD C,SET 1,(IY+d)
+a(set(2,'t').($pag?';d=mw[mp>>14][mp&16383]=t':';wb(mp,d=t)'));//ca//LD D,SET 1,(IY+d)
+a(set(2,'t').($pag?';e=mw[mp>>14][mp&16383]=t':';wb(mp,e=t)'));//cb//LD E,SET 1,(IY+d)
+a(set(2,'t').($pag?';h=mw[mp>>14][mp&16383]=t':';wb(mp,h=t)'));//cc//LD H,SET 1,(IY+d)
+a(set(2,'t').($pag?';l=mw[mp>>14][mp&16383]=t':';wb(mp,l=t)'));//cd//LD L,SET 1,(IY+d)
+a(set(2,'t').($pag?';mw[mp>>14][mp&16383]=t':';wb(mp,t)')); // ce // SET 1,(IY+d)
+a(set(2,'t').($pag?';a=mw[mp>>14][mp&16383]=t':';wb(mp,a=t)'));//cf//LD A,SET 1,(IY+d)
+a(set(4,'t').($pag?';b=mw[mp>>14][mp&16383]=t':';wb(mp,b=t)'));//d0//LD B,SET 2,(IY+d)
+a(set(4,'t').($pag?';c=mw[mp>>14][mp&16383]=t':';wb(mp,c=t)'));//d1//LD C,SET 2,(IY+d)
+a(set(4,'t').($pag?';d=mw[mp>>14][mp&16383]=t':';wb(mp,d=t)'));//d2//LD D,SET 2,(IY+d)
+a(set(4,'t').($pag?';e=mw[mp>>14][mp&16383]=t':';wb(mp,e=t)'));//d3//LD E,SET 2,(IY+d)
+a(set(4,'t').($pag?';h=mw[mp>>14][mp&16383]=t':';wb(mp,h=t)'));//d4//LD H,SET 2,(IY+d)
+a(set(4,'t').($pag?';l=mw[mp>>14][mp&16383]=t':';wb(mp,l=t)'));//d5//LD L,SET 2,(IY+d)
+a(set(4,'t').($pag?';mw[mp>>14][mp&16383]=t':';wb(mp,t)')); // d6 // SET 2,(IY+d)
+a(set(4,'t').($pag?';a=mw[mp>>14][mp&16383]=t':';wb(mp,a=t)'));//d7//LD A,SET 2,(IY+d)
+a(set(8,'t').($pag?';b=mw[mp>>14][mp&16383]=t':';wb(mp,b=t)'));//d8//LD B,SET 3,(IY+d)
+a(set(8,'t').($pag?';c=mw[mp>>14][mp&16383]=t':';wb(mp,c=t)'));//d9//LD C,SET 3,(IY+d)
+a(set(8,'t').($pag?';d=mw[mp>>14][mp&16383]=t':';wb(mp,d=t)'));//da//LD D,SET 3,(IY+d)
+a(set(8,'t').($pag?';e=mw[mp>>14][mp&16383]=t':';wb(mp,e=t)'));//db//LD E,SET 3,(IY+d)
+a(set(8,'t').($pag?';h=mw[mp>>14][mp&16383]=t':';wb(mp,h=t)'));//dc//LD H,SET 3,(IY+d)
+a(set(8,'t').($pag?';l=mw[mp>>14][mp&16383]=t':';wb(mp,l=t)'));//dd//LD L,SET 3,(IY+d)
+a(set(8,'t').($pag?';mw[mp>>14][mp&16383]=t':';wb(mp,t)')); // de // SET 3,(IY+d)
+a(set(8,'t').($pag?';a=mw[mp>>14][mp&16383]=t':';wb(mp,a=t)'));//df//LD A,SET 3,(IY+d)
+a(set(16,'t').($pag?';b=mw[mp>>14][mp&16383]=t':';wb(mp,b=t)'));//e0//LD B,SET 4,(IY+d)
+a(set(16,'t').($pag?';c=mw[mp>>14][mp&16383]=t':';wb(mp,c=t)'));//e1//LD C,SET 4,(IY+d)
+a(set(16,'t').($pag?';d=mw[mp>>14][mp&16383]=t':';wb(mp,d=t)'));//e2//LD D,SET 4,(IY+d)
+a(set(16,'t').($pag?';e=mw[mp>>14][mp&16383]=t':';wb(mp,e=t)'));//e3//LD E,SET 4,(IY+d)
+a(set(16,'t').($pag?';h=mw[mp>>14][mp&16383]=t':';wb(mp,h=t)'));//e4//LD H,SET 4,(IY+d)
+a(set(16,'t').($pag?';l=mw[mp>>14][mp&16383]=t':';wb(mp,l=t)'));//e5//LD L,SET 4,(IY+d)
+a(set(16,'t').($pag?';mw[mp>>14][mp&16383]=t':';wb(mp,t)'));// e6 // SET 4,(IY+d)
+a(set(16,'t').($pag?';a=mw[mp>>14][mp&16383]=t':';wb(mp,a=t)'));//e7//LD A,SET 4,(IY+d)
+a(set(32,'t').($pag?';b=mw[mp>>14][mp&16383]=t':';wb(mp,b=t)'));//e8//LD B,SET 5,(IY+d)
+a(set(32,'t').($pag?';c=mw[mp>>14][mp&16383]=t':';wb(mp,c=t)'));//e9//LD C,SET 5,(IY+d)
+a(set(32,'t').($pag?';d=mw[mp>>14][mp&16383]=t':';wb(mp,d=t)'));//ea//LD D,SET 5,(IY+d)
+a(set(32,'t').($pag?';e=mw[mp>>14][mp&16383]=t':';wb(mp,e=t)'));//eb//LD E,SET 5,(IY+d)
+a(set(32,'t').($pag?';h=mw[mp>>14][mp&16383]=t':';wb(mp,h=t)'));//ec//LD H,SET 5,(IY+d)
+a(set(32,'t').($pag?';l=mw[mp>>14][mp&16383]=t':';wb(mp,l=t)'));//ed//LD L,SET 5,(IY+d)
+a(set(32,'t').($pag?';mw[mp>>14][mp&16383]=t':';wb(mp,t)'));// ee // SET 5,(IY+d)
+a(set(32,'t').($pag?';a=mw[mp>>14][mp&16383]=t':';wb(mp,a=t)'));//ef//LD A,SET 5,(IY+d)
+a(set(64,'t').($pag?';b=mw[mp>>14][mp&16383]=t':';wb(mp,b=t)'));//f0//LD B,SET 6,(IY+d)
+a(set(64,'t').($pag?';c=mw[mp>>14][mp&16383]=t':';wb(mp,c=t)'));//f1//LD C,SET 6,(IY+d)
+a(set(64,'t').($pag?';d=mw[mp>>14][mp&16383]=t':';wb(mp,d=t)'));//f2//LD D,SET 6,(IY+d)
+a(set(64,'t').($pag?';e=mw[mp>>14][mp&16383]=t':';wb(mp,e=t)'));//f3//LD E,SET 6,(IY+d)
+a(set(64,'t').($pag?';h=mw[mp>>14][mp&16383]=t':';wb(mp,h=t)'));//f4//LD H,SET 6,(IY+d)
+a(set(64,'t').($pag?';l=mw[mp>>14][mp&16383]=t':';wb(mp,l=t)'));//f5//LD L,SET 6,(IY+d)
+a(set(64,'t').($pag?';mw[mp>>14][mp&16383]=t':';wb(mp,t)'));// f6 // SET 6,(IY+d)
+a(set(64,'t').($pag?';a=mw[mp>>14][mp&16383]=t':';wb(mp,a=t)'));//f7//LD A,SET 6,(IY+d)
+a(set(128,'t').($pag?';b=mw[mp>>14][mp&16383]=t':';wb(mp,b=t)'));//f8//LD B,SET 7,(IY+d)
+a(set(128,'t').($pag?';c=mw[mp>>14][mp&16383]=t':';wb(mp,c=t)'));//f9//LD C,SET 7,(IY+d)
+a(set(128,'t').($pag?';d=mw[mp>>14][mp&16383]=t':';wb(mp,d=t)'));//fa//LD D,SET 7,(IY+d)
+a(set(128,'t').($pag?';e=mw[mp>>14][mp&16383]=t':';wb(mp,e=t)'));//fb//LD E,SET 7,(IY+d)
+a(set(128,'t').($pag?';h=mw[mp>>14][mp&16383]=t':';wb(mp,h=t)'));//fc//LD H,SET 7,(IY+d)
+a(set(128,'t').($pag?';l=mw[mp>>14][mp&16383]=t':';wb(mp,l=t)'));//fd//LD L,SET 7,(IY+d)
+a(set(128,'t').($pag?';mw[mp>>14][mp&16383]=t':';wb(mp,t)'));//fe // SET 7,(IY+d)
+a(set(128,'t').($pag?';a=mw[mp>>14][mp&16383]=t':';wb(mp,a=t)'));//ff//LD A,SET 7,(IY+d)
 
 a(nop(8));                                                  // 00 // NOP
 a(nop(8));                                                  // 01 // NOP
@@ -2293,12 +2299,19 @@ a(neg());                                                   // 64 // NEG
 a(ret(14));                                                 // 65 // RETN
 a('st+=8;im=0');                                            // 66 // IM 0
 a('st+=18;'.                                                // 67 // RRD
-  't=m[mp=l|h<<8]|a<<8;'.
-  'a=a&240|t&15;'.
-  'ff=ff&-256|(fr=a);'.
-  'fa=a|256;'.
-  'fb=0;'.
-  'wb(mp,t>>4&255)'.
+($pag
+  ? 't=m[u='.($mp?'(mp=l|h<<8)>>14][v=mp':'h>>6][v=l|h<<8').'&16383]|a<<8;'.
+    'a=a&240|t&15;'.
+    'ff=ff&-256|(fr=a);'.
+    'fa=a|256;'.
+    'fb=0;'.
+    'mw[u][v]=t>>4&255'
+  : 't=m[mp=l|h<<8]|a<<8;'.
+    'a=a&240|t&15;'.
+    'ff=ff&-256|(fr=a);'.
+    'fa=a|256;'.
+    'fb=0;'.
+    'wb(mp,t>>4&255)').
   ($mp?';++mp':''));
 a(inr('l'));                                                // 68 // IN L,(C)
 a(outr('l'));                                               // 69 // OUT (C),L
@@ -2308,12 +2321,19 @@ a(neg());                                                   // 6c // NEG
 a(ret(14));                                                 // 6d // RETI
 a('st+=8;im=0');                                            // 6e // IM 0
 a('st+=18;'.                                                // 6f // RLD
-  't=m[mp=l|h<<8]<<4|a&15;'.
-  'a=a&240|t>>8;'.
-  'ff=ff&-256|(fr=a);'.
-  'fa=a|256;'.
-  'fb=0;'.
-  'wb(mp,t&255)'.
+($pag
+  ? 't=m[u='.($mp?'(mp=l|h<<8)>>14][v=mp':'h>>6][v=l|h<<8').'&16383]<<4|a&15;'.
+    'a=a&240|t>>8;'.
+    'ff=ff&-256|(fr=a);'.
+    'fa=a|256;'.
+    'fb=0;'.
+    'mw[u][v]=t&255'
+  : 't=m[mp=l|h<<8]<<4|a&15;'.
+    'a=a&240|t>>8;'.
+    'ff=ff&-256|(fr=a);'.
+    'fa=a|256;'.
+    'fb=0;'.
+    'wb(mp,t&255)').
   ($mp?';++mp':''));
 a(inr('t'));                                                // 70 // IN X,(C)
 a(outr('0'));                                               // 71 // OUT (C),X
@@ -2327,8 +2347,11 @@ a('st+=15;'.                                                // 72 // SBC HL,SP
   'l=t&255;'.
   'fr=t>>8|t<<8');
 a('st+=20;'.                                                // 73 // LD (NN),SP
-  'wb('.($mp?'mp':'t').'=m[pc++&65535]|m[pc++&65535]<<8,sp&255);'.
-  'wb('.($mp?'mp=mp':'t').'+1&65535,sp>>8)');
+($pag
+  ? 'mw[(mp=m[pc>>14&3][pc++&16383]|m[pc>>14&3][pc++&16383]<<8)>>14][mp&16383]=sp&255;'.
+    'mw[++mp>>14][mp&16383]=sp>>8'
+  : 'wb('.($mp?'mp':'t').'=m[pc++&65535]|m[pc++&65535]<<8,sp&255);'.
+    'wb('.($mp?'mp=mp':'t').'+1&65535,sp>>8)'));
 a(neg());                                                   // 74 // NEG
 a(ret(14));                                                 // 75 // RETN
 a('st+=8;im=1');                                            // 76 // IM 1
@@ -2344,8 +2367,10 @@ a('st+=15;'.                                                // 7a // ADC HL,SP
   'h=t>>8&255;'.
   'l=t&255;'.
   'fr=h|l<<8');
-                                                            // 7b // LD SP,(NN)
-a('st+=20;sp=m[t=m[pc++&65535]|m[pc++&65535]<<8]|m['.($mp?'mp=':'').'t+1&65535]<<8');
+a('st+=20;'.                                                // 7b // LD SP,(NN)
+($pag
+  ? 'sp=m[(mp=m[pc>>14&3][pc++&16383]|m[pc>>14&3][pc++&16383]<<8)>>14][mp&16383]|m[++mp>>14][mp&16383]<<8'
+  : 'sp=m[t=m[pc++&65535]|m[pc++&65535]<<8]|m['.($mp?'mp=':'').'t+1&65535]<<8'));
 a(neg());                                                   // 7c // NEG
 a(ret(14));                                                 // 7d // RETI
 a('st+=8;im=2');                                            // 7e // IM 2

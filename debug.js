@@ -1,6 +1,6 @@
 caca= 0;//0x10000000;
 function cond() {
-  caca && caca++==0x1fd2 && generateSnap();
+  caca && caca++==0x20509 && generateSnap();
 }
 
 function generateSnap() {
@@ -24,8 +24,6 @@ function hex(n){
 
 function rm(o) {
 caca= 1;
-//m[0x056c]= 0xcd;
-//m[0x056d]= 0xe7;
   j= 0;
   i= o.charCodeAt(j++);
   l_= o.charCodeAt(j++);
@@ -52,8 +50,30 @@ caca= 1;
   a= o.charCodeAt(j++);
   sp= o.charCodeAt(j++) | o.charCodeAt(j++)<<8;
   im= o.charCodeAt(j++);
-  wp(0,o.charCodeAt(j++));
-  while( j < 0xc01b )
-    m[j+0x3fe5]= o.charCodeAt(j++);
-  g[0xc9]();
+  wp(0, bor=o.charCodeAt(j++)); //bordercolor
+  for ( t= 0
+      ; t < 0x4000
+      ; t++ )
+    ram[5][t]= o.charCodeAt(j++);
+  for ( t= 0
+      ; t < 0x4000
+      ; t++ )
+    ram[2][t]= o.charCodeAt(j++);
+  wp(0x7ffd, lo= o.charCodeAt(49152+27+2));
+  for ( t= 0
+      ; t < 0x4000
+      ; t++ )
+    ram[lo&7][t]= o.charCodeAt(j++);
+  pc= o.charCodeAt(j++) | o.charCodeAt(j++)<<8;
+  j+= 2;
+  for ( t= 0
+      ; t < 8
+      ; t++)
+    if( t != 2
+     && t != 5
+     && t != (lo&7) )
+      for ( u= 0
+          ; u < 0x4000
+          ; u++ )
+        ram[t][u]= o.charCodeAt(j++);
 }

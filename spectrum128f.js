@@ -1,4 +1,4 @@
-rom= [[],[]]; //  , rom= [new Uint8Array(16384),new Uint8Array(16384)];
+rom= [bytes(16384), bytes(16384)];
 
 function init() {
   cv.setAttribute('style', 'image-rendering:'+( localStorage.ft & 1
@@ -14,11 +14,12 @@ function init() {
   if ( localStorage.ft & 8 )
     rotapal();
   sample= 0;
+//z80init();f=0; //abcd
   pag= 1;
-  z80init();
-  a= b= c= d= f= h= l= a_= b_= c_= d_= e_= h_= l_= r= r7= pc= iff= im= halted= t= u= 0;
+  a= b= c= d= h= l= fa= fb= fr= ff= r7=
+  a_=b_=c_=d_=h_=l_=fa_=fb_=fr_=e_= r= pc= iff= im= halted= t= u= 0;
   e=  0x11;
-  f_= 0x01;
+  ff_= 0x100;
   xh= 0x5c;
   xl= 0xe2;
   yh= 0x5c;
@@ -217,7 +218,7 @@ function rm(o) {
   d_= o.charCodeAt(j++);
   c_= o.charCodeAt(j++);
   b_= o.charCodeAt(j++);
-  f_= o.charCodeAt(j++);
+  setf_(o.charCodeAt(j++));
   a_= o.charCodeAt(j++);
   l= o.charCodeAt(j++);
   h= o.charCodeAt(j++);
@@ -231,7 +232,7 @@ function rm(o) {
   xh= o.charCodeAt(j++);
   iff= o.charCodeAt(j++)>>2 & 1;
   r= r7= o.charCodeAt(j++);
-  f= o.charCodeAt(j++);
+  setf(o.charCodeAt(j++));
   a= o.charCodeAt(j++);
   sp= o.charCodeAt(j++) | o.charCodeAt(j++)<<8;
   im= o.charCodeAt(j++);
@@ -264,8 +265,8 @@ function rm(o) {
 }
 
 function wm() {
-  t= String.fromCharCode(i, l_, h_, e_, d_, c_, b_, f_, a_, l, h, e, d, c, b, yl, yh,
-                         xl, xh, iff<<2, r, f, a, sp&255, sp>>8, im&3,  bor);
+  t= String.fromCharCode(i, l_, h_, e_, d_, c_, b_, f_(), a_, l, h, e, d, c, b, yl, yh,
+                         xl, xh, iff<<2, r, f(), a, sp&255, sp>>8, im&3,  bor);
   for ( j= 0x4000
       ; j < 0x10000
       ; j++ )
