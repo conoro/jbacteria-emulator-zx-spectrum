@@ -1,6 +1,7 @@
 <?
 $mp= $_GET['m'];
 $pag= $_GET['p'];
+$cpc= $_GET['c'];
 ?>
 
 function z80interrupt() {
@@ -22,7 +23,7 @@ function z80interrupt() {
         st++;
       case 0: 
         pc= 56;
-        st+= 12;
+        st+= <?=$cpc?3:12?>;
         break;
       default:
 <?if($pag){?>
@@ -31,7 +32,7 @@ function z80interrupt() {
 <?}else{?>
         pc= m[t= 255 | i << 8] | m[++t&65535] << 8;
 <?}?>
-        st+= 19;
+        st+= <?=$cpc?5:19?>;
     }
   }
 }
@@ -79,22 +80,24 @@ function c($a){
 }
 
 function nop($n){
-  return 'st+='.$n;
+  return $n-1?'st+='.$n:'++st';
 }
 
 function inc($r) {
-  return 'st+=4;'.
+  global $cpc;
+  return ($cpc?'++st;':'st+=4;').
   'ff=ff&256|(fr='.$r.'=(fa='.$r.')+(fb=1)&255)';
 }
 
 function dec($r) {
-  return 'st+=4;'.
+  global $cpc;
+  return ($cpc?'++st;':'st+=4;').
   'ff=ff&256|(fr='.$r.'=(fa='.$r.')+(fb=-1)&255)';
 }
 
 function incdecphl($n) {
-  global $pag;
-  return 'st+=11;'.
+  global $cpc;
+  return 'st+='.($cpc?3:11).';'.
   ($pag
     ? 'fa=m[t=h>>6][u=l|h<<8&16383];'.
       'ff=ff&256|(mw[t][u]=fr=fa+(fb='.($n=='+'?'':'-').'1)&255)'
@@ -104,8 +107,8 @@ function incdecphl($n) {
 }
 
 function incdecpi($a, $b) {
-  global $pag;
-  return 'st+=19;'.
+  global $cpc;
+  return 'st+='.($cpc?5:19).';'.
   ($pag
     ? 't=((m[pc>>14&3][pc++&16383]^128)-128+('.$a.'l|'.$a.'h<<8))&65535;'.
       'fa=m[u=t>>14][t&=16383];'.
@@ -116,30 +119,32 @@ function incdecpi($a, $b) {
 }
 
 function incw($a, $b) {
-  return 'st+=6;'.
+  global $cpc;
+  return 'st+='.($cpc?2:6).';'.
   '++'.$b.'==256&&('.
                     $b.'=0,'.
                     $a.'='.$a.'+1&255)';
 }
 
 function decw($a, $b) {
-  return 'st+=6;'.
+  global $cpc;
+  return 'st+='.($cpc?2:6).';'.
   '--'.$b.'<0&&('.
                 $a.'='.$a.'-1&('.$b.'=255))';
 }
 
-function ldpr($a, $b, $r) {
-  global $mp, $pag;
-  return  'st+=7;'.
+function ldpr($a, $b, $r, $t) {
+  global $pag, $cpc;
+  return 'st+='.($cpc?2:7).';'.
           ($pag
             ? 'mw['.$a.'>>6]['.$b.'|'.$a.'<<8&16383]='.$r
             : 'wb('.$b.'|'.$a.'<<8,'.$r.')').
-          ($mp?';mp='.$b.'+1&255|a<<8':'');
+          ($t?';mp='.$b.'+1&255|a<<8':'');
 }
 
 function ldpri($a, $b) {
-  global $pag;
-  return 'st+=15;'.
+  global $pag, $cpc;
+  return 'st+='.($cpc?4:15).';'.
           ($pag
             ? 't=((m[pc>>14&3][pc++&16383]^128)-128+('.$b.'l|'.$b.'h<<8))&65535;'.
               'mw[t>>14][t&16383]='.$a
@@ -147,8 +152,8 @@ function ldpri($a, $b) {
 }
 
 function ldrp($a, $b, $r, $t) {
-  global $pag;
-  return 'st+=7;'.
+  global $pag, $cpc;
+  return 'st+='.($cpc?2:7).';'.
           ($pag
             ? $r.'=m['.($t?'(mp='.$b.'|'.$a.'<<8)>>14][mp':$a.'>>6]['.$b.'|'.$a.'<<8').'&16383]'
             : $r.'=m['.($t?'mp=':'').$b.'|'.$a.'<<8]').
@@ -156,8 +161,8 @@ function ldrp($a, $b, $r, $t) {
 }
 
 function ldrpi($a, $b) {
-  global $pag;
-  return 'st+=15;'.
+  global $pag, $cpc;
+  return 'st+='.($cpc?4:15).';'.
           ($pag
             ? 't=((m[pc>>14&3][pc++&16383]^128)-128+('.$b.'l|'.$b.'h<<8))&65535;'.
               $a.'=m[t>>14][t&16383]'
@@ -165,8 +170,8 @@ function ldrpi($a, $b) {
 }
 
 function ldrrim($a, $b) {
-  global $pag;
-  return 'st+=10;'.
+  global $pag, $cpc;
+  return 'st+='.($cpc?3:10).';'.
           ($pag
             ? $b.'=m[pc>>14&3][pc++&16383];'.
               $a.'=m[pc>>14&3][pc++&16383]'
@@ -175,16 +180,16 @@ function ldrrim($a, $b) {
 }
 
 function ldrim($r) {
-  global $pag;
-  return 'st+=7;'.
+  global $pag, $cpc;
+  return 'st+='.($cpc?2:7).';'.
           ($pag
             ? $r.'=m[pc>>14&3][pc++&16383]'
             : $r.'=m[pc++&65535]');
 }
 
 function ldpin($r) {
-  global $pag;
-  return 'st+=15;'.
+  global $pag, $cpc;
+  return 'st+='.($cpc?5:15).';'.
           ($pag
             ? 't=((m[pc>>14&3][pc++&16383]^128)-128+('.$r.'l|'.$r.'h<<8))&65535;'.
               'mw[t>>14][t&16383]=m[pc>>14&3][pc++&16383]'
@@ -192,7 +197,8 @@ function ldpin($r) {
 }
 
 function addrrrr($a, $b, $c, $d) {
-  return 'st+=11;'.
+  global $mp, $cpc;
+  return 'st+='.($cpc?3:11).';'.
   't='.$b.'+'.$d.'+('.$a.'+'.$c.'<<8);'.
   'ff=ff&128|t>>8&296;fb=fb&128|(t>>8^'.$a.'^'.$c.'^fr^fa)&16;'.
   ($mp?'mp='.$b.'+1+('.$a.'<<8);':'').
@@ -201,7 +207,8 @@ function addrrrr($a, $b, $c, $d) {
 }
 
 function addisp($r) {
-  return 'st+=11;'.
+  global $mp, $cpc;
+  return 'st+='.($cpc?3:11).';'.
   't=sp+('.$r.'l|'.$r.'h<<8);'.
   'ff=ff&128|t>>8&296;'.
   'fb=fb&128|(t>>8^sp>>8^'.$r.'h^fr^fa)&16;'.
@@ -211,32 +218,32 @@ function addisp($r) {
 }
 
 function jrc($c) {
-  global $pag;
+  global $pag, $cpc;
   return 'if('.$c.')'.
-    'st+=7,'.
+    'st+='.($cpc?2:7).','.
     'pc++;'.
   'else '.
-    'st+=12,'.
+    'st+='.($cpc?3:12).','.
 ($pag
   ? 'pc+=(m[pc>>14&3][pc++&16383]^128)-127'
   : 'pc+=(m[pc&65535]^128)-127');
 }
 
 function jrci($c) {
-  global $pag;
+  global $pag, $cpc;
   return 'if('.$c.')'.
-    'st+=12,'.
+    'st+='.($cpc?3:12).','.
 ($pag
   ? 'pc+=(m[pc>>14&3][pc++&16383]^128)-127;'
   : 'pc+=(m[pc&65535]^128)-127;').
   'else '.
-    'st+=7,'.
+    'st+='.($cpc?2:7).','.
     'pc++';
 }
 
 function jpc($c) {
-  global $pag;
-  return 'st+=10;'.
+  global $pag, $cpc;
+  return 'st+='.($cpc?3:10).';'.
   'if('.$c.')'.
     'pc+=2;'.
   'else '.
@@ -246,8 +253,8 @@ function jpc($c) {
 }
 
 function jpci($c) {
-  global $pag;
-  return 'st+=10;'.
+  global $pag, $cpc;
+  return 'st+='.($cpc?3:10).';'.
   'if('.$c.')'.
 ($pag
   ? 'pc=m[pc>>14&3][pc&16383]|m[pc+1>>14&3][pc+1&16383]<<8;'
@@ -257,12 +264,12 @@ function jpci($c) {
 }
 
 function callc($c) {
-  global $mp, $pag;
+  global $mp, $pag, $cpc;
   return 'if('.$c.')'.
-    'st+=10,'.
+    'st+='.($cpc?3:10).','.
     'pc+=2;'.
   'else '.
-    'st+=17,'.
+    'st+='.($cpc?5:17).','.
     't=pc+2,'.
     ($mp?'mp=':'').
 ($pag
@@ -275,9 +282,9 @@ function callc($c) {
 }
 
 function callci($c) {
-  global $mp, $pag;
+  global $mp, $pag, $cpc;
   return 'if('.$c.')'.
-    'st+=17,'.
+    'st+='.($cpc?5:17).','.
     't=pc+2,'.
     ($mp?'mp=':'').
 ($pag
@@ -288,16 +295,16 @@ function callci($c) {
     'wb(--sp&65535,t>>8&255),'.
     'wb(sp=sp-1&65535,t&255);').
   'else '.
-    'st+=10,'.
+    'st+='.($cpc?3:10).','.
     'pc+=2';
 }
 
 function retc($c) {
   global $mp, $pag;
   return 'if('.$c.')'.
-    'st+=5;'.
+    'st+='.($cpc?2:5).';'.
   'else '.
-    'st+=11,'.
+    'st+='.($cpc?4:11).','.
     ($mp?'mp=':'').
 ($pag
   ? 'pc=m[sp>>14][sp&16383]|m[sp+1>>14&3][sp+1&16383]<<8,'
@@ -308,14 +315,14 @@ function retc($c) {
 function retci($c) {
   global $mp, $pag;
   return 'if('.$c.')'.
-    'st+=11,'.
+    'st+='.($cpc?4:11).','.
     ($mp?'mp=':'').
 ($pag
   ? 'pc=m[sp>>14][sp&16383]|m[sp+1>>14&3][sp+1&16383]<<8,'
   : 'pc=m[sp]|m[sp+1&65535]<<8,').
     'sp=sp+2&65535;'.
   'else '.
-    'st+=5';
+    'st+='.($cpc?2:5);
 }
 
 function ret($n){
@@ -349,48 +356,48 @@ function ldrrpnn($a, $b, $n) {
 }
 
 function ldrr($a, $b, $n){
-  return 'st+='.$n.';'.
+  return ($n-1?'st+='.$n:'++st').';'.
   $a.'='.$b;
 }
 
 function add($a, $n){
-  return 'st+='.$n.
+  return ($n-1?'st+='.$n:'++st').
   ';a=fr=(ff=(fa=a)+(fb='.$a.'))&255';
 }
 
 function adc($a, $n){
-  return 'st+='.$n.
+  return ($n-1?'st+='.$n:'++st').
   ';a=fr=(ff=(fa=a)+(fb='.$a.')+(ff>>8&1))&255';
 }
 
 function sub($a, $n){
-  return 'st+='.$n.
+  return ($n-1?'st+='.$n:'++st').
   ';a=fr=(ff=(fa=a)+(fb=~'.$a.')+1)&255';
 }
 
 function sbc($a, $n){
-  return 'st+='.$n.
+  return ($n-1?'st+='.$n:'++st').
   ';a=fr=(ff=(fa=a)+(fb=~'.$a.')+(ff>>8&1^1))&255';
 }
 
 function anda($r, $n){
-  return 'st+='.$n.
+  return ($n-1?'st+='.$n:'++st').
   ';fa=~(a=ff=fr=a&'.$r.');fb=0';
 }
 
 function xoror($r, $n){
-  return 'st+='.$n.
+  return ($n-1?'st+='.$n:'++st').
   ';fa=(ff=fr=a'.$r.')|256;fb=0';
 }
 
 function cp($a, $n){
-  return 'st+='.$n.
+  return ($n-1?'st+='.$n:'++st').
   ';fr=(fa=a)-'.$a.';fb=~'.$a.';ff=fr&-41|'.$a.'&40;fr&=255';
 }
 
 function push($a, $b){
-  global $pag;
-  return 'st+=11;'.
+  global $pag, $cpc;
+  return 'st+='.($cpc?4:11).';'.
 ($pag
   ? 'mw[--sp>>14&3][sp&16383]='.$a.';'.
     'mw[(sp=sp-1&65535)>>14][sp&16383]='.$b
@@ -399,8 +406,8 @@ function push($a, $b){
 }
 
 function pop($a, $b){
-  global $pag;
-  return 'st+=10;'.
+  global $pag, $cpc;
+  return 'st+='.($cpc?3:10).';'.
 ($pag
   ? $b.'=m[sp>>14][sp&16383];'.
     $a.'=m[sp+1>>14&3][sp+1&16383];'
@@ -410,8 +417,8 @@ function pop($a, $b){
 }
 
 function popaf(){
-  global $pag;
-  return 'st+=10;'.
+  global $pag, $cpc;
+  return 'st+='.($cpc?3:10).';'.
 ($pag
   ? 'setf(m[sp>>14][sp&16383]);'.
     'a=m[sp+1>>14&3][sp+1&16383];'
@@ -421,8 +428,8 @@ function popaf(){
 }
 
 function rst($n){
-  global $mp, $pag;
-  return 'st+=11;'.
+  global $mp, $pag, $cpc;
+  return 'st+='.($cpc?4:11).';'.
 ($pag
   ? 'mw[--sp>>14&3][sp&16383]=pc>>8&255;'.
     'mw[(sp=sp-1&65535)>>14][sp&16383]=pc&255;'
@@ -432,79 +439,88 @@ function rst($n){
 }
 
 function rlc($r){
-  return 'st+=8;'.
+  global $cpc;
+  return 'st+='.($cpc?2:8).';'.
   $r.'='.$r.'*257>>7;'.
   'fa=256|(fr='.$r.'=(ff='.$r.')&255);'.
   'fb=0';
 }
 
 function rrc($r){
-  return 'st+=8;'.
+  global $cpc;
+  return 'st+='.($cpc?2:8).';'.
   $r.'='.$r.'>>1|(('.$r.'&1)+1^1)<<7;'.
   'fa=256|(fr='.$r.'=(ff='.$r.')&255);'.
   'fb=0';
 }
 
 function rl($r){
-  return 'st+=8;'.
+  global $cpc;
+  return 'st+='.($cpc?2:8).';'.
   $r.'='.$r.'<<1|ff>>8&1;'.
   'fa=256|(fr='.$r.'=(ff='.$r.')&255);'.
   'fb=0';
 }
 
 function rr($r){
-  return 'st+=8;'.
+  global $cpc;
+  return 'st+='.($cpc?2:8).';'.
   $r.'=('.$r.'*513|ff&256)>>1;'.
   'fa=256|(fr='.$r.'=(ff='.$r.')&255);'.
   'fb=0';
 }
 
 function sla($r){
-  return 'st+=8;'.
+  global $cpc;
+  return 'st+='.($cpc?2:8).';'.
   $r.'<<=1;'.
   'fa=256|(fr='.$r.'=(ff='.$r.')&255);'.
   'fb=0';
 }
 
 function sra($r){
-  return 'st+=8;'.
+  global $cpc;
+  return 'st+='.($cpc?2:8).';'.
   $r.'=('.$r.'*513+128^128)>>1;'.
   'fa=256|(fr='.$r.'=(ff='.$r.')&255);'.
   'fb=0';
 }
 
 function sll($r){
-  return 'st+=8;'.
+  global $cpc;
+  return 'st+='.($cpc?2:8).';'.
   $r.'='.$r.'<<1|1;'.
   'fa=256|(fr='.$r.'=(ff='.$r.')&255);'.
   'fb=0';
 }
 
 function srl($r){
-  return 'st+=8;'.
+  global $cpc;
+  return 'st+='.($cpc?2:8).';'.
   $r.'='.$r.'*513>>1;'.
   'fa=256|(fr='.$r.'=(ff='.$r.')&255);'.
   'fb=0';
 }
 
 function bit($n, $r){
-  return 'st+=8;'.
+  global $cpc;
+  return 'st+='.($cpc?2:8).';'.
   'ff=ff&-256|'.$r.'&40|(fr='.$r.'&'.$n.');'.
   'fa=~fr;'.
   'fb=0';
 }
 
 function biti($n){
-  global $mp;
-  return 'st+=5;'.
+  global $mp, $cpc;
+  return ($cpc?'++st;':'st+=5;').
   'ff=ff&-256|'.($mp?'mp>>8&40|-41&':'').'(t&='.$n.');'.
   'fa=~(fr=t);'.
   'fb=0';
 }
 
 function bithl($n){
-  global $mp, $pag;
-  return 'st+=12;'.
+  global $mp, $pag, $cpc;
+  return 'st+='.($cpc?3:12).';'.
 ($pag
   ? 't=m[h>>6][l|h<<8&16383];'
   : 't=m[l|h<<8];').
@@ -514,34 +530,36 @@ function bithl($n){
 }
 
 function res($n, $r){
-  return 'st+=8;'.
+  global $cpc;
+  return 'st+='.($cpc?2:8).';'.
   $r.'&='.$n;
 }
 
 function reshl($n){
-  global $pag;
-  return 'st+=15;'.
+  global $pag, $cpc;
+  return 'st+='.($cpc?4:15).';'.
 ($pag
   ? 'mw[t=h>>6][u=l|h<<8&16383]=m[t][u]&'.$n
   : 'wb(t=l|h<<8,m[t]&'.$n.')');
 }
 
 function set($n, $r){
-  return 'st+=8;'.
+  global $cpc;
+  return 'st+='.($cpc?2:8).';'.
   $r.'|='.$n;
 }
 
 function sethl($n){
-  global $pag;
-  return 'st+=15;'.
+  global $pag, $cpc;
+  return 'st+='.($cpc?4:15).';'.
 ($pag
   ? 'mw[t=h>>6][u=l|h<<8&16383]=m[t][u]|'.$n
   : 'wb(t=l|h<<8,m[t]|'.$n.')');
 }
 
 function inr($r){
-  global $mp;
-  return 'st+=12;'.
+  global $mp, $cpc;
+  return 'st+='.($cpc?4:12).';'.
   $r.'=rp('.($mp?'mp=':'').'b<<8|c);'.
   ($mp?'++mp;':'').
   'ff=ff&-256|(fr='.$r.');'.
@@ -550,13 +568,15 @@ function inr($r){
 }
 
 function outr($r){
-  return 'st+=12;'.
+  global $mp, $cpc;
+  return 'st+='.($cpc?3:12).';'.
   'wp('.($mp?'mp=':'').'c|b<<8,'.$r.')'.
   ($mp?';++mp':'');
 }
 
 function sbchlrr($a, $b) {
-  return 'st+=15;'.
+  global $mp, $cpc;
+  return 'st+='.($cpc?4:15).';'.
   't='.($a=='h'?'':'l-'.$b.'+(h-'.$a.'<<8)').'-(ff>>8&1);'.
   ($mp?'mp=l+1+(h<<8);':'').
   'ff=t>>8;'.
@@ -568,7 +588,8 @@ function sbchlrr($a, $b) {
 }
 
 function adchlrr($a, $b) {
-  return 'st+=15;'.
+  global $mp, $cpc;
+  return 'st+='.($cpc?4:15).';'.
   't=l+'.$b.'+(h+'.$a.'<<8)+(ff>>8&1);'.
   ($mp?'mp=l+1+(h<<8);':'').
   'ff=t>>8;'.
@@ -580,20 +601,22 @@ function adchlrr($a, $b) {
 }
 
 function neg(){
-  return 'st+=8;'.
+  global $cpc;
+  return 'st+='.($cpc?2:8).';'.
   'a=fr=(ff=(fb=~a)+1)&255;fa=0';
 }
 
 function ldair($r){
-  return 'st+=9;'.
+  global $cpc;
+  return 'st+='.($cpc?3:9).';'.
   'ff=ff&-256|(a='.$r.');'.
   'fr=+!!'.$r.';'.
   'fa=fb=iff<<7&128';
 }
 
 function ldid($i, $r){
-  global $mp, $pag;
-  return 'st+=16;'.
+  global $mp, $pag, $cpc;
+  return 'st+='.($cpc?5:16).';'.
 ($pag
   ? 't=mw[d>>6][e|d<<8&16383]=m[h>>6][l|h<<8&16383];'
   : 'wb(e|d<<8,t=m[l|h<<8]);').
@@ -605,13 +628,13 @@ function ldid($i, $r){
   'ff=ff&-41|t&8|t<<4&32;'.
   'fa=0;'.
   'b|c&&(fa=128'.
-  ($r ? ',st+=5,'.($mp?'mp=--pc,--pc':'pc-=2') : '').
+  ($r ? ','.($cpc?'++st':'st+=5').','.($mp?'mp=--pc,--pc':'pc-=2') : '').
   ');fb=fa';
 }
 
 function cpid($i, $r){
-  global $mp, $pag;
-  return 'st+=16;'.
+  global $mp, $pag, $cpc;
+  return 'st+='.($cpc?4:16).';'.
 ($pag
   ? 'u=a-(t=m[h>>6][l|h<<8&16383])&255;'
   : 'u=a-(t=m[l|h<<8])&255;').
@@ -623,15 +646,15 @@ function cpid($i, $r){
   'fb=~(t|128);'.
   'fa=a&127;'.
   'b|c&&(fa|=128,fb|=128'.
-  ($r ? ',u&&(st+=5,'.($mp?'mp=--pc,--pc)':'pc-=2)') : '').
+  ($r ? ',u&&('.($cpc?'++st':'st+=5').','.($mp?'mp=--pc,--pc)':'pc-=2)') : '').
   ');ff=ff&-256|u&-41;'.
   '(u^t^a)&16&&u--;'.
   'ff|=u<<4&32|u&8';
 }
 
 function inid($i, $r){
-  global $mp, $pag;
-  return 'st+=16;'.
+  global $mp, $pag, $cpc;
+  return 'st+='.($cpc?5:16).';'.
 ($pag
   ? 't=mw[h>>6][l|h<<8&16383]=rp('.($mp?'mp=':'').'c|b<<8);'
   : 'wb(l|h<<8,t=rp('.($mp?'mp=':'').'c|b<<8));').
@@ -640,7 +663,7 @@ function inid($i, $r){
   'b=b-1&255;'.
   ($mp?($i?'++mp;':'--mp;'):'').
   'u=t+(c'.($i?'+':'-').'1&255);'.
-  ($r?'b&&(st+=5,'.($mp?'mp=--pc,--pc);':'pc-=2);'):'').
+  ($r?'b&&('.($cpc?'++st':'st+=5').','.($mp?'mp=--pc,--pc);':'pc-=2);'):'').
   'fb=u&7^b;'.
   'ff=b|(u&=256);'.
   'fa=(fr=b)^128;'.
@@ -648,8 +671,8 @@ function inid($i, $r){
 }
 
 function otid($i, $r){
-  global $mp, $pag;
-  return 'st+=16;'.
+  global $mp, $pag, $cpc;
+  return 'st+='.($cpc?4:16).';'.
   'b=b-1&255;'.
 ($pag
   ? 'wp('.($mp?'mp=':'').'c|b<<8,t=m[h>>6][l|h<<8&16383]);'
@@ -658,7 +681,7 @@ function otid($i, $r){
   ($i ? '++l==256&&(l=0,h=h+1&255);'
       : '--l<0&&(h=h-1&(l=255));').
   'u=t+l;'.
-  ($r?'b&&(st+=5,'.($mp?'mp=--pc,--pc);':'pc-=2);'):'').
+  ($r?'b&&('.($cpc?'++st':'st+=5').','.($mp?'mp=--pc,--pc);':'pc-=2);'):'').
   'fb=u&7^b;'.
   'ff=b|(u&=256);'.
   'fa=(fr=b)^128;'.
@@ -666,8 +689,8 @@ function otid($i, $r){
 }
 
 function exspi($r){
-  global $mp, $pag;
-  return 'st+=19;'.
+  global $mp, $pag, $cpc;
+  return 'st+='.($cpc?6:19).';'.
 ($pag
   ? 'v=m[t=sp>>14][u=sp&16383];'.
     'mw[t][u]='.$r.'l;'.
@@ -685,22 +708,25 @@ function exspi($r){
 }
 
 function ldsppci($a, $b){
-  return 'st+='.($a=='sp'?6:4).';'.
+  global $cpc;
+  return ($cpc
+            ? ($a=='sp'?'st+=2;':'++st;')
+            : ($a=='sp'?'st+=6;':'st+=4;')).
   $a.'='.$b.'l|'.$b.'h<<8';
 }
 
 echo 'g=[';
-b('o00', nop(4));                                           // 00 // NOP
+b('o00', nop($cpc?1:4));                                    // 00 // NOP
 b('o01', ldrrim('b', 'c'));                                 // 01 // LD BC,nn
-b('o02', ldpr('b', 'c', 'a'));                              // 02 // LD (BC),A
+b('o02', ldpr('b', 'c', 'a', $mp));                         // 02 // LD (BC),A
 b('o03', incw('b', 'c'));                                   // 03 // INC BC
 b('o04', inc('b'));                                         // 04 // INC B
 b('o05', dec('b'));                                         // 05 // DEC B
 b('o06', ldrim('b'));                                       // 06 // LD B,n
                                                             // 07 // RLCA
-b('o07', 'st+=4;a=a*257>>7;ff=ff&215|a&296;fb=fb&128|(fa^fr)&16;a&=255');
+b('o07', ($cpc?'++st':'st+=4').';a=a*257>>7;ff=ff&215|a&296;fb=fb&128|(fa^fr)&16;a&=255');
                                                             // 08 // EX AF,AF'
-b('o08', 'st+=4;t=a_;a_=a;a=t;t=ff_;ff_=ff;ff=t;t=fr_;fr_=fr;fr=t;t=fa_;fa_=fa;fa=t;t=fb_;fb_=fb;fb=t');
+b('o08', ($cpc?'++st':'st+=4').';t=a_;a_=a;a=t;t=ff_;ff_=ff;ff=t;t=fr_;fr_=fr;fr=t;t=fa_;fa_=fa;fa=t;t=fb_;fb_=fb;fb=t');
 a(addrrrr('h', 'l', 'b', 'c'));                             // 09 // ADD HL,BC
 b('o0a', ldrp('b', 'c', 'a', $mp));                         // 0A // LD A,(BC)
 b('o0b', decw('b', 'c'));                                   // 0B // DEC BC
@@ -708,24 +734,24 @@ b('o0c', inc('c'));                                         // 0C // INC C
 b('o0d', dec('c'));                                         // 0D // DEC C
 b('o0e', ldrim('c'));                                       // 0E // LD C,n
                                                             // 0F // RRCA
-b('o0f', 'st+=4;a=a>>1|((a&1)+1^1)<<7;ff=ff&215|a&296;fb=fb&128|(fa^fr)&16;a&=255');
-b('o10', 'st+=8;'.                                          // 10 // DJNZ
+b('o0f', ($cpc?'++st':'st+=4').';a=a>>1|((a&1)+1^1)<<7;ff=ff&215|a&296;fb=fb&128|(fa^fr)&16;a&=255');
+b('o10',                                                    // 10 // DJNZ
   'if(b=b-1&255)'.
-    'st+=5,'.
+    'st+='.($cpc?4:13).','.
     ($mp?'mp=':'').
 ($pag
   ? 'pc+=(m[pc>>14&3][pc&16383]^128)-127;'
   : 'pc+=(m[pc&65535]^128)-127;').
-  'else pc++');
+  'else st+='.($cpc?3:8).',pc++');
 b('o11', ldrrim('d', 'e'));                                 // 11 // LD DE,nn
-b('o12', ldpr('d', 'e', 'a'));                              // 12 // LD (DE),A
+b('o12', ldpr('d', 'e', 'a', $mp));                         // 12 // LD (DE),A
 b('o13', incw('d', 'e'));                                   // 13 // INC DE
 b('o14', inc('d'));                                         // 14 // INC D
 b('o15', dec('d'));                                         // 15 // DEC D
 b('o16', ldrim('d'));                                       // 16 // LD D,n
                                                             // 17 // RLA
-b('o17', 'st+=4;a=a<<1|ff>>8&1;ff=ff&215|a&296;fb=fb&128|(fa^fr)&16;a&=255');
-b('o18', 'st+=12;'.                                         // 18 // JR
+b('o17', ($cpc?'++st':'st+=4').';a=a<<1|ff>>8&1;ff=ff&215|a&296;fb=fb&128|(fa^fr)&16;a&=255');
+b('o18', 'st+='.($cpc?3:12).';'.                            // 18 // JR
   ($mp?'mp=':'').
 ($pag
   ? 'pc+=(m[pc>>14&3][pc&16383]^128)-127'
@@ -737,201 +763,205 @@ b('o1c', inc('e'));                                         // 1C // INC E
 b('o1d', dec('e'));                                         // 1D // DEC E
 b('o1e', ldrim('e'));                                       // 1E // LD E,n
                                                             // 1F // RRA
-b('o1f', 'st+=4;a=(a*513|ff&256)>>1;ff=ff&215|a&296;fb=fb&128|(fa^fr)&16;a&=255');
+b('o1f', ($cpc?'++st':'st+=4').';a=(a*513|ff&256)>>1;ff=ff&215|a&296;fb=fb&128|(fa^fr)&16;a&=255');
 b('o20', jrci('fr'));                                       // 20 // JR NZ,s8
 a(ldrrim('h', 'l'));                                        // 21 // LD HL,nn
-a(ldpnnrr('h', 'l', 16));                                   // 22 // LD (nn),HL
+a(ldpnnrr('h', 'l', $cpc?5:16));                            // 22 // LD (nn),HL
 a(incw('h', 'l'));                                          // 23 // INC HL
 a(inc('h'));                                                // 24 // INC H
 a(dec('h'));                                                // 25 // DEC H
 a(ldrim('h'));                                              // 26 // LD H,n
                                                             // 27 // DAA
-b('o27', 'st+=4;t=(fr^fa^fb^fb>>8)&16;u=0;(a|ff&256)>153&&(u=352);(a&15|t)>9&&(u+=6);fa=a|256;fb&512?(a-=u,fb=~u):a+=fb=u,ff=(fr=a&=255)|u&256');
+b('o27', ($cpc?'++st':'st+=4').';t=(fr^fa^fb^fb>>8)&16;u=0;(a|ff&256)>153&&(u=352);(a&15|t)>9&&(u+=6);fa=a|256;fb&512?(a-=u,fb=~u):a+=fb=u,ff=(fr=a&=255)|u&256');
 b('o28', jrc('fr'));                                        // 28 // JR Z,s8
 a(addrrrr('h', 'l', 'h', 'l'));                             // 29 // ADD HL,HL
-a(ldrrpnn('h', 'l', 16));                                   // 2a // LD HL,(nn)
+a(ldrrpnn('h', 'l', $cpc?5:16));                            // 2a // LD HL,(nn)
 a(decw('h', 'l'));                                          // 2b // DEC HL
 a(inc('l'));                                                // 2c // INC L
 a(dec('l'));                                                // 2d // DEC L
 a(ldrim('l'));                                              // 2e // LD L,n
-b('o2f', 'st+=4;ff=ff&-41|(a^=255)&40;fb|=-129;fa=fa&-17|~fr&16');// CPL
+b('o2f', ($cpc?'++st':'st+=4').';ff=ff&-41|(a^=255)&40;fb|=-129;fa=fa&-17|~fr&16');// CPL
 b('o30', jrc('ff&256'));                                    // 30 // JR NC,s8
-b('o31', 'st+=10;'.                                         // 31 // LD SP,nn
+b('o31', 'st+='.($cpc?3:10).';'.                            // 31 // LD SP,nn
 ($pag
   ? 'sp=m[pc>>14&3][pc++&16383]|m[pc>>14&3][pc++&16383]<<8'
   : 'sp=m[pc++&65535]|m[pc++&65535]<<8'));
-b('o32', 'st+=13;'.                                         // 32 // LD (nn),A
+b('o32', 'st+='.($cpc?4:13).';'.                            // 32 // LD (nn),A
 ($pag
   ? 'mw[('.($mp?'t=':'').'m[pc>>14&3][pc++&16383]|m[pc>>14&3][pc++&16383]<<8)>>14][t&16383]=a'
   : 'wb('.($mp?'t=':'').'m[pc++&65535]|m[pc++&65535]<<8,a)').
   ($mp?';mp=t+1&255|a<<8':''));
-b('o33', 'st+=6;sp=sp+1&65535');                            // 33 // INC SP
+b('o33', 'st+='.($cpc?2:6).';sp=sp+1&65535');               // 33 // INC SP
 a(incdecphl('+'));                                          // 34 // INC (HL)
 a(incdecphl('-'));                                          // 35 // DEC (HL)
-a('st+=10;'.                                                // 36 // LD (HL),n
+a('st+='.($cpc?3:10).';'.                                   // 36 // LD (HL),n
 ($pag
   ? 'mw[h>>6][l|h<<8&16383]=m[pc>>14&3][pc++&16383]'
   : 'wb(l|h<<8,m[pc++&65535])'));
-b('o37', 'st+=4;fb=fb&128|(fr^fa)&16;ff=256|ff&128|a&40');  // 37 // SCF
+b('o37', ($cpc?'++st':'st+=4').                             // 37 // SCF
+  ';fb=fb&128|(fr^fa)&16;ff=256|ff&128|a&40');
 b('o38', jrci('ff&256'));                                   // 38 // JR C,s8
 a(addisp(''));                                              // 39 // ADD HL,SP
-b('o3a', 'st+=13;'.                                         // 3a // LD A,(nn)
+b('o3a', 'st+='.($cpc?4:13).';'.                            // 3a // LD A,(nn)
 ($pag
   ? 'a=m[(mp=m[pc>>14&3][pc++&16383]|m[pc>>14&3][pc++&16383]<<8)>>14][mp&16383]'
   : 'a=m['.($mp?'mp=':'').'m[pc++&65535]|m[pc++&65535]<<8]').
   ($mp?';++mp':''));
-b('o3b', 'st+=6;sp=sp-1&65535');                            // 3b // DEC SP
+b('o3b', 'st+='.($cpc?2:6).';sp=sp-1&65535');               // 3b // DEC SP
 b('o3c', inc('a'));                                         // 3c // INC A
 b('o3d', dec('a'));                                         // 3d // DEC A
 b('o3e', ldrim('a'));                                       // 3e // LD A,n
-b('o3f', 'st+=4;fb=fb&128|(ff>>4^fr^fa)&16;ff=~ff&256|ff&128|a&40');//CCF
+b('o3f', ($cpc?'++st':'st+=4').                             // 3f // CCF
+  ';fb=fb&128|(ff>>4^fr^fa)&16;ff=~ff&256|ff&128|a&40');
 c('o00');                                                   // 40 // LD B,B
-b('o41', ldrr('b', 'c', 4));                                // 41 // LD B,C
-b('o42', ldrr('b', 'd', 4));                                // 42 // LD B,D
-b('o43', ldrr('b', 'e', 4));                                // 43 // LD B,E
-a(ldrr('b', 'h', 4));                                       // 44 // LD B,H
-a(ldrr('b', 'l', 4));                                       // 45 // LD B,L
+b('o41', ldrr('b', 'c', $cpc?1:4));                         // 41 // LD B,C
+b('o42', ldrr('b', 'd', $cpc?1:4));                         // 42 // LD B,D
+b('o43', ldrr('b', 'e', $cpc?1:4));                         // 43 // LD B,E
+a(ldrr('b', 'h', $cpc?1:4));                                // 44 // LD B,H
+a(ldrr('b', 'l', $cpc?1:4));                                // 45 // LD B,L
 a(ldrp('h', 'l', 'b', 0));                                  // 46 // LD B,(HL)
-b('o47', ldrr('b', 'a', 4));                                // 47 // LD B,A
-b('o48', ldrr('c', 'b', 4));                                // 48 // LD C,B
+b('o47', ldrr('b', 'a', $cpc?1:4));                         // 47 // LD B,A
+b('o48', ldrr('c', 'b', $cpc?1:4));                         // 48 // LD C,B
 c('o00');                                                   // 49 // LD C,C
-b('o4a', ldrr('c', 'd', 4));                                // 4a // LD C,D
-b('o4b', ldrr('c', 'e', 4));                                // 4b // LD C,E
-a(ldrr('c', 'h', 4));                                       // 4c // LD C,H
-a(ldrr('c', 'l', 4));                                       // 4d // LD C,L
+b('o4a', ldrr('c', 'd', $cpc?1:4));                         // 4a // LD C,D
+b('o4b', ldrr('c', 'e', $cpc?1:4));                         // 4b // LD C,E
+a(ldrr('c', 'h', $cpc?1:4));                                // 4c // LD C,H
+a(ldrr('c', 'l', $cpc?1:4));                                // 4d // LD C,L
 a(ldrp('h', 'l', 'c', 0));                                  // 4e // LD C,(HL)
-b('o4f', ldrr('c', 'a', 4));                                // 4f // LD C,A
-b('o50', ldrr('d', 'b', 4));                                // 50 // LD D,B
-b('o51', ldrr('d', 'c', 4));                                // 51 // LD D,C
+b('o4f', ldrr('c', 'a', $cpc?1:4));                         // 4f // LD C,A
+b('o50', ldrr('d', 'b', $cpc?1:4));                         // 50 // LD D,B
+b('o51', ldrr('d', 'c', $cpc?1:4));                         // 51 // LD D,C
 c('o00');                                                   // 52 // LD D,D
-b('o53', ldrr('d', 'e', 4));                                // 53 // LD D,E
-a(ldrr('d', 'h', 4));                                       // 54 // LD D,H
-a(ldrr('d', 'l', 4));                                       // 55 // LD D,L
+b('o53', ldrr('d', 'e', $cpc?1:4));                         // 53 // LD D,E
+a(ldrr('d', 'h', $cpc?1:4));                                // 54 // LD D,H
+a(ldrr('d', 'l', $cpc?1:4));                                // 55 // LD D,L
 a(ldrp('h', 'l', 'd', 0));                                  // 56 // LD D,(HL)
-b('o57', ldrr('d', 'a', 4));                                // 57 // LD D,A
-b('o58', ldrr('e', 'b', 4));                                // 58 // LD E,B
-b('o59', ldrr('e', 'c', 4));                                // 59 // LD E,C
-b('o5a', ldrr('e', 'd', 4));                                // 5a // LD E,D
+b('o57', ldrr('d', 'a', $cpc?1:4));                         // 57 // LD D,A
+b('o58', ldrr('e', 'b', $cpc?1:4));                         // 58 // LD E,B
+b('o59', ldrr('e', 'c', $cpc?1:4));                         // 59 // LD E,C
+b('o5a', ldrr('e', 'd', $cpc?1:4));                         // 5a // LD E,D
 c('o00');                                                   // 5b // LD E,E
-a(ldrr('e', 'h', 4));                                       // 5c // LD E,H
-a(ldrr('e', 'l', 4));                                       // 5d // LD E,L
+a(ldrr('e', 'h', $cpc?1:4));                                // 5c // LD E,H
+a(ldrr('e', 'l', $cpc?1:4));                                // 5d // LD E,L
 a(ldrp('h', 'l', 'e', 0));                                  // 5e // LD E,(HL)
-b('o5f', ldrr('e', 'a', 4));                                // 5f // LD E,A
-a(ldrr('h', 'b', 4));                                       // 60 // LD H,B
-a(ldrr('h', 'c', 4));                                       // 61 // LD H,C
-a(ldrr('h', 'd', 4));                                       // 62 // LD H,D
-a(ldrr('h', 'e', 4));                                       // 63 // LD H,E
+b('o5f', ldrr('e', 'a', $cpc?1:4));                         // 5f // LD E,A
+a(ldrr('h', 'b', $cpc?1:4));                                // 60 // LD H,B
+a(ldrr('h', 'c', $cpc?1:4));                                // 61 // LD H,C
+a(ldrr('h', 'd', $cpc?1:4));                                // 62 // LD H,D
+a(ldrr('h', 'e', $cpc?1:4));                                // 63 // LD H,E
 c('o00');                                                   // 64 // LD H,H
-a(ldrr('h', 'l', 4));                                       // 65 // LD H,L
+a(ldrr('h', 'l', $cpc?1:4));                                // 65 // LD H,L
 a(ldrp('h', 'l', 'h', 0));                                  // 66 // LD H,(HL)
-a(ldrr('h', 'a', 4));                                       // 67 // LD H,A
-a(ldrr('l', 'b', 4));                                       // 68 // LD L,B
-a(ldrr('l', 'c', 4));                                       // 69 // LD L,C
-a(ldrr('l', 'd', 4));                                       // 6a // LD L,D
-a(ldrr('l', 'e', 4));                                       // 6b // LD L,E
-a(ldrr('l', 'h', 4));                                       // 6c // LD L,H
+a(ldrr('h', 'a', $cpc?1:4));                                // 67 // LD H,A
+a(ldrr('l', 'b', $cpc?1:4));                                // 68 // LD L,B
+a(ldrr('l', 'c', $cpc?1:4));                                // 69 // LD L,C
+a(ldrr('l', 'd', $cpc?1:4));                                // 6a // LD L,D
+a(ldrr('l', 'e', $cpc?1:4));                                // 6b // LD L,E
+a(ldrr('l', 'h', $cpc?1:4));                                // 6c // LD L,H
 c('o00');                                                   // 6d // LD L,L
 a(ldrp('h', 'l', 'l', 0));                                  // 6e // LD L,(HL)
-a(ldrr('l', 'a', 4));                                       // 6f // LD L,A
-a(ldpr('h', 'l', 'b'));                                     // 70 // LD (HL),B
-a(ldpr('h', 'l', 'c'));                                     // 71 // LD (HL),C
-a(ldpr('h', 'l', 'd'));                                     // 72 // LD (HL),D
-a(ldpr('h', 'l', 'e'));                                     // 73 // LD (HL),E
-a(ldpr('h', 'l', 'h'));                                     // 74 // LD (HL),H
-a(ldpr('h', 'l', 'l'));                                     // 75 // LD (HL),L
-b('o76', 'st+=4;halted=1;pc--');                            // 76 // HALT
-a(ldpr('h', 'l', 'a'));                                     // 77 // LD (HL),A
-b('o78', ldrr('a', 'b', 4));                                // 78 // LD A,B
-b('o79', ldrr('a', 'c', 4));                                // 79 // LD A,C
-b('o7a', ldrr('a', 'd', 4));                                // 7a // LD A,D
-b('o7b', ldrr('a', 'e', 4));                                // 7b // LD A,E
-a(ldrr('a', 'h', 4));                                       // 7c // LD A,H
-a(ldrr('a', 'l', 4));                                       // 7d // LD A,L
+a(ldrr('l', 'a', $cpc?1:4));                                // 6f // LD L,A
+a(ldpr('h', 'l', 'b', 0));                                  // 70 // LD (HL),B
+a(ldpr('h', 'l', 'c', 0));                                  // 71 // LD (HL),C
+a(ldpr('h', 'l', 'd', 0));                                  // 72 // LD (HL),D
+a(ldpr('h', 'l', 'e', 0));                                  // 73 // LD (HL),E
+a(ldpr('h', 'l', 'h', 0));                                  // 74 // LD (HL),H
+a(ldpr('h', 'l', 'l', 0));                                  // 75 // LD (HL),L
+b('o76', ($cpc?'++st':'st+=4').';halted=1;pc--');           // 76 // HALT
+a(ldpr('h', 'l', 'a', 0));                                  // 77 // LD (HL),A
+b('o78', ldrr('a', 'b', $cpc?1:4));                         // 78 // LD A,B
+b('o79', ldrr('a', 'c', $cpc?1:4));                         // 79 // LD A,C
+b('o7a', ldrr('a', 'd', $cpc?1:4));                         // 7a // LD A,D
+b('o7b', ldrr('a', 'e', $cpc?1:4));                         // 7b // LD A,E
+a(ldrr('a', 'h', $cpc?1:4));                                // 7c // LD A,H
+a(ldrr('a', 'l', $cpc?1:4));                                // 7d // LD A,L
 a(ldrp('h', 'l', 'a', 0));                                  // 7e // LD A,(HL)
 c('o00');                                                   // 7f // LD A,A
-b('o80', add('b', 4));                                      // 80 // ADD A,B
-b('o81', add('c', 4));                                      // 81 // ADD A,C
-b('o82', add('d', 4));                                      // 82 // ADD A,D
-b('o83', add('e', 4));                                      // 83 // ADD A,E
-a(add('h', 4));                                             // 84 // ADD A,H
-a(add('l', 4));                                             // 85 // ADD A,L
-a(add($pag?'m[h>>6][l|h<<8&16383]':'m[l|h<<8]', 7));        // 86 // ADD A,(HL)
-b('o87', 'st+=4;a=fr=(ff=2*(fa=fb=a))&255');                // 87 // ADD A,A
-b('o88', adc('b', 4));                                      // 88 // ADC A,B
-b('o89', adc('c', 4));                                      // 89 // ADC A,C
-b('o8a', adc('d', 4));                                      // 8a // ADC A,D
-b('o8b', adc('e', 4));                                      // 8b // ADC A,E
-a(adc('h', 4));                                             // 8c // ADC A,H
-a(adc('l', 4));                                             // 8d // ADC A,L
-a(adc($pag?'m[h>>6][l|h<<8&16383]':'m[l|h<<8]', 7));        // 8e // ADC A,(HL)
-b('o8f', 'st+=4;a=fr=(ff=2*(fa=fb=a)+(ff>>8&1))&255');      // 8f // ADC A,A
-b('o90', sub('b', 4));                                      // 90 // SUB A,B
-b('o91', sub('c', 4));                                      // 91 // SUB A,C
-b('o92', sub('d', 4));                                      // 92 // SUB A,D
-b('o93', sub('e', 4));                                      // 93 // SUB A,E
-a(sub('h', 4));                                             // 94 // SUB A,H
-a(sub('l', 4));                                             // 95 // SUB A,L
-a(sub($pag?'m[h>>6][l|h<<8&16383]':'m[l|h<<8]', 7));        // 96 // SUB A,(HL)
-b('o97', 'st+=4;fb=~(fa=a);a=fr=ff=0');                     // 97 // SUB A,A
-b('o98', sbc('b', 4));                                      // 98 // SBC A,B
-b('o99', sbc('c', 4));                                      // 99 // SBC A,C
-b('o9a', sbc('d', 4));                                      // 9a // SBC A,D
-b('o9b', sbc('e', 4));                                      // 9b // SBC A,E
-a(sbc('h', 4));                                             // 9c // SBC A,H
-a(sbc('l', 4));                                             // 9d // SBC A,L
-a(sbc($pag?'m[h>>6][l|h<<8&16383]':'m[l|h<<8]', 7));        // 9e // SBC A,(HL)
-b('o9f', 'st+=4;fb=~(fa=a);a=fr=(ff=(ff&256)/-256)&255');   // 9f // SBC A,A
-b('oa0', anda('b', 4));                                     // a0 // AND B
-b('oa1', anda('c', 4));                                     // a1 // AND C
-b('oa2', anda('d', 4));                                     // a2 // AND D
-b('oa3', anda('e', 4));                                     // a3 // AND E
-a(anda('h', 4));                                            // a4 // AND H
-a(anda('l', 4));                                            // a5 // AND L
-a(anda($pag?'m[h>>6][l|h<<8&16383]':'m[l|h<<8]', 7));       // a6 // AND (HL)
-b('oa7', 'st+=4;fa=~(ff=fr=a);fb=0');                       // a7 // AND A
-b('oa8', xoror('^=b', 4));                                  // a8 // XOR B
-b('oa9', xoror('^=c', 4));                                  // a9 // XOR C
-b('oaa', xoror('^=d', 4));                                  // aa // XOR D
-b('oab', xoror('^=e', 4));                                  // ab // XOR E
-a(xoror('^=h', 4));                                         // ac // XOR H
-a(xoror('^=l', 4));                                         // ad // XOR L
-a(xoror($pag?'^=m[h>>6][l|h<<8&16383]':'^=m[l|h<<8]', 7));  // ae // XOR (HL)
-b('oaf', 'st+=4;a=ff=fr=fb=0;fa=256');                      // af // XOR A
-b('ob0', xoror('|=b', 4));                                  // b0 // OR B
-b('ob1', xoror('|=c', 4));                                  // b1 // OR C
-b('ob2', xoror('|=d', 4));                                  // b2 // OR D
-b('ob3', xoror('|=e', 4));                                  // b3 // OR E
-a(xoror('|=h', 4));                                         // b4 // OR H
-a(xoror('|=l', 4));                                         // b5 // OR L
-a(xoror($pag?'|=m[h>>6][l|h<<8&16383]':'|=m[l|h<<8]', 7));  // b6 // OR (HL)
-b('ob7', 'st+=4;fa=(ff=fr=a)|256;fb=0');                    // b7 // OR A
-b('ob8', cp('b', 4));                                       // b8 // CP B
-b('ob9', cp('c', 4));                                       // b9 // CP C
-b('oba', cp('d', 4));                                       // ba // CP D
-b('obb', cp('e', 4));                                       // bb // CP E
-a(cp('h', 4));                                              // bc // CP H
-a(cp('l', 4));                                              // bd // CP L
-a('t=m['.($pag?'h>>6][l|h<<8&16383':'l|h<<8').'];'.cp('t',7));//be// CP (HL)
-b('obf', 'st+=4;fr=0;fb=~(fa=a);ff=a&40');                  // bf // CP A
+b('o80', add('b', $cpc?1:4));                               // 80 // ADD A,B
+b('o81', add('c', $cpc?1:4));                               // 81 // ADD A,C
+b('o82', add('d', $cpc?1:4));                               // 82 // ADD A,D
+b('o83', add('e', $cpc?1:4));                               // 83 // ADD A,E
+a(add('h', $cpc?1:4));                                      // 84 // ADD A,H
+a(add('l', $cpc?1:4));                                      // 85 // ADD A,L
+a(add($pag?'m[h>>6][l|h<<8&16383]':'m[l|h<<8]', $cpc?2:7)); // 86 // ADD A,(HL)
+b('o87', ($cpc?'++st':'st+=4').';a=fr=(ff=2*(fa=fb=a))&255');//87 // ADD A,A
+b('o88', adc('b', $cpc?1:4));                               // 88 // ADC A,B
+b('o89', adc('c', $cpc?1:4));                               // 89 // ADC A,C
+b('o8a', adc('d', $cpc?1:4));                               // 8a // ADC A,D
+b('o8b', adc('e', $cpc?1:4));                               // 8b // ADC A,E
+a(adc('h', $cpc?1:4));                                      // 8c // ADC A,H
+a(adc('l', $cpc?1:4));                                      // 8d // ADC A,L
+a(adc($pag?'m[h>>6][l|h<<8&16383]':'m[l|h<<8]', $cpc?2:7)); // 8e // ADC A,(HL)
+b('o8f', ($cpc?'++st':'st+=4').                             // 8f // ADC A,A
+  ';a=fr=(ff=2*(fa=fb=a)+(ff>>8&1))&255');
+b('o90', sub('b', $cpc?1:4));                               // 90 // SUB A,B
+b('o91', sub('c', $cpc?1:4));                               // 91 // SUB A,C
+b('o92', sub('d', $cpc?1:4));                               // 92 // SUB A,D
+b('o93', sub('e', $cpc?1:4));                               // 93 // SUB A,E
+a(sub('h', $cpc?1:4));                                      // 94 // SUB A,H
+a(sub('l', $cpc?1:4));                                      // 95 // SUB A,L
+a(sub($pag?'m[h>>6][l|h<<8&16383]':'m[l|h<<8]', $cpc?2:7)); // 96 // SUB A,(HL)
+b('o97', ($cpc?'++st':'st+=4').';fb=~(fa=a);a=fr=ff=0');    // 97 // SUB A,A
+b('o98', sbc('b', $cpc?1:4));                               // 98 // SBC A,B
+b('o99', sbc('c', $cpc?1:4));                               // 99 // SBC A,C
+b('o9a', sbc('d', $cpc?1:4));                               // 9a // SBC A,D
+b('o9b', sbc('e', $cpc?1:4));                               // 9b // SBC A,E
+a(sbc('h', $cpc?1:4));                                      // 9c // SBC A,H
+a(sbc('l', $cpc?1:4));                                      // 9d // SBC A,L
+a(sbc($pag?'m[h>>6][l|h<<8&16383]':'m[l|h<<8]', $cpc?2:7)); // 9e // SBC A,(HL)
+b('o9f', ($cpc?'++st':'st+=4').                             // 9f // SBC A,A
+  ';fb=~(fa=a);a=fr=(ff=(ff&256)/-256)&255');
+b('oa0', anda('b', $cpc?1:4));                              // a0 // AND B
+b('oa1', anda('c', $cpc?1:4));                              // a1 // AND C
+b('oa2', anda('d', $cpc?1:4));                              // a2 // AND D
+b('oa3', anda('e', $cpc?1:4));                              // a3 // AND E
+a(anda('h', $cpc?1:4));                                     // a4 // AND H
+a(anda('l', $cpc?1:4));                                     // a5 // AND L
+a(anda($pag?'m[h>>6][l|h<<8&16383]':'m[l|h<<8]', $cpc?2:7));// a6 // AND (HL)
+b('oa7', ($cpc?'++st':'st+=4').';fa=~(ff=fr=a);fb=0');      // a7 // AND A
+b('oa8', xoror('^=b', $cpc?1:4));                           // a8 // XOR B
+b('oa9', xoror('^=c', $cpc?1:4));                           // a9 // XOR C
+b('oaa', xoror('^=d', $cpc?1:4));                           // aa // XOR D
+b('oab', xoror('^=e', $cpc?1:4));                           // ab // XOR E
+a(xoror('^=h', $cpc?1:4));                                  // ac // XOR H
+a(xoror('^=l', $cpc?1:4));                                  // ad // XOR L
+a(xoror($pag?'^=m[h>>6][l|h<<8&16383]':'^=m[l|h<<8]', $cpc?2:7)); // XOR (HL)
+b('oaf', ($cpc?'++st':'st+=4').';a=ff=fr=fb=0;fa=256');     // af // XOR A
+b('ob0', xoror('|=b', $cpc?1:4));                           // b0 // OR B
+b('ob1', xoror('|=c', $cpc?1:4));                           // b1 // OR C
+b('ob2', xoror('|=d', $cpc?1:4));                           // b2 // OR D
+b('ob3', xoror('|=e', $cpc?1:4));                           // b3 // OR E
+a(xoror('|=h', $cpc?1:4));                                  // b4 // OR H
+a(xoror('|=l', $cpc?1:4));                                  // b5 // OR L
+a(xoror($pag?'|=m[h>>6][l|h<<8&16383]':'|=m[l|h<<8]', $cpc?2:7)); // OR (HL)
+b('ob7', ($cpc?'++st':'st+=4').';fa=(ff=fr=a)|256;fb=0');   // b7 // OR A
+b('ob8', cp('b', $cpc?1:4));                                // b8 // CP B
+b('ob9', cp('c', $cpc?1:4));                                // b9 // CP C
+b('oba', cp('d', $cpc?1:4));                                // ba // CP D
+b('obb', cp('e', $cpc?1:4));                                // bb // CP E
+a(cp('h', $cpc?1:4));                                       // bc // CP H
+a(cp('l', $cpc?1:4));                                       // bd // CP L
+a('t=m['.($pag?'h>>6][l|h<<8&16383':'l|h<<8').'];'.cp('t',$cpc?2:7));//CP (HL)
+b('obf', ($cpc?'++st':'st+=4').';fr=0;fb=~(fa=a);ff=a&40'); // bf // CP A
 b('oc0', retci('fr'));                                      // c0 // RET NZ
 b('oc1', pop('b', 'c'));                                    // c1 // POP BC
 b('oc2', jpci('fr'));                                       // c2 // JP NZ
-b('oc3', 'st+=10;'.                                         // c3 // JP nn
+b('oc3', 'st+='.($cpc?3:10).';'.                            // c3 // JP nn
   ($mp?'mp=':'').
 ($pag
   ? 'pc=m[pc>>14&3][pc&16383]|m[pc+1>>14&3][pc+1&16383]<<8'
   : 'pc=m[pc&65535]|m[pc+1&65535]<<8'));
 b('oc4', callci('fr'));                                     // c4 // CALL NZ
 b('oc5', push('b', 'c'));                                   // c5 // PUSH BC
-b('oc6', add($pag?'m[pc>>14&3][pc++&16383]':'m[pc++&65535]', 7)); // ADD A,n
+b('oc6', add($pag?'m[pc>>14&3][pc++&16383]':'m[pc++&65535]', $cpc?2:7)); // ADD A,n
 b('oc7', rst(0));                                           // c7 // RST 0x00
 b('oc8', retc('fr'));                                       // c8 // RET Z
-b('oc9', ret(10));                                          // c9 // RET
+b('oc9', ret($cpc?3:10));                                   // c9 // RET
 b('oca', jpc('fr'));                                        // ca // JP Z
 a('r++;g[768+m['.($pag? 'pc>>14&3][pc++&16383'              // cb // op cb
                       : 'pc++&65535').']]()');
 b('occ', callc('fr'));                                      // cc // CALL Z
-b('ocd', 'st+=17;'.                                         // cd // CALL NN
+b('ocd', 'st+='.($cpc?5:17).';'.                            // cd // CALL NN
   't=pc+2;'.
   ($mp?'mp=':'').
 ($pag
@@ -941,33 +971,34 @@ b('ocd', 'st+=17;'.                                         // cd // CALL NN
   : 'pc=m[pc&65535]|m[pc+1&65535]<<8;'.
     'wb(--sp&65535,t>>8&255);'.
     'wb(sp=sp-1&65535,t&255)'));
-b('oce', adc($pag?'m[pc>>14&3][pc++&16383]':'m[pc++&65535]', 7)); // ADC A,n
+b('oce', adc($pag?'m[pc>>14&3][pc++&16383]':'m[pc++&65535]', $cpc?2:7)); // ADC A,n
 b('ocf', rst(8));                                           // cf // RST 0x08
 b('od0', retc('ff&256'));                                   // d0 // RET NC
 b('od1', pop('d', 'e'));                                    // d1 // POP DE
 b('od2', jpc('ff&256'));                                    // d2 // JP NC
-b('od3', 'st+=11;'.                                         // d3 // OUT (n),A
+b('od3', 'st+='.($cpc?3:11).';'.                            // d3 // OUT (n),A
 ($pag
   ? 'wp('.($mp?'mp=':'').'m[pc>>14&3][pc++&16383]|a<<8,a)'
   : 'wp('.($mp?'mp=':'').'m[pc++&65535]|a<<8,a)').
   ($mp?';mp=mp+1&255|mp&65280':''));
 b('od4', callc('ff&256'));                                  // d4 // CALL NC
 b('od5', push('d', 'e'));                                   // d5 // PUSH DE
-b('od6', sub($pag?'m[pc>>14&3][pc++&16383]':'m[pc++&65535]', 7)); // SUB A,n
+b('od6', sub($pag?'m[pc>>14&3][pc++&16383]':'m[pc++&65535]', $cpc?2:7)); // SUB A,n
 b('od7', rst(16));                                          // d7 // RST 0x10
 b('od8', retci('ff&256'));                                  // d8 // RET C
                                                             // d9 // EXX
-b('od9', 'st+=4;t=b;b=b_;b_=t;t=c;c=c_;c_=t;t=d;d=d_;d_=t;t=e;e=e_;e_=t;t=h;h=h_;h_=t;t=l;l=l_;l_=t');
+b('od9', ($cpc?'++st':'st+=4').';t=b;b=b_;b_=t;t=c;c=c_;c_=t;t=d;d=d_;d_=t;t=e;e=e_;e_=t;t=h;h=h_;h_=t;t=l;l=l_;l_=t');
 b('oda', jpci('ff&256'));                                   // da // JP C
-b('odb', 'st+=11;'.                                         // db // IN A,(n)
+b('odb', 'st+='.($cpc?3:11).';'.                            // db // IN A,(n)
 ($pag
   ? 'a=rp('.($mp?'mp=':'').'m[pc>>14&3][pc++&16383]|a<<8)'
   : 'a=rp('.($mp?'mp=':'').'m[pc++&65535]|a<<8)').
   ($mp?';++mp':''));
 b('odc', callci('ff&256'));                                 // dc // CALL C
-a('st+=4;r++;g[256+m['.($pag ? 'pc>>14&3][pc++&16383'       // dd // OP dd
-                             : 'pc++&65535').']]()');
-b('ode', sbc($pag?'m[pc>>14&3][pc++&16383]':'m[pc++&65535]', 7)); // SBC A,n
+b('odd', ($cpc?'++st':'st+=4').                             // dd // OP dd
+  ';r++;g[256+m['.($pag ? 'pc>>14&3][pc++&16383'
+                        : 'pc++&65535').']]()');
+b('ode', sbc($pag?'m[pc>>14&3][pc++&16383]':'m[pc++&65535]', $cpc?2:7)); // SBC A,n
 b('odf', rst(24));                                          // df // RST 0x18
 b('oe0', retc('fa&256?38505>>((fr^fr>>4)&15)&1:(fr^fa)&(fr^fb)&128'));//e0//RET PO
 a(pop('h', 'l'));                                           // e1 // POP HL
@@ -975,35 +1006,36 @@ b('oe2', jpc('fa&256?38505>>((fr^fr>>4)&15)&1:(fr^fa)&(fr^fb)&128'));//e2//JP PO
 a(exspi(''));                                               // e3 // EX (SP),HL
 b('oe4', callc('fa&256?38505>>((fr^fr>>4)&15)&1:(fr^fa)&(fr^fb)&128'));//e4//CALL PO
 a(push('h', 'l'));                                          // e5 // PUSH HL
-b('oe6', anda($pag?'m[pc>>14&3][pc++&16383]':'m[pc++&65535]', 7));// AND A,n
+b('oe6', anda($pag?'m[pc>>14&3][pc++&16383]':'m[pc++&65535]', $cpc?2:7));// AND A,n
 b('oe7', rst(32));                                          // e7 // RST 0x20
 b('oe8', retci('fa&256?38505>>((fr^fr>>4)&15)&1:(fr^fa)&(fr^fb)&128'));//e8//RET PE
 a(ldsppci('pc', ''));                                       // e9 // JP (HL)
 b('oea', jpci('fa&256?38505>>((fr^fr>>4)&15)&1:(fr^fa)&(fr^fb)&128'));//ea//JP PE
-b('oeb', 'st+=4;t=d;d=h;h=t;t=e;e=l;l=t');                  // eb // EX DE,HL
+b('oeb', ($cpc?'++st':'st+=4').';t=d;d=h;h=t;t=e;e=l;l=t'); // eb // EX DE,HL
 b('oec', callci('fa&256?38505>>((fr^fr>>4)&15)&1:(fr^fa)&(fr^fb)&128'));//ec//CALL PE
 b('oed', 'r++;g[1280+m['.($pag ? 'pc>>14&3][pc++&16383'     // ed // op ed
                                : 'pc++&65535').']]()');
-b('oee', xoror($pag?'^=m[pc>>14&3][pc++&16383]':'^=m[pc++&65535]',7));//ee//XOR A,n
+b('oee', xoror($pag?'^=m[pc>>14&3][pc++&16383]':'^=m[pc++&65535]',$cpc?2:7));//ee//XOR A,n
 b('oef', rst(40));                                          // ef // RST 0x28
 b('of0', retc('ff&128'));                                   // f0 // RET P
 b('of1', popaf());                                          // f1 // POP AF
 b('of2', jpc('ff&128'));                                    // f2 // JP P
-b('of3', 'st+=4;iff=0');                                    // f3 // DI
+b('of3', ($cpc?'++st':'st+=4').';iff=0');                   // f3 // DI
 b('of4', callc('ff&128'));                                  // f4 // CALL P
 b('of5', push('a', 'f()'));                                 // f5 // PUSH AF
-b('of6', xoror($pag?'|=m[pc>>14&3][pc++&16383]':'|=m[pc++&65535]',7));//f6//OR A,n
+b('of6', xoror($pag?'|=m[pc>>14&3][pc++&16383]':'|=m[pc++&65535]',$cpc?2:7));//f6//OR A,n
 b('of7', rst(48));                                          // f7 // RST 0x30
 b('of8', retci('ff&128'));                                  // f8 // RET M
 a(ldsppci('sp', ''));                                       // f9 // LD SP,HL
 b('ofa', jpci('ff&128'));                                   // fa // JP M
-b('ofb', 'st+=4;iff=1');                                    // fb // EI
+b('ofb', ($cpc?'++st':'st+=4').';iff=1');                   // fb // EI
 b('ofc', callci('ff&128'));                                 // fc // CALL M
-a('st+=4;r++;g[512+m['.($pag ? 'pc>>14&3][pc++&16383'       // fd // op fd
-                             : 'pc++&65535').']]()');
+b('ofd', ($cpc?'++st':'st+=4').                             // fd // op fd
+  ';r++;g[512+m['.($pag ? 'pc>>14&3][pc++&16383'
+                        : 'pc++&65535').']]()');
 b('ofe', ($pag                                              // fe // CP A,n
   ? 't=m[pc>>14&3][pc++&16383];'
-  : 't=m[pc++&65535];').cp('t', 7));
+  : 't=m[pc++&65535];').cp('t', $cpc?2:7));
 b('off', rst(56));                                          // ff // RST 0x38
 
 c('o00');                                                   // 00 // NOP
@@ -1040,7 +1072,7 @@ c('o1e');                                                   // 1E // LD E,n
 c('o1f');                                                   // 1F // RRA
 c('o20');                                                   // 20 // JR NZ,s8
 a(ldrrim('xh', 'xl'));                                      // 21 // LD IX,nn
-a(ldpnnrr('xh', 'xl', 16));                                 // 22 // LD (nn),IX
+a(ldpnnrr('xh', 'xl', $cpc?5:16));                          // 22 // LD (nn),IX
 a(incw('xh', 'xl'));                                        // 23 // INC IX
 a(inc('xh'));                                               // 24 // INC IXH
 a(dec('xh'));                                               // 25 // DEC IXH
@@ -1048,7 +1080,7 @@ a(ldrim('xh'));                                             // 26 // LD IXH,n
 c('o27');                                                   // 27 // DAA
 c('o28');                                                   // 28 // JR Z,s8
 a(addrrrr('xh', 'xl', 'xh', 'xl'));                         // 29 // ADD IX,IX
-a(ldrrpnn('xh', 'xl', 16));                                 // 2a // LD IX,(nn)
+a(ldrrpnn('xh', 'xl', $cpc?5:16));                          // 2a // LD IX,(nn)
 a(decw('xh', 'xl'));                                        // 2b // DEC IX
 a(inc('xl'));                                               // 2c // INC IXL
 a(dec('xl'));                                               // 2d // DEC IXL
@@ -1074,50 +1106,50 @@ c('o00');                                                   // 40 // LD B,B
 c('o41');                                                   // 41 // LD B,C
 c('o42');                                                   // 42 // LD B,D
 c('o43');                                                   // 43 // LD B,E
-a(ldrr('b', 'xh', 4));                                      // 44 // LD B,IXH
-a(ldrr('b', 'xl', 4));                                      // 45 // LD B,IXL
+a(ldrr('b', 'xh', $cpc?1:4));                               // 44 // LD B,IXH
+a(ldrr('b', 'xl', $cpc?1:4));                               // 45 // LD B,IXL
 a(ldrpi('b', 'x'));                                         // 46 // LD B,(IX+d)
 c('o47');                                                   // 47 // LD B,A
 c('o48');                                                   // 48 // LD C,B
 c('o00');                                                   // 49 // LD C,C
 c('o4a');                                                   // 4a // LD C,D
 c('o4b');                                                   // 4b // LD C,E
-a(ldrr('c', 'xh', 4));                                      // 4c // LD C,IXH
-a(ldrr('c', 'xl', 4));                                      // 4d // LD C,IXL
+a(ldrr('c', 'xh', $cpc?1:4));                               // 4c // LD C,IXH
+a(ldrr('c', 'xl', $cpc?1:4));                               // 4d // LD C,IXL
 a(ldrpi('c', 'x'));                                         // 4e // LD C,(IX+d)
 c('o4f');                                                   // 4f // LD C,A
 c('o50');                                                   // 50 // LD D,B
 c('o51');                                                   // 51 // LD D,C
 c('o00');                                                   // 52 // LD D,D
 c('o53');                                                   // 53 // LD D,E
-a(ldrr('d', 'xh', 4));                                      // 54 // LD D,IXH
-a(ldrr('d', 'xl', 4));                                      // 55 // LD D,IXL
+a(ldrr('d', 'xh', $cpc?1:4));                               // 54 // LD D,IXH
+a(ldrr('d', 'xl', $cpc?1:4));                               // 55 // LD D,IXL
 a(ldrpi('d', 'x'));                                         // 56 // LD D,(IX+d)
 c('o57');                                                   // 57 // LD D,A
 c('o58');                                                   // 58 // LD E,B
 c('o59');                                                   // 59 // LD E,C
 c('o5a');                                                   // 5a // LD E,D
 c('o00');                                                   // 5b // LD E,E
-a(ldrr('e', 'xh', 4));                                      // 5c // LD E,IXH
-a(ldrr('e', 'xl', 4));                                      // 5d // LD E,IXL
+a(ldrr('e', 'xh', $cpc?1:4));                               // 5c // LD E,IXH
+a(ldrr('e', 'xl', $cpc?1:4));                               // 5d // LD E,IXL
 a(ldrpi('e', 'x'));                                         // 5e // LD E,(IX+d)
 c('o5f');                                                   // 5f // LD E,A
-a(ldrr('xh', 'b', 4));                                      // 60 // LD IXH,B
-a(ldrr('xh', 'c', 4));                                      // 61 // LD IXH,C
-a(ldrr('xh', 'd', 4));                                      // 62 // LD IXH,D
-a(ldrr('xh', 'e', 4));                                      // 63 // LD IXH,E
+a(ldrr('xh', 'b', $cpc?1:4));                               // 60 // LD IXH,B
+a(ldrr('xh', 'c', $cpc?1:4));                               // 61 // LD IXH,C
+a(ldrr('xh', 'd', $cpc?1:4));                               // 62 // LD IXH,D
+a(ldrr('xh', 'e', $cpc?1:4));                               // 63 // LD IXH,E
 c('o00');                                                   // 64 // LD IXH,IXH
-a(ldrr('xh', 'xl', 4));                                     // 65 // LD IXH,IXL
+a(ldrr('xh', 'xl', $cpc?1:4));                              // 65 // LD IXH,IXL
 a(ldrpi('h', 'x'));                                         // 66 // LD H,(IX+d)
-a(ldrr('xh', 'a', 4));                                      // 67 // LD IXH,A
-a(ldrr('xl', 'b', 4));                                      // 68 // LD IXL,B
-a(ldrr('xl', 'c', 4));                                      // 69 // LD IXL,C
-a(ldrr('xl', 'd', 4));                                      // 6a // LD IXL,D
-a(ldrr('xl', 'e', 4));                                      // 6b // LD IXL,E
-a(ldrr('xl', 'xh', 4));                                     // 6c // LD IXL,IXH
+a(ldrr('xh', 'a', $cpc?1:4));                               // 67 // LD IXH,A
+a(ldrr('xl', 'b', $cpc?1:4));                               // 68 // LD IXL,B
+a(ldrr('xl', 'c', $cpc?1:4));                               // 69 // LD IXL,C
+a(ldrr('xl', 'd', $cpc?1:4));                               // 6a // LD IXL,D
+a(ldrr('xl', 'e', $cpc?1:4));                               // 6b // LD IXL,E
+a(ldrr('xl', 'xh', $cpc?1:4));                              // 6c // LD IXL,IXH
 c('o00');                                                   // 6d // LD IXL,IXL
 a(ldrpi('l', 'x'));                                         // 6e // LD L,(IX+d)
-a(ldrr('xl', 'a', 4));                                      // 6f // LD IXL,A
+a(ldrr('xl', 'a', $cpc?1:4));                               // 6f // LD IXL,A
 a(ldpri('b', 'x'));                                         // 70 // LD (IX+d),B
 a(ldpri('c', 'x'));                                         // 71 // LD (IX+d),C
 a(ldpri('d', 'x'));                                         // 72 // LD (IX+d),D
@@ -1130,89 +1162,89 @@ c('o78');                                                   // 78 // LD A,B
 c('o79');                                                   // 79 // LD A,C
 c('o7a');                                                   // 7a // LD A,D
 c('o7b');                                                   // 7b // LD A,E
-a(ldrr('a', 'xh', 4));                                      // 7c // LD A,IXH
-a(ldrr('a', 'xl', 4));                                      // 7d // LD A,IXL
+a(ldrr('a', 'xh', $cpc?1:4));                               // 7c // LD A,IXH
+a(ldrr('a', 'xl', $cpc?1:4));                               // 7d // LD A,IXL
 a(ldrpi('a', 'x'));                                         // 7e // LD A,(IX+d)
 c('o00');                                                   // 7f // LD A,A
 c('o80');                                                   // 80 // ADD A,B
 c('o81');                                                   // 81 // ADD A,C
 c('o82');                                                   // 82 // ADD A,D
 c('o83');                                                   // 83 // ADD A,E
-a(add('xh', 4));                                            // 84 // ADD A,IXH
-a(add('xl', 4));                                            // 85 // ADD A,IXL
+a(add('xh', $cpc?1:4));                                     // 84 // ADD A,IXH
+a(add('xl', $cpc?1:4));                                     // 85 // ADD A,IXL
 a(add($pag                                                  // 86 // ADD A,(IX+d)
   ? 'm[(t=(m[pc>>14&3][pc++&16383]^128)-128+(xl|xh<<8))>>14&3][t&16383]'
-  : 'm[((m[pc++&65535]^128)-128+(xl|xh<<8))&65535]', 15));
+  : 'm[((m[pc++&65535]^128)-128+(xl|xh<<8))&65535]', $cpc?4:15));
 c('o87');                                                   // 87 // ADD A,A
 c('o88');                                                   // 88 // ADC A,B
 c('o89');                                                   // 89 // ADC A,C
 c('o8a');                                                   // 8a // ADC A,D
 c('o8b');                                                   // 8b // ADC A,E
-a(adc('xh', 4));                                            // 8c // ADC A,IXH
-a(adc('xl', 4));                                            // 8d // ADC A,IXL
+a(adc('xh', $cpc?1:4));                                     // 8c // ADC A,IXH
+a(adc('xl', $cpc?1:4));                                     // 8d // ADC A,IXL
 a(adc($pag                                                  // 8e // ADC A,(IX+d)
   ? 'm[(t=(m[pc>>14&3][pc++&16383]^128)-128+(xl|xh<<8))>>14&3][t&16383]'
-  : 'm[((m[pc++&65535]^128)-128+(xl|xh<<8))&65535]', 15));
+  : 'm[((m[pc++&65535]^128)-128+(xl|xh<<8))&65535]', $cpc?4:15));
 c('o8f');                                                   // 8f // ADC A,A
 c('o90');                                                   // 90 // SUB A,B
 c('o91');                                                   // 91 // SUB A,C
 c('o92');                                                   // 92 // SUB A,D
 c('o93');                                                   // 93 // SUB A,E
-a(sub('xh', 4));                                            // 94 // SUB A,IXH
-a(sub('xl', 4));                                            // 95 // SUB A,IXL
+a(sub('xh', $cpc?1:4));                                     // 94 // SUB A,IXH
+a(sub('xl', $cpc?1:4));                                     // 95 // SUB A,IXL
 a(sub($pag                                                  // 96 // SUB A,(IX+d)
   ? 'm[(t=(m[pc>>14&3][pc++&16383]^128)-128+(xl|xh<<8))>>14&3][t&16383]'
-  : 'm[((m[pc++&65535]^128)-128+(xl|xh<<8))&65535]', 15));
+  : 'm[((m[pc++&65535]^128)-128+(xl|xh<<8))&65535]', $cpc?4:15));
 c('o97');                                                   // 97 // SUB A,A
 c('o98');                                                   // 98 // SBC A,B
 c('o99');                                                   // 99 // SBC A,C
 c('o9a');                                                   // 9a // SBC A,D
 c('o9b');                                                   // 9b // SBC A,E
-a(sbc('xh', 4));                                            // 9c // SBC A,IXH
-a(sbc('xl', 4));                                            // 9d // SBC A,IXL
+a(sbc('xh', $cpc?1:4));                                     // 9c // SBC A,IXH
+a(sbc('xl', $cpc?1:4));                                     // 9d // SBC A,IXL
 a(sbc($pag                                                  // 9e // SBC A,(IX+d)
   ? 'm[(t=(m[pc>>14&3][pc++&16383]^128)-128+(xl|xh<<8))>>14&3][t&16383]'
-  : 'm[((m[pc++&65535]^128)-128+(xl|xh<<8))&65535]', 15));
+  : 'm[((m[pc++&65535]^128)-128+(xl|xh<<8))&65535]', $cpc?4:15));
 c('o9f');                                                   // 9f // SBC A,A
 c('oa0');                                                   // a0 // AND B
 c('oa1');                                                   // a1 // AND C
 c('oa2');                                                   // a2 // AND D
 c('oa3');                                                   // a3 // AND E
-a(anda('xh', 4));                                           // a4 // AND IXH
-a(anda('xl', 4));                                           // a5 // AND IXL
+a(anda('xh', $cpc?1:4));                                    // a4 // AND IXH
+a(anda('xl', $cpc?1:4));                                    // a5 // AND IXL
 a(anda($pag                                                 // a6 // AND (IX+d)
   ? 'm[(t=(m[pc>>14&3][pc++&16383]^128)-128+(xl|xh<<8))>>14&3][t&16383]'
-  : 'm[((m[pc++&65535]^128)-128+(xl|xh<<8))&65535]', 15));
+  : 'm[((m[pc++&65535]^128)-128+(xl|xh<<8))&65535]', $cpc?4:15));
 c('oa7');                                                   // a7 // AND A
 c('oa8');                                                   // a8 // XOR B
 c('oa9');                                                   // a9 // XOR C
 c('oaa');                                                   // aa // XOR D
 c('oab');                                                   // ab // XOR E
-a(xoror('^=xh', 4));                                        // ac // XOR IXH
-a(xoror('^=xl', 4));                                        // ad // XOR IXL
+a(xoror('^=xh', $cpc?1:4));                                 // ac // XOR IXH
+a(xoror('^=xl', $cpc?1:4));                                 // ad // XOR IXL
 a(xoror($pag                                                // ae // XOR (IX+d)
   ? '^=m[(t=(m[pc>>14&3][pc++&16383]^128)-128+(xl|xh<<8))>>14&3][t&16383]'
-  : '^=m[((m[pc++&65535]^128)-128+(xl|xh<<8))&65535]', 15));
+  : '^=m[((m[pc++&65535]^128)-128+(xl|xh<<8))&65535]', $cpc?4:15));
 c('oaf');                                                   // af // XOR A
 c('ob0');                                                   // b0 // OR B
 c('ob1');                                                   // b1 // OR C
 c('ob2');                                                   // b2 // OR D
 c('ob3');                                                   // b3 // OR E
-a(xoror('|=xh', 4));                                        // b4 // OR IXH
-a(xoror('|=xl', 4));                                        // b5 // OR IXL
+a(xoror('|=xh', $cpc?1:4));                                 // b4 // OR IXH
+a(xoror('|=xl', $cpc?1:4));                                 // b5 // OR IXL
 a(xoror($pag                                                // b6 // OR (IX+d)
   ? '|=m[(t=(m[pc>>14&3][pc++&16383]^128)-128+(xl|xh<<8))>>14&3][t&16383]'
-  : '|=m[((m[pc++&65535]^128)-128+(xl|xh<<8))&65535]', 15));
+  : '|=m[((m[pc++&65535]^128)-128+(xl|xh<<8))&65535]', $cpc?4:15));
 c('ob7');                                                   // b7 // OR A
 c('ob8');                                                   // b8 // CP B
 c('ob9');                                                   // b9 // CP C
 c('oba');                                                   // ba // CP D
 c('obb');                                                   // bb // CP E
-a(cp('xh', 4));                                             // bc // CP IXH
-a(cp('xl', 4));                                             // bd // CP IXL
+a(cp('xh', $cpc?1:4));                                      // bc // CP IXH
+a(cp('xl', $cpc?1:4));                                      // bd // CP IXL
 a(($pag                                                     // be // CP (IX+d)
   ? 't=m[(t=(m[pc>>14&3][pc++&16383]^128)-128+(xl|xh<<8))>>14&3][t&16383];'
-  : 't=m[((m[pc++&65535]^128)-128+(xl|xh<<8))&65535];').cp('t', 15));
+  : 't=m[((m[pc++&65535]^128)-128+(xl|xh<<8))&65535];').cp('t', $cpc?4:15));
 c('obf');                                                   // bf // CP A
 c('oc0');                                                   // c0 // RET NZ
 c('oc1');                                                   // c1 // POP BC
@@ -1225,7 +1257,7 @@ c('oc7');                                                   // c7 // RST 0x00
 c('oc8');                                                   // c8 // RET Z
 c('oc9');                                                   // c9 // RET
 c('oca');                                                   // ca // JP Z
-a('st+=11;'.                                                // cb // op ddcb
+a('st+='.($cpc?3:11).';'.                                   // cb // op ddcb
 ($pag
   ? 't=m[(mp=((m[pc>>14&3][pc++&16383]^128)-128+(xl|xh<<8))&65535)>>14][mp&16383];'.
     'g[1024+m[pc>>14&3][pc++&16383]]()'
@@ -1248,7 +1280,7 @@ c('od9');                                                   // d9 // EXX
 c('oda');                                                   // da // JP C
 c('odb');                                                   // db // IN A,(n)
 c('odc');                                                   // dc // CALL C
-c('o00');                                                   // dd // op dd
+c('odd');                                                   // dd // op dd
 c('ode');                                                   // de // SBC A,n
 c('odf');                                                   // df // RST 0x18
 c('oe0');                                                   // e0 // RET PO
@@ -1280,7 +1312,7 @@ a(ldsppci('sp', 'x'));                                      // f9 // LD SP,IX
 c('ofa');                                                   // fa // JP M
 c('ofb');                                                   // fb // EI
 c('ofc');                                                   // fc // CALL M
-c('o00');                                                   // fd // op fd
+c('ofd');                                                   // fd // op fd
 a('ofe');                                                   // fe // CP A,n
 a('off');                                                   // ff // RST 0x38
 
@@ -1318,7 +1350,7 @@ c('o1e');                                                   // 1E // LD E,n
 c('o1f');                                                   // 1F // RRA
 c('o20');                                                   // 20 // JR NZ,s8
 a(ldrrim('yh', 'yl'));                                      // 21 // LD IY,nn
-a(ldpnnrr('yh', 'yl', 16));                                 // 22 // LD (nn),IY
+a(ldpnnrr('yh', 'yl', $cpc?5:16));                          // 22 // LD (nn),IY
 a(incw('yh', 'yl'));                                        // 23 // INC IY
 a(inc('yh'));                                               // 24 // INC IYH
 a(dec('yh'));                                               // 25 // DEC IYH
@@ -1326,7 +1358,7 @@ a(ldrim('yh'));                                             // 26 // LD IYH,n
 c('o27');                                                   // 27 // DAA
 c('o28');                                                   // 28 // JR Z,s8
 a(addrrrr('yh', 'yl', 'yh', 'yl'));                         // 29 // ADD IY,IY
-a(ldrrpnn('yh', 'yl', 16));                                 // 2a // LD IY,(nn)
+a(ldrrpnn('yh', 'yl', $cpc?5:16));                          // 2a // LD IY,(nn)
 a(decw('yh', 'yl'));                                        // 2b // DEC IY
 a(inc('yl'));                                               // 2c // INC IYL
 a(dec('yl'));                                               // 2d // DEC IYL
@@ -1352,50 +1384,50 @@ c('o00');                                                   // 40 // LD B,B
 c('o41');                                                   // 41 // LD B,C
 c('o42');                                                   // 42 // LD B,D
 c('o43');                                                   // 43 // LD B,E
-a(ldrr('b', 'yh', 4));                                      // 44 // LD B,IYH
-a(ldrr('b', 'yl', 4));                                      // 45 // LD B,IYL
+a(ldrr('b', 'yh', $cpc?1:4));                               // 44 // LD B,IYH
+a(ldrr('b', 'yl', $cpc?1:4));                               // 45 // LD B,IYL
 a(ldrpi('b', 'y'));                                         // 46 // LD B,(IY+d)
 c('o47');                                                   // 47 // LD B,A
 c('o48');                                                   // 48 // LD C,B
 c('o00');                                                   // 49 // LD C,C
 c('o4a');                                                   // 4a // LD C,D
 c('o4b');                                                   // 4b // LD C,E
-a(ldrr('c', 'yh', 4));                                      // 4c // LD C,IYH
-a(ldrr('c', 'yl', 4));                                      // 4d // LD C,IYL
+a(ldrr('c', 'yh', $cpc?1:4));                               // 4c // LD C,IYH
+a(ldrr('c', 'yl', $cpc?1:4));                               // 4d // LD C,IYL
 a(ldrpi('c', 'y'));                                         // 4e // LD C,(IY+d)
 c('o4f');                                                   // 4f // LD C,A
 c('o50');                                                   // 50 // LD D,B
 c('o51');                                                   // 51 // LD D,C
 c('o00');                                                   // 52 // LD D,D
 c('o53');                                                   // 53 // LD D,E
-a(ldrr('d', 'yh', 4));                                      // 54 // LD D,IYH
-a(ldrr('d', 'yl', 4));                                      // 55 // LD D,IYL
+a(ldrr('d', 'yh', $cpc?1:4));                               // 54 // LD D,IYH
+a(ldrr('d', 'yl', $cpc?1:4));                               // 55 // LD D,IYL
 a(ldrpi('d', 'y'));                                         // 56 // LD D,(IY+d)
 c('o57');                                                   // 57 // LD D,A
 c('o58');                                                   // 58 // LD E,B
 c('o59');                                                   // 59 // LD E,C
 c('o5a');                                                   // 5a // LD E,D
 c('o00');                                                   // 5b // LD E,E
-a(ldrr('e', 'yh', 4));                                      // 5c // LD E,IYH
-a(ldrr('e', 'yl', 4));                                      // 5d // LD E,IYL
+a(ldrr('e', 'yh', $cpc?1:4));                               // 5c // LD E,IYH
+a(ldrr('e', 'yl', $cpc?1:4));                               // 5d // LD E,IYL
 a(ldrpi('e', 'y'));                                         // 5e // LD E,(IY+d)
 c('o5f');                                                   // 5f // LD E,A
-a(ldrr('yh', 'b', 4));                                      // 60 // LD IYH,B
-a(ldrr('yh', 'c', 4));                                      // 61 // LD IYH,C
-a(ldrr('yh', 'd', 4));                                      // 62 // LD IYH,D
-a(ldrr('yh', 'e', 4));                                      // 63 // LD IYH,E
+a(ldrr('yh', 'b', $cpc?1:4));                               // 60 // LD IYH,B
+a(ldrr('yh', 'c', $cpc?1:4));                               // 61 // LD IYH,C
+a(ldrr('yh', 'd', $cpc?1:4));                               // 62 // LD IYH,D
+a(ldrr('yh', 'e', $cpc?1:4));                               // 63 // LD IYH,E
 c('o00');                                                   // 64 // LD IYH,IYH
-a(ldrr('yh', 'yl', 4));                                     // 65 // LD IYH,IYL
+a(ldrr('yh', 'yl', $cpc?1:4));                              // 65 // LD IYH,IYL
 a(ldrpi('h', 'y'));                                         // 66 // LD H,(IY+d)
-a(ldrr('yh', 'a', 4));                                      // 67 // LD IYH,A
-a(ldrr('yl', 'b', 4));                                      // 68 // LD IYL,B
-a(ldrr('yl', 'c', 4));                                      // 69 // LD IYL,C
-a(ldrr('yl', 'd', 4));                                      // 6a // LD IYL,D
-a(ldrr('yl', 'e', 4));                                      // 6b // LD IYL,E
-a(ldrr('yl', 'yh', 4));                                     // 6c // LD IYL,IYH
+a(ldrr('yh', 'a', $cpc?1:4));                               // 67 // LD IYH,A
+a(ldrr('yl', 'b', $cpc?1:4));                               // 68 // LD IYL,B
+a(ldrr('yl', 'c', $cpc?1:4));                               // 69 // LD IYL,C
+a(ldrr('yl', 'd', $cpc?1:4));                               // 6a // LD IYL,D
+a(ldrr('yl', 'e', $cpc?1:4));                               // 6b // LD IYL,E
+a(ldrr('yl', 'yh', $cpc?1:4));                              // 6c // LD IYL,IYH
 c('o00');                                                   // 6d // LD IYL,IYL
 a(ldrpi('l', 'y'));                                         // 6e // LD L,(IY+d)
-a(ldrr('yl', 'a', 4));                                      // 6f // LD IYL,A
+a(ldrr('yl', 'a', $cpc?1:4));                               // 6f // LD IYL,A
 a(ldpri('b', 'y'));                                         // 70 // LD (IY+d),B
 a(ldpri('c', 'y'));                                         // 71 // LD (IY+d),C
 a(ldpri('d', 'y'));                                         // 72 // LD (IY+d),D
@@ -1408,89 +1440,89 @@ c('o78');                                                   // 78 // LD A,B
 c('o79');                                                   // 79 // LD A,C
 c('o7a');                                                   // 7a // LD A,D
 c('o7b');                                                   // 7b // LD A,E
-a(ldrr('a', 'yh', 4));                                      // 7c // LD A,IYH
-a(ldrr('a', 'yl', 4));                                      // 7d // LD A,IYL
+a(ldrr('a', 'yh', $cpc?1:4));                               // 7c // LD A,IYH
+a(ldrr('a', 'yl', $cpc?1:4));                               // 7d // LD A,IYL
 a(ldrpi('a', 'y'));                                         // 7e // LD A,(IY+d)
 c('o00');                                                   // 7f // LD A,A
 c('o80');                                                   // 80 // ADD A,B
 c('o81');                                                   // 81 // ADD A,C
 c('o82');                                                   // 82 // ADD A,D
 c('o83');                                                   // 83 // ADD A,E
-a(add('yh', 4));                                            // 84 // ADD A,IYH
-a(add('yl', 4));                                            // 85 // ADD A,IYL
+a(add('yh', $cpc?1:4));                                     // 84 // ADD A,IYH
+a(add('yl', $cpc?1:4));                                     // 85 // ADD A,IYL
 a(add($pag                                                  // 86 // ADD A,(IY+d)
   ? 'm[(t=(m[pc>>14&3][pc++&16383]^128)-128+(yl|yh<<8))>>14&3][t&16383]'
-  : 'm[((m[pc++&65535]^128)-128+(yl|yh<<8))&65535]', 15));
+  : 'm[((m[pc++&65535]^128)-128+(yl|yh<<8))&65535]', $cpc?4:15));
 c('o87');                                                   // 87 // ADD A,A
 c('o88');                                                   // 88 // ADC A,B
 c('o89');                                                   // 89 // ADC A,C
 c('o8a');                                                   // 8a // ADC A,D
 c('o8b');                                                   // 8b // ADC A,E
-a(adc('yh', 4));                                            // 8c // ADC A,IYH
-a(adc('yl', 4));                                            // 8d // ADC A,IYL
+a(adc('yh', $cpc?1:4));                                     // 8c // ADC A,IYH
+a(adc('yl', $cpc?1:4));                                     // 8d // ADC A,IYL
 a(adc($pag                                                  // 8e // ADC A,(IY+d)
   ? 'm[(t=(m[pc>>14&3][pc++&16383]^128)-128+(yl|yh<<8))>>14&3][t&16383]'
-  : 'm[((m[pc++&65535]^128)-128+(yl|yh<<8))&65535]', 15));
+  : 'm[((m[pc++&65535]^128)-128+(yl|yh<<8))&65535]', $cpc?4:15));
 c('o8f');                                                   // 8f // ADC A,A
 c('o90');                                                   // 90 // SUB A,B
 c('o91');                                                   // 91 // SUB A,C
 c('o92');                                                   // 92 // SUB A,D
 c('o93');                                                   // 93 // SUB A,E
-a(sub('yh', 4));                                            // 94 // SUB A,IYH
-a(sub('yl', 4));                                            // 95 // SUB A,IYL
+a(sub('yh', $cpc?1:4));                                     // 94 // SUB A,IYH
+a(sub('yl', $cpc?1:4));                                     // 95 // SUB A,IYL
 a(sub($pag                                                  // 96 // SUB A,(IY+d)
   ? 'm[(t=(m[pc>>14&3][pc++&16383]^128)-128+(yl|yh<<8))>>14&3][t&16383]'
-  : 'm[((m[pc++&65535]^128)-128+(yl|yh<<8))&65535]', 15));
+  : 'm[((m[pc++&65535]^128)-128+(yl|yh<<8))&65535]', $cpc?4:15));
 c('o97');                                                   // 97 // SUB A,A
 c('o98');                                                   // 98 // SBC A,B
 c('o99');                                                   // 99 // SBC A,C
 c('o9a');                                                   // 9a // SBC A,D
 c('o9b');                                                   // 9b // SBC A,E
-a(sbc('yh', 4));                                            // 9c // SBC A,IYH
-a(sbc('yl', 4));                                            // 9d // SBC A,IYL
+a(sbc('yh', $cpc?1:4));                                     // 9c // SBC A,IYH
+a(sbc('yl', $cpc?1:4));                                     // 9d // SBC A,IYL
 a(sbc($pag                                                  // 9e // SBC A,(IY+d)
   ? 'm[(t=(m[pc>>14&3][pc++&16383]^128)-128+(yl|yh<<8))>>14&3][t&16383]'
-  : 'm[((m[pc++&65535]^128)-128+(yl|yh<<8))&65535]', 15));
+  : 'm[((m[pc++&65535]^128)-128+(yl|yh<<8))&65535]', $cpc?4:15));
 c('o9f');                                                   // 9f // SBC A,A
 c('oa0');                                                   // a0 // AND B
 c('oa1');                                                   // a1 // AND C
 c('oa2');                                                   // a2 // AND D
 c('oa3');                                                   // a3 // AND E
-a(anda('yh', 4));                                           // a4 // AND IYH
-a(anda('yl', 4));                                           // a5 // AND IYL
+a(anda('yh', $cpc?1:4));                                    // a4 // AND IYH
+a(anda('yl', $cpc?1:4));                                    // a5 // AND IYL
 a(anda($pag                                                 // a6 // AND (IY+d)
   ? 'm[(t=(m[pc>>14&3][pc++&16383]^128)-128+(yl|yh<<8))>>14&3][t&16383]'
-  : 'm[((m[pc++&65535]^128)-128+(yl|yh<<8))&65535]', 15));
+  : 'm[((m[pc++&65535]^128)-128+(yl|yh<<8))&65535]', $cpc?4:15));
 c('oa7');                                                   // a7 // AND A
 c('oa8');                                                   // a8 // XOR B
 c('oa9');                                                   // a9 // XOR C
 c('oaa');                                                   // aa // XOR D
 c('oab');                                                   // ab // XOR E
-a(xoror('^=yh', 4));                                        // ac // XOR IYH
-a(xoror('^=yl', 4));                                        // ad // XOR IYL
+a(xoror('^=yh', $cpc?1:4));                                 // ac // XOR IYH
+a(xoror('^=yl', $cpc?1:4));                                 // ad // XOR IYL
 a(xoror($pag                                                // ae // XOR (IY+d)
   ? '^=m[(t=(m[pc>>14&3][pc++&16383]^128)-128+(yl|yh<<8))>>14&3][t&16383]'
-  : '^=m[((m[pc++&65535]^128)-128+(yl|yh<<8))&65535]', 15));
+  : '^=m[((m[pc++&65535]^128)-128+(yl|yh<<8))&65535]', $cpc?4:15));
 c('oaf');                                                   // af // XOR A
 c('ob0');                                                   // b0 // OR B
 c('ob1');                                                   // b1 // OR C
 c('ob2');                                                   // b2 // OR D
 c('ob3');                                                   // b3 // OR E
-a(xoror('|=yh', 4));                                        // b4 // OR IYH
-a(xoror('|=yl', 4));                                        // b5 // OR IYL
+a(xoror('|=yh', $cpc?1:4));                                 // b4 // OR IYH
+a(xoror('|=yl', $cpc?1:4));                                 // b5 // OR IYL
 a(xoror($pag                                                // b6 // OR (IY+d)
   ? '|=m[(t=(m[pc>>14&3][pc++&16383]^128)-128+(yl|yh<<8))>>14&3][t&16383]'
-  : '|=m[((m[pc++&65535]^128)-128+(yl|yh<<8))&65535]', 15));
+  : '|=m[((m[pc++&65535]^128)-128+(yl|yh<<8))&65535]', $cpc?4:15));
 c('ob7');                                                   // b7 // OR A
 c('ob8');                                                   // b8 // CP B
 c('ob9');                                                   // b9 // CP C
 c('oba');                                                   // ba // CP D
 c('obb');                                                   // bb // CP E
-a(cp('yh', 4));                                             // bc // CP IYH
-a(cp('yl', 4));                                             // bd // CP IYL
+a(cp('yh', $cpc?1:4));                                      // bc // CP IYH
+a(cp('yl', $cpc?1:4));                                      // bd // CP IYL
 a(($pag                                                     // be // CP (IY+d)
   ? 't=m[(t=(m[pc>>14&3][pc++&16383]^128)-128+(yl|yh<<8))>>14&3][t&16383];'
-  : 't=m[((m[pc++&65535]^128)-128+(yl|yh<<8))&65535];').cp('t', 15));
+  : 't=m[((m[pc++&65535]^128)-128+(yl|yh<<8))&65535];').cp('t', $cpc?4:15));
 c('obf');                                                   // bf // CP A
 c('oc0');                                                   // c0 // RET NZ
 c('oc1');                                                   // c1 // POP BC
@@ -1503,7 +1535,7 @@ c('oc7');                                                   // c7 // RST 0x00
 c('oc8');                                                   // c8 // RET Z
 c('oc9');                                                   // c9 // RET
 c('oca');                                                   // ca // JP Z
-a('st+=11;'.                                                // cb // op fdcb
+a('st+='.($cpc?3:11).';'.                                   // cb // op fdcb
 ($pag
   ? 't=m[(mp=((m[pc>>14&3][pc++&16383]^128)-128+(yl|yh<<8))&65535)>>14][mp&16383];'.
     'g[1024+m[pc>>14&3][pc++&16383]]()'
@@ -1526,7 +1558,7 @@ c('od9');                                                   // d9 // EXX
 c('oda');                                                   // da // JP C
 c('odb');                                                   // db // IN A,(n)
 c('odc');                                                   // dc // CALL C
-c('o00');                                                   // dd // op dd
+c('odd');                                                   // dd // op dd
 c('ode');                                                   // de // SBC A,n
 c('odf');                                                   // df // RST 0x18
 c('oe0');                                                   // e0 // RET PO
@@ -1558,7 +1590,7 @@ a(ldsppci('sp', 'y'));                                      // f9 // LD SP,IY
 c('ofa');                                                   // fa // JP M
 c('ofb');                                                   // fb // EI
 c('ofc');                                                   // fc // CALL M
-c('o00');                                                   // fd // op fd
+c('ofd');                                                   // fd // op fd
 a('ofe');                                                   // fe // CP A,n
 a('off');                                                   // ff // RST 0x38
 
@@ -1568,7 +1600,7 @@ a(rlc('d'));                                                // 02 // RLC D
 a(rlc('e'));                                                // 03 // RLC E
 a(rlc('h'));                                                // 04 // RLC H
 a(rlc('l'));                                                // 05 // RLC L
-a('st+=15;'.                                                // 06 // RLC (HL)
+a('st+='.($cpc?4:15).';'.                                   // 06 // RLC (HL)
 ($pag
   ? 'v=m[t=h>>6][u=l|h<<8&16383];'.rlc('v').';mw[t][u]=v'
   : 't=l|h<<8;u=m[t];'.rlc('u').';wb(t,u)'));
@@ -1579,7 +1611,7 @@ a(rrc('d'));                                                // 0a // RRC D
 a(rrc('e'));                                                // 0b // RRC E
 a(rrc('h'));                                                // 0c // RRC H
 a(rrc('l'));                                                // 0d // RRC L
-a('st+=15;'.                                                // 0e // RRC (HL)
+a('st+='.($cpc?4:15).';'.                                   // 0e // RRC (HL)
 ($pag
   ? 'v=m[t=h>>6][u=l|h<<8&16383];'.rrc('v').';mw[t][u]=v'
   : 't=l|h<<8;u=m[t];'.rrc('u').';wb(t,u)'));
@@ -1590,7 +1622,7 @@ a(rl('d'));                                                 // 12 // RL D
 a(rl('e'));                                                 // 13 // RL E
 a(rl('h'));                                                 // 14 // RL H
 a(rl('l'));                                                 // 15 // RL L
-a('st+=15;'.                                                // 16 // RL (HL)
+a('st+='.($cpc?4:15).';'.                                   // 16 // RL (HL)
 ($pag
   ? 'v=m[t=h>>6][u=l|h<<8&16383];'.rl('v').';mw[t][u]=v'
   : 't=l|h<<8;u=m[t];'.rl('u').';wb(t,u)'));
@@ -1601,7 +1633,7 @@ a(rr('d'));                                                 // 1a // RR D
 a(rr('e'));                                                 // 1b // RR E
 a(rr('h'));                                                 // 1c // RR H
 a(rr('l'));                                                 // 1d // RR L
-a('st+=15;'.                                                // 1e // RR (HL)
+a('st+='.($cpc?4:15).';'.                                   // 1e // RR (HL)
 ($pag
   ? 'v=m[t=h>>6][u=l|h<<8&16383];'.rr('v').';mw[t][u]=v'
   : 't=l|h<<8;u=m[t];'.rr('u').';wb(t,u)'));
@@ -1612,7 +1644,7 @@ a(sla('d'));                                                // 22 // SLA D
 a(sla('e'));                                                // 23 // SLA E
 a(sla('h'));                                                // 24 // SLA H
 a(sla('l'));                                                // 25 // SLA L
-a('st+=15;'.                                                // 26 // SLA (HL)
+a('st+='.($cpc?4:15).';'.                                   // 26 // SLA (HL)
 ($pag
   ? 'v=m[t=h>>6][u=l|h<<8&16383];'.sla('v').';mw[t][u]=v'
   : 't=l|h<<8;u=m[t];'.sla('u').';wb(t,u)'));
@@ -1623,7 +1655,7 @@ a(sra('d'));                                                // 2a // SRA D
 a(sra('e'));                                                // 2b // SRA E
 a(sra('h'));                                                // 2c // SRA H
 a(sra('l'));                                                // 2d // SRA L
-a('st+=15;'.                                                // 2e // SRA (HL)
+a('st+='.($cpc?4:15).';'.                                   // 2e // SRA (HL)
 ($pag
   ? 'v=m[t=h>>6][u=l|h<<8&16383];'.sra('v').';mw[t][u]=v'
   : 't=l|h<<8;u=m[t];'.sra('u').';wb(t,u)'));
@@ -1634,7 +1666,7 @@ a(sll('d'));                                                // 32 // SLL D
 a(sll('e'));                                                // 33 // SLL E
 a(sll('h'));                                                // 34 // SLL H
 a(sll('l'));                                                // 35 // SLL L
-a('st+=15;'.                                                // 36 // SLL (HL)
+a('st+='.($cpc?4:15).';'.                                   // 36 // SLL (HL)
 ($pag
   ? 'v=m[t=h>>6][u=l|h<<8&16383];'.sll('v').';mw[t][u]=v'
   : 't=l|h<<8;u=m[t];'.sll('u').';wb(t,u)'));
@@ -1645,7 +1677,7 @@ a(srl('d'));                                                // 3a // SRL D
 a(srl('e'));                                                // 3b // SRL E
 a(srl('h'));                                                // 3c // SRL H
 a(srl('l'));                                                // 3d // SRL L
-a('st+=15;'.                                                // 3e // SRL (HL)
+a('st+='.($cpc?4:15).';'.                                   // 3e // SRL (HL)
 ($pag
   ? 'v=m[t=h>>6][u=l|h<<8&16383];'.srl('v').';mw[t][u]=v'
   : 't=l|h<<8;u=m[t];'.srl('u').';wb(t,u)'));
@@ -2100,7 +2132,7 @@ a(set(128,'t').($pag?';l=mw[mp>>14][mp&16383]=t':';wb(mp,l=t)'));//fd//LD L,SET 
 a(set(128,'t').($pag?';mw[mp>>14][mp&16383]=t':';wb(mp,t)'));//fe // SET 7,(IY+d)
 a(set(128,'t').($pag?';a=mw[mp>>14][mp&16383]=t':';wb(mp,a=t)'));//ff//LD A,SET 7,(IY+d)
 
-b('p00', nop(8));                                           // 00 // NOP
+b('p00', nop($cpc?2:8));                                    // 00 // NOP
 c('p00');                                                   // 01 // NOP
 c('p00');                                                   // 02 // NOP
 c('p00');                                                   // 03 // NOP
@@ -2167,43 +2199,43 @@ c('p00');                                                   // 3f // NOP
 a(inr('b'));                                                // 40 // IN B,(C)
 a(outr('b'));                                               // 41 // OUT (C),B
 a(sbchlrr('b', 'c'));                                       // 42 // SBC HL,BC
-a(ldpnnrr('b', 'c', 20));                                   // 43 // LD (NN),BC
+a(ldpnnrr('b', 'c', $cpc?6:20));                            // 43 // LD (NN),BC
 b('o44', neg());                                            // 44 // NEG
-b('o45', ret(14));                                          // 45 // RETN
-b('o46', 'st+=8;im=0');                                     // 46 // IM 0
-a(ldrr('i', 'a', 9));                                       // 47 // LD I,A
+b('o45', ret($cpc?4:14));                                   // 45 // RETN
+b('o46', 'st+='.($cpc?2:8).';im=0');                        // 46 // IM 0
+a(ldrr('i', 'a', $cpc?3:9));                                // 47 // LD I,A
 a(inr('c'));                                                // 48 // IN C,(C)
 a(outr('c'));                                               // 49 // OUT (C),C
 a(adchlrr('b', 'c'));                                       // 4a // ADC HL,BC
-a(ldrrpnn('b', 'c', 20));                                   // 4b // LD BC,(NN)
+a(ldrrpnn('b', 'c', $cpc?6:20));                            // 4b // LD BC,(NN)
 c('o44');                                                   // 4c // NEG
 c('o45');                                                   // 4d // RETI
 c('o46');                                                   // 4e // IM 0
-a(ldrr('r=r7', 'a', 9));                                    // 4f // LD R,A
+a(ldrr('r=r7', 'a', $cpc?3:9));                             // 4f // LD R,A
 a(inr('d'));                                                // 50 // IN D,(C)
 a(outr('d'));                                               // 51 // OUT (C),D
 a(sbchlrr('d', 'e'));                                       // 52 // SBC HL,DE
-a(ldpnnrr('d', 'e', 20));                                   // 53 // LD (NN),DE
+a(ldpnnrr('d', 'e', $cpc?6:20));                            // 53 // LD (NN),DE
 c('o44');                                                   // 54 // NEG
 c('o45');                                                   // 55 // RETN
-b('o56', 'st+=8;im=1');                                     // 56 // IM 1
+b('o56', 'st+='.($cpc?2:8).';im=1');                        // 56 // IM 1
 a(ldair('i'));                                              // 57 // LD A,I
 a(inr('e'));                                                // 58 // IN E,(C)
 a(outr('e'));                                               // 59 // OUT (C),E
 a(adchlrr('d', 'e'));                                       // 5a // ADC HL,DE
-a(ldrrpnn('d', 'e', 20));                                   // 5b // LD DE,(NN)
+a(ldrrpnn('d', 'e', $cpc?6:20));                            // 5b // LD DE,(NN)
 c('o44');                                                   // 5c // NEG
 c('o45');                                                   // 5d // RETI
-b('o5e', 'st+=8;im=2');                                     // 5e // IM 2
+b('o5e', 'st+='.($cpc?2:8).';im=2');                        // 5e // IM 2
 a(ldair('(r&127|r7&128)'));                                 // 5f // LD A,R
 a(inr('h'));                                                // 60 // IN H,(C)
 a(outr('h'));                                               // 61 // OUT (C),H
 a(sbchlrr('h', 'l'));                                       // 62 // SBC HL,HL
-a(ldpnnrr('h', 'l', 20));                                   // 63 // LD (NN),HL
+a(ldpnnrr('h', 'l', $cpc?6:20));                            // 63 // LD (NN),HL
 c('o44');                                                   // 64 // NEG
 c('o45');                                                   // 65 // RETN
 c('o46');                                                   // 66 // IM 0
-a('st+=18;'.                                                // 67 // RRD
+a('st+='.($cpc?5:18).';'.                                   // 67 // RRD
 ($pag
   ? 't=m[u='.($mp?'(mp=l|h<<8)>>14][v=mp':'h>>6][v=l|h<<8').'&16383]|a<<8;'.
     'a=a&240|t&15;'.
@@ -2221,11 +2253,11 @@ a('st+=18;'.                                                // 67 // RRD
 a(inr('l'));                                                // 68 // IN L,(C)
 a(outr('l'));                                               // 69 // OUT (C),L
 a(adchlrr('h', 'l'));                                       // 6a // ADC HL,HL
-a(ldrrpnn('h', 'l', 20));                                   // 6b // LD HL,(NN)
+a(ldrrpnn('h', 'l', $cpc?6:20));                            // 6b // LD HL,(NN)
 c('o44');                                                   // 6c // NEG
 c('o45');                                                   // 6d // RETI
 c('o46');                                                   // 6e // IM 0
-a('st+=18;'.                                                // 6f // RLD
+a('st+='.($cpc?5:18).';'.                                   // 6f // RLD
 ($pag
   ? 't=m[u='.($mp?'(mp=l|h<<8)>>14][v=mp':'h>>6][v=l|h<<8').'&16383]<<4|a&15;'.
     'a=a&240|t>>8;'.
@@ -2242,7 +2274,7 @@ a('st+=18;'.                                                // 6f // RLD
   ($mp?';++mp':''));
 a(inr('t'));                                                // 70 // IN X,(C)
 a(outr('0'));                                               // 71 // OUT (C),X
-a('st+=15;'.                                                // 72 // SBC HL,SP
+a('st+='.($cpc?4:15).';'.                                   // 72 // SBC HL,SP
   't=('.($mp?'mp=':'').'l|h<<8)-sp-(ff>>8&1);'.
   ($mp?'++mp;':'').
   'ff=t>>8;'.
@@ -2251,7 +2283,7 @@ a('st+=15;'.                                                // 72 // SBC HL,SP
   'h=t>>8&255;'.
   'l=t&255;'.
   'fr=t>>8|t<<8');
-a('st+=20;'.                                                // 73 // LD (NN),SP
+a('st+='.($cpc?6:20).';'.                                   // 73 // LD (NN),SP
 ($pag
   ? 'mw[(mp=m[pc>>14&3][pc++&16383]|m[pc>>14&3][pc++&16383]<<8)>>14][mp&16383]=sp&255;'.
     'mw[++mp>>14][mp&16383]=sp>>8'
@@ -2263,7 +2295,7 @@ c('o56');                                                   // 76 // IM 1
 c('p00');                                                   // 77 // NOP
 a(inr('a'));                                                // 78 // IN A,(C)
 a(outr('a'));                                               // 79 // OUT (C),A
-a('st+=15;'.                                                // 7a // ADC HL,SP
+a('st+='.($cpc?4:15).';'.                                   // 7a // ADC HL,SP
   't=('.($mp?'mp=':'').'l|h<<8)+sp+(ff>>8&1);'.
   ($mp?'++mp;':'').
   'ff=t>>8;'.
@@ -2272,7 +2304,7 @@ a('st+=15;'.                                                // 7a // ADC HL,SP
   'h=t>>8&255;'.
   'l=t&255;'.
   'fr=h|l<<8');
-a('st+=20;'.                                                // 7b // LD SP,(NN)
+a('st+='.($cpc?6:20).';'.                                   // 7b // LD SP,(NN)
 ($pag
   ? 'sp=m[(mp=m[pc>>14&3][pc++&16383]|m[pc>>14&3][pc++&16383]<<8)>>14][mp&16383]|m[++mp>>14][mp&16383]<<8'
   : 'sp=m[t=m[pc++&65535]|m[pc++&65535]<<8]|m['.($mp?'mp=':'').'t+1&65535]<<8'));

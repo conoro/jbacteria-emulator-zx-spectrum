@@ -1,10 +1,10 @@
-caca= 1;//0x10000000;
+caca= 0;//0x10000000;
 function cond() {
-//  caca && caca++==0xbb82 && generateSnap();
+  caca && caca++==0x2779 && generateSnap();
 }
 
 function generateSnap() {
-console.log('snap');
+console.log('snap', hex(mp));
   node.onaudioprocess= audioprocess0;
 //  clearInterval(interval);
   o= wm();
@@ -22,7 +22,7 @@ function hex(n){
   return h[n>>12]+h[n>>8&15]+h[n>>4&15]+h[n&15];
 }
 
-/*function rm(o) { // 48
+function rm(o) { // 48
 caca=1;
   j= 0;
   i= o.charCodeAt(j++);
@@ -54,8 +54,8 @@ caca=1;
   while( j < 0xc01b )
     m[j+0x3fe5]= o.charCodeAt(j++);
   g[0xc9]();
-}*/
-
+}
+/*
 function rm(o) {  // 128
 caca= 1;
   j= 0;
@@ -112,5 +112,5 @@ console.log(r7&128);
           ; u < 0x4000
           ; u++ )
         ram[t][u]= o.charCodeAt(j++);
-}
+}*/
 

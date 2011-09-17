@@ -129,7 +129,7 @@ function words(a) {
 
 function run() {
   while( st < 69888 )                       // execute z80 instructions during a frame
-//cond(),
+cond(),
     r++,
     g[m[pc++&0xffff]]();
   if( !(++flash & 15) )
@@ -185,8 +185,8 @@ function init() {
   if( game )                               // emulate LOAD ""
     tp(),
     pc= 0x56c;
-m[0x056c]=0xcd;
-m[0x056d]=0xe7;
+//m[0x056c]=0xcd;
+//m[0x056d]=0xe7;
   document.ondragover= handleDragOver;
   document.ondrop= handleFileSelect;
   document.onkeydown= kdown;          // key event handling
