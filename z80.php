@@ -1,7 +1,7 @@
 <?
-$mp= $_GET['m'];
-$pag= $_GET['p'];
-$cpc= $_GET['c'];
+$mp= $m?$m:$_GET['m'];
+$pag= $p?$p:$_GET['p'];
+$cpc= $c?$c:$_GET['c'];
 ?>
 
 function z80interrupt() {
@@ -67,6 +67,7 @@ function setf_(a) {
 
 <?
 
+if(!function_exists('a')){
 function a($a){
   echo 'function(){'.$a."},\n";
 }
@@ -96,7 +97,7 @@ function dec($r) {
 }
 
 function incdecphl($n) {
-  global $cpc;
+  global $pag, $cpc;
   return 'st+='.($cpc?3:11).';'.
   ($pag
     ? 'fa=m[t=h>>6][u=l|h<<8&16383];'.
@@ -107,7 +108,7 @@ function incdecphl($n) {
 }
 
 function incdecpi($a, $b) {
-  global $cpc;
+  global $pag, $cpc;
   return 'st+='.($cpc?5:19).';'.
   ($pag
     ? 't=((m[pc>>14&3][pc++&16383]^128)-128+('.$a.'l|'.$a.'h<<8))&65535;'.
@@ -713,7 +714,7 @@ function ldsppci($a, $b){
             ? ($a=='sp'?'st+=2;':'++st;')
             : ($a=='sp'?'st+=6;':'st+=4;')).
   $a.'='.$b.'l|'.$b.'h<<8';
-}
+}}
 
 echo 'g=[';
 b('o00', nop($cpc?1:4));                                    // 00 // NOP
@@ -788,7 +789,7 @@ b('o31', 'st+='.($cpc?3:10).';'.                            // 31 // LD SP,nn
   : 'sp=m[pc++&65535]|m[pc++&65535]<<8'));
 b('o32', 'st+='.($cpc?4:13).';'.                            // 32 // LD (nn),A
 ($pag
-  ? 'mw[('.($mp?'t=':'').'m[pc>>14&3][pc++&16383]|m[pc>>14&3][pc++&16383]<<8)>>14][t&16383]=a'
+  ? 'mw[(t=m[pc>>14&3][pc++&16383]|m[pc>>14&3][pc++&16383]<<8)>>14][t&16383]=a'
   : 'wb('.($mp?'t=':'').'m[pc++&65535]|m[pc++&65535]<<8,a)').
   ($mp?';mp=t+1&255|a<<8':''));
 b('o33', 'st+='.($cpc?2:6).';sp=sp+1&65535');               // 33 // INC SP

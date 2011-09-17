@@ -137,16 +137,8 @@ function run() {
 function init() {
   onresize();
   ft= st= time= tape= flash= p236= bIRQ= bIRQe= 0;  // states, time (miliseconts), tape data, flash frame, tape pointer
-  z80init();
-  a= b= c= d= f= h= l= a_= b_= c_= d_= e_= h_= l_= r= r7= pc= iff= im= halted= t= u= 0;
-  e=  0;
-  f_= 0;
-  xh= 0;
-  xl= 0;
-  yh= 0;
-  yl= 0;
-  i=  0;
-  sp= 0;
+  a= b= c= d= e= h= l= xl=xh=fa= fb= fr= ff= r7=i= sp=
+  a_=b_=c_=d_=e_=h_=l_=yl=yh=fa_=fb_=fr_=ff_=r= im=pc= iff= halted= t= u= 0;
   if( ifra ){
     put= document.createElement('div');
     put.style.color= '#888';
@@ -357,8 +349,8 @@ function wb(addr, val) {
 }
 
 function wm() {
-  t= 'TRS80m3 - SNA'+String.fromCharCode(0,0,0,1,f,a,c,b,e,d,l,h,r,i,iff,0,xl,xh,yl,yh,
-     sp&255,sp>>8,pc&255,pc>>8,im,f_,a_,c_,b_,e_,d_,l_,h_,bIRQ, bIRQe, p236);
+  t= 'TRS80m3 - SNA'+String.fromCharCode(0,0,0,1,f(),a,c,b,e,d,l,h,r,i,iff,0,xl,xh,yl,yh,
+     sp&255,sp>>8,pc&255,pc>>8,im,f_(),a_,c_,b_,e_,d_,l_,h_,bIRQ, bIRQe, p236);
   for (j= 0; j < 207; j++)
     t+= String.fromCharCode(0);
   for (j= 0x3c00; j < 0x10000; j++)
@@ -368,7 +360,7 @@ function wm() {
 
 function rm(o) {
   j= 17;
-  f= o.charCodeAt(j++);
+  setf(o.charCodeAt(j++));
   a= o.charCodeAt(j++);
   c= o.charCodeAt(j++);
   b= o.charCodeAt(j++);
@@ -387,7 +379,7 @@ function rm(o) {
   sp= o.charCodeAt(j++) | o.charCodeAt(j++)<<8;
   pc= o.charCodeAt(j++) | o.charCodeAt(j++)<<8;
   im= o.charCodeAt(j++);
-  f_= o.charCodeAt(j++);
+  setf_(o.charCodeAt(j++));
   a_= o.charCodeAt(j++);
   c_= o.charCodeAt(j++);
   b_= o.charCodeAt(j++);

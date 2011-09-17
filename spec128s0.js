@@ -96,5 +96,5 @@ function paintScreen(){
           eld[o+30]= fo[2];
       }
   dymax >= dymin &&
-    ct.putImageData(elm, 0, 0, (dxmin<<3)-1, (dymin<<3)-1, (dxmax-dxmin+1<<3)+2, (dymax-dymin+1<<3)+2);
+    ct.putImageData(elm, 0, 0, (dxmin<<3)-1, (dymin<<3)-1, (dxmax-dxmin<<3)+10, (dymax-dymin<<3)+10);
 }

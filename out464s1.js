@@ -16,8 +16,8 @@ function init() {
         0, 0, 0]; // last 3 values for tone counter
   if( localStorage.ft==undefined )
     localStorage.ft= 4;
-  z80init();
-  d= r= r7= pc= iff= halted= f= c= b_= c_= h= l= h_= l_= e= d_= e_= f_= a_= xh= xl= yh= yl= i= im= 0;
+        c= d= e= h= l= xl=xh=fa= fb= fr= ff= r7=i=
+  a_=b_=c_=d_=e_=h_=l_=yl=yh=fa_=fb_=fr_=ff_=r= im=pc= iff= halted= 0;
   a= 0x09;
   b= 0xf7;
   sp= 0xbfe8;

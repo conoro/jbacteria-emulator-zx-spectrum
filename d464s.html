@@ -7,7 +7,7 @@
 <script type="text/javascript" src="screen0.js"></script>
 <script type="text/javascript" src="out464s0.js"></script>
 <script type="text/javascript" src="ay.js"></script>
-<script type="text/javascript" src="z80cpc.js"></script>
+<script type="text/javascript" src="z80.php?m=0&p=1&c=1"></script>
 <script type="text/javascript" src="debug.js"></script>
 <script type="text/javascript">ie=0</script>
 <!--[if IE]>
@@ -15,7 +15,8 @@
 <script type="text/vbscript" src="ie.vbscript"></script>
 <![endif]-->
 <script type="text/javascript">
-game=t=u=0;
+pb= []; // playback
+gl=pbc=game=t=u=0;
 function cb(b,f){
   if(f[0]=='_')
     emul=b;

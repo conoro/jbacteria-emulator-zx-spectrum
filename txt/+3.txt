@@ -3,5 +3,5 @@ spec128s1.js
 spectrum3f.js
 fdc.js
 ay.js
-z80p.js
+z80mp.js
 dom.js

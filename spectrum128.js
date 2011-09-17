@@ -148,7 +148,7 @@ function words(a) {
 
 function run() {
   while(st < 70908)
-cond(),
+//cond(),
     r++,
     g[m[pc>>14&3][pc++&0x3fff]]();
   if( !(++flash & 15) )

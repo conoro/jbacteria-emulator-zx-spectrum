@@ -1,6 +1,25 @@
 <?
 //
 /*
+  ob_start();
+  $m=0;$p=0;$c=0;require 'z80.php';
+  file_put_contents('z80.js', ob_get_contents());
+  ob_start();
+  $m=1;$p=0;$c=0;require 'z80.php';
+  file_put_contents('z80m.js', ob_get_contents());
+  ob_start();
+  $m=0;$p=1;$c=0;require 'z80.php';
+  file_put_contents('z80p.js', ob_get_contents());
+  ob_start();
+  $m=1;$p=1;$c=0;require 'z80.php';
+  file_put_contents('z80mp.js', ob_get_contents());
+  ob_start();
+  $m=0;$p=1;$c=1;require 'z80.php';
+  file_put_contents('z80pc.js', ob_get_contents());
+  ob_start();
+  $m=1;$p=1;$c=1;require 'z80.php';
+  file_put_contents('z80mpc.js', ob_get_contents());
+///*
   error_log("list_wos.php");
   ob_start();
   require'list_wos.php';
@@ -73,10 +92,7 @@
   unlink('48.js');
   exec('kzip -y temp.zip aa.rom');
   file_put_contents('_tk90.tap.deflate', substr(file_get_contents('temp.zip'), 36, -75));
-///*/
-  ob_start();
-  require 'z80.php';
-  file_put_contents('z80php.js', ob_get_contents());
+///*
   error_log("48s");
   exec("java yui 48s");
   $rom= file_get_contents('rom/48.rom');
@@ -100,8 +116,7 @@
   unlink('48s.js');
   exec('kzip -y temp.zip aa.rom');
   file_put_contents('_tk90s.tap.deflate', substr(file_get_contents('temp.zip'), 36, -75));
-//
-/*
+///*
   error_log("128");
   exec("java yui 128");
   $rom= file_get_contents('rom/128.rom');
@@ -530,4 +545,10 @@
 //*/
   unlink('aa.rom');
   unlink('temp.zip');
+  unlink('z80.js');
+  unlink('z80m.js');
+  unlink('z80p.js');
+  unlink('z80mp.js');
+  unlink('z80pc.js');
+  unlink('z80mpc.js');
 ?>

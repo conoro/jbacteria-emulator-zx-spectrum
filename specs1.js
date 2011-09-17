@@ -14,13 +14,10 @@ function paintScreen(){
             & ( u ^ t<<3 )
             )
         ; u+= 0x100
-        , o+= 0x400 )
-      if( k=  col>>7
-            & flash>>4
-              ? ~m[u]
-              : m[u]
-        , vm[u] != (col | k<<8) ){
-        vm[u]= col | k<<8;
+        , o+= 0x400){
+        k= col>>7 & flash>>4
+            ? ~m[u]
+            : m[u];
         if( k&128 )
           eld[o  ]= bk[0],
           eld[o+1]= bk[1],
@@ -85,6 +82,6 @@ function paintScreen(){
           eld[o+28]= fo[0],
           eld[o+29]= fo[1],
           eld[o+30]= fo[2];
-      }
+    }
   ct.putImageData(elm, 0, 0);
 }

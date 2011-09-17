@@ -129,7 +129,7 @@ function words(a) {
 
 function run() {
   while( st < 69888 )                       // execute z80 instructions during a frame
-cond(),
+//cond(),
     r++,
     g[m[pc++&0xffff]]();
   if( !(++flash & 15) )

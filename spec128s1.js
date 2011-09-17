@@ -1,6 +1,6 @@
 function paintScreen(){
   t= -1;
-  while(t++ < 0x2ff)
+  while( t++ < 0x2ff )
     for ( col= scree[t+0x1800]
         , bk= pal[col    & 7
                 | col>>3 & 8]
@@ -13,13 +13,10 @@ function paintScreen(){
             & ( u ^ t<<3 )
             )
         ; u+= 0x100
-        , o+= 0x400 )
-      if( k=  col>>7
-            & flash>>4
-              ? ~scree[u]
-              : scree[u]
-        , vm[u] != (col | k<<8) ){
-        vm[u]= col | k<<8;
+        , o+= 0x400 ){
+        k= col>>7 & flash>>4
+            ? ~scree[u]
+            : scree[u]
         if( k&128 )
           eld[o  ]= bk[0],
           eld[o+1]= bk[1],
@@ -84,6 +81,6 @@ function paintScreen(){
           eld[o+28]= fo[0],
           eld[o+29]= fo[1],
           eld[o+30]= fo[2];
-      }
+    }
   ct.putImageData(elm, 0, 0);
 }

@@ -3,5 +3,5 @@ j464.js
 screen1.js
 out464s1.js
 ay.js
-z80cpc.js
+z80mpc.js
 dom_cpc.js

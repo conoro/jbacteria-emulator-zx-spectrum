@@ -1,4 +1,4 @@
-rom= [[],[],[],[]]; //  rom= [new Uint8Array(16384),new Uint8Array(16384),new Uint8Array(16384),new Uint8Array(16384)];
+rom= [bytes(16384), bytes(16384), bytes(16384), bytes(16384)];
 
 function init() {
   cv.setAttribute('style', 'image-rendering:'+( localStorage.ft & 1
@@ -15,10 +15,10 @@ function init() {
     rotapal();
   sample= 0;
   pag= 1;
-  z80init();
-  a= b= c= d= f= h= l= a_= b_= c_= d_= e_= h_= l_= r= r7= pc= iff= im= halted= t= u= 0;
+  a= b= c= d= h= l= fa= fb= fr= ff= r7=
+  a_=b_=c_=d_=h_=l_=fa_=fb_=fr_=e_= r= pc= iff= im= halted= t= u= 0;
   e=  0x11;
-  f_= 0x01;
+  ff_= 0x100;
   xh= 0x5c;
   xl= 0xe2;
   yh= 0x5c;
@@ -56,7 +56,6 @@ function init() {
     ram[j>>14][j&0x3fff]= 1 << (j>>14) & 0xa1
                           ? emul.charCodeAt(0x18018+r++) & 0xff 
                           : 0;
-//  mw[0]= ram[8]; //dummy for rom write
   m[1]= mw[1]= ram[5];
   m[2]= mw[2]= ram[2];
   if(game)                               // emulate LOAD ""
@@ -224,7 +223,7 @@ function rm(o) {
     return 1;
   j= 0;
   a= o.charCodeAt(j++);
-  f= o.charCodeAt(j++);
+  setf(o.charCodeAt(j++));
   c= o.charCodeAt(j++);
   b= o.charCodeAt(j++);
   l= o.charCodeAt(j++);
@@ -245,7 +244,7 @@ function rm(o) {
   l_= o.charCodeAt(j++);
   h_= o.charCodeAt(j++);
   a_= o.charCodeAt(j++);
-  f_= o.charCodeAt(j++);
+  setf_(o.charCodeAt(j++));
   yl= o.charCodeAt(j++);
   yh= o.charCodeAt(j++);
   xl= o.charCodeAt(j++);
@@ -287,8 +286,8 @@ function rm(o) {
 }
 
 function wm() {
-  t= String.fromCharCode(a,f,c,b,l,h,0,0,sp&255,sp>>8,i,r,r7>>7|bor<<1,e,d,
-                         c_,b_,e_,d_,l_,h_,a_,f_,yl,yh,xl,xh,iff,iff,im,55,0,
+  t= String.fromCharCode(a,f(),c,b,l,h,0,0,sp&255,sp>>8,i,r,r7>>7|bor<<1,e,d,
+                         c_,b_,e_,d_,l_,h_,a_,f_(),yl,yh,xl,xh,iff,iff,im,55,0,
                          pc&255,pc>>8,13,p0,0,0,ayr);
   for (u= 0; u< 16; u++)
     t+= String.fromCharCode(ayr[u]);
