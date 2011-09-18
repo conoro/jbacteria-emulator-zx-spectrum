@@ -1,6 +1,16 @@
 AddDefaultCharset utf-8
-AddType text/plain;charset=utf-8 dsk cmd rec
-AddType application/x.zx.tap tap
+#AddType text/plain;charset=utf-8 dsk cmd rec
+AddType application/x.trs.cmd cmd
+#AddType application/x.zx.tap tap
+AddType application/x.cpc.tap tap
+#AddType application/x.zx.dsk dsk 
+AddType application/x.cpc.dsk dsk 
+#AddType application/x.zx.rec rec
+AddType application/x.cpc.rec rec
+#AddType application/x.zx.sna sna
+AddType application/x.cpc.sna sna
+#AddType application/x.zx.rom rom
+AddType application/x.cpc.rom rom
 AddEncoding deflate deflate
 Options SymLinksIfOwnerMatch MultiViews
 ExpiresActive On

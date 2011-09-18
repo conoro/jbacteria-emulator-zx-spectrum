@@ -53,15 +53,16 @@ function rm(o) {
   ap= o.charCodeAt(j++);
   bp= o.charCodeAt(j++);
   cp= o.charCodeAt(j++);
-  /*pm=*/ o.charCodeAt(j++);
+  io= o.charCodeAt(j++);
   ay= o.charCodeAt(j++);
   ayr= [o.charCodeAt(j++), o.charCodeAt(j++), o.charCodeAt(j++), o.charCodeAt(j++),
        o.charCodeAt(j++), o.charCodeAt(j++), o.charCodeAt(j++), o.charCodeAt(j++),
        o.charCodeAt(j++), o.charCodeAt(j++), o.charCodeAt(j++), o.charCodeAt(j++),
        o.charCodeAt(j++), o.charCodeAt(j++), o.charCodeAt(j++), o.charCodeAt(j++)];
-  j+= 149;
+  j= 256;
   for (t= 0; t < 65536; t++)
     mw[t>>14][t&16383]= o.charCodeAt(j++);
+  border();
   onresize();
 }
 
@@ -85,10 +86,13 @@ function wm() {
 }
 
 function tp(){
+  if( game.charCodeAt(0)==77 ){
+    rm(game);
+    return;
+  }
   tapei= tapep= t= j= 0;
   v= '';
-  while(u=  game.charCodeAt(t)      & 0xff
-          | game.charCodeAt(t+1)<<8 & 0xffff)
+  while(u=  game.charCodeAt(t) | game.charCodeAt(t+1)<<8)
     v+= '<option value="'+t+'">#'+ ++j+
         ( game.charCodeAt(t+2) == 0x2c
           ? ' Prog: '+game.substr(t+3,16).replace(/\0/g, '')
@@ -99,23 +103,22 @@ function tp(){
     pt.outerHTML= '<select onchange="tapep=this.value;tapei=this.selectedIndex">'+v+'</select>';
   else
     pt.innerHTML= v;
+  pc= 0x2a5e;
 }
 
 function loadblock() {
-  o=  game.charCodeAt(tapep++)    & 0xff
-    | game.charCodeAt(tapep++)<<8 & 0xffff;
+  o=  game.charCodeAt(tapep++) | game.charCodeAt(tapep++)<<8;
   tapei++;
   tapep++;
   for ( j= 0
       ; j < o-1
       ; j++ )
-    mw[h >> 6][l | h<<8 & 0x3fff]= game.charCodeAt(tapep++) & 0xff,
+    mw[h >> 6][l | h<<8 & 0x3fff]= game.charCodeAt(tapep++),
     g[0x23]();
   iff= 1;
   pc= 0x286d;                           // exit address
   setf(0x45);
-  o=  game.charCodeAt(tapep)      & 0xff
-    | game.charCodeAt(tapep+1)<<8 & 0xffff;
+  o=  game.charCodeAt(tapep) | game.charCodeAt(tapep+1)<<8;
   if( !o )
     tapei= tapep= 0;
   pt.selectedIndex= tapei;

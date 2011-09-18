@@ -85,7 +85,7 @@ file_put_contents('snaps/'.$b64.'.sna.deflate', gzdeflate($snap));
 <a href="<?=$url?>"><?=$url?></a>
 
 
-Also you can <a href="<?=$urls.'?'.$b64.'sna'?>">play</a> or <a href="snaps/<?=$b64.'sna'?>">download</a> the final snapshot.
+Also you can <a href="<?=$urls.'?'.$b64.'.sna'?>">play</a> or <a href="snaps/<?=$b64.'.sna'?>">download</a> the final snapshot.
 
 <form method="post" action="record.php">
 Your name or nickname:

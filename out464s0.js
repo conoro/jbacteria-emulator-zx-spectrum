@@ -26,7 +26,7 @@ function init() {
   t= localStorage.ft>>3;
   rotapal();
   onresize();
-  pbcs= frcs= pbc= bp= ci= ap= io= vsync= ay= envc= envx= ay13= noic= noir= tons= cp= ga= f1= f3= f4= st= time= flash= 0;
+  pbcs= frcs= pbc= bp= ci= ap= io= vsync= ay= envc= envx= ay13= noic= noir= noiv= tons= cp= ga= f1= f3= f4= st= time= flash= 0;
   ayr= [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         0, 0, 0]; // last 3 values for tone counter
   if( localStorage.ft==undefined )
@@ -79,9 +79,7 @@ function init() {
   rom[0][0x2871]= 0xfa,
   rom[0][0x2836]= 0xed,
   rom[0][0x2837]= 0xfc;
-  if( game )                               // emulate LOAD ""
-    tp(),
-    pc= 0x2a5e;
+  game && tp();
   document.ondragover= handleDragOver;
   document.ondrop= handleFileSelect;
   document.onkeydown= kdown;          // key event handling
@@ -133,13 +131,8 @@ function wp(addr, val) {
         gc[ga]= val&0x1f;
         pl[ga]= pal[val&0x1f];
         t= cr[1]*(cr[9]+1)*cr[6]<<1;
-        if( ga==16 ){
-          document.body.style.backgroundColor= 'rgb('+pl[16].toString()+')';
-          if( ifra )
-            put.style.color= pl[16][0]+pl[16][1]+pl[16][2]<300 ? '#fff' : '#000';
-          if( pbt )
-            tim.style.color= pl[16][0]+pl[16][1]+pl[16][2]<300 ? '#fff' : '#000';
-        }
+        if( ga==16 )
+          border();
         else if(ga<1<<(4>>gm)){
           u= 1<<ga;
           if(gm==0){

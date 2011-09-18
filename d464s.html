@@ -16,13 +16,12 @@
 <script type="text/javascript">
 pb= []; // playback
 pbf=pbt=frc=game=t=u=0;
-function cb(b,f){
-console.log(t,f);
-  if(f[0]=='_')
+function cb(b,c){
+  if( c=='m' ) // rom m
     emul=b;
   else
     game=b;
-  if(f=='record.php')
+  if(c==8) // record.php text/html utf8 8
     document.write(game);
   else if(!t--){
     document.body.style.margin= 0;
@@ -56,10 +55,10 @@ console.log(t,f);
     ir.setAttribute('style','display:none');
     document.body.appendChild(ir);
     while(t<196607)
-      a= emul.charCodeAt(++t+69) & 255,
-      eld[u++]= emul.charCodeAt(3*a) & 255,
-      eld[u++]= emul.charCodeAt(3*a+1) & 255,
-      eld[u++]= emul.charCodeAt(3*a+2) & 255,
+      a= emul.charCodeAt(++t+69),
+      eld[u++]= emul.charCodeAt(3*a),
+      eld[u++]= emul.charCodeAt(3*a+1),
+      eld[u++]= emul.charCodeAt(3*a+2),
       eld[u++]= a ? 255 : 55;
     ct.putImageData(elm, 0, 0);
     cv= document.createElement('canvas');
@@ -67,37 +66,39 @@ console.log(t,f);
     document.body.appendChild(he);
     document.body.appendChild(dv);
     eld= (elm= (ct= cv.getContext('2d')).getImageData(0,0,1,1)).data;
- console.log('init0');
     init();
- console.log('init1');
   }
-  else if ( game.charCodeAt(0)!=29 && f[0]!='_' ){
-    u=game.indexOf('\0');
-    ci=game.length;
+  else if ( c=='c' ){ // rec c
+    u=b.indexOf('\0');
+    ci=b.length;
     frc=bp=u+1;
     while(bp<ci)
-      ap= game.charCodeAt(--ci) & 255,
-      pbf+= ap,
+      pbf+= (ap= b.charCodeAt(--ci)),
       ap != 255 && bp++;
-    while(ci<game.length)
-      ap=game.charCodeAt(ci++) & 255,
-      pb[pbt++]= ap==255 ? ap : ap | game.charCodeAt(frc++)<<8;
-    frc= (pb[0]&255)+1;
- console.log(frc, pb);
-    ajax('games/'+(param=game.substr(0, u)));
+    while(ci<b.length)
+      ap=b.charCodeAt(ci++),
+      pb[pbt++]= ap==255 ? ap : ap | b.charCodeAt(frc++)<<8;
+    frc= (pb[0]&255); //+1 tap +0 sna
+    ajax((b[u-1]=='a'?'snaps/':'games/')+(param=b.substr(0, u)));
   }
 }
 function ajax(f,g){
   var xhr=new XMLHttpRequest();
   xhr.onreadystatechange=function(){
     if(xhr&&xhr.readyState==4)
-      cb(ie ? bin2arr(xhr.responseBody) : xhr.responseText, f);
+      cb(ie ? bin2arr(xhr.responseBody) : bin2str(xhr.responseText), xhr.getResponseHeader('Content-Type').slice(-1));
     };
   xhr.open('POST',f,true);
   if (!ie)
     xhr.overrideMimeType('text/plain;charset=x-user-defined');
   xhr.send(g);
 }
+function bin2str(a) {
+  return a.replace(/[\s\S]/g,function(t){
+    return String.fromCharCode(t.charCodeAt(0)&0xff);
+  });
+}
+
 function bin2arr(a) {
   return arr(a).replace(/[\s\S]/g,function(t){
     v= t.charCodeAt(0);
@@ -108,7 +109,9 @@ k=location.href.indexOf('?')+1;
 ifra=location.href.slice(-1)=='#';
 if(k)
   t++,
-  ajax((location.href.substr(location.href.length-ifra-4,4)=='.rec'?(t++,'recorded/'):'games/')+(param=location.href.substr(k,location.href.length-k-ifra)));
+  ajax(((u=location.href.charCodeAt(location.href.length-ifra-1))==99 //rec c, sna s, tap p, dsk k
+    ? (t++,'recorded/')
+    : (u==97?'snaps/':'games/'))+(param=location.href.substr(k,location.href.length-k-ifra)));
 ajax('_464');
 </script>
 </html>

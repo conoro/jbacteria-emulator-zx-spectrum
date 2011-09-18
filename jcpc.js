@@ -273,7 +273,7 @@ function run() {
         frc= 0;
     if( ++frc == 255 )
       pb[pbc++]= frc,
-      frc= 1;
+      frc= 0;
     for ( t= 0; t<10; t++ )
       ks[t]= kb[t];
   }
@@ -349,7 +349,6 @@ function kdown(ev) {
         clearInterval(interval);
       else
         node.onaudioprocess= audioprocess0;
- console.log(pb);
       t= wm()+String.fromCharCode(f3)+String.fromCharCode(f4)+param+String.fromCharCode(255);
       while( pbc )
         t+= String.fromCharCode(pb[--pbc]);
@@ -447,4 +446,12 @@ function mozrun(){
       data[j++]= aystep();
     audioOutput.mozWriteAudio(data);
   }
+}
+
+function border(){
+  document.body.style.backgroundColor= 'rgb('+pl[16].toString()+')';
+  if( ifra )
+    put.style.color= pl[16][0]+pl[16][1]+pl[16][2]<300 ? '#fff' : '#000';
+  if( pbt )
+    tim.style.color= pl[16][0]+pl[16][1]+pl[16][2]<300 ? '#fff' : '#000';
 }
