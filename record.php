@@ -27,17 +27,21 @@ if( $_POST['enviar'] ){
   die('Your recorded playgame has been registered in our database');
 }
 $str= file_get_contents('php://input');
-$keys= $frames= $param= '';
 $index= 0;
+$snap= $keys= $frames= $param= '';
+while ( strlen($snap)<256 )
+  $snap.= chr(getval($index, $str));
+$len= ord($snap[0x6b])*1024+256;
+while ( strlen($snap)<$len )
+  $snap.= chr(getval($index, $str));
+//$index= 0;
 $f3= (getval($index, $str));
 $f4= (getval($index, $str));
 while( $str[$index]!=chr(0xc3) )
   $param.= $str[$index++];
-$url= strstr($param, '?', 1);
+$url= strstr($_SERVER['HTTP_REFERER'], '?', 1);
 $urls= substr(strstr($url, '/d'), 2);
-$param= strstr($param, '?');
-$sname= substr(strstr($param, '.', 1), 1);
-$param= strrpos($param, '#') ? substr($param, 1, -1) : substr($param, 1);
+$sname= strstr($param, '.', 1);
 while( $str[$index]==chr(0xc3) && $str[$index+1]==chr(0xbf) )
   $index+= 2;
 $num_frames= 0;
@@ -63,15 +67,25 @@ while ( $index<strlen($str) )
 $num= time();
 $num2= 0;
 while( file_exists($file= 'recorded/'.
-                          ($b64= substr(base64_encode(chr($num>>24&255).chr($num>>16&255).chr($num>>8&255).chr($num&255).chr(($num2&15)<<4)),0,6).'.rec').
-                          '.deflate') )
+                          ($b64=  substr(
+                                    strtr(
+                                      base64_encode(
+                                        chr($num>>24&255).chr($num>>16&255).chr($num>>8&255).chr($num&255).chr(($num2&15)<<4)
+                                      ), '+/', '-_'
+                                    ), 0, 6
+                                  )
+                          ).'.rec.deflate') )
   if( ++$num2&15 == 0 )
     $num++;
-$url.= '?'.$b64;
-file_put_contents('caca.txt', $param."\0".$keys.$frames);
-file_put_contents($file, gzdeflate($param."\0".$keys.$frames));
+$url.= '?'.$b64.'.rec';
+file_put_contents('caca.txt', $param."\0".strrev($frames.$keys));
+file_put_contents($file, gzdeflate($param."\0".strrev($frames.$keys)));
+file_put_contents('snaps/'.$b64.'.sna.deflate', gzdeflate($snap));
 ?><pre style="text-align:center;font-size:20px">The recorded gameplay is located at:
 <a href="<?=$url?>"><?=$url?></a>
+
+
+Also you can <a href="<?=$urls.'?'.$b64.'sna'?>">play</a> or <a href="snaps/<?=$b64.'sna'?>">download</a> the final snapshot.
 
 <form method="post" action="record.php">
 Your name or nickname:
@@ -81,7 +95,7 @@ Write a comment:
 <textarea name="comment" style="width:300px;height:100px;font-size:20px"></textarea>
 
 <input name="enviar" type="submit" style="font-size:20px"/>
-<input name="id" type="hidden" value="<?=substr($b64,0,-4)?>"/>
+<input name="id" type="hidden" value="<?=$b64?>"/>
 <input name="sname" type="hidden" value="<?=$sname?>"/>
 <input name="frames" type="hidden" value="<?=$num_frames?>"/>
 <input name="url" type="hidden" value="<?=$urls?>"/>

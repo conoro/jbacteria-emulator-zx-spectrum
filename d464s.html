@@ -8,7 +8,6 @@
 <script type="text/javascript" src="out464s0.js"></script>
 <script type="text/javascript" src="ay.js"></script>
 <script type="text/javascript" src="z80.php?m=0&p=1&c=1"></script>
-<script type="text/javascript" src="debug.js"></script>
 <script type="text/javascript">ie=0</script>
 <!--[if IE]>
 <script type="text/javascript">ie=1;onhelp=function(){return false}</script>
@@ -16,13 +15,16 @@
 <![endif]-->
 <script type="text/javascript">
 pb= []; // playback
-gl=pbc=game=t=u=0;
+pbf=pbt=frc=game=t=u=0;
 function cb(b,f){
+console.log(t,f);
   if(f[0]=='_')
     emul=b;
   else
     game=b;
-  if(!t--){
+  if(f=='record.php')
+    document.write(game);
+  else if(!t--){
     document.body.style.margin= 0;
     pt= document.createElement('select');
     pt.setAttribute('onchange','tapep=this.value;tapei=this.selectedIndex');
@@ -65,19 +67,36 @@ function cb(b,f){
     document.body.appendChild(he);
     document.body.appendChild(dv);
     eld= (elm= (ct= cv.getContext('2d')).getImageData(0,0,1,1)).data;
+ console.log('init0');
     init();
+ console.log('init1');
+  }
+  else if ( game.charCodeAt(0)!=29 && f[0]!='_' ){
+    u=game.indexOf('\0');
+    ci=game.length;
+    frc=bp=u+1;
+    while(bp<ci)
+      ap= game.charCodeAt(--ci) & 255,
+      pbf+= ap,
+      ap != 255 && bp++;
+    while(ci<game.length)
+      ap=game.charCodeAt(ci++) & 255,
+      pb[pbt++]= ap==255 ? ap : ap | game.charCodeAt(frc++)<<8;
+    frc= (pb[0]&255)+1;
+ console.log(frc, pb);
+    ajax('games/'+(param=game.substr(0, u)));
   }
 }
-function ajax(f){
+function ajax(f,g){
   var xhr=new XMLHttpRequest();
   xhr.onreadystatechange=function(){
     if(xhr&&xhr.readyState==4)
       cb(ie ? bin2arr(xhr.responseBody) : xhr.responseText, f);
     };
-  xhr.open('GET',f,true);
+  xhr.open('POST',f,true);
   if (!ie)
     xhr.overrideMimeType('text/plain;charset=x-user-defined');
-  xhr.send(null);
+  xhr.send(g);
 }
 function bin2arr(a) {
   return arr(a).replace(/[\s\S]/g,function(t){
@@ -89,7 +108,7 @@ k=location.href.indexOf('?')+1;
 ifra=location.href.slice(-1)=='#';
 if(k)
   t++,
-  ajax(location.href.substr(k,location.href.length-k-ifra));
+  ajax((location.href.substr(location.href.length-ifra-4,4)=='.rec'?(t++,'recorded/'):'games/')+(param=location.href.substr(k,location.href.length-k-ifra)));
 ajax('_464');
 </script>
 </html>

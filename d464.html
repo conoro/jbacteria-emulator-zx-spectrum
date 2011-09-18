@@ -16,7 +16,7 @@
 <![endif]-->
 <script type="text/javascript">
 pb= []; // playback
-gl=pbc=game=t=u=0;
+gl=pbt=game=t=u=0;
 function cb(b,f){
   if(f[0]=='_')
     emul=b;
@@ -78,8 +78,9 @@ function cb(b,f){
         bp++;
     while(ci<game.length)
       ap=game.charCodeAt(ci++) & 255,
-      pb[pbc++]= ap==255 ? ap : ap | game.charCodeAt(frc++)<<8;
-    pb[pbc++]= 0;
+      pb[pbt++]= ap==255 ? ap : ap | game.charCodeAt(frc++)<<8;
+    pb[pbt++]= 0;
+ console.log(pb);
     ajax('games/'+game.substr(0, gl));
   }
 }

@@ -8,6 +8,7 @@ m= [];                                 // memory
 mw= [[],[],[],[]];        // [new Uint8Array(16384),new Uint8Array(16384),new Uint8Array(16384),new Uint8Array(16384), new Uint8Array(16384),new Uint8Array(16384),new Uint8Array(16384),new Uint8Array(16384)]
 kb= [255,255,255,255,255,255,255,255,255,255]; // keyboard state
 ks= [255,255,255,255,255,255,255,255,255,255]; // keyboard state playback
+kss=[255,255,255,255,255,255,255,255,255,255]; // keyboard state playback savestate
 kc= [255,255,255,255,255,255,255,255,      // keyboard codes
     0x97,// 8 del qwerty backspace
     localStorage.ft & 2
@@ -252,17 +253,18 @@ function run() {
     g[m[pc>>14&3][pc++&16383]]();
   st-= 3200;
 
-  if( gl ){
+  if( pbt ){
     if( !frc-- ){
       do{
         t= pb[pbc]>>8;
-        if( (pb[pbc]&255)!=255 )
-          ks[t>>3]^= 1 << (t&7);
-        frc= pb[--pbc]&255;
-      } while( !(frc&255) )
+        (pb[pbc]&255)!=255 && (ks[t>>3]^= 1 << (t&7));
+        frc= pb[++pbc]&255;
+      } while( pbc<pbt && !(frc&255) )
+      if(pbc==pbt)
+        tim.innerHTML= '',
+        pbt= 0;
       frc--;
     }
-    gl= pbc;
   }
   else{
     for ( t= 0; t<80; t++ )
@@ -318,12 +320,27 @@ function kdown(ev) {
       self.focus();
       break;
     case 114: // F3
-      f3++,
-      localStorage.save= wm();
+      if( pbt )
+        alert(123);
+      else
+        for ( t= 0; t<10; t++ )
+          kss[t]= ks[t];
+        frcs= frc;
+        pbcs= pbc;
+        f3++;
+        localStorage.save= wm();
       break;
     case 115: // F4
-      f4++,
-      rm(localStorage.save);
+      if( pbt )
+        alert(123);
+      else{
+        for ( t= 0; t<10; t++ )
+          ks[t]= kss[t];
+        frc= frcs;
+        pbc= pbcs;
+        f4++;
+        rm(localStorage.save);
+      }
       break;
     case 116: // F5
       return 1;
@@ -332,7 +349,8 @@ function kdown(ev) {
         clearInterval(interval);
       else
         node.onaudioprocess= audioprocess0;
-      t= String.fromCharCode(f3)+String.fromCharCode(f4)+location.href+String.fromCharCode(255);
+ console.log(pb);
+      t= wm()+String.fromCharCode(f3)+String.fromCharCode(f4)+param+String.fromCharCode(255);
       while( pbc )
         t+= String.fromCharCode(pb[--pbc]);
       ajax('record.php', t);

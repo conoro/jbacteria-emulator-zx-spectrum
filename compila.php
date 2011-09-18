@@ -1,6 +1,5 @@
 <?
-//
-/*
+///*
   ob_start();
   $m=0;$p=0;$c=0;require 'z80.php';
   file_put_contents('z80.js', ob_get_contents());
@@ -19,7 +18,8 @@
   ob_start();
   $m=1;$p=1;$c=1;require 'z80.php';
   file_put_contents('z80mpc.js', ob_get_contents());
-///*
+//
+/*
   error_log("list_wos.php");
   ob_start();
   require'list_wos.php';
@@ -68,7 +68,7 @@
   file_put_contents('aa.rom', ob_get_contents());
   exec('kzip -y temp.zip aa.rom');
   file_put_contents('noframes.html.deflate', substr(file_get_contents('temp.zip'), 36, -75));
-///*
+///*/
   error_log("48");
   exec("java yui 48");
   $rom= file_get_contents('rom/48.rom');
@@ -367,7 +367,8 @@
   unlink('3.js');
   exec('kzip -y temp.zip aa.rom');
   file_put_contents('_3.tap.deflate', substr(file_get_contents('temp.zip'), 36, -75));
-///*
+//
+/*
   error_log("48.html");
   ob_start();$x=48;$y=0x10000;
   require'emu.php';

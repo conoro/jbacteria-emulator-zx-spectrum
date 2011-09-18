@@ -90,7 +90,7 @@ function init() {
         audioOutput.mozSetup(1, 55400);
         myrun= mozrun;
       }
-      catch (e){}
+      catch (er){}
       paso= 70908/1108; // 55400/1108= 50  70908/1108= 16*4
       interval= setInterval(myrun, 20);
     }

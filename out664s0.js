@@ -90,7 +90,7 @@ function init() {
         audioOutput.mozSetup(1, 62400); // 62400/1248= 50  19968/1248= 16.  16/4= 4
         myrun= mozrun;
       }
-      catch (e){}
+      catch (er){}
       interval= setInterval(myrun, 20);
     }
     else

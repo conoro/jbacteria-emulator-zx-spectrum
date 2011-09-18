@@ -345,6 +345,7 @@ function tp(){
 function loadblock() {
   o=  game.charCodeAt(tapep++)    & 0xff
     | game.charCodeAt(tapep++)<<8 & 0xffff;
+console.log(o);
   tapei++;
   tapep++;
   for ( j= 0

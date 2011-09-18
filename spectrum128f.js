@@ -52,6 +52,7 @@ function init() {
     ram[j>>14][j&0x3fff]= 1 << (j>>14) & 0xa1
                           ? emul.charCodeAt(0x18018+r++) & 0xff 
                           : 0;
+  mw[0]= ram[8];
   m[1]= mw[1]= ram[5];
   m[2]= mw[2]= ram[2];
   if(game)                               // emulate LOAD ""
@@ -85,7 +86,7 @@ function init() {
         audioOutput.mozSetup(1, 55400);
         myrun= mozrun;
       }
-      catch (e){}
+      catch (er){}
       paso= 70908/1108; // 55400/1108= 50  70908/1108= 16*4
       interval= setInterval(myrun, 20);
     }
