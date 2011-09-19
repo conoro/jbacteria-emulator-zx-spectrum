@@ -39,10 +39,10 @@ $f3= (getval($index, $str));
 $f4= (getval($index, $str));
 while( $str[$index]!=chr(0xc3) )
   $param.= $str[$index++];
-$url= strstr($_SERVER['HTTP_REFERER'], '?', 1);
-$urls= substr(strstr($url, '/d'), 2);
-$sname= strstr($param, '.', 1);
-while( $str[$index]==chr(0xc3) && $str[$index+1]==chr(0xbf) )
+list($url,)= explode('?', $_SERVER['HTTP_REFERER']);
+$urls= substr(strstr($url, '.es/'), 4);
+list($sname,)= explode('.', $param);
+//while( $str[$index]==chr(0xc3) && $str[$index+1]==chr(0xbf) )
   $index+= 2;
 $num_frames= 0;
 while ( $index<strlen($str) )
@@ -78,7 +78,6 @@ while( file_exists($file= 'recorded/'.
   if( ++$num2&15 == 0 )
     $num++;
 $url.= '?'.$b64.'.rec';
-file_put_contents('caca.txt', $param."\0".strrev($frames.$keys));
 file_put_contents($file, gzdeflate($param."\0".strrev($frames.$keys)));
 file_put_contents('snaps/'.$b64.'.sna.deflate', gzdeflate($snap));
 ?><pre style="text-align:center;font-size:20px">The recorded gameplay is located at:

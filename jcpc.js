@@ -8,7 +8,7 @@ m= [];                                 // memory
 mw= [[],[],[],[]];        // [new Uint8Array(16384),new Uint8Array(16384),new Uint8Array(16384),new Uint8Array(16384), new Uint8Array(16384),new Uint8Array(16384),new Uint8Array(16384),new Uint8Array(16384)]
 kb= [255,255,255,255,255,255,255,255,255,255]; // keyboard state
 ks= [255,255,255,255,255,255,255,255,255,255]; // keyboard state playback
-kss=[255,255,255,255,255,255,255,255,255,255]; // keyboard state playback savestate
+//kss=[255,255,255,255,255,255,255,255,255,255]; // keyboard state playback savestate
 kc= [255,255,255,255,255,255,255,255,      // keyboard codes
     0x97,// 8 del qwerty backspace
     localStorage.ft & 2
@@ -261,9 +261,11 @@ function run() {
         frc= pb[++pbc]&255;
       } while( pbc<pbt && !(frc&255) )
       if(pbc==pbt)
+        console.log(frc),
         tim.innerHTML= '',
         pbt= 0;
-      frc--;
+      else
+        frc--;
     }
   }
   else{
@@ -320,22 +322,28 @@ function kdown(ev) {
       self.focus();
       break;
     case 114: // F3
-      if( pbt )
-        alert(123);
-      else
-        for ( t= 0; t<10; t++ )
-          kss[t]= ks[t];
-        frcs= frc;
-        pbcs= pbc;
-        f3++;
-        localStorage.save= wm();
+      pbt && (
+        pbt= 0,
+        tim.innerHTML= '',
+        frc= (pb[pbc]&255)-frc);
+//      for ( t= 0; t<10; t++ )
+//        kss[t]= ks[t];
+      frcs= frc;
+      pbcs= pbc;
+      f3++;
+      localStorage.save= wm();
       break;
     case 115: // F4
-      if( pbt )
-        alert(123);
+      if( pbt ){
+        if( trein==32000 )
+          clearInterval(interval);
+        else
+          node.onaudioprocess= audioprocess0;
+        ajax('snaps/'+location.href.substr(k,location.href.length-k-ifra-4)+'.sna', -1);
+      }
       else{
-        for ( t= 0; t<10; t++ )
-          ks[t]= kss[t];
+//        for ( t= 0; t<10; t++ )
+//          ks[t]= kss[t];
         frc= frcs;
         pbc= pbcs;
         f4++;
@@ -345,15 +353,17 @@ function kdown(ev) {
     case 116: // F5
       return 1;
     case 117: // F6
-      if( trein==32000 )
-        clearInterval(interval);
-      else
-        node.onaudioprocess= audioprocess0;
-      t= wm()+String.fromCharCode(f3)+String.fromCharCode(f4)+param+String.fromCharCode(255);
-      while( pbc )
-        t+= String.fromCharCode(pb[--pbc]);
-      ajax('record.php', t);
-      document.documentElement.innerHTML= 'Please wait...';
+      if( !pbt ){
+        if( trein==32000 )
+          clearInterval(interval);
+        else
+          node.onaudioprocess= audioprocess0;
+        t= wm()+String.fromCharCode(f3)+String.fromCharCode(f4)+param+String.fromCharCode(255);
+        while( pbc )
+          t+= String.fromCharCode(pb[--pbc]);
+        ajax('record.php', t);
+        document.documentElement.innerHTML= 'Please wait...';
+      }
       break;
     case 118: // F7
       localStorage.ft= +localStorage.ft+8 % 24;
@@ -454,4 +464,18 @@ function border(){
     put.style.color= pl[16][0]+pl[16][1]+pl[16][2]<300 ? '#fff' : '#000';
   if( pbt )
     tim.style.color= pl[16][0]+pl[16][1]+pl[16][2]<300 ? '#fff' : '#000';
+}
+
+function rt(f){
+  rm(f);
+  pbcs= pbc= pbt;
+  frcs= frc= f.charCodeAt(255);
+  f3++;
+  localStorage.save= wm();
+  tim.innerHTML= '';
+  pbt= 0;
+  if( trein==32000 )
+    interval= setInterval(myrun, 20);
+  else
+    node.onaudioprocess= audioprocess;
 }

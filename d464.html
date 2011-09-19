@@ -8,7 +8,6 @@
 <script type="text/javascript" src="out464s1.js"></script>
 <script type="text/javascript" src="ay.js"></script>
 <script type="text/javascript" src="z80.php?m=1&p=1&c=1"></script>
-<script type="text/javascript" src="debug.js"></script>
 <script type="text/javascript">ie=0</script>
 <!--[if IE]>
 <script type="text/javascript">ie=1;onhelp=function(){return false}</script>
@@ -16,13 +15,13 @@
 <![endif]-->
 <script type="text/javascript">
 pb= []; // playback
-gl=pbt=game=t=u=0;
-function cb(b,f){
-  if(f[0]=='_')
+pbf=pbt=frc=game=t=u=0;
+function cb(b,c){
+  if( c=='m' )
     emul=b;
   else
     game=b;
-  if(f=='record.php')
+  if( c==8 )
     document.write(game);
   else if(!t--){
     document.body.style.margin= 0;
@@ -56,10 +55,10 @@ function cb(b,f){
     ir.setAttribute('style','display:none');
     document.body.appendChild(ir);
     while(t<196607)
-      a= emul.charCodeAt(++t+69) & 255,
-      eld[u++]= emul.charCodeAt(3*a) & 255,
-      eld[u++]= emul.charCodeAt(3*a+1) & 255,
-      eld[u++]= emul.charCodeAt(3*a+2) & 255,
+      a= emul.charCodeAt(++t+69),
+      eld[u++]= emul.charCodeAt(3*a),
+      eld[u++]= emul.charCodeAt(3*a+1),
+      eld[u++]= emul.charCodeAt(3*a+2),
       eld[u++]= a ? 255 : 55;
     ct.putImageData(elm, 0, 0);
     cv= document.createElement('canvas');
@@ -69,31 +68,41 @@ function cb(b,f){
     eld= (elm= (ct= cv.getContext('2d')).getImageData(0,0,1,1)).data;
     init();
   }
-  else if ( game.charCodeAt(0)!=29 ){
-    gl=game.indexOf('\0');
-    ci=game.length;
-    frc=bp=gl+1;
+  else if ( c=='c' ){ // rec c
+    u=b.indexOf('\0');
+    ci=b.length;
+    frc=bp=u+1;
     while(bp<ci)
-      if((game.charCodeAt(--ci) & 255) != 255)
-        bp++;
-    while(ci<game.length)
-      ap=game.charCodeAt(ci++) & 255,
-      pb[pbt++]= ap==255 ? ap : ap | game.charCodeAt(frc++)<<8;
-    pb[pbt++]= 0;
- console.log(pb);
-    ajax('games/'+game.substr(0, gl));
+      pbf+= (ap= b.charCodeAt(--ci)),
+      ap != 255 && bp++;
+    while(ci<b.length)
+      ap=b.charCodeAt(ci++),
+      pb[pbt++]= ap==255 ? ap : ap | b.charCodeAt(frc++)<<8;
+    frc= pb[0]&255;
+    ajax((b[u-1]=='a'?'snaps/':'games/')+(param=b.substr(0, u)));
   }
 }
 function ajax(f,g){
   var xhr=new XMLHttpRequest();
-  xhr.onreadystatechange=function(){
-    if(xhr&&xhr.readyState==4)
-      cb(ie ? bin2arr(xhr.responseBody) : xhr.responseText, f);
-    };
+  if( g<0 )
+    xhr.onreadystatechange=function(){
+      if(xhr&&xhr.readyState==4)
+        rt(ie ? bin2arr(xhr.responseBody) : bin2str(xhr.responseText));
+      };
+  else
+    xhr.onreadystatechange=function(){
+      if(xhr&&xhr.readyState==4)
+        cb(ie ? bin2arr(xhr.responseBody) : bin2str(xhr.responseText), xhr.getResponseHeader('Content-Type').slice(-1));
+      };
   xhr.open('POST',f,true);
   if (!ie)
     xhr.overrideMimeType('text/plain;charset=x-user-defined');
   xhr.send(g);
+}
+function bin2str(a) {
+  return a.replace(/[\s\S]/g,function(t){
+    return String.fromCharCode(t.charCodeAt(0)&0xff);
+  });
 }
 function bin2arr(a) {
   return arr(a).replace(/[\s\S]/g,function(t){
@@ -103,10 +112,11 @@ function bin2arr(a) {
 }
 k=location.href.indexOf('?')+1;
 ifra=location.href.slice(-1)=='#';
-//alert(location.href.substr(location.href.length-ifra-4,4));
 if(k)
   t++,
-  ajax((location.href.substr(location.href.length-ifra-4,4)=='.rec'?'recorded/':'games/')+location.href.substr(k,location.href.length-k-ifra));
+  ajax(((u=location.href[location.href.length-ifra-1])=='c'
+    ? (t++,'recorded/')
+    : (u=='a'?'snaps/':'games/'))+(param=location.href.substr(k,location.href.length-k-ifra)));
 ajax('_464');
 </script>
 </html>

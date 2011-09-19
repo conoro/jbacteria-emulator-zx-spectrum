@@ -59,6 +59,8 @@ function rm(o) {
        o.charCodeAt(j++), o.charCodeAt(j++), o.charCodeAt(j++), o.charCodeAt(j++),
        o.charCodeAt(j++), o.charCodeAt(j++), o.charCodeAt(j++), o.charCodeAt(j++),
        o.charCodeAt(j++), o.charCodeAt(j++), o.charCodeAt(j++), o.charCodeAt(j++)];
+  for (j= 0; j < 10; j++ )
+    ks[j]= o.charCodeAt(j+245);
   j= 256;
   for (t= 0; t < 65536; t++)
     mw[t>>14][t&16383]= o.charCodeAt(j++);
@@ -78,19 +80,22 @@ function wm() {
   for (j= 0; j < 16; j++)
     t+= String.fromCharCode(ayr[j]);
   t+= String.fromCharCode(64,0, 0,0, 1,1,1,1,1,1);
-  for (j= 0; j < 139; j++)
+  for (j= 0; j < 128; j++)
     t+= String.fromCharCode(0);
+  for (j= 0; j < 10; j++ )
+    t+= String.fromCharCode(ks[j]);
+  t+= String.fromCharCode(frc);
   for (j= 0; j < 65536; j++)
     t+= String.fromCharCode(mw[j>>14][j&16383]);
   return t;
 }
 
 function tp(){
+  tapei= tapep= t= j= 0;
   if( game.charCodeAt(0)==77 ){
     rm(game);
     return;
   }
-  tapei= tapep= t= j= 0;
   v= '';
   while(u=  game.charCodeAt(t) | game.charCodeAt(t+1)<<8)
     v+= '<option value="'+t+'">#'+ ++j+

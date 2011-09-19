@@ -36,7 +36,7 @@ function init() {
   a= 0x09;
   b= 0xf7;
   sp= 0xbfe8;
-  pbf= ' / '+('0'+parseInt(pbf/3000)).slice(-2)+':'+('0'+parseInt(pbf/50)).slice(-2);
+  pbf= ' / '+('0'+parseInt(pbf/3000)).slice(-2)+':'+('0'+parseInt(pbf/50)%60).slice(-2);
   if( ifra ){
     put= document.createElement('div');
     put.style.width= '40px';
@@ -45,7 +45,7 @@ function init() {
     titul= function(){
       put.innerHTML= parseInt(trein/((nt= new Date().getTime())-time))+'%';
       if( pbt )
-        tim.innerHTML= ('0'+parseInt(flash/3000)).slice(-2)+':'+('0'+parseInt(flash/50)).slice(-2)+pbf;
+        tim.innerHTML= ('0'+parseInt(flash/3000)).slice(-2)+':'+('0'+parseInt(flash/50)%60).slice(-2)+pbf;
     }
   }
   else{
@@ -53,7 +53,7 @@ function init() {
     titul= function(){
       put.title= 'Roland464 '+parseInt(trein/((nt= new Date().getTime())-time))+'%';
       if( pbt )
-        tim.innerHTML= ('0'+parseInt(flash/3000)).slice(-2)+':'+('0'+parseInt(flash/50)).slice(-2)+pbf;
+        tim.innerHTML= ('0'+parseInt(flash/3000)).slice(-2)+':'+('0'+parseInt(flash/50)%60).slice(-2)+pbf;
     }
   }
   if( pbt )
