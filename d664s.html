@@ -71,9 +71,9 @@ function cb(b,c){
     init();
   }
   else if ( c=='c' ){ // rec c
-    u=b.indexOf('\0');
+    k=b.indexOf('\0');
     ci=b.length;
-    frc=bp=u+1;
+    frc=bp=k+1;
     while(bp<ci)
       pbf+= (ap= b.charCodeAt(--ci)),
       ap != 255 && bp++;
@@ -81,7 +81,7 @@ function cb(b,c){
       ap=b.charCodeAt(ci++),
       pb[pbt++]= ap==255 ? ap : ap | b.charCodeAt(frc++)<<8;
     frc= pb[0]&255;
-    param=b.substr(0, u),
+    param=b.substr(0, k),
     param1= param.split('/')[0],
     param2= param.split('/')[1],
     ajax((param1.slice(-1)=='a'?'snaps/':'games/')+param1);

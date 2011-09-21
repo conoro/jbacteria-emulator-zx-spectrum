@@ -7,8 +7,9 @@
 ?><script type="text/javascript">ie=1;onhelp=function(){return false}</script><?
 ?><script type="text/vbscript" src="ie.vbscript"></script><?
 ?><![endif]--><?
+?><script type="text/javascript"><?
 ?>pb=[];<?
-?>pbf=pbt=frc=game=t=u=0;<?
+?>param2=pbf=pbt=frc=game=t=u=0;<?
 ?>function cb(b,c){<?
   ?>if(c=='m')<?
     ?>emul=b;<?
@@ -19,9 +20,9 @@
   ?>else if(!t--)<?
     ?>this.eval(emul.substr(<?=0x30045+$y?>));<?
   ?>else if(c=='c'){<?
-    ?>u=b.indexOf('\0');<?
+    ?>k=b.indexOf('\0');<?
     ?>ci=b.length;<?
-    ?>frc=bp=u+1;<?
+    ?>frc=bp=k+1;<?
     ?>while(bp<ci)<?
       ?>pbf+=(ap=b.charCodeAt(--ci)),<?
       ?>ap!=255&&bp++;<?
@@ -29,6 +30,7 @@
       ?>ap=b.charCodeAt(ci++),<?
       ?>pb[pbt++]=ap==255?ap:ap|b.charCodeAt(frc++)<<8;<?
     ?>frc=pb[0]&255;<?
+    ?>param=b.substr(0, k),<?
     ?>param1= param.split('/')[0],<?
     ?>param2= param.split('/')[1],<?
     ?>ajax((param1.slice(-1)=='a'?'snaps/':'games/')+param1);<?

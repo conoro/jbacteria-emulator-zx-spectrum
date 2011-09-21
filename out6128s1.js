@@ -53,8 +53,8 @@ function init() {
     rom[r>>14][r&16383]= emul.charCodeAt(0x30045+r) & 255;
   for (j= 0; j < 131072; j++)        // fill memory
     ram[j>>14][j&16383]= j < 65536 ? emul.charCodeAt(0x30045+r++) & 255 : 0;
-  for (j= 0; j < param1.length; j++)        // fill memory
-    ram[j+0xac8a>>14][j+0xac8a&16383]= param1.charCodeAt(j);
+  for (j= 0; j < param2.length; j++)        // fill memory
+    ram[j+0xac8a>>14][j+0xac8a&16383]= param2.charCodeAt(j);
   mw[0]= ram[0];
   mw[3]= ram[3];
   m[0]= rom[0];

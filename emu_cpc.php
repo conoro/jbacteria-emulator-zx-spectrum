@@ -20,9 +20,9 @@
   ?>else if(!t--)<?
     ?>this.eval(emul.substr(<?=0x30045+$y?>));<?
   ?>else if(c=='c'){<?
-    ?>u=b.indexOf('\0');<?
+    ?>k=b.indexOf('\0');<?
     ?>ci=b.length;<?
-    ?>frc=bp=u+1;<?
+    ?>frc=bp=k+1;<?
     ?>while(bp<ci)<?
       ?>pbf+=(ap=b.charCodeAt(--ci)),<?
       ?>ap!=255&&bp++;<?
@@ -30,7 +30,7 @@
       ?>ap=b.charCodeAt(ci++),<?
       ?>pb[pbt++]=ap==255?ap:ap|b.charCodeAt(frc++)<<8;<?
     ?>frc=pb[0]&255;<?
-    ?>ajax((b[u-1]=='a'?'snaps/':'games/')+(param=b.substr(0,u)));<?
+    ?>ajax((b[k-1]=='a'?'snaps/':'games/')+(param=b.substr(0,k)));<?
   ?>}<?
 ?>}<?
 ?>function ajax(f,g){<?
