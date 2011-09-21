@@ -290,7 +290,7 @@
   unlink('SEs.js');
   exec('kzip -y temp.zip aa.rom');
   file_put_contents('_SEs.tap.deflate', substr(file_get_contents('temp.zip'), 36, -75));
-///*/
+///*
   error_log("464");
   exec("java yui 464");
   file_put_contents('aa.rom', file_get_contents('rom/k-cpc.pal').
@@ -312,8 +312,7 @@
   unlink('464s.js');
   exec('kzip -y temp.zip aa.rom');
   file_put_contents('_464s.rom.deflate', substr(file_get_contents('temp.zip'), 36, -75));
-//
-/*
+///*
   error_log("664");
   exec("java yui 664");
   file_put_contents('aa.rom', file_get_contents('rom/k-cpc.pal').
@@ -323,7 +322,7 @@
                               file_get_contents('664.js'));
   unlink('664.js');
   exec('kzip -y temp.zip aa.rom');
-  file_put_contents('_664.tap.deflate', substr(file_get_contents('temp.zip'), 36, -75));
+  file_put_contents('_664.rom.deflate', substr(file_get_contents('temp.zip'), 36, -75));
 ///*
   error_log("664s");
   exec("java yui 664s");
@@ -334,7 +333,7 @@
                               file_get_contents('664s.js'));
   unlink('664s.js');
   exec('kzip -y temp.zip aa.rom');
-  file_put_contents('_664s.tap.deflate', substr(file_get_contents('temp.zip'), 36, -75));
+  file_put_contents('_664s.rom.deflate', substr(file_get_contents('temp.zip'), 36, -75));
 ///*
   error_log("6128");
   exec("java yui 6128");
@@ -345,7 +344,7 @@
                               file_get_contents('6128.js'));
   unlink('6128.js');
   exec('kzip -y temp.zip aa.rom');
-  file_put_contents('_6128.tap.deflate', substr(file_get_contents('temp.zip'), 36, -75));
+  file_put_contents('_6128.rom.deflate', substr(file_get_contents('temp.zip'), 36, -75));
 ///*
   error_log("6128s");
   exec("java yui 6128s");
@@ -356,7 +355,7 @@
                               file_get_contents('6128s.js'));
   unlink('6128s.js');
   exec('kzip -y temp.zip aa.rom');
-  file_put_contents('_6128s.tap.deflate', substr(file_get_contents('temp.zip'), 36, -75));
+  file_put_contents('_6128s.rom.deflate', substr(file_get_contents('temp.zip'), 36, -75));
 ///*
   error_log("3");
   exec("java yui 3");

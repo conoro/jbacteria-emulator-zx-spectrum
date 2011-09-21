@@ -8,7 +8,6 @@ m= [];                                 // memory
 mw= [[],[],[],[]];        // [new Uint8Array(16384),new Uint8Array(16384),new Uint8Array(16384),new Uint8Array(16384), new Uint8Array(16384),new Uint8Array(16384),new Uint8Array(16384),new Uint8Array(16384)]
 kb= [255,255,255,255,255,255,255,255,255,255]; // keyboard state
 ks= [255,255,255,255,255,255,255,255,255,255]; // keyboard state playback
-//kss=[255,255,255,255,255,255,255,255,255,255]; // keyboard state playback savestate
 kc= [255,255,255,255,255,255,255,255,      // keyboard codes
     0x97,// 8 del qwerty backspace
     localStorage.ft & 2
@@ -261,7 +260,7 @@ function run() {
         frc= pb[++pbc]&255;
       } while( pbc<pbt && !(frc&255) )
       if(pbc==pbt)
-        console.log(frc),
+//        console.log(frc),
         tim.innerHTML= '',
         pbt= 0;
       else

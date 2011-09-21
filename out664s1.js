@@ -11,7 +11,7 @@ function init() {
   t= localStorage.ft>>3;
   rotapal();
   onresize();
-  pbc= frc= bp= ci= ap= io= vsync= ay= envc= envx= ay13= noic= noir= tons= cp= ga= f1= f3= f4= st= time= flash= 0;
+  pbcs= frcs= pbc= bp= ci= ap= io= vsync= ay= envc= envx= ay13= noic= noir= noiv= tons= cp= ga= f1= f3= f4= st= time= flash= 0;
   ayr= [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         0, 0, 0]; // last 3 values for tone counter
   if( localStorage.ft==undefined )
@@ -22,6 +22,7 @@ function init() {
   a= 0x0d;
   c_= 0x89;
   sp= 0xbfec;
+  pbf= ' / '+('0'+parseInt(pbf/3000)).slice(-2)+':'+('0'+parseInt(pbf/50)%60).slice(-2);
   if( ifra ){
     put= document.createElement('div');
     put.style.width= '40px';
@@ -29,20 +30,31 @@ function init() {
     document.body.appendChild(put);
     titul= function(){
       put.innerHTML= parseInt(trein/((nt= new Date().getTime())-time))+'%';
+      if( pbt )
+        tim.innerHTML= ('0'+parseInt(flash/3000)).slice(-2)+':'+('0'+parseInt(flash/50)%60).slice(-2)+pbf;
     }
   }
   else{
     put= top==self ? document : parent.document;
     titul= function(){
       put.title= 'Roland664 '+parseInt(trein/((nt= new Date().getTime())-time))+'%';
+      if( pbt )
+        tim.innerHTML= ('0'+parseInt(flash/3000)).slice(-2)+':'+('0'+parseInt(flash/50)%60).slice(-2)+pbf;
     }
   }
+  if( pbt )
+    tim= document.createElement('div'),
+    tim.style.position= 'absolute',
+    tim.style.top= '0',
+    tim.style.width= '100px',
+    tim.style.textAlign= 'right',
+    document.body.appendChild(tim);
   for (r= 0; r < 49152; r++)        // fill memory
     rom[r>>14][r&16383]= emul.charCodeAt(0x30045+r) & 255;
   for (j= 0; j < 65536; j++)        // fill memory
     mw[j>>14][j&16383]= emul.charCodeAt(0x30045+r++) & 255;
-  for (j= 0; j < param.length; j++)        // fill memory
-    mw[j+0xac8a>>14][j+0xac8a&16383]= param.charCodeAt(j);
+  for (j= 0; j < param2.length; j++)        // fill memory
+    mw[j+0xac8a>>14][j+0xac8a&16383]= param2.charCodeAt(j);
   m[0]= rom[0];
   m[1]= mw[1];
   m[2]= mw[2];
@@ -99,11 +111,8 @@ function wp(addr, val) {
       if(val & 0x40 && gc[ga] != (val&0x1f)){ //colour for pen
         gc[ga]= val&0x1f;
         pl[ga]= pal[val&0x1f];
-        if( ga==16 ){
-          document.body.style.backgroundColor= 'rgb('+pl[16].toString()+')';
-          if( ifra )
-            put.style.color= pl[16][0]+pl[16][1]+pl[16][2]<300 ? '#fff' : '#000';
-        }
+        if( ga==16 )
+          border();
       }
       else{ //select pen
         ga= val;

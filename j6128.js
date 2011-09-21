@@ -65,7 +65,9 @@ function rm(o) {
        o.charCodeAt(j++), o.charCodeAt(j++), o.charCodeAt(j++), o.charCodeAt(j++),
        o.charCodeAt(j++), o.charCodeAt(j++), o.charCodeAt(j++), o.charCodeAt(j++),
        o.charCodeAt(j++), o.charCodeAt(j++), o.charCodeAt(j++), o.charCodeAt(j++)];
-  j+= 149;
+  for (j= 0; j < 10; j++ )
+    ks[j]= o.charCodeAt(j+245);
+  j= 256;
   for (t= 0; t < 131072; t++)
     ram[t>>14][t&16383]= o.charCodeAt(j++);
   onresize();
@@ -83,8 +85,11 @@ function wm() {
   for (j= 0; j < 16; j++)
     t+= String.fromCharCode(ayr[j]);
   t+= String.fromCharCode(64,0, 0,0, 1,1,1,1,1,1);
-  for (j= 0; j < 139; j++)
+  for (j= 0; j < 128; j++)
     t+= String.fromCharCode(0);
+  for (j= 0; j < 10; j++ )
+    t+= String.fromCharCode(ks[j]);
+  t+= String.fromCharCode(frc);
   for (j= 0; j < 131072; j++)
     t+= String.fromCharCode(ram[j>>14][j&16383]);
   return t;
@@ -108,14 +113,14 @@ function rp(addr) {
       if(addr&0x0100) //xxxx0x01 ... 8255 port B
         j&= io & 0x02 ? 0x7e | vsync : bp;
       else //xxxx0x00 ... 8255 port A
-        j&= (ay==14 ? kb[cp&0x0f] : ayr[ay]) & (io & 0x10 ? 0xff : ap);
+        j&= (ay==14 ? ks[cp&0x0f] : ayr[ay]) & (io & 0x10 ? 0xff : ap);
     }
   }
   if ((addr&0x0580)==0x0100){ //xxxxx0x1 0xxxxxxx ...
     if(addr&0x0001) //xxxxx0x1 0xxxxxx1 ... fdc data
       j&= fdcdr();
     else //xxxxx0x1 0xxxxxx0 ... fdc status
-      j&= fdc_msr_read();
+      j&= fdcmsr();
 //      j&= fdcs;
   }
   return j;

@@ -34,6 +34,7 @@ function cb(b,c){
         'F3: save quick snapshot<br/>'+
         'F4: load quick snapshot (also works in other session)<br/>'+
         'F5: reload (browser refresh)<br/>'+
+        'F6: save gameplay<br/>'+
         'F7: change pallete (color, grayscale, green)<br/>'+
         'F8: reset machine<br/>'+
         'F9: toggle bilinear/nearest neighbor scaling (Firefox only)<br/>'+
@@ -113,10 +114,11 @@ function bin2arr(a) {
 k=location.href.indexOf('?')+1;
 ifra=location.href.slice(-1)=='#';
 if(k)
+  param=location.href.substr(k,location.href.length-k-ifra),
   t++,
-  ajax(((u=location.href[location.href.length-ifra-1])=='c'
+  ajax((param.slice(-1)=='c'
     ? (t++,'recorded/')
-    : (u=='a'?'snaps/':'games/'))+(param=location.href.substr(k,location.href.length-k-ifra)));
+    : (param.slice(-1)=='a'?'snaps/':'games/'))+param);
 ajax('_464');
 </script>
 </html>
