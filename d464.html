@@ -114,7 +114,7 @@ function bin2arr(a) {
 k=location.href.indexOf('?')+1;
 ifra=location.href.slice(-1)=='#';
 if(k)
-  param=location.href.substr(k,location.href.length-k-ifra),
+  params=param=location.href.substr(k,location.href.length-k-ifra),
   t++,
   ajax((param.slice(-1)=='c'
     ? (t++,'recorded/')

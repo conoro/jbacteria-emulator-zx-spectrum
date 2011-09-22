@@ -67,13 +67,13 @@
 ?>k=location.href.indexOf('?')+1;<?
 ?>ifra= location.href.slice(-1)=='#';<?
 ?>if(k)<?
-  ?>param=decodeURI(ifra?location.href.slice(k,-1):location.href.slice(k)),<?
+  ?>params=param=decodeURI(ifra?location.href.slice(k,-1):location.href.slice(k)),<?
   ?>param1=param.split('/')[0],<?
   ?>param2=param.split('/')[1],<?
   ?>t++,<?
   ?>ajax((param1.slice(-1)=='c'<?
     ?>?(t++,'recorded/')<?
     ?>:(param1.slice(-1)=='a'?'snaps/':'games/'))+param1);<?
-?>ajax('_<?=$x?>');<?
+?>ajax('_<?=$x?>.rom');<?
 ?></script><?
 ?></html>

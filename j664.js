@@ -2,7 +2,7 @@ rom= [[],[],[]]; //  , rom= [new Uint8Array(16384),new Uint8Array(16384)];
 
 function rm(o) {
   j= 17;
-  f= o.charCodeAt(j++);
+  setf(o.charCodeAt(j++));
   a= o.charCodeAt(j++);
   c= o.charCodeAt(j++);
   b= o.charCodeAt(j++);
@@ -21,7 +21,7 @@ function rm(o) {
   sp= o.charCodeAt(j++)|o.charCodeAt(j++)<<8;
   pc= o.charCodeAt(j++)|o.charCodeAt(j++)<<8;
   im= o.charCodeAt(j++);
-  f_= o.charCodeAt(j++);
+  setf_(o.charCodeAt(j++));
   a_= o.charCodeAt(j++);
   c_= o.charCodeAt(j++);
   b_= o.charCodeAt(j++);
@@ -68,8 +68,8 @@ function rm(o) {
 }
 
 function wm() {
-  t= 'MV - SNA'+String.fromCharCode(0,0,0,0,0,0,0,0,2,f,a,c,b,e,d,l,h,r,i,iff,0,xl,xh,yl,yh,
-     sp&255,sp>>8,pc&255,pc>>8,im,f_,a_,c_,b_,e_,d_,l_,h_,ga);
+  t= 'MV - SNA'+String.fromCharCode(0,0,0,0,0,0,0,0,2,f(),a,c,b,e,d,l,h,r,i,iff,0,xl,xh,yl,yh,
+     sp&255,sp>>8,pc&255,pc>>8,im,f_(),a_,c_,b_,e_,d_,l_,h_,ga);
   for (j= 0; j < 17; j++)
     t+= String.fromCharCode(gc[j]);
   t+= String.fromCharCode(0x80+gm+(m[0]==mw[0]?4:0)+(m[3]==mw[3]?8:0),0,ci);

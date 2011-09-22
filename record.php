@@ -14,7 +14,7 @@ function getval(&$index, &$str){
 }
 if( $_POST['enviar'] ){
   require 'connect.php';
-  list($name_year, $publisher)= $db->query('SELECT name_year, publisher FROM games WHERE shortname="'.$_POST['sname'].'"')->fetch_row();
+  list($name_year, $publisher)= $db->query('SELECT CONCAT(name," ",year), publisher FROM games WHERE shortname="'.$_POST['sname'].'"')->fetch_row();
   $db->query('INSERT record VALUES("'.$_POST['id'].'","'.
              $_POST['url'].'",'.
              $_POST['frames'].',"'.
@@ -40,7 +40,7 @@ $f4= (getval($index, $str));
 while( $str[$index]!=chr(0xc3) )
   $param.= $str[$index++];
 list($url,)= explode('?', $_SERVER['HTTP_REFERER']);
-$urls= substr(strstr($url, '.es/'), 4);
+$urls= substr(strstr($url, 'emulador/'), 9);
 list($sname,)= explode('.', $param);
 //while( $str[$index]==chr(0xc3) && $str[$index+1]==chr(0xbf) )
   $index+= 2;
@@ -74,12 +74,12 @@ while( file_exists($file= 'recorded/'.
                                       ), '+/', '-_'
                                     ), 0, 6
                                   )
-                          ).'.rec.deflate') )
+                          ).'.rec.z') )
   if( ++$num2&15 == 0 )
     $num++;
 $url.= '?'.$b64.'.rec';
 file_put_contents($file, gzdeflate($param."\0".strrev($frames.$keys)));
-file_put_contents('snaps/'.$b64.'.sna.deflate', gzdeflate($snap));
+file_put_contents('snaps/'.$b64.'.sna.z', gzdeflate($snap));
 ?><pre style="text-align:center;font-size:20px">The recorded gameplay is located at:
 <a href="<?=$url?>"><?=$url?></a>
 

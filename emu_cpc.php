@@ -64,11 +64,11 @@
 ?>k=location.href.indexOf('?')+1;<?
 ?>ifra=location.href.slice(-1)=='#';<?
 ?>if(k)<?
-  ?>param=location.href.substr(k,location.href.length-k-ifra),<?
+  ?>params=param=location.href.substr(k,location.href.length-k-ifra),<?
   ?>t++,<?
   ?>ajax((param.slice(-1)=='c'<?
     ?>?(t++,'recorded/')<?
     ?>:(param.slice(-1)=='a'?'snaps/':'games/'))+param);<?
-?>ajax('_<?=$x?>');<?
+?>ajax('_<?=$x?>.rom');<?
 ?></script><?
 ?></html>
