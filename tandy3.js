@@ -303,6 +303,8 @@ function kup(evt) {
 }
 
 function kpress(evt) {
+  if( ev.keyCode==116 || ev.keyCode==122 )
+    return 1;
   if (!evt.metaKey)
     return false;
 }

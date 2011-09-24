@@ -172,7 +172,7 @@ function rp(addr) {
     if( addr&0x1000 )
       j&= fdcdr();
     else
-      j&= fdc_msr_read();
+      j&= fdcmsr();
 //      j&= fdcs;
   }
   return j;

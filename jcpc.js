@@ -410,6 +410,8 @@ function kup(ev) {
 }
 
 function kpress(ev) {
+  if( ev.keyCode==116 || ev.keyCode==122 )
+    return 1;
   if( !ev.metaKey )
     return false;
 }
@@ -431,8 +433,6 @@ function audioprocess(e){
     while( j<1024 ) // 48000/1024= 46.875  19968/1024= 19.5. 19.5/4=5
       aymute(),
       aymute(),
-      aymute(),
-      aymute(),
       data1[j++]= data2[j]= aystep();
   else
     while( j<1024 )
@@ -444,8 +444,6 @@ function mozrun(){
   if( localStorage.ft & 4 ){
     j= 0;
     while( j<1248 )
-      aymute(),
-      aymute(),
       aymute(),
       data[j++]= aystep();
     audioOutput.mozWriteAudio(data);

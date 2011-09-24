@@ -499,6 +499,8 @@ function kup(ev) {
 }
 
 function kpress(ev) {
+  if( ev.keyCode==116 || ev.keyCode==122 )
+    return 1;
   if( !ev.metaKey )
     return false;
 }
