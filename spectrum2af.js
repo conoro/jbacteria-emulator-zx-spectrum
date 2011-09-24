@@ -5,15 +5,13 @@ function init() {
                                                 ? 'optimizeSpeed'
                                                 : '' ));
   onresize();
-  ay= envc= envx= ay13= noic= noir= tons= 0;
+  sample= pbcs= frcs= pbc= cts= playp= vbp= bor= p0= p1= sha= f1= f3= f4= st= time= flash= ay= envc= envx= ay13= noic= noir= tons= 0;
   ayr= [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         0, 0, 0]; // last 3 values for tone counter
-  cts= playp= vbp= bor= p0= p1= sha= f1= st= time= flash= 0;
   if( localStorage.ft==undefined )
     localStorage.ft= 4;
   if ( localStorage.ft & 8 )
     rotapal();
-  sample= 0;
   pag= 1;
   a= b= c= d= h= l= fa= fb= fr= ff= r7=
   a_=b_=c_=d_=h_=l_=fa_=fb_=fr_=e_= r= pc= iff= im= halted= t= u= 0;
@@ -25,6 +23,7 @@ function init() {
   yl= 0x3a;
   i=  0x3f;
   sp= 0xff46;
+  pbf= ' / '+('0'+parseInt(pbf/3000)).slice(-2)+':'+('0'+parseInt(pbf/50)%60).slice(-2);
   if( ifra ){
     put= document.createElement('div');
     put.style.width= '40px';
@@ -32,14 +31,25 @@ function init() {
     document.body.appendChild(put);
     titul= function(){
       put.innerHTML= parseInt(trein/((nt= new Date().getTime())-time))+'%';
+      if( pbt )
+        tim.innerHTML= ('0'+parseInt(flash/3000)).slice(-2)+':'+('0'+parseInt(flash/50)%60).slice(-2)+pbf;
     }
   }
   else{
     put= top==self ? document : parent.document;
     titul= function(){
       put.title= 'jAmeba2a '+parseInt(trein/((nt= new Date().getTime())-time))+'%';
+      if( pbt )
+        tim.innerHTML= ('0'+parseInt(flash/3000)).slice(-2)+':'+('0'+parseInt(flash/50)%60).slice(-2)+pbf;
     }
   }
+  if( pbt )
+    tim= document.createElement('div'),
+    tim.style.position= 'absolute',
+    tim.style.top= '0',
+    tim.style.width= '100px',
+    tim.style.textAlign= 'right',
+    document.body.appendChild(tim);
   while( t < 0x30000 )
     eld[t++]= 0xff;
   for ( o= 0
@@ -58,10 +68,7 @@ function init() {
                           : 0;
   m[1]= mw[1]= ram[5];
   m[2]= mw[2]= ram[2];
-  if(game)                               // emulate LOAD ""
-    tp(),
-    p1= 4,
-    pc= 0x56c;
+  game && (p1= 4, tp());
   wp(0x7ffd, game ? 16 : 0);
   document.ondragover= handleDragOver;
   document.ondrop= handleFileSelect;
@@ -152,13 +159,13 @@ function mozrun(){
 function rp(addr) {
   j= 0xff;
   if( !(addr & 0xe0) )                    // read kempston
-    j^= kb[8];
+    j^= ks[8];
   else if( ~addr & 1 ){                   // read keyboard
     for ( k= 8
         ; k < 16
         ; k++ )
       if( ~addr & 1<<k )            // scan row
-        j&= kb[k-8];
+        j&= ks[k-8];
   }
   else if( (addr&0xc002) == 0xc000 )
     j= ayr[ay];
@@ -174,6 +181,8 @@ function wp(addr, val) {                // write port, only border color emulati
                                         + ')';
     if( ifra )
       put.style.color= pal[bor&7][0]+pal[bor&7][1]+pal[bor&7][2]<300 ? '#fff' : '#000';
+    if( pbt )
+      tim.style.color= pal[bor&7][0]+pal[bor&7][1]+pal[bor&7][2]<300 ? '#fff' : '#000';
   }
   else if( ~addr&0x0002 )   // xxxx xxxx xxxx xx0x
     if( addr&0x8000 )       // 1xxx xxxx xxxx xx0x
@@ -259,7 +268,9 @@ function rm(o) {
   ay= o.charCodeAt(j++)&3;
   for (t= 0; t< 16; t++)
     ayr[t]= o.charCodeAt(j++) & (1<<t&8234 ? 15 : (1<<t&1792 ? 31 : 255));
-  j+= 31;
+  for (j= 0; j < 10; j++ )
+    ks[j]= o.charCodeAt(j+75);
+  j= 86;
   p1= o.charCodeAt(j++);
   while(j<o.length){
     t= o.charCodeAt(j++)|o.charCodeAt(j++)<<8;
@@ -291,8 +302,11 @@ function wm() {
                          pc&255,pc>>8,13,p0,0,0,ayr);
   for (u= 0; u< 16; u++)
     t+= String.fromCharCode(ayr[u]);
-  t+= String.fromCharCode(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-                          0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,p1);
+  for (j= 0; j < 20; j++)
+    t+= String.fromCharCode(0);
+  for (j= 0; j < 10; j++ )
+    t+= String.fromCharCode(ks[j]);
+  t+= String.fromCharCode(frc, p1);
   for (u= 0; u< 8; u++)
     for (j= 0, t+= String.fromCharCode(255,255,u+3); j < 0x4000; j++)
       t+= String.fromCharCode(ram[u][j]);

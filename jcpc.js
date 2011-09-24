@@ -325,8 +325,6 @@ function kdown(ev) {
         pbt= 0,
         tim.innerHTML= '',
         frc= (pb[pbc]&255)-frc);
-//      for ( t= 0; t<10; t++ )
-//        kss[t]= ks[t];
       frcs= frc;
       pbcs= pbc;
       f3++;
@@ -340,14 +338,11 @@ function kdown(ev) {
           node.onaudioprocess= audioprocess0;
         ajax('snaps/'+params.slice(0,-3)+'sna', -1);
       }
-      else{
-//        for ( t= 0; t<10; t++ )
-//          ks[t]= kss[t];
-        frc= frcs;
-        pbc= pbcs;
-        f4++;
+      else
+        frc= frcs,
+        pbc= pbcs,
+        f4++,
         rm(localStorage.save);
-      }
       break;
     case 116: // F5
       return 1;

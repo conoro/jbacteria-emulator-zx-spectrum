@@ -5,15 +5,13 @@ function init() {
                                                 ? 'optimizeSpeed'
                                                 : '' ));
   onresize();
-  ay= envc= envx= ay13= noic= noir= tons= 0;
+  sample= pbcs= frcs= pbc= cts= playp= vbp= bor= p0= p1= sha= f1= f3= f4= st= time= flash= ay= envc= envx= ay13= noic= noir= tons= 0;
   ayr= [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         0, 0, 0]; // last 3 values for tone counter
-  cts= playp= vbp= bor= p0= p1= sha= f1= st= time= flash= 0;
   if( localStorage.ft==undefined )
     localStorage.ft= 4;
   if ( localStorage.ft & 8 )
     rotapal();
-  sample= 0;
   pag= 1;
   fdcinit();
   a= b= c= d= h= l= fa= fb= fr= ff= r7=
@@ -26,6 +24,7 @@ function init() {
   yl= 0x3a;
   i=  0x3f;
   sp= 0xff46;
+  pbf= ' / '+('0'+parseInt(pbf/3000)).slice(-2)+':'+('0'+parseInt(pbf/50)%60).slice(-2);
   if( ifra ){
     put= document.createElement('div');
     put.style.width= '40px';
@@ -33,14 +32,25 @@ function init() {
     document.body.appendChild(put);
     titul= function(){
       put.innerHTML= parseInt(trein/((nt= new Date().getTime())-time))+'%';
+      if( pbt )
+        tim.innerHTML= ('0'+parseInt(flash/3000)).slice(-2)+':'+('0'+parseInt(flash/50)%60).slice(-2)+pbf;
     }
   }
   else{
     put= top==self ? document : parent.document;
     titul= function(){
       put.title= 'jAmeba3 '+parseInt(trein/((nt= new Date().getTime())-time))+'%';
+      if( pbt )
+        tim.innerHTML= ('0'+parseInt(flash/3000)).slice(-2)+':'+('0'+parseInt(flash/50)%60).slice(-2)+pbf;
     }
   }
+  if( pbt )
+    tim= document.createElement('div'),
+    tim.style.position= 'absolute',
+    tim.style.top= '0',
+    tim.style.width= '100px',
+    tim.style.textAlign= 'right',
+    document.body.appendChild(tim);
   while(t<0x30000)
     eld[t++]= 0xff;
   for ( o= 0
@@ -148,13 +158,13 @@ function mozrun(){
 function rp(addr) {
   j= 0xff;
   if( !(addr & 0xe0) )                   // read kempston
-    j^= kb[8];
+    j^= ks[8];
   else if( ~addr & 1 ){                   // read keyboard
     for ( k= 8
         ; k < 16
         ; k++ )
       if( ~addr & 1<<k )            // scan row
-        j&= kb[k-8];
+        j&= ks[k-8];
   }
   else if( (addr&0xc002)==0xc000 )
     j= ayr[ay];
@@ -177,6 +187,8 @@ function wp(addr, val) {                // write port, only border color emulati
                                         + ')';
     if( ifra )
       put.style.color= pal[bor&7][0]+pal[bor&7][1]+pal[bor&7][2]<300 ? '#fff' : '#000';
+    if( pbt )
+      tim.style.color= pal[bor&7][0]+pal[bor&7][1]+pal[bor&7][2]<300 ? '#fff' : '#000';
   }
   else if( ~addr&0x0002 )   // xxxx xxxx xxxx xx0x
     if( addr&0x8000 )       // 1xxx xxxx xxxx xx0x

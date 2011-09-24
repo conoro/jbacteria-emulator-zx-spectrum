@@ -1,9 +1,6 @@
 function paintScreen(){
-  var dxmin= 32,
-      dxmax= 0,
-      dymin= 24,
-      dymax= 0;
-  t= -1;
+  mix= miy= 32;
+  max= may= t= -1;
   while( t++ < 0x2ff )
     for ( col= m[t+0x5800]
         , bk= pal[col    & 7
@@ -25,12 +22,16 @@ function paintScreen(){
             & flash>>4
               ? ~m[u]
               : m[u]
-        , vm[u] != (col | k<<8) ){
-        vm[u]= col | k<<8;
-        dx<dxmin && (dxmin= dx);
-        dx>dxmax && (dxmax= dx);
-        dy<dymin && (dymin= dy);
-        dy>dymax && (dymax= dy);
+        , vm[u-0x4000] != (col | k<<8) ){
+        vm[u-0x4000]= col | k<<8;
+        if(dx<mix)
+          mix= dx;
+        else
+          dx>max && (max= dx);
+        if(dy < miy)
+          miy= dy;
+        else
+          dy>may && (may= dy);
         if( k&128 )
           eld[o  ]= bk[0],
           eld[o+1]= bk[1],
@@ -96,6 +97,6 @@ function paintScreen(){
           eld[o+29]= fo[1],
           eld[o+30]= fo[2];
       }
-  dymax >= dymin &&
-    ct.putImageData(elm, 0, 0, (dxmin<<3)-1, (dymin<<3)-1, (dxmax-dxmin<<3)+10, (dymax-dymin<<3)+10);
+  may >= miy &&
+    ct.putImageData(elm, 0, 0, (mix<<3)-1, (miy<<3)-1, (max-mix<<3)+10, (may-miy<<3)+10);
 }

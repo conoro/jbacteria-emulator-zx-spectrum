@@ -8,13 +8,14 @@ cu.innerHTML='F1: pause/help<br/>'+
     'F3: save quick snapshot<br/>'+
     'F4: load quick snapshot (also works in other session)<br/>'+
     'F5: reload (browser refresh)<br/>'+
+    'F6: save gameplay<br/>'+
     'F7: toggle color/grayscale pallete<br/>'+
     'F8: reset machine<br/>'+
     'F9: toggle bilinear/nearest neighbor scaling (Firefox only)<br/>'+
     'F10: save snapshot to local file (Chrome only)<br/>'+
     'F11: toggle fullscreen<br/>'+
     'F12: toggle sound (Firefox and Chrome)<br/><br/>'+
-    '<a href="//jbacteria.antoniovillena.es" target="_blank">jBacteria</a> version 20110702 by <a href="//antoniovillena.es" target="_blank">Antonio Villena</a><br/>'+
+    '<a href="//jbacteria.antoniovillena.es" target="_blank">jBacteria</a> version 20110924 by <a href="//antoniovillena.es" target="_blank">Antonio Villena</a><br/>'+
     'GPLv3 licensed, source code available at <a href="//emuscriptoria.svn.sourceforge.net/viewvc/emuscriptoria" target="_blank">EmuScriptoria</a>';
 dv= document.createElement('div');
 dv.setAttribute('style','display:none;position:absolute');

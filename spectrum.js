@@ -4,6 +4,7 @@ vm= words(6144);
 vb= [];
 data= [];
 kb= [0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff]; // keyboard state
+ks= [0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff]; // keyboard state
 kc= [0,0,0,0,0,0,0,0,      // keyboard codes
     0x05<<7|0x25, // 8 backspace
     localStorage.ft & 2
@@ -132,6 +133,31 @@ function run() {
 //cond(),
     r++,
     g[m[pc++&0xffff]]();
+  if( pbt ){
+    if( !frc-- ){
+      do{
+        t= pb[pbc]>>8;
+        (pb[pbc]&255)!=255 && (ks[t>>3]^= 1 << (t&7));
+        frc= pb[++pbc]&255;
+      } while( pbc<pbt && !(frc&255) )
+      if(pbc==pbt)
+        tim.innerHTML= '',
+        pbt= 0;
+      else
+        frc--;
+    }
+  }
+  else{
+    for ( t= 0; t<80; t++ )
+      if( (kb[t>>3] ^ ks[t>>3]) & (1 << (t&7)) )
+        pb[pbc++]= frc | t<<8,
+        frc= 0;
+    if( ++frc == 255 )
+      pb[pbc++]= frc,
+      frc= 0;
+    for ( t= 0; t<10; t++ )
+      ks[t]= kb[t];
+  }
   if( !(++flash & 15) )
     titul(),
     time= nt;
@@ -145,12 +171,11 @@ function init() {
                                                 ? 'optimizeSpeed'
                                                 : '' ));
   onresize();
-  cts= playp= vbp= bor= f1= st= time= flash= 0;
+  sample= pbcs= pbc= cts= playp= vbp= bor= f1= f3= f4= st= time= flash= 0;
   if( localStorage.ft==undefined )
     localStorage.ft= 4;
   if ( localStorage.ft & 8 )
     rotapal();
-  sample= 0;
   a= b= c= d= h= l= fa= fb= fr= ff= r7=
   a_=b_=c_=d_=h_=l_=fa_=fb_=fr_=e_= r= pc= iff= im= halted= t= u= 0;
   e=  0x11;
@@ -161,6 +186,7 @@ function init() {
   yl= 0x3a;
   i=  0x3f;
   sp= 0xff4a;
+  pbf= ' / '+('0'+parseInt(pbf/3000)).slice(-2)+':'+('0'+parseInt(pbf/50)%60).slice(-2);
   if( ifra ){
     put= document.createElement('div');
     put.style.width= '40px';
@@ -168,25 +194,32 @@ function init() {
     document.body.appendChild(put);
     titul= function(){
       put.innerHTML= parseInt(trein/((nt= new Date().getTime())-time))+'%';
+      if( pbt )
+        tim.innerHTML= ('0'+parseInt(flash/3000)).slice(-2)+':'+('0'+parseInt(flash/50)%60).slice(-2)+pbf;
     }
   }
   else{
     put= top==self ? document : parent.document;
     titul= function(){
       put.title= na+parseInt(trein/((nt= new Date().getTime())-time))+'%';
+      if( pbt )
+        tim.innerHTML= ('0'+parseInt(flash/3000)).slice(-2)+':'+('0'+parseInt(flash/50)%60).slice(-2)+pbf;
     }
   }
+  if( pbt )
+    tim= document.createElement('div'),
+    tim.style.position= 'absolute',
+    tim.style.top= '0',
+    tim.style.width= '100px',
+    tim.style.textAlign= 'right',
+    document.body.appendChild(tim);
   while( t < 0x30000 )
     eld[t++]= 0xff;
   for ( j= 0
       ; j < 0x10000
       ; j++ )        // fill memory
-    m[j]= emul.charCodeAt(j+0x18018) & 0xff;
-  if( game )                               // emulate LOAD ""
-    tp(),
-    pc= 0x56c;
-//m[0x056c]=0xcd;
-//m[0x056d]=0xe7;
+    m[j]= emul.charCodeAt(j+0x18018);
+  game && tp();
   document.ondragover= handleDragOver;
   document.ondrop= handleFileSelect;
   document.onkeydown= kdown;          // key event handling
@@ -277,7 +310,36 @@ function handleFileSelect(ev) {
       var reader= new FileReader();
       reader.onloadend = function(ev) {
         o= ev.target.result;
-        rm(o);
+        j= 0;
+        i= o.charCodeAt(j++);
+        l_= o.charCodeAt(j++);
+        h_= o.charCodeAt(j++);
+        e_= o.charCodeAt(j++);
+        d_= o.charCodeAt(j++);
+        c_= o.charCodeAt(j++);
+        b_= o.charCodeAt(j++);
+        setf_(o.charCodeAt(j++));
+        a_= o.charCodeAt(j++);
+        l= o.charCodeAt(j++);
+        h= o.charCodeAt(j++);
+        e= o.charCodeAt(j++);
+        d= o.charCodeAt(j++);
+        c= o.charCodeAt(j++);
+        b= o.charCodeAt(j++);
+        yl= o.charCodeAt(j++);
+        yh= o.charCodeAt(j++);
+        xl= o.charCodeAt(j++);
+        xh= o.charCodeAt(j++);
+        iff= o.charCodeAt(j++)>>2 & 1;
+        r= r7= o.charCodeAt(j++);
+        setf(o.charCodeAt(j++));
+        a= o.charCodeAt(j++);
+        sp= o.charCodeAt(j++) | o.charCodeAt(j++)<<8;
+        im= o.charCodeAt(j++);
+        wp(0,o.charCodeAt(j++));
+        while( j < 0xc01b )
+          m[j+0x3fe5]= o.charCodeAt(j++);
+        g[0xc9]();
       }
       reader.readAsBinaryString(ev.dataTransfer.files[0]);
       break;
@@ -285,68 +347,8 @@ function handleFileSelect(ev) {
       var reader= new FileReader();
       reader.onloadend = function(ev) {
         o= ev.target.result;
-        u= o.charCodeAt(30);
-        if( u>23 && o.charCodeAt(34) )
+        if(rm(o))
           return alert('Invalid Z80 file');
-        j= 0;
-        a= o.charCodeAt(j++);
-        f= o.charCodeAt(j++);
-        c= o.charCodeAt(j++);
-        b= o.charCodeAt(j++);
-        l= o.charCodeAt(j++);
-        h= o.charCodeAt(j++);
-        j+= 2;
-        sp= o.charCodeAt(j++) | o.charCodeAt(j++)<<8;
-        i= o.charCodeAt(j++);
-        r= o.charCodeAt(j++);
-        r7= o.charCodeAt(j++);
-        bor= r7>>1 & 7;
-        wp(0, bor);
-        e= o.charCodeAt(j++);
-        d= o.charCodeAt(j++);
-        c_= o.charCodeAt(j++);
-        b_= o.charCodeAt(j++);
-        e_= o.charCodeAt(j++);
-        d_= o.charCodeAt(j++);
-        l_= o.charCodeAt(j++);
-        h_= o.charCodeAt(j++);
-        a_= o.charCodeAt(j++);
-        f_= o.charCodeAt(j++);
-        yl= o.charCodeAt(j++);
-        yh= o.charCodeAt(j++);
-        xl= o.charCodeAt(j++);
-        xh= o.charCodeAt(j++);
-        iff= o.charCodeAt(j++);
-        im= o.charCodeAt(j+1)&3;
-        pc= u>23
-            ? o.charCodeAt(j+4) | o.charCodeAt(j+5)<<8
-            : o.charCodeAt(6) | o.charCodeAt(7)<<8;
-        j+= u+4;
-        while( j < o.length ){
-          t= o.charCodeAt(j++) | o.charCodeAt(j++)<<8;
-          u= o.charCodeAt(j++);
-          u=  ( u==8
-                ? 1
-                : u-2
-              )
-              <<
-              14;
-          if( t<0xffff )
-            while( t-- )
-              if( o.charCodeAt(j)==0xed && o.charCodeAt(j+1)==0xed ){
-                t-= 3;
-                w= o.charCodeAt(j+2);
-                j+= 4;
-                while( w-- )
-                  m[u++]= o.charCodeAt(j-1);
-              }
-              else
-                m[u++]= o.charCodeAt(j++);
-          else
-            do m[u++]= o.charCodeAt(j++)
-            while( u & 0x3fff );
-        }
-        r7<<= 7;
       }
       reader.readAsBinaryString(ev.dataTransfer.files[0]);
       break;
@@ -404,13 +406,45 @@ function kdown(ev) {
       self.focus();
       break;
     case 114: // F3
+      pbt && (
+        pbt= 0,
+        tim.innerHTML= '',
+        frc= (pb[pbc]&255)-frc);
+//      frcs= frc;
+      pbcs= pbc;
+      f3++;
       localStorage.save= wm();
       break;
     case 115: // F4
-      rm(localStorage.save);
+      if( pbt ){
+        if( trein==32000 )
+          clearInterval(interval);
+        else
+          node.onaudioprocess= audioprocess0;
+        ajax('snaps/'+params.slice(0,-3)+'sna', -1);
+      }
+      else
+//        frc= frcs,
+        frc= localStorage.save.charCodeAt(85),
+        pbc= pbcs,
+        f4++,
+        rm(localStorage.save);
       break;
     case 116: // F5
       return 1;
+    case 117: // F6
+      if( !pbt ){
+        if( trein==32000 )
+          clearInterval(interval);
+        else
+          node.onaudioprocess= audioprocess0;
+        t= wm()+String.fromCharCode(f3)+String.fromCharCode(f4)+param+String.fromCharCode(255);
+        while( pbc )
+          t+= String.fromCharCode(pb[--pbc]);
+        ajax('rec.php', t);
+        document.documentElement.innerHTML= 'Please wait...';
+      }
+      break;
     case 118: // F7
       localStorage.ft^= 8;
       rotapal();
@@ -437,7 +471,7 @@ function kdown(ev) {
       j= new WebKitBlobBuilder(); 
       j.append(t);
       ir.src= webkitURL.createObjectURL(j.getBlob());
-      alert('Snapshot saved.\nRename the file (without extension) to .SNA.');
+      alert('Snapshot saved.\nRename the file (without extension) to .Z80.');
       self.focus();
       break;
     case 122: // F11
@@ -494,13 +528,13 @@ function onresize(ev) {
 function rp(addr) {
   j= 0xff;
   if( !(addr & 0xe0) )                    // read kempston
-    j^= kb[8];
+    j^= ks[8];
   else if( ~addr & 1 ){                   // read keyboard
     for ( k= 8
         ; k < 16
         ; k++ )
       if( ~addr & 1<<k )            // scan row
-        j&= kb[k-8];
+        j&= ks[k-8];
   }
   else{
     t= parseInt(st/224);
@@ -530,6 +564,8 @@ function wp(addr, val) {                // write port, only border color emulati
                                         + ')';
     if( ifra )
       put.style.color= pal[bor&7][0]+pal[bor&7][1]+pal[bor&7][2]<300 ? '#fff' : '#000';
+    if( pbt )
+      tim.style.color= pal[bor&7][0]+pal[bor&7][1]+pal[bor&7][2]<300 ? '#fff' : '#000';
   }
 }
 
@@ -539,55 +575,100 @@ function wb(addr, val) {
 }
 
 function rm(o) {
+  if(o.charCodeAt(6)|o.charCodeAt(7) ||
+     o.charCodeAt(12)==255 ||
+     o.charCodeAt(30)!=55 ||
+     o.charCodeAt(34))
+    return 1;
   j= 0;
-  i= o.charCodeAt(j++);
-  l_= o.charCodeAt(j++);
-  h_= o.charCodeAt(j++);
-  e_= o.charCodeAt(j++);
-  d_= o.charCodeAt(j++);
-  c_= o.charCodeAt(j++);
-  b_= o.charCodeAt(j++);
-  setf_(o.charCodeAt(j++));
-  a_= o.charCodeAt(j++);
-  l= o.charCodeAt(j++);
-  h= o.charCodeAt(j++);
-  e= o.charCodeAt(j++);
-  d= o.charCodeAt(j++);
+  a= o.charCodeAt(j++);
+  setf(o.charCodeAt(j++));
   c= o.charCodeAt(j++);
   b= o.charCodeAt(j++);
+  l= o.charCodeAt(j++);
+  h= o.charCodeAt(j++);
+  j+= 2;
+  sp= o.charCodeAt(j++) | o.charCodeAt(j++)<<8;
+  i= o.charCodeAt(j++);
+  r= o.charCodeAt(j++);
+  r7= o.charCodeAt(j++);
+  bor= r7>>1 & 7;
+  wp(0, bor);
+  e= o.charCodeAt(j++);
+  d= o.charCodeAt(j++);
+  c_= o.charCodeAt(j++);
+  b_= o.charCodeAt(j++);
+  e_= o.charCodeAt(j++);
+  d_= o.charCodeAt(j++);
+  l_= o.charCodeAt(j++);
+  h_= o.charCodeAt(j++);
+  a_= o.charCodeAt(j++);
+  setf_(o.charCodeAt(j++));
   yl= o.charCodeAt(j++);
   yh= o.charCodeAt(j++);
   xl= o.charCodeAt(j++);
   xh= o.charCodeAt(j++);
-  iff= o.charCodeAt(j++)>>2 & 1;
-  r= r7= o.charCodeAt(j++);
-  setf(o.charCodeAt(j++));
-  a= o.charCodeAt(j++);
-  sp= o.charCodeAt(j++) | o.charCodeAt(j++)<<8;
-  im= o.charCodeAt(j++);
-  wp(0,o.charCodeAt(j++));
-  while( j < 0xc01b )
-    m[j+0x3fe5]= o.charCodeAt(j++);
-  g[0xc9]();
+  iff= o.charCodeAt(j++);
+  im= o.charCodeAt(j+1)&3;
+  u= o.charCodeAt(30);
+  if( u>23 ){
+    pc= o.charCodeAt(j+4) | o.charCodeAt(j+5)<<8;
+    for (v= 0; v < 10; v++ )
+      ks[v]= o.charCodeAt(v+75);
+  }
+  else
+    pc= o.charCodeAt(6) | o.charCodeAt(7)<<8;
+  j+= u+4;
+  while( j<o.length ){
+    t= o.charCodeAt(j++)|o.charCodeAt(j++)<<8;
+    u= o.charCodeAt(j++);
+    u=  ( u==8
+          ? 1
+          : u-2
+        )
+        <<
+        14;
+    if( t<0xffff )
+      while( t-- )
+        if( o.charCodeAt(j)==0xed && o.charCodeAt(j+1)==0xed ){
+          t-= 3;
+          w= o.charCodeAt(j+2);
+          j+= 4;
+          while( w-- )
+            m[u++]= o.charCodeAt(j-1);
+        }
+        else
+          m[u++]= o.charCodeAt(j++);
+    else
+      do m[u++]= o.charCodeAt(j++)
+      while( u & 0x3fff );
+  }
+  r7<<= 7;
 }
 
 function wm() {
-  wb(sp-1 & 0xffff, pc>>8 & 0xff);
-  wb(sp-2 & 0xffff, pc    & 0xff);
-  t= String.fromCharCode(i, l_, h_, e_, d_, c_, b_, f_(), a_, l, h, e, d, c, b, yl, yh,
-                         xl, xh, iff<<2, r&127|r7&128, f(), a, sp-2&0xff, sp-2>>8, im&3, bor); // 0x15
-  for ( j= 0x4000
-      ; j < 0x10000
-      ; j++ )
-    t+= String.fromCharCode(m[j]);
+  t= String.fromCharCode(a,f(),c,b,l,h,0,0,sp&255,sp>>8,i,r,r7>>7|bor<<1,e,d,
+                         c_,b_,e_,d_,l_,h_,a_,f_(),yl,yh,xl,xh,iff,iff,im,55,0,
+                         pc&255,pc>>8);
+  for (j= 0; j < 41; j++)
+    t+= String.fromCharCode(0);
+  for (j= 0; j < 10; j++ )
+    t+= String.fromCharCode(ks[j]);
+  t+= String.fromCharCode(frc, 0);
+  for (u= 1; u< 4; u++)
+    for (j= 0, t+= String.fromCharCode(255,255,'845'[u-1]); j < 0x4000; j++)
+      t+= String.fromCharCode(m[j|u<<14]);
   return t;
 }
 
 function tp(){
   tapei= tapep= t= j= 0;
+  if( game.charCodeAt(0)!=19 ){
+    rm(game);
+    return;
+  }
   v= '';
-  while( u= game.charCodeAt(t)      & 0xff
-          | game.charCodeAt(t+1)<<8 & 0xffff )
+  while( u= game.charCodeAt(t) | game.charCodeAt(t+1)<<8 )
     v+= '<option value="'+t+'">#'+ ++j+
         ( game.charCodeAt(t+2)
           ? ' Data: '+u+' bytes'
@@ -598,24 +679,23 @@ function tp(){
     pt.outerHTML= '<select onchange="tapep=this.value;tapei=this.selectedIndex">'+v+'</select>';
   else
     pt.innerHTML= v;
+  pc= 0x56c;
 }
 
 function loadblock() {
-  o=  game.charCodeAt(tapep++)    & 0xff
-    | game.charCodeAt(tapep++)<<8 & 0xffff;
+  o=  game.charCodeAt(tapep++) | game.charCodeAt(tapep++)<<8;
   tapei++;
   tapep++;
   for ( j= 0
       ; j < o-2
       ; j++ )
-    wb(xl | xh << 8, game.charCodeAt(tapep++) & 0xff),
+    wb(xl | xh << 8, game.charCodeAt(tapep++)),
     g[0x123]();
   setf_(0x6d);
   a= d= e= 0;
   pc= 0x5e0;                           // exit address
   tapep++;
-  o=  game.charCodeAt(tapep)      & 0xff
-    | game.charCodeAt(tapep+1)<<8 & 0xffff;
+  o=  game.charCodeAt(tapep) | game.charCodeAt(tapep+1)<<8;
   if( !o )
     tapei= tapep= 0;
   pt.selectedIndex= tapei;
@@ -631,4 +711,18 @@ function rotapal(){
   document.body.style.backgroundColor=  'rgb('
                                       + pal[bor&7].toString()
                                       + ')';
+}
+
+function rt(f){
+  rm(f);
+  pbcs= pbc= pbt;
+  frc= f.charCodeAt(85);
+  f3++;
+  localStorage.save= wm();
+  tim.innerHTML= '';
+  pbt= 0;
+  if( trein==32000 )
+    interval= setInterval(myrun, 20);
+  else
+    node.onaudioprocess= audioprocess;
 }

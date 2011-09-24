@@ -7,7 +7,8 @@
 ?><script type="text/vbscript" src="ie.vbscript"></script><?
 ?><![endif]--><?
 ?><script type="text/javascript"><?
-?>game=t=u=0;<?
+?>pb=[];<?
+?>pbf=pbt=frc=game=t=u=0;<?
 ?>function cb(b){<?
   ?>emul=b;<?
   ?>this.eval(emul.substr(<?=0x18018+0x4000?>));<?

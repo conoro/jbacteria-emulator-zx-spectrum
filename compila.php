@@ -80,7 +80,7 @@
                               file_get_contents('rom/48.mem').
                               file_get_contents('48.js'));
   exec('kzip -y temp.zip aa.rom');
-  file_put_contents('_48.tap.deflate', substr(file_get_contents('temp.zip'), 36, -75));
+  file_put_contents('_48.rom.deflate', substr(file_get_contents('temp.zip'), 36, -75));
   $rom= file_get_contents('rom/tk90.rom');
   $rom[0x56c]= chr(0xed);
   $rom[0x56d]= chr(0xfc);
@@ -91,7 +91,7 @@
                               file_get_contents('48.js'));
   unlink('48.js');
   exec('kzip -y temp.zip aa.rom');
-  file_put_contents('_tk90.tap.deflate', substr(file_get_contents('temp.zip'), 36, -75));
+  file_put_contents('_tk90.rom.deflate', substr(file_get_contents('temp.zip'), 36, -75));
 ///*
   error_log("48s");
   exec("java yui 48s");
@@ -104,7 +104,7 @@
                               file_get_contents('rom/48.mem').
                               file_get_contents('48s.js'));
   exec('kzip -y temp.zip aa.rom');
-  file_put_contents('_48s.tap.deflate', substr(file_get_contents('temp.zip'), 36, -75));
+  file_put_contents('_48s.rom.deflate', substr(file_get_contents('temp.zip'), 36, -75));
   $rom= file_get_contents('rom/tk90.rom');
   $rom[0x56c]= chr(0xed);
   $rom[0x56d]= chr(0xfc);
@@ -115,7 +115,7 @@
                               file_get_contents('48s.js'));
   unlink('48s.js');
   exec('kzip -y temp.zip aa.rom');
-  file_put_contents('_tk90s.tap.deflate', substr(file_get_contents('temp.zip'), 36, -75));
+  file_put_contents('_tk90s.rom.deflate', substr(file_get_contents('temp.zip'), 36, -75));
 ///*
   error_log("128");
   exec("java yui 128");
@@ -128,7 +128,7 @@
                               file_get_contents('rom/128.mem').
                               file_get_contents('128.js'));
   exec('kzip -y temp.zip aa.rom');
-  file_put_contents('_128.tap.deflate', substr(file_get_contents('temp.zip'), 36, -75));
+  file_put_contents('_128.rom.deflate', substr(file_get_contents('temp.zip'), 36, -75));
   $rom= file_get_contents('rom/128i.rom');
   $rom[0x456c]= chr(0xed);
   $rom[0x456d]= chr(0xfc);
@@ -138,7 +138,7 @@
                               file_get_contents('rom/128.mem').
                               file_get_contents('128.js'));
   exec('kzip -y temp.zip aa.rom');
-  file_put_contents('_128i.tap.deflate', substr(file_get_contents('temp.zip'), 36, -75));
+  file_put_contents('_128i.rom.deflate', substr(file_get_contents('temp.zip'), 36, -75));
   unlink('128.js');
 ///*
   error_log("128s");
@@ -152,7 +152,7 @@
                               file_get_contents('rom/128.mem').
                               file_get_contents('128s.js'));
   exec('kzip -y temp.zip aa.rom');
-  file_put_contents('_128s.tap.deflate', substr(file_get_contents('temp.zip'), 36, -75));
+  file_put_contents('_128s.rom.deflate', substr(file_get_contents('temp.zip'), 36, -75));
   $rom= file_get_contents('rom/128i.rom');
   $rom[0x456c]= chr(0xed);
   $rom[0x456d]= chr(0xfc);
@@ -162,7 +162,7 @@
                               file_get_contents('rom/128.mem').
                               file_get_contents('128s.js'));
   exec('kzip -y temp.zip aa.rom');
-  file_put_contents('_128is.tap.deflate', substr(file_get_contents('temp.zip'), 36, -75));
+  file_put_contents('_128is.rom.deflate', substr(file_get_contents('temp.zip'), 36, -75));
   unlink('128s.js');
 ///*
   error_log("16");
@@ -177,7 +177,7 @@
                               file_get_contents('16.js'));
   unlink('16.js');
   exec('kzip -y temp.zip aa.rom');
-  file_put_contents('_16.tap.deflate', substr(file_get_contents('temp.zip'), 36, -75));
+  file_put_contents('_16.rom.deflate', substr(file_get_contents('temp.zip'), 36, -75));
 ///*
   error_log("16s");
   exec("java yui 16s");
@@ -191,7 +191,7 @@
                               file_get_contents('16s.js'));
   unlink('16s.js');
   exec('kzip -y temp.zip aa.rom');
-  file_put_contents('_16s.tap.deflate', substr(file_get_contents('temp.zip'), 36, -75));
+  file_put_contents('_16s.rom.deflate', substr(file_get_contents('temp.zip'), 36, -75));
 ///*
   error_log("+2");
   exec("java yui +2");
@@ -205,7 +205,7 @@
                               file_get_contents('+2.js'));
   unlink('+2.js');
   exec('kzip -y temp.zip aa.rom');
-  file_put_contents('_+2.tap.deflate', substr(file_get_contents('temp.zip'), 36, -75));
+  file_put_contents('_+2.rom.deflate', substr(file_get_contents('temp.zip'), 36, -75));
 ///*
   error_log("+2s");
   exec("java yui +2s");
@@ -219,7 +219,7 @@
                               file_get_contents('+2s.js'));
   unlink('+2s.js');
   exec('kzip -y temp.zip aa.rom');
-  file_put_contents('_+2s.tap.deflate', substr(file_get_contents('temp.zip'), 36, -75));
+  file_put_contents('_+2s.rom.deflate', substr(file_get_contents('temp.zip'), 36, -75));
 ///*
   error_log("+2A");
   exec("java yui +2A");
@@ -233,7 +233,7 @@
                               file_get_contents('+2A.js'));
   unlink('+2A.js');
   exec('kzip -y temp.zip aa.rom');
-  file_put_contents('_+2A.tap.deflate', substr(file_get_contents('temp.zip'), 36, -75));
+  file_put_contents('_+2A.rom.deflate', substr(file_get_contents('temp.zip'), 36, -75));
 ///*
   error_log("+2As");
   exec("java yui +2As");
@@ -247,7 +247,7 @@
                               file_get_contents('+2As.js'));
   unlink('+2As.js');
   exec('kzip -y temp.zip aa.rom');
-  file_put_contents('_+2As.tap.deflate', substr(file_get_contents('temp.zip'), 36, -75));
+  file_put_contents('_+2As.rom.deflate', substr(file_get_contents('temp.zip'), 36, -75));
 ///*
   error_log("+3");
   exec("java yui +3");
@@ -258,7 +258,7 @@
                               file_get_contents('+3.js'));
   unlink('+3.js');
   exec('kzip -y temp.zip aa.rom');
-  file_put_contents('_+3.tap.deflate', substr(file_get_contents('temp.zip'), 36, -75));
+  file_put_contents('_+3.rom.deflate', substr(file_get_contents('temp.zip'), 36, -75));
 ///*
   error_log("+3s");
   exec("java yui +3s");
@@ -269,7 +269,7 @@
                               file_get_contents('+3s.js'));
   unlink('+3s.js');
   exec('kzip -y temp.zip aa.rom');
-  file_put_contents('_+3s.tap.deflate', substr(file_get_contents('temp.zip'), 36, -75));
+  file_put_contents('_+3s.rom.deflate', substr(file_get_contents('temp.zip'), 36, -75));
 ///*
   error_log("SE");
   exec("java yui SE");
@@ -279,7 +279,7 @@
                               file_get_contents('SE.js'));
   unlink('SE.js');
   exec('kzip -y temp.zip aa.rom');
-  file_put_contents('_SE.tap.deflate', substr(file_get_contents('temp.zip'), 36, -75));
+  file_put_contents('_SE.rom.deflate', substr(file_get_contents('temp.zip'), 36, -75));
 ///*
   error_log("SEs");
   exec("java yui SEs");
@@ -289,7 +289,7 @@
                               file_get_contents('SEs.js'));
   unlink('SEs.js');
   exec('kzip -y temp.zip aa.rom');
-  file_put_contents('_SEs.tap.deflate', substr(file_get_contents('temp.zip'), 36, -75));
+  file_put_contents('_SEs.rom.deflate', substr(file_get_contents('temp.zip'), 36, -75));
 ///*
   error_log("464");
   exec("java yui 464");
@@ -366,7 +366,7 @@
                               file_get_contents('3.js'));
   unlink('3.js');
   exec('kzip -y temp.zip aa.rom');
-  file_put_contents('_3.tap.deflate', substr(file_get_contents('temp.zip'), 36, -75));
+  file_put_contents('_3.rom.deflate', substr(file_get_contents('temp.zip'), 36, -75));
 ///*
   error_log("48.html");
   ob_start();$x=48;$y=0x10000;
