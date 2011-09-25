@@ -5,14 +5,14 @@ function init() {
                                                 ? 'optimizeSpeed'
                                                 : '' ));
   onresize();
-  sample= pbcs= frcs= pbc= cts= playp= vbp= bor= p0= p1= sha= f1= f3= f4= st= time= flash= ay= envc= envx= ay13= noic= noir= tons= 0;
+  sample= pbcs= frcs= pbc= cts= playp= vbp= bor= p0= p1= sha= f1= f3= f4= st= time= flash= ay= envc= envx= ay13= noic= tons= 0;
   ayr= [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         0, 0, 0]; // last 3 values for tone counter
   if( localStorage.ft==undefined )
     localStorage.ft= 4;
   if ( localStorage.ft & 8 )
     rotapal();
-  pag= 1;
+  noir= pag= 1;
   fdcinit();
   a= b= c= d= h= l= fa= fb= fr= ff= r7=
   a_=b_=c_=d_=h_=l_=fa_=fb_=fr_=e_= r= pc= iff= im= halted= t= u= 0;

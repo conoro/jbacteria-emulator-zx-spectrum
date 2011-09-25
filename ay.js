@@ -12,8 +12,8 @@ function aystep() {
     envv= estep();
   if( ++noic >= ayr[6]<<1 )
     noic= 0,
-    noiv= noir & 0x01,
-    noir= ((~(noir>>3 ^ noiv) & 1) << 16) | noir >> 1;
+    noiv= noir & 1,
+    noir= (noir^noiv*0x24000)>>1;
   return (cstep(0) + cstep(1) + cstep(2)) / 3;
 }
 function aymute() {
@@ -25,7 +25,8 @@ function aymute() {
   }
   if( ++noic >= ayr[6]<<1 )
     noic= 0,
-    noir= ((~(noir>>3 ^ (noir & 0x01)) & 1) << 16) | noir >> 1;
+    noiv= noir & 1,
+    noir= (noir^noiv*0x24000)>>1;
   if( ++ayr[16] >= (ayr[0] | ayr[1]<<8) )
     ayr[16]= 0,
     tons^= 1;

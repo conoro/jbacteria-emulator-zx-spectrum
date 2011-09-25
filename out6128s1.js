@@ -1,5 +1,5 @@
 function init() {
-  rs= gm= 1;
+  noir= rs= gm= 1;
   for (t= 0; t < 17; t++)
     pl[t]= pal[gc[t]];
   for (t= 0; t < 256; t++)
@@ -11,7 +11,7 @@ function init() {
   t= localStorage.ft>>3;
   rotapal();
   onresize();
-  pbcs= frcs= pbc= bp= ci= ap= io= vsync= ay= envc= envx= ay13= noic= noir= noiv= tons= cp= ga= f1= f3= f4= st= time= flash= 0;
+  pbcs= frcs= pbc= bp= ci= ap= io= vsync= ay= envc= envx= ay13= noic= noiv= tons= cp= ga= f1= f3= f4= st= time= flash= 0;
   ayr= [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         0, 0, 0]; // last 3 values for tone counter
   if( localStorage.ft==undefined )
