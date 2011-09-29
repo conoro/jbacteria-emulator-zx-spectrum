@@ -45,7 +45,7 @@
       ?>if(xhr&&xhr.readyState==4)<?
         ?>cb(ie?bin2arr(xhr.responseBody):bin2str(xhr.responseText),xhr.getResponseHeader('Content-Type').slice(-1));<?
       ?>};<?
-  ?>xhr.open('POST',f,true);<?
+  ?>xhr.open(g?'POST':'GET',f,true);<?
   ?>if(!ie)<?
     ?>xhr.overrideMimeType('text/plain;charset=x-user-defined');<?
   ?>xhr.send(g);<?

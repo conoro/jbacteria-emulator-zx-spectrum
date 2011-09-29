@@ -4406,7 +4406,6 @@
 17083 2005 48     Card    Klaverjas                                         YRS                                  klaverja Klaverjas.tap.zip
 02707 1990 48/128 Puzzle  Klax                                              Domark Ltd                           klax     Klax128.tap.zip
 02712 0000 48     Puzzle  Kleuren Kubus                                                                          kleurenk KleurenKubus.tap.zip
-09365 1993 48/128 Arc/Adv Kliatba Noci                                      Ultrasoft/Sintech                    kliatban KliatbaNoci.tzx.zip
 02713 1990 128    Arc/Maz Klimax                                            Hewson Consultants Ltd               klimax   Klimax.tap.zip
 21813 1988 48     Arc/Plf Kljuc                                             Suzy Soft                            kljuc    Kljuc.tzx.zip
 14511 1985 48     Str/Mgt Klondike                                          Your Computer                                 _
