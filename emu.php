@@ -69,6 +69,6 @@
   ?>ajax((param.slice(-1)=='c'<?
     ?>?(t++,'recorded/')<?
     ?>:(param.slice(-1)==0?'snaps/':'games/'))+param);<?
-?>ajax('_<?=$x?>');<?
+?>ajax('_<?=$x?>.rom');<?
 ?></script><?
 ?></html>
