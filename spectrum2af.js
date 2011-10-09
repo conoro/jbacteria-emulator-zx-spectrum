@@ -161,6 +161,7 @@ function rp(addr) {
   if( !(addr & 0xe0) )                    // read kempston
     j^= ks[8];
   else if( ~addr & 1 ){                   // read keyboard
+    j= 0xbf;
     for ( k= 8
         ; k < 16
         ; k++ )
