@@ -6,6 +6,7 @@ ini     ld    b, 23
         db    $3a ;xor   a
 tet1    rst   $10
         ld    a, 13
+        ld    (time-1), a
         rst   $10
 ini2    ld    a, 249
         djnz  tet1
@@ -22,43 +23,18 @@ resi    sub   $f9
         add   a, a
         add   a, l
         ld    (opc0+1), a
-        ld    h, $5d
-        ld    l, (hl)
-        ld    h, $10
         ld    de, 6  | 2<<5 | $5800
         push  de
-otve    add   hl, hl
+        ld    h, $5d
+        ld    l, (hl)
         jr    tttt
         db    %11101000 ;7l
         db    %01100011 ;z
         db    %01100110 ;cu
         db    %00110110 ;s
         db    %01001110 ;t
-        db    %10001110; 0010 ;es
         db    %00001111 ;ba
-tttt    jr    nc, otve
-        push  hl
-        ld    c, $04
-
-lejo    ld    ix, opc2
-        call  pint
-        jr    z, delg     ;si no final, bien
-        pop   hl
-        pop   de
-        ld    sp, $ff40
-        bit   2, c
-        jr    nz, ini
-        inc   c
-; compuebo final
-
-delg    ld    ixl, opci
-        dec   (ix)
-        ld    ixl, opc0
-        call  pint        ; pinta pieza
-        ld    ixl, opci
-        inc   (ix)
-teal    bit   1, c
-        jr    z, ted
+        db    %10001110; 0010 ;es
 disi    ld    de, 31 | 22<<5 | $5800
 dis2    ld    a, $38+10
         ld    hl, $ffe0
@@ -71,14 +47,45 @@ dis2    ld    a, $38+10
         ld    a, d
         sub   $58
         ld    b, a
-        push  hl
         ex    de, hl
         lddr
+        ld    hl, fin
+        rrc   (hl)
+        jr    nc, disi
+        ld    l, time-1
+        dec   (hl)
+        jr    disi-1
+
+tttt    ld    h, b
+        add   hl, hl
+        add   hl, hl
+        add   hl, hl
+        add   hl, hl
+        push  hl
+        ld    c, d
+
+lejo    ld    ix, opc2
+        call  pint
+        jr    z, delg     ;si no final, bien
+        pop   hl
         pop   de
-        jr    dis2
+        ld    sp, $ff40
+        bit   2, c
+        jr    z, ini
+        inc   c
+; compuebo final
+
+delg    ld    ixl, opci
+        dec   (ix)
+        ld    ixl, opc0
+        call  pint        ; pinta pieza
+        ld    ixl, opci
+        inc   (ix)
+teal    bit   1, c
+        jr    nz, disi
 ; compruebo linea hecha
 ted     ld    a, ($5c78)
-        sub   12
+        sub   0
 time    sub   0
         jr    z, salt
         bit   5, (iy+1)
@@ -97,20 +104,25 @@ salt    push  de
 nrigh   cp    'o'
         jr    nz, nleft
         dec   e
-nleft   cp    'q'
+nleft   sub   'q'
         jr    z, rota
-        cp    'b'
-        ld    bc, $2008
-        jr    nc, lejo
+        add   'q'-'b'
+tlejo   ld    bc, $2004
+        jr    c, lejo
         inc   c
 noca    inc   de
         djnz  noca
         ld    a, ($5c78)
         ld    (time+1), a
-tlejo   jp    lejo
+        jr    lejo
 
-rota    ld    c, 0
-        ld    a, 1
+nfina   djnz  akir
+        pop   hl
+        rr    h
+        rr    l
+        db    $ca; jr    akia
+rota    ld    c, a
+        inc   a
 akia    ld    b, 4
         push  hl
 akir    add   hl, hl
@@ -119,16 +131,10 @@ akir    add   hl, hl
         add   hl, hl
         rla
         rl    c
-        jr    c, fina
-        djnz  akir
+        jr    nc, nfina
         pop   hl
-        rr    h
-        rr    l
-        jr    akia
-fina    pop   hl
         ld    h, c
         ld    l, a
-        ld    c, 8
         jr    tlejo
 
 pint    push  bc
@@ -168,10 +174,10 @@ opc1    ld    (de), a
 opci    dec   (hl)
         pop   hl
         ret
-
+fin
 /*<?php require 'zx.inc.php';
   exec('sjasmplus tetris.asm');
   $in= file_get_contents('tetris.bin');
   file_put_contents('tetris.tap',
-      head("\26\1\0\262TETAS\350", strlen($in)).data($in));
+      head("\26\1\0SA\261\264RI\263", strlen($in)).data($in));
   exec('tetris.tap')?>*/
