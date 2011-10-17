@@ -112,7 +112,7 @@ nfina   djnz  akir
         pop   hl
         rr    h
         rr    l
-        db    $ca               ; jr    akia
+        db    $32               ; jr    akia
 rota    ld    c, a
         inc   a
 akia    ld    b, 4
