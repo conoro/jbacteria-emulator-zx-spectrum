@@ -90,14 +90,14 @@ salt    push  de
         ex    af, af
         call  pint-1              ; borra pieza
         ex    af, af
-        cp    'p'
-        jr    nz, nrigh
-        inc   e
-nrigh   cp    'o'
+        ld    c, 1
+        sub   'o'
         jr    nz, nleft
         dec   e
-nleft   sub   'q'
-        ld    c, a
+nleft   sub   c
+        jr    nz, nrigh
+        inc   e
+nrigh   sub   c
         jr    z, rota
         add   'q'-'b'
 tlejo   ld    bc, $2004
@@ -113,22 +113,21 @@ nfina   djnz  akir
         pop   hl
         rr    h
         rr    l
-        dec   a
-rota    inc   a
-akia    ld    b, 4
+rota    ld    b, 4
         push  hl
 akir    add   hl, hl
         add   hl, hl
         add   hl, hl
         add   hl, hl
-        rla
         rl    c
+        rla
         jr    nc, nfina
         pop   hl
-        ld    h, c
-        ld    l, a
+        ld    h, a
+        ld    l, c
         jr    tlejo
 
+        push  de
 pint    push  bc
         push  hl
 pint1   ld    b, 4
