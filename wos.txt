@@ -7074,6 +7074,7 @@
 20939 1992 48     Arc     Saimazoom 2                                       LOKOsoft                             saimazo1 Saimazoom2.tap.zip
 04312 1989 48/128 Quiz    Saint and Greavsie                                Grandslam Entertainments Ltd         saintand SaintAndGreavsie.tap.zip
 04313 1987 48     Arc/SEU Salamander                                        Konami Ltd                           salamand Salamander.tap.zip
+00000 2011 48     Arc     Salen tan ricos                                   Antonio Villena                      salentan _
 18542 1982 16     Sim     Sales                                             Silicon Software                              _
 18549 1985 48     Arc     Salon G.                                          VideoSpectrum                                 _
 17155 1985 48     Arc     Saltamovil                                        Micromania [2]                       saltamov Saltamovil.tap.zip
