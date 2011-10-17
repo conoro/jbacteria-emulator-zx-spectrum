@@ -62,7 +62,7 @@ tttt    ld    l, (hl)
         add   hl, hl
         push  hl
 lejo    ld    ixl, opc2
-        call  pint
+        call  pint-1
         jr    z, delg
         pop   hl
         pop   de
@@ -72,7 +72,7 @@ lejo    ld    ixl, opc2
         inc   c
 delg    ld    ixl, opc0
         dec   (ix+opci-opc0)
-        call  pint              ; pinta pieza
+        call  pint-1              ; pinta pieza
         inc   (ix+opci-opc0)
 teal    bit   1, c
         jr    nz, disi
@@ -88,7 +88,7 @@ salt    push  de
         res   5, (iy+1)
         ld    ixl, opc1
         ex    af, af
-        call  pint              ; borra pieza
+        call  pint-1              ; borra pieza
         ex    af, af
         cp    'p'
         jr    nz, nrigh
@@ -97,6 +97,7 @@ nrigh   cp    'o'
         jr    nz, nleft
         dec   e
 nleft   sub   'q'
+        ld    c, a
         jr    z, rota
         add   'q'-'b'
 tlejo   ld    bc, $2004
@@ -112,9 +113,8 @@ nfina   djnz  akir
         pop   hl
         rr    h
         rr    l
-        db    $32               ; jr    akia
-rota    ld    c, a
-        inc   a
+        dec   a
+rota    inc   a
 akia    ld    b, 4
         push  hl
 akir    add   hl, hl
@@ -130,13 +130,12 @@ akir    add   hl, hl
         jr    tlejo
 
 pint    push  bc
-        push  de
         push  hl
 pint1   ld    b, 4
 pint2   add   hl, hl
         jr    nc, pint4
         xor   a
-pint3   call  $03f4
+        call  $03f4
 pint4   dec   de
         djnz  pint2
         ld    b, 32-4
@@ -151,20 +150,19 @@ opc1    ld    (de), a
         push  hl
         ld    h, d
         ld    a, e
-        or    a, $1f
+        or    $1f
         ld    l, a
 opci    dec   (hl)
         pop   hl
         ret
 
-opc2    ex    de, hl
-        add   a, (hl)
-        ex    de, hl
+opc2    ld    a, (de)
+        or    a
         ret   z
         pop   de
 pint5   pop   hl
-        pop   de
         pop   bc
+        pop   de
         ret
 fin
 
