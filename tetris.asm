@@ -1,168 +1,167 @@
         output "tetris.bin"
         org   $5ccb
-ini     ld    b, 23
+inic    ld    b, 23
         ld    a, $11
         db    $d7, $c0, $37, $0e, $8f, $39, $96 ; BEEP USR 7 ($5ccb)
         db    $3a               ;xor   a
-tet1    rst   $10
+ini1    rst   $10
         ld    a, 13
-        ld    (time-1), a
+        ld    (velo+1), a
         rst   $10
 ini2    ld    a, 249
-        djnz  tet1
+        djnz  ini1
         ld    hl, $0110
         ld    ($5c09), hl       ;REPDEL, REPPER
-bpgs    ld    a, ($5c78)
-resi    sub   $f9
-        jr    c, resi
+newp    ld    a, ($5c78)        ;FRAMES1
+mod7    sub   $f9
+        jr    c, mod7
         inc   a
         ld    l, a
         add   a, a
         add   a, a
         add   a, a
         add   a, l
-        ld    (opc0+1), a
+        ex    af, af
         ld    de, 6 | 2<<5 | $5800
         ld    c, d
         push  de
         ld    h, $5d
-        jr    tttt
-        db    %11101000
-        db    %01100011
-        db    %01100110
-        db    %00110110
-        db    %01001110
-        db    %00001111
-        db    %10001110
-disi    ld    de, 31 | 22<<5 | $5800
-dis2    ld    a, $38+10
+        ld    l, (hl)
+        ld    h, b
+        jr    cont
+        db    %01100110         ;-oo-
+                                ;-oo-
+        db    %00001111               ;----
+                                      ;oooo
+        db    %00101110         ;--o-
+                                ;ooo-
+        db    %01001110               ;-o--
+                                      ;ooo-
+        db    %01101100         ;-oo-
+                                ;oo--
+        db    %10001110               ;o---
+                                      ;ooo-
+        db    %11000110         ;oo--
+                                ;-oo-
+tlin    ld    hl, 31 | 21<<5 | $5800
+tli1    ex    de, hl
+        xor   a
         ld    hl, $ffe0
         adc   hl, de
-        jr    nc, bpgs
-        ex    de, hl
-        xor   (hl)
-        jr    nz, dis2
-        ld    c, e
-        ld    a, d
+        ld    c, 11
+        push  hl
+        cpir
+        pop   hl
+        jr    z, tli1
+        ld    c, l
+        ld    a, h
         sub   $58
+        jr    c, newp
         ld    b, a
-        ex    de, hl
         lddr
         ld    hl, fin
         rrc   (hl)
-        jr    nc, disi
-        ld    l, time-1
+        jr    nc, tlin
+        ld    l, d                ; velo+1
         dec   (hl)
-        jr    disi-1
-tttt    ld    l, (hl)
-        ld    h, b
-        add   hl, hl
+        jr    tlin
+cont    add   hl, hl
         add   hl, hl
         add   hl, hl
         add   hl, hl
         push  hl
-lejo    ld    ixl, opc2
-        call  pint-1
-        jr    z, delg
+loop    ld    ixl, opc2
+        call  pint-1              ; testeo antes de colocar pieza
+        jr    z, ncol
         pop   hl
         pop   de
         ld    sp, $ff40
         bit   2, c
-        jr    z, ini
+        jr    z, inic
         inc   c
-delg    ld    ixl, opc0
-        dec   (ix+opci-opc0)
+ncol    ld    ixl, opc1
+        ex    af, af
         call  pint-1              ; pinta pieza
-        inc   (ix+opci-opc0)
-teal    bit   1, c
-        jr    nz, disi
-ted     ld    a, ($5c78)
-        sub   0
+        ex    af, af
+        bit   1, c
+        jr    nz, tlin
+        push  de
+rkey    ld    a, ($5c78)
 time    sub   0
+velo    sub   0
         jr    z, salt
         bit   5, (iy+1)
-        jr    z, ted
+        jr    z, rkey
         ld    a, ($5c08)
-salt    push  de
-        push  hl
+salt    push  hl
         res   5, (iy+1)
-        ld    ixl, opc1
-        ex    af, af
+        push  af
+        xor   a
         call  pint-1              ; borra pieza
-        ex    af, af
-        ld    c, 1
+        pop   af
         sub   'o'
-        jr    nz, nleft
+        jr    nz, nizq
         dec   e
-nleft   sub   c
-        jr    nz, nrigh
+nizq    dec   a
+        jr    nz, nder
         inc   e
-nrigh   sub   c
+nder    dec   a
+        ld    c, 1
         jr    z, rota
         add   'q'-'b'
-tlejo   ld    bc, $2004
-        jr    c, lejo
+tloo    ld    bc, $2004
+        jr    c, loop
         inc   c
-noca    inc   de
-        djnz  noca
+su32    inc   de
+        djnz  su32
         ld    a, ($5c78)
         ld    (time+1), a
-        jr    lejo
+        jr    loop
 
-nfina   djnz  akir
+opc1    ld    (de), a
+        ret
+
+rot2    djnz  rot1
         pop   hl
         rr    h
         rr    l
 rota    ld    b, 4
         push  hl
-akir    add   hl, hl
+rot1    add   hl, hl
         add   hl, hl
         add   hl, hl
         add   hl, hl
         rl    c
         rla
-        jr    nc, nfina
+        jr    nc, rot2
         pop   hl
         ld    h, a
         ld    l, c
-        jr    tlejo
+        jr    tloo
 
-        push  de
 pint    push  bc
         push  hl
-pint1   ld    b, 4
-pint2   add   hl, hl
-        jr    nc, pint4
-        xor   a
+pin1    ld    b, 4
+pin2    add   hl, hl
+        jr    nc, pin3
         call  $03f4
-pint4   dec   de
-        djnz  pint2
+pin3    dec   de
+        djnz  pin2
         ld    b, 32-4
-sum28   dec   de
-        djnz  sum28
+re28    dec   de
+        djnz  re28
         dec   c
-        jr    nz, pint1
-        jr    pint5
-
-opc0    ld    a, 0
-opc1    ld    (de), a
-        push  hl
-        ld    h, d
-        ld    a, e
-        or    $1f
-        ld    l, a
-opci    dec   (hl)
-        pop   hl
+        jr    nz, pin1
+pin4    pop   hl
+        pop   bc
+        pop   de
         ret
 
 opc2    ld    a, (de)
         or    a
         ret   z
         pop   de
-pint5   pop   hl
-        pop   bc
-        pop   de
-        ret
+        jr    pin4
 fin
 
 /*<?php require 'zx.inc.php';
