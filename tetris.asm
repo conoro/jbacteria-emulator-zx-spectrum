@@ -192,7 +192,8 @@ fin
 
 /*<?php                                 // Estas líneas en PHP generan el archivo TAP, tan sólo hay que ejecutar "PHP ejemplo.asm" desde la línea de comandos y tener php.exe y sjasmplus.exe en el mismo directorio
   require 'zx.inc.php';                 // Librería, extraer desde aquí http://jbacteria.antoniovillena.es/taps/desprot.zip
-  exec('sjasmplus tetris.asm');         // Compila la parte ASM del archivo (el código PHP está oculto para SjAsmPlus con comentarios /* */)
+  exec('sjasmplus tetris.asm', $res);   // Compila la parte ASM del archivo (el código PHP está oculto para SjAsmPlus con comentarios /* */)
+  echo implode("\n", $res);             // Muestra por pantalla el resultado de la compilación
   $in= file_get_contents('tetris.bin'); // Leo el binario ya ensamblado
   file_put_contents('salentan.tap',     // Genero y escribo en el archivo .TAP
       head("\26\1\0SA\261\264RI\263", strlen($in)).data($in));
