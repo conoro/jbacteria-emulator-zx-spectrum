@@ -162,6 +162,10 @@ rot1    add   hl, hl            ; Desplazo 4 veces HL a la izquierda
         ld    l, c
         jr    tloo              ; Salto al bucle principal (con indicador de pieza no acelerada)
 
+; Función polivalente. Se llama tres veces dentro del bucle principal.
+; La primera para comprobar si hay algo que obstruya la pieza (suelo, pared, otra pieza).
+; La segunda pinta la pieza. La tercera, en caso de no tocar suelo, borra la pieza.
+
 pint    push  bc                ; Guardo DE, BC y HL en pila (el primer push está oculto en el último byte de la instrucción anterior
         push  hl
 pin1    ld    b, 4              ; El bucle interior es de 4 y el exterior es de C, por tanto se repite 4xC veces, siendo C siempre mayor que 4. Como HL no puede tener más de 16 bits sólo se pinta/borra/comprueba colisión en una retícula de 4x4
@@ -190,12 +194,5 @@ opc2    ld    a, (de)           ; Leo el color (en A) de la posición actual (de
         jr    pin4
 fin
 
-/*<?php                                 // Estas líneas en PHP generan el archivo TAP, tan sólo hay que ejecutar "PHP ejemplo.asm" desde la línea de comandos y tener php.exe y sjasmplus.exe en el mismo directorio
-  require 'zx.inc.php';                 // Librería, extraer desde aquí http://jbacteria.antoniovillena.es/taps/desprot.zip
-  exec('sjasmplus tetris.asm', $res);   // Compila la parte ASM del archivo (el código PHP está oculto para SjAsmPlus con comentarios /* */)
-  echo implode("\n", $res);             // Muestra por pantalla el resultado de la compilación
-  $in= file_get_contents('tetris.bin'); // Leo el binario ya ensamblado
-  file_put_contents('salentan.tap',     // Genero y escribo en el archivo .TAP
-      head("\26\1\0SA\261\264RI\263", strlen($in)).data($in));
-  exec('salentan.tap');                 // Ejecuto el .TAP resultante (lanza emulador tras generar el .TAP)
-?>*/
+/*<?php require 'zx.inc.php';
+  generate_basic('tetris', "\26\1\0SA\261\264RI\263", 1)?>*/
