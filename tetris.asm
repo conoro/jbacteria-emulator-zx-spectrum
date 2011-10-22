@@ -137,7 +137,7 @@ tloo    ld    bc, $2004         ; Inicializo B a 32 (bajo posición una fila com
         inc   c                 ; Si se ha pulsado 'a' o equivalente, señalizo pieza acelerada en registro C
 su32    inc   de                ; Avanza la posición en una fila (32 caracteres)
         djnz  su32
-        ld    ($5c78), a        ; Pongo FRAMES1 (antes guardada en A) como referencia en time (variable incrustada en código)
+        ld    (time+1), a       ; Pongo FRAMES1 (antes guardada en A) como referencia en time (variable incrustada en código)
         jr    loop              ; Cierro bucle principal
 
 ; Función rotar pieza, el punto de entrada es la etiqueta rota
