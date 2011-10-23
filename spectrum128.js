@@ -395,7 +395,7 @@ function tp(){
           | game.charCodeAt(t+1)<<8 & 0xffff)
     v+= '<option value="'+t+'">#'+ ++j+
         ( game.charCodeAt(t+2)
-          ? ' Data: '+u+' bytes'
+          ? ' Data: '+(u-2)+' bytes'
           : ' Prog: '+game.substr(t+4,10).replace(/\0/g, '')
         )+'</option>',
     t+= 2+u;

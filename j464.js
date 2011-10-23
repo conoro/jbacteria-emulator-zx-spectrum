@@ -101,7 +101,7 @@ function tp(){
     v+= '<option value="'+t+'">#'+ ++j+
         ( game.charCodeAt(t+2) == 0x2c
           ? ' Prog: '+game.substr(t+3,16).replace(/\0/g, '')
-          : ' Data: '+u+' bytes'
+          : ' Data: '+(u-1)+' bytes'
         )+'</option>',
     t+= 2+u;
   if( ie )

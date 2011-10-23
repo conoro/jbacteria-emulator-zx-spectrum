@@ -76,18 +76,14 @@ tli1    ex    de, hl            ; Almaceno posición en DE
         jr    c, newp           ; Si me salgo de la zona de atributos es que ya he llegado a la primera línea y por tanto salgo del bucle (a generar una nueva pieza)
         ld    b, a
         lddr                    ; Hago el corrimiento de líneas
-        ld    hl, fin           ; Roto el byte marcador (justo al final del código) que inicialmente está a $80
-        rrc   (hl)              ; Esto me permite aumentar el nivel de velocidad cada 8 líneas completadas
+        rrc   (ix-$3e)          ; Esto me permite aumentar el nivel de velocidad cada 8 líneas completadas
         jr    nc, tlin
-        ld    l, d              ; L apunta a velo+1 (lo he hecho coincidir con D=$58 para ahorrar 1 byte) que es la variable que indica la velocidad de caída de la pieza
-        dec   (hl)              ; Decremento retardo de caída de piezas (aumento por tanto la velocidad)
+        dec   (ix+velo+1-opc1)  ; Decremento retardo de caída de piezas (aumento por tanto la velocidad)
         jr    tlin              ; Cierro bucle
 
 ; Continúo tras haber saltado la tabla
 
 cont    ld    c, d              ; Pongo C a un valor mayor de 4 con los bits 1 y 2 a cero (que indican que entro en el bucle principal desde nueva pieza)
-        push  de                ; Guardo posición en pila. También guardaré la pieza generada para recuperar en caso de colisión
-        push  hl                ; Guardo pieza generada en pila                                       0000
 
 ; Bucle principal del juego
 
@@ -116,7 +112,7 @@ velo    sub   0                 ; Aplico un retardo (número de frames que tarda
         jr    z, rkey           ; En tal caso, rompo el bucle de tiempo
         ld    a, ($5c08)        ; Con el registro A conteniendo el código ASCII de la tecla pulsada
 salt    push  hl                ; Guardo pieza en pila
-        res   5, (iy+1)         ; Señalizo tecla leída. En este punto si A vale cero es que no se ha pulsado nada y la pieza cae por sí sola
+        call  $1f4f             ; res   5, (iy+1). Señalizo tecla leída. En este punto si A vale cero es que no se ha pulsado nada y la pieza cae por sí sola
         push  af                ; Guardo tecla pulsada
         xor   a                 ; Borrar es pintar con color 0 (negro)
         call  pint              ; Borra pieza
