@@ -1,11 +1,12 @@
 rom= [bytes(16384), bytes(16384), bytes(16384), bytes(16384)];
 
 function init() {
+  paintScreen= paintNormal;
   cv.setAttribute('style', 'image-rendering:'+( localStorage.ft & 1
                                                 ? 'optimizeSpeed'
                                                 : '' ));
   onresize();
-  sample= pbcs= frcs= pbc= cts= playp= vbp= bor= p0= p1= sha= f1= f3= f4= st= time= flash= ay= envc= envx= ay13= noic= tons= 0;
+  ula= sample= pbcs= frcs= pbc= cts= playp= vbp= bor= p0= p1= sha= f1= f3= f4= st= time= flash= ay= envc= envx= ay13= noic= tons= 0;
   ayr= [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         0, 0, 0]; // last 3 values for tone counter
   if( localStorage.ft==undefined )
@@ -184,12 +185,22 @@ function wp(addr, val) {                // write port, only border color emulati
     if( (bor^val) & 0x10 )
       vb[vbp++]= st;
     document.body.style.backgroundColor=  'rgb('
-                                        + pal[(bor= val)&7].toString()
+                                        + ( paintScreen==paintNormal
+                                              ? pal[(bor= val)&7]
+                                              : ulap[8] )
                                         + ')';
     if( ifra )
       put.style.color= pal[bor&7][0]+pal[bor&7][1]+pal[bor&7][2]<300 ? '#fff' : '#000';
     if( pbt )
       tim.style.color= pal[bor&7][0]+pal[bor&7][1]+pal[bor&7][2]<300 ? '#fff' : '#000';
+  }
+  else if( addr == 0xbf3b )
+    ula= val;
+  else if( addr == 0xff3b ){
+    if( ula==0x40 )
+      paintScreen= val&1 ? paintUlap : paintNormal;
+    else if( ula<0x40 )
+      ulap[ula]= [parseInt((val>>2 & 7)*255/7), parseInt((val>>5)*255/7), parseInt((val&3)*255/3)];
   }
   else if( ~addr&0x0002 )   // xxxx xxxx xxxx xx0x
     if( addr&0x8000 )       // 1xxx xxxx xxxx xx0x

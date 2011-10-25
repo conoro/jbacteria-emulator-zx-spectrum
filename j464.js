@@ -108,7 +108,6 @@ function tp(){
     pt.outerHTML= '<select onchange="tapep=this.value;tapei=this.selectedIndex">'+v+'</select>';
   else
     pt.innerHTML= v;
-  pc= 0x2a5e;
 }
 
 function loadblock() {

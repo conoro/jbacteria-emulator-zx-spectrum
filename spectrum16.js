@@ -1,9 +1,10 @@
 function init() {
+  paintScreen= paintNormal;
   cv.setAttribute('style', 'image-rendering:'+( localStorage.ft & 1
                                                 ? 'optimizeSpeed'
                                                 : '' ));
   onresize();
-  sample= pbcs= frcs= pbc= cts= playp= vbp= bor= f1= f3= f4= st= time= flash= 0;
+  ula= sample= pbcs= frcs= pbc= cts= playp= vbp= bor= f1= f3= f4= st= time= flash= 0;
   if( localStorage.ft==undefined )
     localStorage.ft= 4;
   if ( localStorage.ft & 8 )
@@ -53,7 +54,7 @@ function init() {
     m[j]= j < 0x8000
           ? emul.charCodeAt(j+0x18018) & 0xff
           : 0xff;
-  game && tp();
+  game && (pc= 0x56c, tp());
   document.ondragover= handleDragOver;
   document.ondrop= handleFileSelect;
   document.onkeydown= kdown;          // key event handling

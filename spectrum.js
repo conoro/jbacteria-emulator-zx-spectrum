@@ -104,6 +104,71 @@ pal= [[  0,   0,   0],
       [226, 226, 226],
       [255, 255, 255]];
 
+ulap=[[  0,   0,   0],
+      [  0,   0, 202],
+      [202,   0,   0],
+      [202,   0, 202],
+      [  0, 202,   0],
+      [  0, 202, 202],
+      [202, 202,   0],
+      [197, 199, 197],
+      [  0,   0,   0],
+      [  0,   0, 202],
+      [202,   0,   0],
+      [202,   0, 202],
+      [  0, 202,   0],
+      [  0, 202, 202],
+      [202, 202,   0],
+      [197, 199, 197],
+      [  0,   0,   0],
+      [  0,   0, 255],
+      [255,   0,   0],
+      [255,   0, 255],
+      [  0, 255,   0],
+      [  0, 255, 255],
+      [255, 255,   0],
+      [255, 255, 255],
+      [  0,   0,   0],
+      [  0,   0, 255],
+      [255,   0,   0],
+      [255,   0, 255],
+      [  0, 255,   0],
+      [  0, 255, 255],
+      [255, 255,   0],
+      [255, 255, 255],
+      [  0,   0,   0],
+      [  0,   0, 202],
+      [202,   0,   0],
+      [202,   0, 202],
+      [  0, 202,   0],
+      [  0, 202, 202],
+      [202, 202,   0],
+      [197, 199, 197],
+      [  0,   0,   0],
+      [  0,   0, 202],
+      [202,   0,   0],
+      [202,   0, 202],
+      [  0, 202,   0],
+      [  0, 202, 202],
+      [202, 202,   0],
+      [197, 199, 197],
+      [  0,   0,   0],
+      [  0,   0, 255],
+      [255,   0,   0],
+      [255,   0, 255],
+      [  0, 255,   0],
+      [  0, 255, 255],
+      [255, 255,   0],
+      [255, 255, 255],
+      [  0,   0,   0],
+      [  0,   0, 255],
+      [255,   0,   0],
+      [255,   0, 255],
+      [  0, 255,   0],
+      [  0, 255, 255],
+      [255, 255,   0],
+      [255, 255, 255]];
+
 function bytes(a) {
   try{
     return new Uint8Array(a);
@@ -167,11 +232,12 @@ function run() {
 }
 
 function init() {
+  paintScreen= paintNormal;
   cv.setAttribute('style', 'image-rendering:'+( localStorage.ft & 1
                                                 ? 'optimizeSpeed'
                                                 : '' ));
   onresize();
-  sample= pbcs= pbc= cts= playp= vbp= bor= f1= f3= f4= st= time= flash= 0;
+  ula= sample= pbcs= pbc= cts= playp= vbp= bor= f1= f3= f4= st= time= flash= 0;
   if( localStorage.ft==undefined )
     localStorage.ft= 4;
   if ( localStorage.ft & 8 )
@@ -219,7 +285,7 @@ function init() {
       ; j < 0x10000
       ; j++ )        // fill memory
     m[j]= emul.charCodeAt(j+0x18018);
-  game && tp();
+  game && (pc= 0x56c, tp());
   document.ondragover= handleDragOver;
   document.ondrop= handleFileSelect;
   document.onkeydown= kdown;          // key event handling
@@ -450,6 +516,7 @@ function kdown(ev) {
       rotapal();
       break;
     case 119: // F8
+      paintScreen= paintNormal;
       pc= 0;
       break;
     case 120: // F9
@@ -563,12 +630,22 @@ function wp(addr, val) {                // write port, only border color emulati
     if( (bor^val) & 0x10 )
       vb[vbp++]= st;
     document.body.style.backgroundColor=  'rgb('
-                                        + pal[(bor= val)&7].toString()
+                                        + ( paintScreen==paintNormal
+                                              ? pal[(bor= val)&7]
+                                              : ulap[8] )
                                         + ')';
     if( ifra )
       put.style.color= pal[bor&7][0]+pal[bor&7][1]+pal[bor&7][2]<300 ? '#fff' : '#000';
     if( pbt )
       tim.style.color= pal[bor&7][0]+pal[bor&7][1]+pal[bor&7][2]<300 ? '#fff' : '#000';
+  }
+  else if( addr == 0xbf3b )
+    ula= val;
+  else if( addr == 0xff3b ){
+    if( ula==0x40 )
+      paintScreen= val&1 ? paintUlap : paintNormal;
+    else if( ula<0x40 )
+      ulap[ula]= [parseInt((val>>2 & 7)*255/7), parseInt((val>>5)*255/7), parseInt((val&3)*255/3)];
   }
 }
 
@@ -682,7 +759,6 @@ function tp(){
     pt.outerHTML= '<select onchange="tapep=this.value;tapei=this.selectedIndex">'+v+'</select>';
   else
     pt.innerHTML= v;
-  pc= 0x56c;
 }
 
 function loadblock() {
@@ -711,9 +787,11 @@ function rotapal(){
     pal[t+16]= u;
   for (t= 0x4000; t < 0x5800; t++)
     vm[t]= -1;
-  document.body.style.backgroundColor=  'rgb('
-                                      + pal[bor&7].toString()
-                                      + ')';
+    document.body.style.backgroundColor=  'rgb('
+                                        + ( paintScreen==paintNormal
+                                              ? pal[bor&7]
+                                              : ulap[8] )
+                                        + ')';
 }
 
 function rt(f){

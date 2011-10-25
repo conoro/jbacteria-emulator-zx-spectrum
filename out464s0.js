@@ -79,7 +79,7 @@ function init() {
   rom[0][0x2871]= 0xfa,
   rom[0][0x2836]= 0xed,
   rom[0][0x2837]= 0xfc;
-  game && tp();
+  game && (pc= 0x2a5e, tp());
   document.ondragover= handleDragOver;
   document.ondrop= handleFileSelect;
   document.onkeydown= kdown;          // key event handling

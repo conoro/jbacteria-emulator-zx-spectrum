@@ -273,9 +273,13 @@
 ///*
   error_log("SE");
   exec("java yui SE");
+  $rom= file_get_contents('rom/SE.rom');
+  $rom[0x56c]= chr(0xed);
+  $rom[0x56d]= chr(0xfc);
   file_put_contents('aa.rom', file_get_contents('rom/k-spectrum.pal').
                               file_get_contents('rom/k-spectrum.bin').
-                              file_get_contents('rom/SE.rom').
+                              $rom.
+                              file_get_contents('rom/SE.mem').
                               file_get_contents('SE.js'));
   unlink('SE.js');
   exec('kzip -y temp.zip aa.rom');
@@ -283,9 +287,13 @@
 ///*
   error_log("SEs");
   exec("java yui SEs");
+  $rom= file_get_contents('rom/SE.rom');
+  $rom[0x56c]= chr(0xed);
+  $rom[0x56d]= chr(0xfc);
   file_put_contents('aa.rom', file_get_contents('rom/k-spectrum.pal').
                               file_get_contents('rom/k-spectrum.bin').
-                              file_get_contents('rom/SE.rom').
+                              $rom.
+                              file_get_contents('rom/SE.mem').
                               file_get_contents('SEs.js'));
   unlink('SEs.js');
   exec('kzip -y temp.zip aa.rom');
@@ -481,15 +489,15 @@
   file_put_contents('+3s.html.deflate', substr(file_get_contents('temp.zip'), 36, -75));
 ///*
   error_log("SE.html");
-  ob_start();$x='SE';
-  require'emu_se.php';
+  ob_start();$x='SE';$y=0x10000;
+  require'emu.php';
   file_put_contents('aa.rom', ob_get_contents());
   exec('kzip -y temp.zip aa.rom');
   file_put_contents('SE.html.deflate', substr(file_get_contents('temp.zip'), 36, -75));
 ///*
   error_log("SEs.html");
-  ob_start();$x='SEs';
-  require'emu_se.php';
+  ob_start();$x='SEs';$y=0x10000;
+  require'emu.php';
   file_put_contents('aa.rom', ob_get_contents());
   exec('kzip -y temp.zip aa.rom');
   file_put_contents('SEs.html.deflate', substr(file_get_contents('temp.zip'), 36, -75));
