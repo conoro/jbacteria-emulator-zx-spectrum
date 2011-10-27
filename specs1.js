@@ -170,3 +170,28 @@ function paintUlap(){
     }
   ct.putImageData(elm, 0, 0);
 }
+
+function wp(addr, val) {                // write port, only border color emulation
+  if( ~addr & 1 ){
+    if( (bor^val) & 0x10 )
+      vb[vbp++]= st;
+    document.body.style.backgroundColor=  'rgb('
+                                        + ( paintScreen==paintNormal
+                                              ? pal[(bor= val)&7]
+                                              : ulap[8|(bor= val)&7] )
+                                        + ')';
+    if( ifra )
+      put.style.color= pal[bor&7][0]+pal[bor&7][1]+pal[bor&7][2]<300 ? '#fff' : '#000';
+    if( pbt )
+      tim.style.color= pal[bor&7][0]+pal[bor&7][1]+pal[bor&7][2]<300 ? '#fff' : '#000';
+  }
+  else if( addr == 0xbf3b )
+    ula= val;
+  else if( addr == 0xff3b ){
+    if( ula==0x40 )
+      paintScreen= val&1 ? paintUlap : paintNormal;
+    else if( ula<0x40 )
+      ulap[ula]= [parseInt((val>>2 & 7)*255/7), parseInt((val>>5)*255/7), parseInt((val&3)*255/3)],
+      ula-8==bor&7 && (document.body.style.backgroundColor= 'rgb('+ulap[ula]+')');
+  }
+}

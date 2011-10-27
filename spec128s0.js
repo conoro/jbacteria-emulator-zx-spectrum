@@ -197,3 +197,10 @@ function paintUlap(){
   may >= miy &&
     ct.putImageData(elm, 0, 0, (mix<<3)-1, (miy<<3)-1, (max-mix<<3)+10, (may-miy<<3)+10);
 }
+
+function doUlap(val){
+  ulap[ula]= [parseInt((val>>2 & 7)*255/7), parseInt((val>>5)*255/7), parseInt((val&3)*255/3)];
+  ula-8==bor&7 && (document.body.style.backgroundColor= 'rgb('+ulap[ula]+')');
+  for (t= 0; t < 0x1800; t++)
+    vm[t]= -1;
+}

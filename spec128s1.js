@@ -168,3 +168,8 @@ function paintUlap(){
     }
   ct.putImageData(elm, 0, 0);
 }
+
+function doUlap(val){
+  ulap[ula]= [parseInt((val>>2 & 7)*255/7), parseInt((val>>5)*255/7), parseInt((val&3)*255/3)];
+  ula-8==bor&7 && (document.body.style.backgroundColor= 'rgb('+ulap[ula]+')');
+}

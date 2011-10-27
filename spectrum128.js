@@ -502,7 +502,7 @@ function rotapal(){
   document.body.style.backgroundColor=  'rgb('
                                       + ( paintScreen==paintNormal
                                             ? pal[bor&7]
-                                            : ulap[8] )
+                                            : ulap[8|bor&7] )
                                       + ')';
 }
 
