@@ -6,7 +6,7 @@ function init() {
                                                 ? 'optimizeSpeed'
                                                 : '' ));
   onresize();
-  ula= sample= pbcs= frcs= pbc= cts= playp= vbp= bor= p0= p1= sha= f1= f3= f4= st= time= flash= ay= envc= envx= ay13= noic= tons= 0;
+  scrl= ula= sample= pbcs= frcs= pbc= cts= playp= vbp= bor= p0= p1= sha= f1= f3= f4= st= time= flash= ay= envc= envx= ay13= noic= tons= 0;
   ayr= [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         0, 0, 0]; // last 3 values for tone counter
   if( localStorage.ft==undefined )
@@ -194,6 +194,8 @@ function wp(addr, val) {                // write port, only border color emulati
     if( pbt )
       tim.style.color= pal[bor&7][0]+pal[bor&7][1]+pal[bor&7][2]<300 ? '#fff' : '#000';
   }
+  else if( addr == 0x7f3b )
+    doScrl(val);
   else if( addr == 0xbf3b )
     ula= val;
   else if( addr == 0xff3b ){

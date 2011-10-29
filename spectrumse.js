@@ -222,7 +222,7 @@ function init() {
                                                 ? 'optimizeSpeed'
                                                 : '' ));
   onresize();
-  ula= sample= pbcs= pbc= cts= playp= vbp= bor= f1= f3= f4= st= time= flash= 0;
+  scrl= ula= sample= pbcs= pbc= cts= playp= vbp= bor= f1= f3= f4= st= time= flash= 0;
   if( localStorage.ft==undefined )
     localStorage.ft= 4;
   if ( localStorage.ft & 8 )
