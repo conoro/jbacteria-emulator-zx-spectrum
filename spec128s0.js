@@ -24,8 +24,8 @@ function paintNormal(){
                   : scree[u]
             , vm[u] != (col | k<<8) ){
             vm[u]= col | k<<8;
-            if(dx<mix)
-              mix= dx;
+            if(dx-scrl<mix)
+              mix= dx-scrl;
             else
               dx>max && (max= dx);
             if(dy < miy)
@@ -149,6 +149,8 @@ function paintNormal(){
             o+= 4;
           }
         }
+        else
+          o+= 32;
   }
   else
     while( ++t < 0x300 )
