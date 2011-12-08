@@ -1,4 +1,8 @@
- 
+
+; 06-12-2011 modificado para que compile con sjasmplus 1.07 rc7
+
+        OUTPUT  48.rom
+
 ;************************************************************************
 ;** An Assembly File Listing to generate a 16K ROM for the ZX Spectrum **
 ;************************************************************************
@@ -7,15 +11,6 @@
 ; Last updated: 13-DEC-2004
 ; -------------------------
 
-; TASM cross-assembler directives. 
-; ( comment out, perhaps, for other assemblers - see Notes at end.)
-
-#define DEFB .BYTE      
-#define DEFW .WORD
-#define DEFM .TEXT
-#define ORG  .ORG
-#define EQU  .EQU
-#define equ  .EQU
 
 ;   It is always a good idea to anchor, using ORGs, important sections such as 
 ;   the character bitmaps so that they don't move as code is added and removed.
@@ -23,7 +18,7 @@
 ;   Generally most approaches try to maintain main entry points as they are
 ;   often used by third-party software. 
 
-ORG 0000
+        ORG     $0000
 
 ;*****************************************
 ;** Part 1. RESTART ROUTINES AND TABLES **
@@ -2010,7 +2005,7 @@ L0605:  POP     AF              ; discard address STMT-RET.
 ;   Now reduce the low byte of the Syntax table entry to give command.
 ;   Note. For ZASM use SUB $E0 as next instruction.
 
-L0609:  SUB     L1ADF + 1 % 256 ; subtract the known offset.
+L0609:  SUB     (L1ADF+1) % 256 ; subtract the known offset.
                                 ; ( is SUB $E0 in standard ROM )
 
         LD      ($5C74),A       ; and put back in T_ADDR as 0,1,2, or 3
@@ -8659,7 +8654,7 @@ L1C96:  BIT     7,(IY+$01)      ; test FLAGS - checking syntax only ?
 
 ; Note. For ZASM assembler replace following expression with SUB $13.
 
-L1CA5:  SUB     L1AEB-$D8 % 256 ; convert $EB to $D8 ('INK') etc.
+L1CA5:  SUB     (L1AEB-$D8)%256 ; convert $EB to $D8 ('INK') etc.
                                 ; ( is SUB $13 in standard ROM )
 
         CALL    L21FC           ; routine CO-TEMP-4
@@ -19097,156 +19092,227 @@ L386C:  DEFB    $38             ;;end-calc              last value is 1 or 0.
 
 ;; spare
 L386E:  DEFB    $FF, $FF        ;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF
 
+L38BF:  INC     H
+        JR      C, L38CD
+        OR      B
+        ADD     A,A
+fin0:   JR      C, fin0
+        ADD     A,A
+        EX      AF,AF'
+        OUT     ($FE),A
+        IN      L,(C)
+        JP      (HL)
+L38CD:  XOR     B
+        LD      (DE),A
+        INC     DE
+        LD      A,4
+        EX      AF,AF'
+        SCF
+        IN      L,(C)
+        JP      (HL)
 
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+L38D7:  DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
 
-ORG $3D00
+L38FF:  IN      L,(C)
+        JP      (HL)
+
+L3902:  DEFB    $FF, $FF, $FF, $FF, $FF, $FF;             tabla
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+
+L39BF:  IN      L,(C)
+        JP      (HL)
+
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+
+L39FF:  LD      A,R
+        LD      L,A
+        LD      B,(HL)
+        LD      A,4
+        LD      R,A
+        ADC     A,A
+        EX      AF,AF'
+        DEC     H
+        IN      L,(C)
+        JP      (HL)
+        
+
+L3A0D:  DEFB    $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+
+L3ABF:  IN      L,(C)
+        JP      (HL)
+
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+
+L3AFF:  INC     H
+        JR      C, L3B0D
+        OR      B
+        ADD     A,A
+fin1:   JR      C, fin1
+        ADD     A,A
+        EX      AF,AF'
+        OUT     ($FE),A
+        IN      L,(C)
+        JP      (HL)
+L3B0D:  XOR     B
+        LD      (DE),A
+        INC     DE
+        LD      A,4
+        EX      AF,AF'
+        SCF
+        IN      L,(C)
+        JP      (HL)
+
+L3B17:  DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;  tabla
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+
+L3BBF:  LD      A,R
+        LD      L,A
+        LD      B,(HL)
+        LD      A,4
+        LD      R,A
+        ADC     A,A
+        EX      AF,AF'
+        DEC     H
+        IN      L,(C)
+        JP      (HL)
+        
+L3BCD:  DEFB    $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+
+L3BFF:  IN      L,(C)
+        JP      (HL)
+
+L3C00:  DEFB    $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+
+        ORG     $3D00
 
 ; -------------------------------
 ; THE 'ZX SPECTRUM CHARACTER SET'
@@ -20311,7 +20377,7 @@ L3D00:  DEFB    %00000000
         DEFB    %00111100
 
 
-#end                            ; generic cross-assembler directive 
+.end                            ; generic cross-assembler directive 
 
 ; Acknowledgements
 ; -----------------
