@@ -1739,62 +1739,71 @@ L0554:  POP     AF              ; restore the accumulator.
 ;; LD-BYTES
 L0556:  di
         ex      af, af'
+        push    ix
+        pop     bc
         ld      hl, L053F
         push    hl
-ldsta   ld      a, $7f
-        in      a, ($fe)
+        exx
+        ld      bc, $7ffe
+ldsta   in      a, (c)
         rra
         ret     nc
-        ld      b, 0
+        ld      d, 0
         call    edge1
-        cp      80
+        jr      z, ldsta
+        cp      25
         rl      h
-        cp      40
+        cp      15
         jr      nc, ldsta
         inc     h
         jr      nz, ldsta
         call    edge1
         ld      l, $1
 l16b    call    edge2
-        cp      40
+        cp      12
         adc     hl, hl
         jr      nc, l16b
         ex      af, af'
-        cp      h
+        cp      l
         ret     nz
-        ld      a, c
+        ld      a, h
         exx
-        ld      c, a
-        ld      hl, $3a10
+        ld      l, a
+        exx
+        ld      hl, $381e
 speed   call    edge2
-        cp      40
+        cp      12
         rl      l
         jr      nc, speed
         ld      a, (hl)
-        push    ix
         ld      ixl, a
-        pop     de
-        bit     5, c
-        ld      bc, $10fe
+
+        bit     5, e
+        xor     a
+        ld      b, a
+        inc     a
+        ex      af, af'
         jr      z, one
-        ld      hl, l38ff
+        ld      hl, L39FF+4
         jr      zero
-one     ld      hl, l3abf
-zero    call    162c
+one     ld      hl, L3BBF+4
+zero    call    L162C
         
 
 
-edge2   call    edge1
+edge2   ld      d, 0
+        call    edge1
 
-edgel   inc     b
+edgel   inc     d
         ret     z
-edge1   in      a, ($fe)
-        cp      c
-        jr      nz, edgel
-        ld      c, a
-        ld      a, b
+edge1   in      a, (c)
+        cp      e
+        jr      z, edgel
+        ld      e, a
+        ld      a, d
         ret
 
+        BLOCK   $0605-$, $ff
         org     $0605
 
 ; ---------------------------------
@@ -18934,16 +18943,20 @@ L38CD:  XOR     B           ;4
         IN      L,(C)       ;12   activo flag para borde
         JP      (HL)        ;4
 
-L38D7:  DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+L38D7:  DEFB    $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+
+L38E0:  DEFB    $00, $01, $02, $03, $04, $05, $06, $07;
+        DEFB    $08, $09, $0a, $0b, $0c, $0d, $0e, $0f;
+
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF;
 
 L38FF:  IN      L,(C)
         JP      (HL)
 
 L3902:  DEFB    $FF, $FF, $FF, $FF, $FF, $FF;             tabla
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
@@ -18977,13 +18990,12 @@ L39BF:  IN      L,(C)       ;12
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF;
 
 L39FF:  LD      A,R         ;9        49
         LD      L,A         ;4
         LD      B,(HL)      ;7
-        LD      A,IXl       ;8
+        LD      A,IXL       ;8
         LD      R,A         ;9
         ADC     A,A         ;4      el carry de entrada va al borde
         EX      AF,AF'      ;4      salgo con flag carry en F' a cero
@@ -19072,7 +19084,7 @@ L3B17:  DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;  tabla
 L3BBF:  LD      A,R
         LD      L,A
         LD      B,(HL)
-        LD      A,IXl
+        LD      A,IXL
         LD      R,A
         ADC     A,A
         EX      AF,AF'
@@ -19091,7 +19103,7 @@ L3BCD:  DEFB    $FF, $FF, $FF;
 L3BFF:  IN      L,(C)
         JP      (HL)
 
-L3C00:  DEFB    $FF, $FF, $FF, $FF, $FF, $FF;
+L3C02:  DEFB    $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
