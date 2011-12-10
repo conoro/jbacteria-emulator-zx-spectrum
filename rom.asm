@@ -1745,6 +1745,7 @@ L0556:  di
         push    hl
         exx
         ld      bc, $7ffe
+        ld      l, $8
 ldsta   in      a, (c)
         rra
         ret     nc
@@ -1752,7 +1753,11 @@ ldsta   in      a, (c)
         call    edge1
         jr      z, ldsta
         cp      25
-        rl      h
+        jr      nc, mal
+        dec     l
+        set     3, l
+        out     (c), l
+mal     rl      h
         cp      15
         jr      nc, ldsta
         inc     h
@@ -1768,6 +1773,8 @@ l16b    call    edge2
         ret     nz
         ld      a, h
         exx
+        push    bc
+        ld      h, a
         ld      l, a
         exx
         ld      hl, $381e
@@ -1778,17 +1785,32 @@ speed   call    edge2
         ld      a, (hl)
         ld      ixl, a
 
-        ld      a, 1
+        ld      a, 3
+        and     a
         ex      af, af'
         bit     6, e
+        pop     de
         ld      b, 0
         jr      z, one
         ld      hl, L39FF+4
         jr      zero
 one     ld      hl, L3BBF+4
 zero    call    L162C
-        
-
+        exx
+check   ld      a, (bc)
+        xor     h
+        ld      h, a
+        inc     bc
+        dec     de
+        ld      a, d
+        or      e
+        jr      nz, check
+        xor     h
+        push    bc
+        pop     ix
+        ret     nz
+        scf
+        ret
 
 edge2   ld      d, 0
         call    edge1
@@ -18945,7 +18967,7 @@ L38CC:  XOR     B           ;4
 L38D5:  DEFB    $FF, $FF;, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
 
-L38E0:  DEFB    $00, $01, $02, $55, $04, $05, $06, $07;
+L38E0:  DEFB    $00, $01, $02, $70, $04, $05, $06, $07;
         DEFB    $08, $09, $0a, $0b, $0c, $0d, $0e, $0f;
 
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;

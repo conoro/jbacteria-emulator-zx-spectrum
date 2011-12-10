@@ -49,31 +49,36 @@ $lastbl= $pos= 0;
 while($pos<$long){
   $len= ord($cont[$pos])|ord($cont[$pos+1])<<8;
 echo $len."\n";
-  pilot( $lastbl ? 1000 : 100 );
+  pilot( $lastbl ? 1000 : 200 );
   outbits_double(3);
   $c20= 20;
-  $b20= $velo | $muest<<3&8 | ord($cont[$pos+2])<<4 | ord($cont[$pos+$len+1])<<12;
+  $check= ord($cont[$pos+$len+1])^ord($cont[$pos+2]);
+  $b20= $velo | $muest<<3&8 | ord($cont[$pos+2])<<4 | $check<<12;
   while( $c20-- ){
     outbits_double( $b20&0x80000 ? 3 : 5 );
     $b20<<= 1;
   }
+  $ini= 1;
   for($i= 2; $i<$len; $i++){
     $val= ord($cont[$pos+1+$i]) >> 6;
-    outbits($tabla1[$velo][$val]);
+    outbits($ini+$tabla1[$velo][$val]);
     outbits($tabla2[$velo][$val]);
     $val= ord($cont[$pos+1+$i]) >> 4 & 3;
     outbits($tabla1[$velo][$val]);
     outbits($tabla2[$velo][$val]);
-    $val= ord($cont[$pos+1+$i]) >> 6 & 3;
+    $val= ord($cont[$pos+1+$i]) >> 2 & 3;
     outbits($tabla1[$velo][$val]);
     outbits($tabla2[$velo][$val]);
     $val= ord($cont[$pos+1+$i]) & 3;
-    outbits($tabla1[$velo][$val]);
-    outbits($tabla2[$velo][$val]);
+    outbits($tabla1[$velo][$val^2]);
+    outbits($tabla2[$velo][$val^2]);
+    $ini= 0;
   }
+  outbits_double(9);
   $lastbl= ord($cont[$pos+2]);
   $pos+= $len+2;
 }
+pilot( 200 );
 $longi= strlen($bytes);
 file_put_contents(substr($_SERVER['argv'][1],0,-4).'.tzx',
                   $tzx.chr($longi&255).chr($longi>>8&255).chr($longi>>16&255).$bytes);
