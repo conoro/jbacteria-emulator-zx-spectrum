@@ -1778,11 +1778,10 @@ speed   call    edge2
         ld      a, (hl)
         ld      ixl, a
 
-        bit     5, e
-        xor     a
-        ld      b, a
-        inc     a
+        ld      a, 1
         ex      af, af'
+        bit     6, e
+        ld      b, 0
         jr      z, one
         ld      hl, L39FF+4
         jr      zero
@@ -18924,29 +18923,29 @@ L386E:  DEFB    $FF, $FF        ;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF
 
-L38BF:  INC     H           ;4      ruta1: 46  ruta2: 46
-        JP      C, L38CD    ;10
-        OR      B           ;4
+L38BF:  INC     H           ;4      ruta1: 44  ruta2: 44
+        JR      C, L38CC    ;7/12
+        XOR     B           ;4
         ADD     A,A         ;4
         RET     C           ;5/11
         ADD     A,A         ;4
         EX      AF,AF'      ;4    si flag f' activo he completado byte
-        OUT     ($FE),A     ;11
+        OUT     ($FE),A     ;12
         IN      L,(C)       ;12
         JP      (HL)        ;4
-L38CD:  XOR     B           ;4
+L38CC:  XOR     B           ;4
         LD      (DE),A      ;7
         INC     DE          ;6
-        LD      A,4         ;7    marker bit
+        LD      A,$c        ;7    marker bit
         EX      AF,AF'      ;4
-        SCF                 ;4
+        nop
         IN      L,(C)       ;12   activo flag para borde
         JP      (HL)        ;4
 
-L38D7:  DEFB    $FF;
+L38D5:  DEFB    $FF, $FF;, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
 
-L38E0:  DEFB    $00, $01, $02, $03, $04, $05, $06, $07;
+L38E0:  DEFB    $00, $01, $02, $55, $04, $05, $06, $07;
         DEFB    $08, $09, $0a, $0b, $0c, $0d, $0e, $0f;
 
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
@@ -18992,19 +18991,19 @@ L39BF:  IN      L,(C)       ;12
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF;
 
-L39FF:  LD      A,R         ;9        49
+L39FF:  LD      A,R         ;9        45
         LD      L,A         ;4
         LD      B,(HL)      ;7
         LD      A,IXL       ;8
         LD      R,A         ;9
-        ADC     A,A         ;4      el carry de entrada va al borde
+     ld a,b
         EX      AF,AF'      ;4      salgo con flag carry en F' a cero
         DEC     H           ;4
         IN      L,(C)       ;12
         JP      (HL)        ;4
         
 
-L3A0D:  DEFB    $FF, $FF, $FF;
+L3A0D:  DEFB    $FF, $FF, $FF;, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
@@ -19037,12 +19036,19 @@ L3ABF:  IN      L,(C)
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF;, $FF;
 
+L3AF5:  XOR     B
+        LD      (DE),A
+        INC     DE
+        LD      A,$c
+        EX      AF,AF'
+        nop
+        IN      L,(C)
+        JP      (HL)
 L3AFF:  INC     H
-        JP      C, L3B0D
-        OR      B
+        JR      C, L3AF5
+        XOR     B
         ADD     A,A
         RET     C
         ADD     A,A
@@ -19050,49 +19056,87 @@ L3AFF:  INC     H
         OUT     ($FE),A
         IN      L,(C)
         JP      (HL)
-L3B0D:  XOR     B
-        LD      (DE),A
-        INC     DE
-        LD      A,4
-        EX      AF,AF'
-        SCF
-        IN      L,(C)
-        JP      (HL)
+L3B0C:  ;DEFB    $0A, $FF, $0A
+        DEFB    $0A, $FF, $0A   ;0c
+        DEFB    $0A, $FF, $0A   ;0f
+        DEFB    $0A, $FF, $0A   ;12
+        DEFB    $0A, $FF, $0A   ;15
+        DEFB    $0A, $FF, $0A   ;18
+        DEFB    $0A, $FF, $0A   ;1b
+        DEFB    $0A, $FF, $0A   ;1e
+        DEFB    $0A, $FF, $0A   ;21
+        DEFB    $0A, $FF, $0A   ;24
 
-L3B17:  DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;  tabla
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $0B, $FF, $0B   ;27
+        DEFB    $0B, $FF, $0B   ;2a
+        DEFB    $0B, $FF, $0B   ;2d
+        DEFB    $0B, $FF, $0B   ;30
+        DEFB    $0B, $FF, $0B   ;33
+        DEFB    $0B, $FF, $0B   ;36
+        DEFB    $0B, $FF, $0B   ;39
+        DEFB    $0B, $FF, $0B   ;3c
+        DEFB    $0B, $FF, $0B   ;3f
+        DEFB    $0B, $FF, $08   ;42
+
+        DEFB    $08, $FF, $08   ;45
+        DEFB    $08, $FF, $08   ;48
+        DEFB    $08, $FF, $08   ;4b
+        DEFB    $08, $FF, $08   ;4e
+        DEFB    $08, $FF, $08   ;51
+        DEFB    $08, $FF, $08   ;54
+        DEFB    $08, $FF, $08   ;57
+        DEFB    $08, $FF, $08   ;5a
+        DEFB    $08, $FF, $09   ;5d
+        DEFB    $08, $FF, $09   ;60
+
+        DEFB    $09, $FF, $09   ;63
+        DEFB    $09, $FF, $09   ;66
+        DEFB    $09, $FF, $09   ;69
+        DEFB    $09, $FF, $09   ;6c
+        DEFB    $09, $FF, $09   ;6f
+        DEFB    $09, $FF, $09   ;72
+        DEFB    $09, $FF, $09   ;75
+        DEFB    $09, $FF, $FF   ;78
+        DEFB    $09, $FF, $FF   ;7b
+        DEFB    $09, $FF        ;7e
+
+L3B80:  DEFB    $0A, $FF, $0A
+        DEFB    $0A, $FF, $0A
+        DEFB    $0A, $FF, $0A
+        DEFB    $0A, $FF, $0A
+        DEFB    $0A, $FF, $0A
+
+        DEFB    $0B, $FF, $0B
+        DEFB    $0B, $FF, $0B
+        DEFB    $0B, $FF, $0B
+        DEFB    $0B, $FF, $0B
+        DEFB    $0B, $FF, $08
+
+        DEFB    $08, $FF, $08
+        DEFB    $08, $FF, $08
+        DEFB    $08, $FF, $08
+        DEFB    $08, $FF, $08
+        DEFB    $08, $FF, $09
+
+        DEFB    $09, $FF, $09
+        DEFB    $09, $FF, $09
+        DEFB    $09, $FF, $09
+        DEFB    $09, $FF, $09
+        DEFB    $09, $FF, $FF
+        DEFB    $FF, $FF, $FF;
 
 L3BBF:  LD      A,R
         LD      L,A
         LD      B,(HL)
         LD      A,IXL
         LD      R,A
-        ADC     A,A
+        ld      a,b
         EX      AF,AF'
         DEC     H
         IN      L,(C)
         JP      (HL)
         
-L3BCD:  DEFB    $FF, $FF, $FF;
+L3BCD:  DEFB    $FF, $FF, $FF;, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;

@@ -22,20 +22,28 @@ function pilot($val){
   while( $val-- )
     outbits_double($muest);
 }
-$tabla= array(array(2,3,4,5),
-              array(2,4,6,8),
-              array(3,4,5,6),
-              array(3,5,7,9),
-              array(4,5,6,7),
-              array(4,6,8,10),
-              array(5,6,7,8),
-              array(5,7,9,11));
+$tabla1= array( array(1,2,2,3),
+                array(1,2,3,4),
+                array(2,2,3,3),
+                array(2,3,4,5),
+                array(2,3,3,4),
+                array(2,3,4,5),
+                array(3,3,4,4),
+                array(3,4,5,6));
+$tabla2= array( array(1,1,2,2),
+                array(1,2,3,4),
+                array(1,2,2,3),
+                array(1,2,3,4),
+                array(2,2,3,3),
+                array(2,3,4,5),
+                array(2,3,3,4),
+                array(2,3,4,5));
 $cont= file_get_contents($_SERVER['argv'][1]);
 $velo= $_SERVER['argv'][2] ? $_SERVER['argv'][2] : 3;
 $muest= $_SERVER['argv'][3]==48 ? 11 : 12;
-$inibit= $_SERVER['argv'][4]==1 ? 1 : 0;
+$inibit= $_SERVER['argv'][4]==1 ? 1 : 0; //abcd
 $long= strlen($cont);
-$tzx= "ZXTape!\32\1\24\25".chr($muest&1?79:73)."\0\0\0\10";
+$tzx= "ZXTape!\32\1\24\25".chr($muest&1?73:79)."\0\0\0\10";
 $byte= 1;
 $lastbl= $pos= 0;
 while($pos<$long){
@@ -51,13 +59,17 @@ echo $len."\n";
   }
   for($i= 2; $i<$len; $i++){
     $val= ord($cont[$pos+1+$i]) >> 6;
-    outbits_double($tabla[$velo][$val]);
+    outbits($tabla1[$velo][$val]);
+    outbits($tabla2[$velo][$val]);
     $val= ord($cont[$pos+1+$i]) >> 4 & 3;
-    outbits_double($tabla[$velo][$val]);
+    outbits($tabla1[$velo][$val]);
+    outbits($tabla2[$velo][$val]);
     $val= ord($cont[$pos+1+$i]) >> 6 & 3;
-    outbits_double($tabla[$velo][$val]);
+    outbits($tabla1[$velo][$val]);
+    outbits($tabla2[$velo][$val]);
     $val= ord($cont[$pos+1+$i]) & 3;
-    outbits_double($tabla[$velo][$val]);
+    outbits($tabla1[$velo][$val]);
+    outbits($tabla2[$velo][$val]);
   }
   $lastbl= ord($cont[$pos+2]);
   $pos+= $len+2;
