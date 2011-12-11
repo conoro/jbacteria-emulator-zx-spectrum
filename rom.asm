@@ -1785,12 +1785,11 @@ speed   call    edge2
         ld      a, (hl)
         ld      ixl, a
 
-        ld      a, 3
-        and     a
+        ld      a, $8d ;3  0010 1010
         ex      af, af'
         bit     6, e
         pop     de
-        ld      b, 0
+        ld      b, $ef
         jr      z, one
         ld      hl, L39FF+4
         jr      zero
@@ -19047,7 +19046,11 @@ L3A0D:  DEFB    $FF, $FF, $FF;, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF;
+
+        IN      L,(C)
+        JP      (HL)
+        NOP
 
 L3ABF:  IN      L,(C)
         JP      (HL)
@@ -19058,18 +19061,21 @@ L3ABF:  IN      L,(C)
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF;, $FF;
+        DEFB    $FF;
 
-L3AF5:  XOR     B
+L3AF1:  XOR     B
         LD      (DE),A
         INC     DE
-        LD      A,$c
+        LD      A,$88
+        SCF
         EX      AF,AF'
-        nop
         IN      L,(C)
         JP      (HL)
+        LD      C,$FE
+        NOP
+        NOP
 L3AFF:  INC     H
-        JR      C, L3AF5
+        JR      NC, L3AF1
         XOR     B
         ADD     A,A
         RET     C
@@ -19078,74 +19084,76 @@ L3AFF:  INC     H
         OUT     ($FE),A
         IN      L,(C)
         JP      (HL)
-L3B0C:  ;DEFB    $0A, $FF, $0A
-        DEFB    $0A, $FF, $0A   ;0c
-        DEFB    $0A, $FF, $0A   ;0f
-        DEFB    $0A, $FF, $0A   ;12
-        DEFB    $0A, $FF, $0A   ;15
-        DEFB    $0A, $FF, $0A   ;18
-        DEFB    $0A, $FF, $0A   ;1b
-        DEFB    $0A, $FF, $0A   ;1e
-        DEFB    $0A, $FF, $0A   ;21
-        DEFB    $0A, $FF, $0A   ;24
+L3B0C:  DEFB    $ed, $7f, $ed   ;0c
+        DEFB    $ed, $7f, $ed   ;0f
+        DEFB    $ed, $7f, $ed   ;12
+        DEFB    $ed, $7f, $ed   ;15
+        DEFB    $ed, $7f, $ed   ;18
+        DEFB    $ed, $7f, $ed   ;1b
+        DEFB    $ed, $7f, $ed   ;1e
+        DEFB    $ed, $7f, $ed   ;21
+        DEFB    $ed, $7f, $ed   ;24
 
-        DEFB    $0B, $FF, $0B   ;27
-        DEFB    $0B, $FF, $0B   ;2a
-        DEFB    $0B, $FF, $0B   ;2d
-        DEFB    $0B, $FF, $0B   ;30
-        DEFB    $0B, $FF, $0B   ;33
-        DEFB    $0B, $FF, $0B   ;36
-        DEFB    $0B, $FF, $0B   ;39
-        DEFB    $0B, $FF, $0B   ;3c
-        DEFB    $0B, $FF, $0B   ;3f
-        DEFB    $0B, $FF, $08   ;42
+        DEFB    $ec, $7f, $ec   ;27
+        DEFB    $ec, $7f, $ec   ;2a
+        DEFB    $ec, $7f, $ec   ;2d
+        DEFB    $ec, $7f, $ec   ;30
+        DEFB    $ec, $7f, $ec   ;33
+        DEFB    $ec, $7f, $ec   ;36
+        DEFB    $ec, $7f, $ec   ;39
+        DEFB    $ec, $7f, $ec   ;3c
+        DEFB    $ec, $7f, $ec   ;3f
+        DEFB    $ec, $7f, $ef   ;42
 
-        DEFB    $08, $FF, $08   ;45
-        DEFB    $08, $FF, $08   ;48
-        DEFB    $08, $FF, $08   ;4b
-        DEFB    $08, $FF, $08   ;4e
-        DEFB    $08, $FF, $08   ;51
-        DEFB    $08, $FF, $08   ;54
-        DEFB    $08, $FF, $08   ;57
-        DEFB    $08, $FF, $08   ;5a
-        DEFB    $08, $FF, $09   ;5d
-        DEFB    $08, $FF, $09   ;60
+        DEFB    $ef, $7f, $ef   ;45
+        DEFB    $ef, $7f, $ef   ;48
+        DEFB    $ef, $7f, $ef   ;4b
+        DEFB    $ef, $7f, $ef   ;4e
+        DEFB    $ef, $7f, $ef   ;51
+        DEFB    $ef, $7f, $ef   ;54
+        DEFB    $ef, $7f, $ef   ;57
+        DEFB    $ef, $7f, $ef   ;5a
+        DEFB    $ef, $7f, $ee   ;5d
+        DEFB    $ef, $7f, $ee   ;60
 
-        DEFB    $09, $FF, $09   ;63
-        DEFB    $09, $FF, $09   ;66
-        DEFB    $09, $FF, $09   ;69
-        DEFB    $09, $FF, $09   ;6c
-        DEFB    $09, $FF, $09   ;6f
-        DEFB    $09, $FF, $09   ;72
-        DEFB    $09, $FF, $09   ;75
-        DEFB    $09, $FF, $FF   ;78
-        DEFB    $09, $FF, $FF   ;7b
-        DEFB    $09, $FF        ;7e
+        DEFB    $ee, $7f, $ee   ;63
+        DEFB    $ee, $7f, $ee   ;66
+        DEFB    $ee, $7f, $ee   ;69
+        DEFB    $ee, $7f, $ee   ;6c
+        DEFB    $ee, $7f, $ee   ;6f
+        DEFB    $ee, $7f, $ee   ;72
+        DEFB    $ee, $7f, $ee   ;75
+        DEFB    $ee, $7f, $7f   ;78
+        DEFB    $ee, $7f, $7f   ;7b
+        DEFB    $ee, $7f        ;7e
 
-L3B80:  DEFB    $0A, $FF, $0A
-        DEFB    $0A, $FF, $0A
-        DEFB    $0A, $FF, $0A
-        DEFB    $0A, $FF, $0A
-        DEFB    $0A, $FF, $0A
+L3B80:  DEFB    $ed, $7f, $ed
+        DEFB    $ed, $7f, $ed
+        DEFB    $ed, $7f, $ed
+        DEFB    $ed, $7f, $ed
+        DEFB    $ed, $7f, $ed
 
-        DEFB    $0B, $FF, $0B
-        DEFB    $0B, $FF, $0B
-        DEFB    $0B, $FF, $0B
-        DEFB    $0B, $FF, $0B
-        DEFB    $0B, $FF, $08
+        DEFB    $ec, $7f, $ec
+        DEFB    $ec, $7f, $ec
+        DEFB    $ec, $7f, $ec
+        DEFB    $ec, $7f, $ec
+        DEFB    $ec, $7f, $ef
 
-        DEFB    $08, $FF, $08
-        DEFB    $08, $FF, $08
-        DEFB    $08, $FF, $08
-        DEFB    $08, $FF, $08
-        DEFB    $08, $FF, $09
+        DEFB    $ef, $7f, $ef
+        DEFB    $ef, $7f, $ef
+        DEFB    $ef, $7f, $ef
+        DEFB    $ef, $7f, $ef
+        DEFB    $ef, $7f, $ee
 
-        DEFB    $09, $FF, $09
-        DEFB    $09, $FF, $09
-        DEFB    $09, $FF, $09
-        DEFB    $09, $FF, $09
-        DEFB    $09, $FF, $FF
-        DEFB    $FF, $FF, $FF;
+        DEFB    $ee, $7f, $ee
+        DEFB    $ee, $7f, $ee
+        DEFB    $ee, $7f, $ee
+        DEFB    $ee, $7f, $ee
+        DEFB    $ee, $7f
+
+        LD      C,$FE
+        NOP
+        NOP
 
 L3BBF:  LD      A,R
         LD      L,A
@@ -19164,7 +19172,12 @@ L3BCD:  DEFB    $FF, $FF, $FF;, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF;
+
+        IN      L,(C)
+        JP      (HL)
+
+        NOP
 
 L3BFF:  IN      L,(C)
         JP      (HL)

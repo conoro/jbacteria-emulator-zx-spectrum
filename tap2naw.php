@@ -61,17 +61,17 @@ echo $len."\n";
   $ini= 1;
   for($i= 2; $i<$len; $i++){
     $val= ord($cont[$pos+1+$i]) >> 6;
-    outbits($ini+$tabla1[$velo][$val]);
-    outbits($tabla2[$velo][$val]);
+    outbits($ini+$tabla1[$velo][$val^3]);
+    outbits($tabla2[$velo][$val^3]);
     $val= ord($cont[$pos+1+$i]) >> 4 & 3;
     outbits($tabla1[$velo][$val]);
     outbits($tabla2[$velo][$val]);
     $val= ord($cont[$pos+1+$i]) >> 2 & 3;
-    outbits($tabla1[$velo][$val]);
-    outbits($tabla2[$velo][$val]);
-    $val= ord($cont[$pos+1+$i]) & 3;
     outbits($tabla1[$velo][$val^2]);
     outbits($tabla2[$velo][$val^2]);
+    $val= ord($cont[$pos+1+$i]) & 3;
+    outbits($tabla1[$velo][$val^1]);
+    outbits($tabla2[$velo][$val^1]);
     $ini= 0;
   }
   outbits_double(9);
@@ -121,4 +121,20 @@ feff lee timings
 3b04 tabla
 3bbf lee timings
 3bff salto1
+
+1110 11xx registro B
+0110 0010 ini
+1000 1000 shi
+0110 01xx xor
+1001 xx00 shi
+0111 XXyy xor
+11XX yy00 shi
+00Xx YYzz xor
+XxYY zz00 shi
+xXyY ZZww xor
+
+ teclas problematicas
+ 6 7 9 0
+ Z X V Shift
+ A S F G
 */
