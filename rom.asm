@@ -4,7 +4,7 @@
         OUTPUT  48.rom
 
       MACRO table
-        DEFB    $ed, $ed, $7f   ;0c
+        DEFB    $ed, $ed, $7f   ;0c   ;0d
         DEFB    $ed, $ed, $7f   ;0f
         DEFB    $ed, $ed, $7f   ;12
         DEFB    $ed, $ed, $7f   ;15
@@ -42,7 +42,7 @@
         DEFB    $ee, $ee, $7f   ;75
         DEFB    $ee, $7f, $7f   ;78
         DEFB    $ee, $7f, $7f   ;7b
-        DEFB    $ee, $7f        ;7e
+        DEFB    $ee             ;7e
 
         DEFB    $ed, $ed, $7f   ;80
         DEFB    $ed, $ed, $7f   ;83
@@ -19170,7 +19170,7 @@ L387F:  LD      A,$7F
         RRA
         RET     NC
         LD      D,0
-        CALL    L39E1
+        CALL    L3ADE
         JR      Z,L387F
         CP      50
         JR      NC,L389F
@@ -19190,38 +19190,39 @@ L389F:  CP      25
         INC     H
         JR      NZ,L387F
         POP     AF
-        CALL    L39E1
+        CALL    L3ADE
         LD      L,$01
-L38B1:  CALL    L39DA
+L38B1:  CALL    L3AD7
         CP      12
         ADC     HL,HL
         JR      NC,L38B1
-        JR      L38D6
+        JR      L38DA
 
 L38BB:  LD      C,$FE
         NOP
         NOP
 
-L38BF:  INC     H           ;4      ruta1: 43  ruta2: 48
+L38BF:  INC     H           ;4      45/48
         JR      NC,L38CC    ;7/12
         XOR     B           ;4
         ADD     A,A         ;4
-        RET     C           ;5/11
+        JR      C,L38D7     ;7/12
         ADD     A,A         ;4
-        EX      AF,AF'      ;4    si flag f' activo he completado byte
+        EX      AF,AF'      ;4
         OUT     ($FE),A     ;11
         IN      L,(C)       ;12
         JP      (HL)        ;4
 L38CC:  XOR     B           ;4
         LD      (DE),A      ;7
         INC     DE          ;6
-        LD      A,$88       ;7    marker bit
+        LD      A,$88       ;7
         SCF                 ;4
         EX      AF,AF'      ;4
-        IN      L,(C)       ;12   activo flag para borde
+        IN      L,(C)       ;12
         JP      (HL)        ;4
 
-L38D6:  POP     AF
+L38D7:  JP      L3AC2
+L38DA:  POP     AF
         EX      AF,AF'
         CP      L
         RET     NZ
@@ -19232,18 +19233,16 @@ L38D6:  POP     AF
         LD      L,A
         EXX
         LD      HL,$3B0D
-L39E2:  CALL    L39DA
+L39E7:  CALL    L3AD7
         CP      12
         RL      L
-        JR      NC,L39E2
+        JR      NC,L39E7
         LD      A,$8D
         EX      AF,AF'
         SRA     L
         LD      A,(HL)
         LD      IXL,A
         SBC     A,A
-        LD      IXH,A
-        BIT     6,E
         JR      L3902
 
 L38FB:  IN      L,(C)
@@ -19253,56 +19252,33 @@ L38FB:  IN      L,(C)
 L38FF:  IN      L,(C)
         JP      (HL)
 
-L3902:  POP     DE
+L3902:  LD      IXH,A
+        BIT     6,E
+        POP     DE
         LD      B,$EF
-        JP      Z,L39C5
         JP      L39C2
         NOP
 
-L390C:  table
+L390D:  table
 
-L39BB:  LD      C,$FE
+L39BB:  IN      L,(C)
+        JP      (HL)
         NOP
-        NOP
 
-L39BF:  IN      L,(C)       ;12
-        JP      (HL)        ;4
+L39BF:  IN      L,(C)
+        JP      (HL)
 
-L39C2:  LD      H,$39
-        CALL    L39FF+4
-L39C5:  CALL    Z,L3BBF+4
-        EXX
-        INC     IXH
-        JR      Z,L39D4
-L39CA:  LD      A,(BC)
-        XOR     H
-        LD      H,A
-        INC     BC
-        DEC     DE
-        LD      A,D
-        OR      E
-        JR      NZ,L39CA
-        XOR     H
-L39D4:  PUSH    BC
-        POP     IX
-        RET     NZ
-        SCF
-        RET
+L39C2:  JP      Z,L3BBF+4
+        LD      H,$39
+        JP      L39FF+4
 
-L39DA:  LD      D,0
-        CALL    L39E1
-L39DF:  INC     D
-        RET     Z
-L39E1:  LD      A,$7F
-        IN      A,($FE)
-        CP      E
-        JR      Z,L39DF
-        LD      E,A
-        LD      A,D
-        RET
-
-        BLOCK   $39FB-$, $ff
-        org     $39FB
+L39CA   DEFB    $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF;
 
 L39FB:  LD      C,$FE
         NOP
@@ -19314,11 +19290,10 @@ L39FF:  LD      A,R         ;9        49
         LD      A,IXL       ;8
         LD      R,A         ;9
         LD      A,B         ;4
-        EX      AF,AF'      ;4      salgo con flag carry en F' a cero
+        EX      AF,AF'      ;4
         DEC     H           ;4
         IN      L,(C)       ;12
         JP      (HL)        ;4
-        
 
 L3A0D:  DEFB    $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
@@ -19351,12 +19326,37 @@ L3ABB:  IN      L,(C)
 L3ABF:  IN      L,(C)
         JP      (HL)
 
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+L3AC2:  EXX
+        INC     IXH
+        JR      Z,L3AD1
+L3AC7:  LD      A,(BC)
+        XOR     H
+        LD      H,A
+        INC     BC
+        DEC     DE
+        LD      A,D
+        OR      E
+        JR      NZ,L3AC7
+        XOR     H
+L3AD1:  PUSH    BC
+        POP     IX
+        RET     NZ
+        SCF
+        RET
+
+L3AD7:  LD      D,0
+        CALL    L3ADE
+L3ADC:  INC     D
+        RET     Z
+L3ADE:  LD      A,$7F
+        IN      A,($FE)
+        CP      E
+        JR      Z,L3ADC
+        LD      E,A
+        LD      A,D
+        RET
+
+L3AE8:  DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF;
 
 L3AF1:  XOR     B
@@ -19374,7 +19374,7 @@ L3AFF:  INC     H
         JR      NC,L3AF1
         XOR     B
         ADD     A,A
-        RET     C
+        JR      C,L3AC2
         ADD     A,A
         EX      AF,AF'
         OUT     ($FE),A
@@ -19399,7 +19399,7 @@ L3BBF:  LD      A,R
         JP      (HL)
         
 L3BCD:  DEFB    $FF, $FF, $FF;
-L3BE0:  DEFB    $00, $01, $02, $70, $04, $05, $06, $07;
+L3BE0:  DEFB    $00, $01, $02, $71, $04, $05, $06, $07;
         DEFB    $08, $09, $0a, $0b, $0c, $0d, $0e, $0f;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
