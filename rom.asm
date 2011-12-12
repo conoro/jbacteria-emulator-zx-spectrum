@@ -19153,28 +19153,28 @@ L386C:  DEFB    $38             ;;end-calc              last value is 1 or 0.
 ; ---------------------
 
 ;; spare
-L386E:  EX      AF,AF'
-        JR      C,L3876
+L386E:  EX      AF,AF'          ; compruebo si estamos en VERIFY y retorno
+        JR      C,L3876         ; al cargador estandar si es el caso
 L3871:  EX      AF,AF'
-L3872:  OR      $02             ; combine with red border colour.
-        LD      C,A             ; and store initial state long-term in C.
+L3872:  OR      $02             ; estas son las instrucciones que
+        LD      C,A             ; machaco en el cargador estandar con el JP
         RET
 L3876:  EX      AF,AF'
         PUSH    IX
-        POP     BC
-        PUSH    AF
-        EXX
-        LD      BC,$08FE
-L387F:  LD      A,$7F
-        IN      A,($FE)
-        RRA
-        RET     NC
-        LD      D,0
-        CALL    L3ADE
-        JR      Z,L387F
-        CP      50
-        JR      NC,L389F
-        DEC     B
+        POP     BC              ; pongo la direccion de comienzo en BC
+        PUSH    AF              ; salvo registro A, necesario en caso de volver al cargador estandar
+        EXX                     ; salvo DE, en caso de volver al cargador estandar y para hacer luego el checksum
+        LD      BC,$08FE        ; en B muestro los colores del borde y FE es para la escritura en puerto
+L387F:  LD      A,$7F           ; para leer el espacio (interrumpir la carga)
+        IN      A,($FE)         ; leo puerto
+        RRA                     ; si el espacio esta pulsado esta intruccion devuelve Carry
+        RET     NC              ; salgo si interrupcion por el usuario
+        LD      D,0             ; pongo a 0 el contador que usare para detectar la longitud de lo pulsos
+        CALL    L3ADE           ; leo la duracion de un pulso (positivo o negativo)
+        JR      Z,L387F         ; si el pulso es muy largo retorno a bucle
+        CP      50              ; si el contador esta entre 40 y 50
+        JR      NC,L389F        ; y se reciben 8 pulsos (me falta inicializar HL a 00FF)
+        DEC     B               ; retorno al cargador estandar
         SET     3,B
         OUT     (C),B
         CP      40
@@ -19183,20 +19183,20 @@ L387F:  LD      A,$7F
         EXX
         POP     AF
         JR      L3872
-L389F:  CP      25
-        RL      H
-        CP      15
+L389F:  CP      25              ; si el contador esta entre 15 y 25 es el tono guia
+        RL      H               ; de las ultracargas, si los ultimos 8 pulsos
+        CP      15              ; son de tono guia H debe valer FF
         JR      NC,L387F
         INC     H
-        JR      NZ,L387F
-        POP     AF
-        CALL    L3ADE
-        LD      L,$01
-L38B1:  CALL    L3AD7
+        JR      NZ,L387F        ; si detecto sincronismo sin 8 pulsos de tono guia retorno a bucle
+        POP     AF              ; equilibro pila, ya no necesitare A porque no volvere al cargador estandar
+        CALL    L3ADE           ; leo pulso negativo de sincronismo
+        LD      L,$01           ; HL vale 0001, marker para leer 16 bits en HL (checksum y byte flag)
+L38B1:  CALL    L3AD7           ; leo 16 bits, ahora temporizo cada 2 pulsos
         CP      12
         ADC     HL,HL
         JR      NC,L38B1
-        JR      L38DA
+        JR      L38DA           ; continuo, saltando un fragmento de Shavings Raudo
 
 L38BB:  LD      C,$FE
         NOP
@@ -19221,29 +19221,29 @@ L38CC:  XOR     B           ;4
         IN      L,(C)       ;12
         JP      (HL)        ;4
 
-L38D7:  JP      L3AC2
-L38DA:  POP     AF
-        EX      AF,AF'
-        CP      L
-        RET     NZ
-        XOR     H
-        EXX
-        PUSH    BC
+L38D7:  JP      L3AC2       ; fin de Raudo, hago un salto largo tras el salto corto anterior
+L38DA:  POP     AF          ; machaco la direccion de retorno de la carga estandar
+        EX      AF,AF'      ; A es el byte flag que espero
+        CP      L           ; lo comparo con el que me encuentro en la ultracarga
+        RET     NZ          ; salgo si no coinciden
+        XOR     H           ; xoreo el checksum con en byte flag, resultado en A
+        EXX                 ; guardo checksum por duplicado en H' y L'
+        PUSH    BC          ; pongo direccion de comienzo en pila
         LD      H,A
         LD      L,A
         EXX
-        LD      HL,$3B0D
-L39E7:  CALL    L3AD7
+        LD      HL,$3B0D    ; 3B apunta a tabla de offsets, 0D es el marker bit para leer 5 bits en L
+L39E7:  CALL    L3AD7       ; leo 5 bits en L
         CP      12
         RL      L
         JR      NC,L39E7
-        LD      A,$8D
+        LD      A,$8D       ; A' tiene que valer esto para entrar en Raudo
         EX      AF,AF'
-        SRA     L
-        LD      A,(HL)
+        SRA     L           ; me quedo con 4 bits en L (muestreo y velocidad) y pongo verificacion checksum en Carry
+        LD      A,(HL)      ; leo offset de la tabla y lo pongo en ixl
         LD      IXL,A
-        SBC     A,A
-        JR      L3902
+        SBC     A,A         ; ixh vale 00 si hago checksum y ff si no lo hago
+        JR      L3902       ; salto parte de Raudo
 
 L38FB:  IN      L,(C)
         JP      (HL)
@@ -19253,10 +19253,10 @@ L38FF:  IN      L,(C)
         JP      (HL)
 
 L3902:  LD      IXH,A
-        BIT     6,E
-        POP     DE
-        LD      B,$EF
-        JP      L39C2
+        BIT     6,E         ; pongo en flag Z el signo del pulso
+        POP     DE          ; recupero en DE la direccion de comienzo del bloque
+        LD      B,$EF       ; este valor es el que necesita B para entrar en Raudo
+        JP      L39C2       ; salto fragmento de Raudo
         NOP
 
 L390D:  table
@@ -19268,9 +19268,9 @@ L39BB:  IN      L,(C)
 L39BF:  IN      L,(C)
         JP      (HL)
 
-L39C2:  JP      Z,L3BBF+4
-        LD      H,$39
-        JP      L39FF+4
+L39C2:  JP      Z,L3BBF+4   ; salto a Raudo segun el signo del pulso en flag Z
+        LD      H,$39       ; H tiene un valor 3B u otro 39 segun el signo del pulso
+        JP      L39FF+4     ; salto a Raudo
 
 L39CA   DEFB    $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
@@ -19326,10 +19326,10 @@ L3ABB:  IN      L,(C)
 L3ABF:  IN      L,(C)
         JP      (HL)
 
-L3AC2:  EXX
-        INC     IXH
+L3AC2:  EXX                 ; ya se ha acabado la ultracarga (Raudo)
+        INC     IXH         ; en caso de no verificar checksum me salto la rutina
         JR      Z,L3AD1
-L3AC7:  LD      A,(BC)
+L3AC7:  LD      A,(BC)      ; verifico checksum
         XOR     H
         LD      H,A
         INC     BC
@@ -19337,16 +19337,16 @@ L3AC7:  LD      A,(BC)
         LD      A,D
         OR      E
         JR      NZ,L3AC7
-        XOR     H
-L3AD1:  PUSH    BC
-        POP     IX
-        RET     NZ
+        XOR     H           ; salgo con A=0 H=0 L=checksum y Carry activo si todo
+L3AD1:  PUSH    BC          ; a ido bien
+        POP     IX          ; IX debe apuntar al siguiente byte despues del bloque
+        RET     NZ          ; si no coincide el checksum salgo con Carry desactivado
         SCF
         RET
 
-L3AD7:  LD      D,0
+L3AD7:  LD      D,0         ; esta rutina lee 2 pulsos e inicializa el contador de pulsos
         CALL    L3ADE
-L3ADC:  INC     D
+L3ADC:  INC     D           ; esta rutina lee 1 pulsos sin inicializar el contador
         RET     Z
 L3ADE:  LD      A,$7F
         IN      A,($FE)
