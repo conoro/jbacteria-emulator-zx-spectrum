@@ -141,4 +141,13 @@ xXyY ZZww xor
  6 7 9 0
  Z X V Shift
  A S F G
+
+ZxTapTimingInfo   48K        128K
+01 HP SAIMAZOOM   123        126
+02 D  213         3494400    234124
+03 HB saimazooms  123        234
+04 D  6914        1234       2142
+05 HB saimazoomc  123        321
+06 D  34502       Block      Block
+
 */
