@@ -1800,94 +1800,252 @@ L0554:  POP     AF              ; restore the accumulator.
 ;   is set then data is loaded, if reset then it is verified.
 
 ;; LD-BYTES
-L0556:  di
-        ex      af, af'
-        push    ix
-        pop     bc
-        ld      hl, L053F
-        push    hl
-        exx
-        ld      bc, $7ffe
-        ld      l, $8
-ldsta   in      a, (c)
-        rra
-        ret     nc
-        ld      d, 0
-        call    edge1
-        jr      z, ldsta
-        cp      25
-        jr      nc, mal
-        dec     l
-        set     3, l
-        out     (c), l
-mal     rl      h
-        cp      15
-        jr      nc, ldsta
-        inc     h
-        jr      nz, ldsta
-        call    edge1
-        ld      l, $1
-l16b    call    edge2
-        cp      12
-        adc     hl, hl
-        jr      nc, l16b
-        ex      af, af'
-        cp      l
-        ret     nz
-        ld      a, h
-        exx
-        push    bc
-        ld      h, a
-        ld      l, a
-        exx
-        ld      hl, $381e
-speed   call    edge2
-        cp      12
-        rl      l
-        jr      nc, speed
-        ld      a, (hl)
-        ld      ixl, a
+L0556:  INC     D               ; reset the zero flag without disturbing carry.
+        EX      AF,AF'          ; preserve entry flags.
+        DEC     D               ; restore high byte of length.
 
-        ld      a, $8d ;3  0010 1010
-        ex      af, af'
-        bit     6, e
-        pop     de
-        ld      b, $ef
-        ld      h, $3b
-        jr      z, one
-        ld      h, $39
-        call    L39FF+4
-one     call    z, L3BBF+4
-        exx
-check   ld      a, (bc)
-        xor     h
-        ld      h, a
-        inc     bc
-        dec     de
-        ld      a, d
-        or      e
-        jr      nz, check
-        xor     h
-        push    bc
-        pop     ix
-        ret     nz
-        scf
-        ret
+        DI                      ; disable interrupts
 
-edge2   ld      d, 0
-        call    edge1
+        LD      A,$0F           ; make the border white and mic off.
+        OUT     ($FE),A         ; output to port.
 
-edgel   inc     d
-        ret     z
-edge1   in      a, (c)
-        cp      e
-        jr      z, edgel
-        ld      e, a
-        ld      a, d
-        ret
+        LD      HL,L053F        ; Address: SA/LD-RET
+        PUSH    HL              ; is saved on stack as terminating routine.
 
-        BLOCK   $0605-$, $ff
-        org     $0605
+;   the reading of the EAR bit (D6) will always be preceded by a test of the 
+;   space key (D0), so store the initial post-test state.
+
+        IN      A,($FE)         ; read the ear state - bit 6.
+        RRA                     ; rotate to bit 5.
+        AND     $20             ; isolate this bit.
+        CALL    L386E
+        CP      A               ; set the zero flag.
+
+; 
+
+;; LD-BREAK
+L056B:  RET     NZ              ; return if at any time space is pressed.
+
+;; LD-START
+L056C:  CALL    L05E7           ; routine LD-EDGE-1
+        JR      NC,L056B        ; back to LD-BREAK with time out and no
+                                ; edge present on tape.
+
+;   but continue when a transition is found on tape.
+
+        LD      HL,$0415        ; set up 16-bit outer loop counter for 
+                                ; approx 1 second delay.
+
+;; LD-WAIT
+L0574:  DJNZ    L0574           ; self loop to LD-WAIT (for 256 times)
+
+        DEC     HL              ; decrease outer loop counter.
+        LD      A,H             ; test for
+        OR      L               ; zero.
+        JR      NZ,L0574        ; back to LD-WAIT, if not zero, with zero in B.
+
+;   continue after delay with H holding zero and B also.
+;   sample 256 edges to check that we are in the middle of a lead-in section. 
+
+        CALL    L05E3           ; routine LD-EDGE-2
+        JR      NC,L056B        ; back to LD-BREAK
+                                ; if no edges at all.
+
+;; LD-LEADER
+L0580:  LD      B,$9C           ; set timing value.
+        CALL    L05E3           ; routine LD-EDGE-2
+        JR      NC,L056B        ; back to LD-BREAK if time-out
+
+        LD      A,$C6           ; two edges must be spaced apart.
+        CP      B               ; compare
+        JR      NC,L056C        ; back to LD-START if too close together for a 
+                                ; lead-in.
+
+        INC     H               ; proceed to test 256 edged sample.
+        JR      NZ,L0580        ; back to LD-LEADER while more to do.
+
+;   sample indicates we are in the middle of a two or five second lead-in.
+;   Now test every edge looking for the terminal sync signal.
+
+;; LD-SYNC
+L058F:  LD      B,$C9           ; initial timing value in B.
+        CALL    L05E7           ; routine LD-EDGE-1
+        JR      NC,L056B        ; back to LD-BREAK with time-out.
+
+        LD      A,B             ; fetch augmented timing value from B.
+        CP      $D4             ; compare 
+        JR      NC,L058F        ; back to LD-SYNC if gap too big, that is,
+                                ; a normal lead-in edge gap.
+
+;   but a short gap will be the sync pulse.
+;   in which case another edge should appear before B rises to $FF
+
+        CALL    L05E7           ; routine LD-EDGE-1
+        RET     NC              ; return with time-out.
+
+; proceed when the sync at the end of the lead-in is found.
+; We are about to load data so change the border colours.
+
+        LD      A,C             ; fetch long-term mask from C
+        XOR     $03             ; and make blue/yellow.
+
+        LD      C,A             ; store the new long-term byte.
+
+        LD      H,$00           ; set up parity byte as zero.
+        LD      B,$B0           ; timing.
+        JR      L05C8           ; forward to LD-MARKER 
+                                ; the loop mid entry point with the alternate 
+                                ; zero flag reset to indicate first byte 
+                                ; is discarded.
+
+; --------------
+;   the loading loop loads each byte and is entered at the mid point.
+
+;; LD-LOOP
+L05A9:  EX      AF,AF'          ; restore entry flags and type in A.
+        JR      NZ,L05B3        ; forward to LD-FLAG if awaiting initial flag
+                                ; which is to be discarded.
+
+        JR      NC,L05BD        ; forward to LD-VERIFY if not to be loaded.
+
+        LD      (IX+$00),L      ; place loaded byte at memory location.
+        JR      L05C2           ; forward to LD-NEXT
+
+; ---
+
+;; LD-FLAG
+L05B3:  RL      C               ; preserve carry (verify) flag in long-term
+                                ; state byte. Bit 7 can be lost.
+
+        XOR     L               ; compare type in A with first byte in L.
+        RET     NZ              ; return if no match e.g. CODE vs. DATA.
+
+;   continue when data type matches.
+
+        LD      A,C             ; fetch byte with stored carry
+        RRA                     ; rotate it to carry flag again
+        LD      C,A             ; restore long-term port state.
+
+        INC     DE              ; increment length ??
+        JR      L05C4           ; forward to LD-DEC.
+                                ; but why not to location after ?
+
+; ---
+;   for verification the byte read from tape is compared with that in memory.
+
+;; LD-VERIFY
+L05BD:  LD      A,(IX+$00)      ; fetch byte from memory.
+        XOR     L               ; compare with that on tape
+        RET     NZ              ; return if not zero. 
+
+;; LD-NEXT
+L05C2:  INC     IX              ; increment byte pointer.
+
+;; LD-DEC
+L05C4:  DEC     DE              ; decrement length.
+        EX      AF,AF'          ; store the flags.
+        LD      B,$B2           ; timing.
+
+;   when starting to read 8 bits the receiving byte is marked with bit at right.
+;   when this is rotated out again then 8 bits have been read.
+
+;; LD-MARKER
+L05C8:  LD      L,$01           ; initialize as %00000001
+
+;; LD-8-BITS
+L05CA:  CALL    L05E3           ; routine LD-EDGE-2 increments B relative to
+                                ; gap between 2 edges.
+        RET     NC              ; return with time-out.
+
+        LD      A,$CB           ; the comparison byte.
+        CP      B               ; compare to incremented value of B.
+                                ; if B is higher then bit on tape was set.
+                                ; if <= then bit on tape is reset. 
+
+        RL      L               ; rotate the carry bit into L.
+
+        LD      B,$B0           ; reset the B timer byte.
+        JP      NC,L05CA        ; JUMP back to LD-8-BITS
+
+;   when carry set then marker bit has been passed out and byte is complete.
+
+        LD      A,H             ; fetch the running parity byte.
+        XOR     L               ; include the new byte.
+        LD      H,A             ; and store back in parity register.
+
+        LD      A,D             ; check length of
+        OR      E               ; expected bytes.
+        JR      NZ,L05A9        ; back to LD-LOOP 
+                                ; while there are more.
+
+;   when all bytes loaded then parity byte should be zero.
+
+        LD      A,H             ; fetch parity byte.
+        CP      $01             ; set carry if zero.
+        RET                     ; return
+                                ; in no carry then error as checksum disagrees.
+
+; -------------------------
+; Check signal being loaded
+; -------------------------
+;   An edge is a transition from one mic state to another.
+;   More specifically a change in bit 6 of value input from port $FE.
+;   Graphically it is a change of border colour, say, blue to yellow.
+;   The first entry point looks for two adjacent edges. The second entry point
+;   is used to find a single edge.
+;   The B register holds a count, up to 256, within which the edge (or edges) 
+;   must be found. The gap between two edges will be more for a '1' than a '0'
+;   so the value of B denotes the state of the bit (two edges) read from tape.
+
+; ->
+
+;; LD-EDGE-2
+L05E3:  CALL    L05E7           ; call routine LD-EDGE-1 below.
+        RET     NC              ; return if space pressed or time-out.
+                                ; else continue and look for another adjacent 
+                                ; edge which together represent a bit on the 
+                                ; tape.
+
+; -> 
+;   this entry point is used to find a single edge from above but also 
+;   when detecting a read-in signal on the tape.
+
+;; LD-EDGE-1
+L05E7:  LD      A,$16           ; a delay value of twenty two.
+
+;; LD-DELAY
+L05E9:  DEC     A               ; decrement counter
+        JR      NZ,L05E9        ; loop back to LD-DELAY 22 times.
+
+        AND      A              ; clear carry.
+
+;; LD-SAMPLE
+L05ED:  INC     B               ; increment the time-out counter.
+        RET     Z               ; return with failure when $FF passed.
+
+        LD      A,$7F           ; prepare to read keyboard and EAR port
+        IN      A,($FE)         ; row $7FFE. bit 6 is EAR, bit 0 is SPACE key.
+        RRA                     ; test outer key the space. (bit 6 moves to 5)
+        RET     NC              ; return if space pressed.  >>>
+
+        XOR     C               ; compare with initial long-term state.
+        AND     $20             ; isolate bit 5
+        JR      Z,L05ED         ; back to LD-SAMPLE if no edge.
+
+;   but an edge, a transition of the EAR bit, has been found so switch the
+;   long-term comparison byte containing both border colour and EAR bit. 
+
+        LD      A,C             ; fetch comparison value.
+        CPL                     ; switch the bits
+        LD      C,A             ; and put back in C for long-term.
+
+        AND     $07             ; isolate new colour bits.
+        OR      $08             ; set bit 3 - MIC off.
+        OUT     ($FE),A         ; send to port to effect the change of colour. 
+
+        SCF                     ; set carry flag signaling edge found within
+                                ; time allowed.
+        RET                     ; return.
 
 ; ---------------------------------
 ; Entry point for all tape commands
@@ -18995,26 +19153,63 @@ L386C:  DEFB    $38             ;;end-calc              last value is 1 or 0.
 ; ---------------------
 
 ;; spare
-L386E:  DEFB    $FF, $FF        ;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF
+L386E:  EX      AF,AF'
+        JR      C,L3876
+L3871:  EX      AF,AF'
+L3872:  OR      $02             ; combine with red border colour.
+        LD      C,A             ; and store initial state long-term in C.
+        RET
+L3876:  EX      AF,AF'
+        PUSH    IX
+        POP     BC
+        PUSH    AF
+        EXX
+        LD      BC,$08FE
+L387F:  LD      A,$7F
+        IN      A,($FE)
+        RRA
+        RET     NC
+        LD      D,0
+        CALL    L39E1
+        JR      Z,L387F
+        CP      50
+        JR      NC,L389F
+        DEC     B
+        SET     3,B
+        OUT     (C),B
+        CP      40
+        RL      L
+        JR      NZ,L389F
+        EXX
+        POP     AF
+        JR      L3872
+L389F:  CP      25
+        RL      H
+        CP      15
+        JR      NC,L387F
+        INC     H
+        JR      NZ,L387F
+        POP     AF
+        CALL    L39E1
+        LD      L,$01
+L38B1:  CALL    L39DA
+        CP      12
+        ADC     HL,HL
+        JR      NC,L38B1
+        JR      L38D6
 
-L38BF:  INC     H           ;4      ruta1: 44  ruta2: 44
-        JR      NC, L38CC   ;7/12
+L38BB:  LD      C,$FE
+        NOP
+        NOP
+
+L38BF:  INC     H           ;4      ruta1: 43  ruta2: 48
+        JR      NC,L38CC    ;7/12
         XOR     B           ;4
         ADD     A,A         ;4
         RET     C           ;5/11
         ADD     A,A         ;4
         EX      AF,AF'      ;4    si flag f' activo he completado byte
-        OUT     ($FE),A     ;12
+        OUT     ($FE),A     ;11
         IN      L,(C)       ;12
         JP      (HL)        ;4
 L38CC:  XOR     B           ;4
@@ -19026,22 +19221,43 @@ L38CC:  XOR     B           ;4
         IN      L,(C)       ;12   activo flag para borde
         JP      (HL)        ;4
 
-L38D5:  DEFB    $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+L38D6:  POP     AF
+        EX      AF,AF'
+        CP      L
+        RET     NZ
+        XOR     H
+        EXX
+        PUSH    BC
+        LD      H,A
+        LD      L,A
+        EXX
+        LD      HL,$3B0D
+L39E2:  CALL    L39DA
+        CP      12
+        RL      L
+        JR      NC,L39E2
+        LD      A,$8D
+        EX      AF,AF'
+        SRA     L
+        LD      A,(HL)
+        LD      IXL,A
+        SBC     A,A
+        LD      IXH,A
+        BIT     6,E
+        JR      L3902
 
-L38E0:  DEFB    $00, $01, $02, $70, $04, $05, $06, $07;
-        DEFB    $08, $09, $0a, $0b, $0c, $0d, $0e, $0f;
-
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+L38FB:  IN      L,(C)
+        JP      (HL)
+        NOP
 
 L38FF:  IN      L,(C)
         JP      (HL)
 
-L3902:  DEFB    $7F, $7F, $7F;
-        DEFB    $7F, $7F, $7F;
-        DEFB    $7F, $7F, $7F;
-        DEFB    $7F;
+L3902:  POP     DE
+        LD      B,$EF
+        JP      Z,L39C5
+        JP      L39C2
+        NOP
 
 L390C:  table
 
@@ -19052,16 +19268,47 @@ L39BB:  LD      C,$FE
 L39BF:  IN      L,(C)       ;12
         JP      (HL)        ;4
 
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+L39C2:  LD      H,$39
+        CALL    L39FF+4
+L39C5:  CALL    Z,L3BBF+4
+        EXX
+        INC     IXH
+        JR      Z,L39D4
+L39CA:  LD      A,(BC)
+        XOR     H
+        LD      H,A
+        INC     BC
+        DEC     DE
+        LD      A,D
+        OR      E
+        JR      NZ,L39CA
+        XOR     H
+L39D4:  PUSH    BC
+        POP     IX
+        RET     NZ
+        SCF
+        RET
 
-L39FF:  LD      A,R         ;9        45
+L39DA:  LD      D,0
+        CALL    L39E1
+L39DF:  INC     D
+        RET     Z
+L39E1:  LD      A,$7F
+        IN      A,($FE)
+        CP      E
+        JR      Z,L39DF
+        LD      E,A
+        LD      A,D
+        RET
+
+        BLOCK   $39FB-$, $ff
+        org     $39FB
+
+L39FB:  LD      C,$FE
+        NOP
+        NOP
+
+L39FF:  LD      A,R         ;9        49
         LD      L,A         ;4
         LD      B,(HL)      ;7
         LD      A,IXL       ;8
@@ -19124,7 +19371,7 @@ L3AFB:  LD      C,$FE
         NOP
         NOP
 L3AFF:  INC     H
-        JR      NC, L3AF1
+        JR      NC,L3AF1
         XOR     B
         ADD     A,A
         RET     C
@@ -19151,9 +19398,9 @@ L3BBF:  LD      A,R
         IN      L,(C)
         JP      (HL)
         
-L3BCD:  DEFB    $FF, $FF, $FF;, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+L3BCD:  DEFB    $FF, $FF, $FF;
+L3BE0:  DEFB    $00, $01, $02, $70, $04, $05, $06, $07;
+        DEFB    $08, $09, $0a, $0b, $0c, $0d, $0e, $0f;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;

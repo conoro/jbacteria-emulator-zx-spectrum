@@ -41,7 +41,8 @@ $tabla2= array( array(1,1,2,2),
 $cont= file_get_contents($_SERVER['argv'][1]);
 $velo= $_SERVER['argv'][2] ? $_SERVER['argv'][2] : 3;
 $muest= $_SERVER['argv'][3]==48 ? 11 : 12;
-$inibit= $_SERVER['argv'][4]==1 ? 1 : 0; //abcd
+$inibit= $_SERVER['argv'][4]==1 ? 1 : 0;
+$skip= $_SERVER['argv'][5]=='skip' ? 1 : 0;
 $long= strlen($cont);
 $tzx= "ZXTape!\32\1\24\25".chr($muest&1?73:79)."\0\0\0\10";
 $byte= 1;
@@ -51,14 +52,17 @@ while($pos<$long){
 echo $len."\n";
   pilot( $lastbl ? 1000 : 200 );
   outbits_double(3);
-  $c20= 20;
-  $check= ord($cont[$pos+$len+1])^ord($cont[$pos+2]);
-  $b20= $velo | $muest<<3&8 | ord($cont[$pos+2])<<4 | $check<<12;
-  while( $c20-- ){
-    outbits_double( $b20&0x80000 ? 3 : 5 );
-    $b20<<= 1;
+  $c21= 21;
+  $b21= ( $len==6914 ? $skip : 0 )      // eludo checksum solo en bloques de pantalla
+      | $velo<<1                        // velocidad
+      | $muest<<4&16                    // muestreo 44 ó 48khz
+      | ord($cont[$pos+2])<<5           // byte flag
+      | ord($cont[$pos+$len+1])<<13;    // checksum
+  while( $c21-- ){
+    outbits_double( $b21&0x100000 ? 3 : 5 );
+    $b21<<= 1;
   }
-  $ini= 1;
+  $ini= 2;
   for($i= 2; $i<$len; $i++){
     $val= ord($cont[$pos+1+$i]) >> 6;
     outbits($ini+$tabla1[$velo][$val^3]);
