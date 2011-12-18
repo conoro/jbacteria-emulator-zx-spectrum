@@ -4,45 +4,45 @@
         OUTPUT  48.rom
 
       MACRO table
-        DEFB    $ed, $ed, $7f   ;0c   ;0d
-        DEFB    $ed, $ed, $7f   ;0f
-        DEFB    $ed, $ed, $7f   ;12
-        DEFB    $ed, $ed, $7f   ;15
-        DEFB    $ed, $ed, $7f   ;18
-        DEFB    $ed, $ed, $7f   ;1b
-        DEFB    $ed, $ed, $7f   ;1e
-        DEFB    $ed, $ed, $7f   ;21
-        DEFB    $ed, $ed, $7f   ;24
-        DEFB    $ec, $ec, $7f   ;27
-        DEFB    $ec, $ec, $7f   ;2a
-        DEFB    $ec, $ec, $7f   ;2d
-        DEFB    $ec, $ec, $7f   ;30
-        DEFB    $ec, $ec, $7f   ;33
-        DEFB    $ec, $ec, $7f   ;36
-        DEFB    $ec, $ec, $7f   ;39
-        DEFB    $ec, $ec, $7f   ;3c
-        DEFB    $ec, $ec, $7f   ;3f
-        DEFB    $ec, $ef, $7f   ;42
-        DEFB    $ef, $ef, $7f   ;45
-        DEFB    $ef, $ef, $7f   ;48
-        DEFB    $ef, $ef, $7f   ;4b
-        DEFB    $ef, $ef, $7f   ;4e
-        DEFB    $ef, $ef, $7f   ;51
-        DEFB    $ef, $ef, $7f   ;54
-        DEFB    $ef, $ef, $7f   ;57
-        DEFB    $ef, $ef, $7f   ;5a
-        DEFB    $ef, $ee, $7f   ;5d
-        DEFB    $ef, $ee, $7f   ;60
-        DEFB    $ee, $ee, $7f   ;63
-        DEFB    $ee, $ee, $7f   ;66
-        DEFB    $ee, $ee, $7f   ;69
-        DEFB    $ee, $ee, $7f   ;6c
-        DEFB    $ee, $ee, $7f   ;6f
-        DEFB    $ee, $ee, $7f   ;72
-        DEFB    $ee, $ee, $7f   ;75
-        DEFB    $ee, $7f, $7f   ;78
-        DEFB    $ee, $7f, $7f   ;7b
-        DEFB    $ee             ;7e
+        DEFB    $ed, $ed, $7f   ;0d   ;0d
+        DEFB    $ed, $ed, $7f   ;10
+        DEFB    $ed, $ed, $7f   ;13
+        DEFB    $ed, $ed, $7f   ;16
+        DEFB    $ed, $ed, $7f   ;19
+        DEFB    $ed, $ed, $7f   ;1c
+        DEFB    $ed, $ed, $7f   ;1f
+        DEFB    $ed, $ed, $7f   ;22
+        DEFB    $ed, $ed, $7f   ;25
+        DEFB    $ec, $ec, $7f   ;28
+        DEFB    $ec, $ec, $7f   ;2b
+        DEFB    $ec, $ec, $7f   ;2e
+        DEFB    $ec, $ec, $7f   ;31
+        DEFB    $ec, $ec, $7f   ;34
+        DEFB    $ec, $ec, $7f   ;37
+        DEFB    $ec, $ec, $7f   ;3a
+        DEFB    $ec, $ec, $7f   ;3d
+        DEFB    $ec, $ec, $7f   ;40
+        DEFB    $ec, $ef, $7f   ;43
+        DEFB    $ef, $ef, $7f   ;46
+        DEFB    $ef, $ef, $7f   ;49
+        DEFB    $ef, $ef, $7f   ;4c
+        DEFB    $ef, $ef, $7f   ;4f
+        DEFB    $ef, $ef, $7f   ;52
+        DEFB    $ef, $ef, $7f   ;55
+        DEFB    $ef, $ef, $7f   ;58
+        DEFB    $ef, $ef, $7f   ;5b
+        DEFB    $ef, $ee, $7f   ;5e
+        DEFB    $ef, $ee, $7f   ;61
+        DEFB    $ee, $ee, $7f   ;64
+        DEFB    $ee, $ee, $7f   ;67
+        DEFB    $ee, $ee, $7f   ;6a
+        DEFB    $ee, $ee, $7f   ;6d
+        DEFB    $ee, $ee, $7f   ;70
+        DEFB    $ee, $ee, $7f   ;73
+        DEFB    $ee, $ee, $7f   ;76
+        DEFB    $ee, $7f, $7f   ;79
+        DEFB    $ee, $7f, $7f   ;7c
+        DEFB    $ee             ;7f
 
         DEFB    $ed, $ed, $7f   ;80
         DEFB    $ed, $ed, $7f   ;83
@@ -19381,7 +19381,7 @@ L3AFF:  INC     H
         IN      L,(C)
         JP      (HL)
 
-L3B0C:  table
+L3B0D:  table
 
 L3BBB:  LD      C,$FE
         NOP
