@@ -19399,8 +19399,8 @@ L3BBF:  LD      A,R
         JP      (HL)
         
 L3BCD:  DEFB    $FF, $FF, $FF;
-L3BE0:  DEFB    $00, $01, $02, $71, $04, $05, $06, $07;
-        DEFB    $08, $09, $0a, $0b, $0c, $0d, $0e, $0f;
+L3BE0:  DEFB    $f0, $01, $02, $71, $04, $05, $06, $07;
+        DEFB    $f1, $09, $0a, $0b, $0c, $0d, $0e, $0f;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;

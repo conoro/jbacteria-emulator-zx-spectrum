@@ -38,9 +38,11 @@ $tabla2= array( array(1,1,2,2),
                 array(2,3,4,5),
                 array(2,3,3,4),
                 array(2,3,4,5));
+$termin= array( array( 20, 0, 0, 18, 0, 0, 0, 0),
+                array( 13, 0, 0,  0, 0, 0, 0, 0));
 $cont= file_get_contents($_SERVER['argv'][1]);
-$velo= $_SERVER['argv'][2] ? $_SERVER['argv'][2] : 3;
-$muest= $_SERVER['argv'][3]==48 ? 11 : 12;
+$velo= isset($_SERVER['argv'][2]) ? $_SERVER['argv'][2] : 3;
+$muest= $_SERVER['argv'][3]==48 ? 13 : 12;
 $inibit= $_SERVER['argv'][4]==1 ? 1 : 0;
 $skip= $_SERVER['argv'][5]=='skip' ? 1 : 0;
 $long= strlen($cont);
@@ -78,7 +80,9 @@ echo $len."\n";
     outbits($tabla2[$velo][$val^1]);
     $ini= 0;
   }
-  outbits_double(9);
+  outbits($termin[$muest&1][$velo]>>1);
+  outbits($termin[$muest&1][$velo]-($termin[$muest&1][$velo]>>1));
+  outbits_double(3);
   $lastbl= ord($cont[$pos+2]);
   $pos+= $len+2;
 }
