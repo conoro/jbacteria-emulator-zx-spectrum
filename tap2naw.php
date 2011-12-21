@@ -54,17 +54,19 @@ while($pos<$long){
 echo $len."\n";
   pilot( $lastbl ? 1000 : 200 );
   outbits_double(3);
-  $c21= 21;
-  $b21= ( $len==6914 ? $skip : 0 )      // eludo checksum solo en bloques de pantalla
-      | $velo<<1                        // velocidad
-      | $muest<<4&16                    // muestreo 44 ó 48khz
-      | ord($cont[$pos+2])<<5           // byte flag
-      | ord($cont[$pos+$len+1])<<13;    // checksum
+  $c21= 24;
+  $b21= $velo                           // velocidad
+      | $muest<<3&8                     // muestreo 44 ó 48khz
+      | 1<<6
+      | ( $len==6914 ? $skip<<7 : 0 )   // eludo checksum solo en bloques de pantalla
+      | ord($cont[$pos+2])<<8           // byte flag
+      | ord($cont[$pos+$len+1])<<16;    // checksum
   while( $c21-- ){
-    outbits_double( $b21&0x100000 ? 3 : 5 );
+    outbits_double( $b21&0x800000 ? 3 : 5 );
     $b21<<= 1;
   }
-  $ini= 2;
+  $ini= 0;
+  outbits_double(2);
   for($i= 2; $i<$len; $i++){
     $val= ord($cont[$pos+1+$i]) >> 6;
     outbits($ini+$tabla1[$velo][$val^3]);
