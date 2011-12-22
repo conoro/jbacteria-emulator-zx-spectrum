@@ -5,7 +5,7 @@
 
       MACRO table
         DEFB    $ed, $ed, $7f   ;0d   ;0d
-        DEFB    $ed, $ed, $7f   ;10
+        DEFB    $ed, $ed, $7f   ;10 triple
         DEFB    $ed, $ed, $7f   ;13
         DEFB    $ed, $ed, $7f   ;16
         DEFB    $ed, $ed, $7f   ;19
@@ -8156,7 +8156,7 @@ L1B10:  DEFB    $0A             ; Class-0A - A string expression must follow.
 
 ;; P-CAT
 L1B14:  DEFB    $00             ; Class-00 - No further operands.
-        DEFW    L39EA           ; Address: $39EA;
+        DEFW    L3AE8           ; Address: $3AE8;
 
 ; * Note that a comma is required as a separator with the OPEN command
 ; but the Interface 1 programmers relaxed this allowing ';' as an
@@ -19218,34 +19218,41 @@ L39BB:  IN      L,(C)
 L39BF:  IN      L,(C)
         JP      (HL)
 
-L39C2:  CALL    L3902
-        JR      Z,L39C2
-        DEC     E
-        JR      NZ,L39C2
-        LD      B,E
-        CALL    L05ED
-        PUSH    BC
-        CALL    L05ED
-        LD      C,B
-        LD      B,E
-        CALL    L2D2B           ; STK-(PULSE0+PULSE1)
-        POP     BC
-        LD      C,B
-        LD      B,0
-        CALL    L2D2B           ; STK-PULSE0
-        RST     28H             ; FP-CALC      P0+P1, P0.
-        DEFB    $01             ; EXCHANGE     P0, P0+P1.
-        DEFB    $05             ; DIVISION     P0/(P0+P1).
-        DEFB    $A2             ; STK-HALF     P0/(P0+P1), 0.5.
-        DEFB    $03             ; SUBTRACT     P0/(P0+P1)-0.5.
-        DEFB    $38             ; END-CALC
-        CALL    L2DE3           ; ROUTINE PRINT-FP OUTPUTS THE NUMBER TO
-        LD      A,$0D
-        RST     10H
-L39EA:  LD      E,A
-        LD      C,3
-        RES     0,(IY+$02)
-        JR      L39C2
+L39C2:  POP     HL
+        LD      SP,HL
+        POP     HL            ; reemplazo pila, 4 bytes
+        LD      ($FF48),HL
+        POP     HL
+        LD      ($FF4A),HL
+        POP     BC            ; BC'
+        POP     DE            ; DE'
+        POP     HL            ; HL'
+        EXX
+        POP     AF            ; AF'
+        EX      AF,AF'
+        POP     BC            ; BC
+        POP     DE            ; DE
+        POP     HL            ; IR
+        POP     IX            ; IX
+        POP     IY            ; IY
+        LD      A,L
+        LD      I,A
+        POP     AF            ; IM,IFF
+        JR      NC,L39E1
+        IM      2
+L39E1:  JR      NZ,L39E4
+        EI
+L39E4:  PUSH    AF
+        DEC     SP
+        POP     AF
+        RRA
+        OUT     ($FE),A
+        LD      A,H
+        LD      HL,2
+        ADD     HL,SP
+        LD      R,A
+        POP     AF            ; AF
+        JP      (HL)
 
 L39F3:  DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF; 8 bytes
 
@@ -19305,10 +19312,10 @@ L3A3D:  CALL    L3902           ; leo 16 bits, ahora temporizo cada 2 pulsos
         LD      L,A
         EXX
         LD      HL,$3B01    ; 3B apunta a tabla de offsets, 01 es el marker bit para leer 8 bits en L
-L3A56:  CALL    L3902       ; leo 5 bits en L
+L3A53:  CALL    L3902       ; leo 5 bits en L
         CP      6
         RL      L
-        JR      NC,L3A56
+        JR      NC,L3A53
         LD      A,$8D       ; A' tiene que valer esto para entrar en Raudo
         EX      AF,AF'
         LD      A,L
@@ -19318,41 +19325,41 @@ L3A56:  CALL    L3902       ; leo 5 bits en L
         LD      A,IXH
         RLA
         POP     DE          ; recupero en DE la direccion de comienzo del bloque
-        JR      NC,L3A71
+        JR      NC,L3A6E
         LD      DE,$4000
-L3A71:  LD      A,(HL)      ; leo offset de la tabla y lo pongo en ixl
+L3A6E:  LD      A,(HL)      ; leo offset de la tabla y lo pongo en ixl
         LD      IXL,A
         INC     C           ; pongo en flag Z el signo del pulso
         LD      BC,$EFFE    ; este valor es el que necesita B para entrar en Raudo
-        JR      Z, L3A84
-L3A7A:  IN      F,(C)
-        JP      PE,L3A7A
+        JR      Z, L3A81
+L3A77:  IN      F,(C)
+        JP      PE,L3A77
         CALL    L3BBF+4     ; salto a Raudo segun el signo del pulso en flag Z
-        JR      L3A8E
-L3A84:  LD      H,$39       ; H tiene un valor 3B u otro 39 segun el signo del pulso
-L3A86:  IN      F,(C)
-        JP      PO,L3A86
+        JR      L3A8B
+L3A81:  LD      H,$39       ; H tiene un valor 3B u otro 39 segun el signo del pulso
+L3A83:  IN      F,(C)
+        JP      PO,L3A83
         CALL    L39FF+4     ; salto a Raudo
-L3A8E:  LD      A,IXH       ; en caso de no verificar checksum me salto la rutina
+L3A8B:  LD      A,IXH       ; en caso de no verificar checksum me salto la rutina
         AND     $20
         EXX                 ; ya se ha acabado la ultracarga (Raudo)
-        JR      Z,L3A9F
-L3A95:  LD      A,(BC)      ; verifico checksum
+        JR      Z,L3A9C
+L3A92:  LD      A,(BC)      ; verifico checksum
         XOR     H
         LD      H,A
         INC     BC
         DEC     DE
         LD      A,D
         OR      E
-        JR      NZ,L3A95
+        JR      NZ,L3A92
         XOR     H           ; salgo con A=0 H=0 L=checksum y Carry activo si todo
-L3A9F:  PUSH    BC          ; a ido bien
+L3A9C:  PUSH    BC          ; ha ido bien
         POP     IX          ; IX debe apuntar al siguiente byte despues del bloque
         RET     NZ          ; si no coincide el checksum salgo con Carry desactivado
         SCF
         RET
 
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;      25 bytes
+L3AA2:  DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;      25 bytes
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
 
@@ -19363,39 +19370,33 @@ L3ABB:  IN      L,(C)
 L3ABF:  IN      L,(C)
         JP      (HL)
 
-L3AC2:  POP     HL
-        LD      SP,HL
-        POP     HL            ; reemplazo pila, 4 bytes
-        LD      ($FF40),HL
-        POP     HL
-        LD      ($FF42),HL
-        POP     BC            ; BC'
-        POP     DE            ; DE'
-        POP     HL            ; HL'
-        EXX
-        POP     AF            ; AF'
-        EX      AF,AF'
-        POP     BC            ; BC
-        POP     DE            ; DE
-        POP     HL            ; IR
-        POP     IX            ; IX
-        POP     IY            ; IY
-        LD      A,L
-        LD      I,A
-        POP     AF            ; IM,IFF
-        JR      C,L3AE1
-        IM      2
-L3AE1:  JR      Z,L3AE4
-        EI
-L3AE4:  DEC     SP
-        LD      A,H
-        LD      HL,2
-        ADD     HL,SP
-        LD      R,A
-        POP     AF            ; AF
-        JP      (HL)
-
-L3AEE:  DEFB    $FF, $FF, $FF; 3 bytes
+L3AC2:  CALL    L3902
+        JR      Z,L3AC2
+        DEC     D
+        JR      NZ,L3AC2
+        LD      B,D
+        CALL    L05ED
+        PUSH    BC
+        CALL    L05ED
+        LD      E,B
+        CALL    L2CB3           ; STK-(PULSE0+PULSE1)
+        LD      D,B
+        POP     BC
+        LD      E,B
+        CALL    L2CB3           ; STK-PULSE0
+        RST     28H             ; FP-CALC      P0+P1, P0.
+        DEFB    $01             ; EXCHANGE     P0, P0+P1.
+        DEFB    $05             ; DIVISION     P0/(P0+P1).
+        DEFB    $A2             ; STK-HALF     P0/(P0+P1), 0.5.
+        DEFB    $03             ; SUBTRACT     P0/(P0+P1)-0.5.
+        DEFB    $38             ; END-CALC
+        CALL    L2DE3           ; ROUTINE PRINT-FP OUTPUTS THE NUMBER TO
+        LD      A,$0D
+        RST     10H
+L3AE8:  LD      D,A
+        LD      C,3
+        RES     0,(IY+$02)
+        JR      L3AC2
 
 L3AF1:  XOR     B
         LD      (DE),A
