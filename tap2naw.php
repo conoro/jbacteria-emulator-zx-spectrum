@@ -22,24 +22,26 @@ function pilot($val){
   while( $val-- )
     outbits_double($muest);
 }
-$tabla1= array( array(1,2,2,3),
-                array(1,2,3,4),
-                array(2,2,3,3),
-                array(2,3,4,5),
-                array(2,3,3,4),
-                array(2,3,4,5),
-                array(3,3,4,4),
-                array(3,4,5,6));
-$tabla2= array( array(1,1,2,2),
-                array(1,2,3,4),
-                array(1,2,2,3),
-                array(1,2,3,4),
-                array(2,2,3,3),
-                array(2,3,4,5),
-                array(2,3,3,4),
-                array(2,3,4,5));
-$termin= array( array( 20, 0, 0, 18, 0, 0, 0, 0),
-                array( 13, 0, 0,  0, 0, 0, 0, 0));
+$tabla1= array( array(1,2,2,3), // 0
+                array(2,2,3,3), // 1
+                array(2,3,3,4), // 2
+                array(3,3,4,4), // 3
+                array(1,2,3,4), // 4
+                array(2,3,4,5), // 5
+                array(2,3,4,5), // 6
+                array(3,4,5,6));// 7
+$tabla2= array( array(1,1,2,2), // 0
+                array(1,2,2,3), // 1
+                array(2,2,3,3), // 2
+                array(2,3,3,4), // 3
+                array(1,2,3,4), // 4
+                array(1,2,3,4), // 5
+                array(2,3,4,5), // 6
+                array(2,3,4,5));// 7
+$termin= array( array( 21, 22, 23, 24, 23, 24, 25, 26),  // 0 1 2 3 4 5 6 7
+                array( 13, 14, 15, 16, 15, 16, 17, 18)); // 0 1 2 3 4 5 6 7
+$byvel=  array( array( 0xed, 0xde, 0xd2, 0xc3, 0x00, 0x71, 0x62, 0x53),  // 0 1 2 3 4 5 6 7
+                array( 0xf1, 0xe2, 0xd6, 0xc7, 0x04, 0x78, 0x69, 0x5d)); // 0 1 2 3 4 5 6 7
 $cont= file_get_contents($_SERVER['argv'][1]);
 $velo= isset($_SERVER['argv'][2]) ? $_SERVER['argv'][2] : 3;
 $muest= $_SERVER['argv'][3]==48 ? 13 : 12;
@@ -54,16 +56,14 @@ while($pos<$long){
 echo $len."\n";
   pilot( $lastbl ? 1000 : 200 );
   outbits_double(3);
-  $c21= 24;
-  $b21= $velo                           // velocidad
-      | $muest<<3&8                     // muestreo 44 ó 48khz
-      | 1<<6
-      | ( $len==6914 ? $skip<<7 : 0 )   // eludo checksum solo en bloques de pantalla
-      | ord($cont[$pos+2])<<8           // byte flag
-      | ord($cont[$pos+$len+1])<<16;    // checksum
-  while( $c21-- ){
-    outbits_double( $b21&0x800000 ? 3 : 5 );
-    $b21<<= 1;
+  $c26= 26;
+  $b26= ( $len==6914 ? $skip<<3 : 0 )   // eludo checksum solo en bloques de pantalla
+      | $byvel[$muest&1][$velo]         // byte velo
+      | ord($cont[$pos+2])<<10          // byte flag
+      | ord($cont[$pos+$len+1])<<18;    // checksum
+  while( $c26-- ){
+    outbits_double( $b26&0x2000000 ? 3 : 6 );
+    $b26<<= 1;
   }
   $ini= 0;
   outbits_double(2);
@@ -155,5 +155,50 @@ ZxTapTimingInfo   48K        128K
 04 D  6914        1234       2142
 05 HB saimazoomc  123        321
 06 D  34502       Block      Block
+
+44 0 *ed a0 a3 - 21
+      f0 a3 a6 - 21
+     
+44 1 *de a0 a3 - 22
+      e1 a3 a6 - 22
+
+44 2  cf a0 a3 - 23
+     *d2 a3 a6 - 23
+
+44 3  c0 a0 a3 - 24
+     *c3 a3 a6 - 24
+
+83-86-89
+92-95-98
+a1-a4-a7
+b0-b3-b6
+
+44 5  00 a0 a3 - 24
+     *c3 a3 a6 - 24
+
+16-19
+34-37
+52-55
+70-73
+
+48 0  f1 - 13
+     
+48 1  e2 - 14
+
+48 2  d6 - 15
+
+48 3  c7 - 16
+
+84-87-*8a
+93-96
+9f-a2-*a5
+ae-b1
+
+48 4  f1 - 13
+
+17-1a-1d
+32-35-38
+4d-50-53
+   6b-6e
 
 */

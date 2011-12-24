@@ -149,17 +149,21 @@ nei DEC SP
     LD  SP,XXXX       ; SP
     JP  XXXX          ; PC
 
+(11)
+(10)
+(47)
+
+
   77
   36
-   8 (57)
-  25 (174)
-  19
-  11
+   8 (57)    49
+  34 (174)  140
+  46
  254
 ----
- 430 bytes
+ 455 bytes
 -169 exomizer
 ----
- 261 bytes
+ 286 bytes
 
 */
