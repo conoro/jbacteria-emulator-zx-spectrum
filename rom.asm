@@ -422,8 +422,8 @@ L0095:  DEFB    '?'+$80
         DEFB    'N'+$80
         DEFM    "CA"
         DEFB    'T'+$80
-        DEFM    "FORMA"
-        DEFB    'T'+$80
+        DEFM    "TETRI"
+        DEFB    'S'+$80
         DEFM    "MOV"
         DEFB    'E'+$80
         DEFM    "ERAS"
@@ -8079,7 +8079,7 @@ L1B02:  DEFB    $06             ; Class-06 - A numeric expression must follow.
 ;; P-FORMAT
 L1B06:  DEFB    $0A             ; Class-0A - A string expression must follow.
         DEFB    $00             ; Class-00 - No further operands.
-        DEFW    L1793           ; Address: $1793; Address: CAT-ETC
+        DEFW    L3C02           ; Address: $3c02;
 
 ;; P-MOVE
 L1B0A:  DEFB    $0A             ; Class-0A - A string expression must follow.
