@@ -8077,10 +8077,10 @@ L1B02:  DEFB    $06             ; Class-06 - A numeric expression must follow.
         DEFW    L16E5           ; Address: $16E5; Address: CLOSE
 
 ;; P-FORMAT
-L1B06:  DEFB    $0A             ; Class-0A - A string expression must follow.
-        DEFB    $00             ; Class-00 - No further operands.
+L1B06:  DEFB    $00             ; Class-00 - No further operands.
         DEFW    L3C02           ; Address: $3c02;
-
+        DEFB    $FF             ; Padding
+        
 ;; P-MOVE
 L1B0A:  DEFB    $0A             ; Class-0A - A string expression must follow.
         DEFB    $2C             ; Separator:  ','
@@ -8095,7 +8095,7 @@ L1B10:  DEFB    $0A             ; Class-0A - A string expression must follow.
 
 ;; P-CAT
 L1B14:  DEFB    $00             ; Class-00 - No further operands.
-        DEFW    L3AE8           ; Address: $3AE8;
+        DEFW    L3AC3           ; Address: $3AE8;
 
 ; * Note that a comma is required as a separator with the OPEN command
 ; but the Interface 1 programmers relaxed this allowing ';' as an
