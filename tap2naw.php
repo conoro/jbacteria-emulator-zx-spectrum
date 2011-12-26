@@ -57,19 +57,19 @@ echo $len."\n";
   pilot( $lastbl ? 1000 : 200 );
   outbits_double(3);
   $c26= 26;
-  $b26= ( $len==6914 ? $skip<<3 : 0 )   // eludo checksum solo en bloques de pantalla
-      | $byvel[$muest&1][$velo]         // byte velo
+  $b26= $byvel[$muest&1][$velo]         // byte velo
+      | 0<<8                            // bit snapshot
+      | ( $len==6914 ? $skip<<9 : 0 )   // eludo checksum solo en bloques de pantalla
       | ord($cont[$pos+2])<<10          // byte flag
       | ord($cont[$pos+$len+1])<<18;    // checksum
   while( $c26-- ){
     outbits_double( $b26&0x2000000 ? 3 : 6 );
     $b26<<= 1;
   }
-  $ini= 0;
   outbits_double(2);
   for($i= 2; $i<$len; $i++){
     $val= ord($cont[$pos+1+$i]) >> 6;
-    outbits($ini+$tabla1[$velo][$val^3]);
+    outbits($tabla1[$velo][$val^3]);
     outbits($tabla2[$velo][$val^3]);
     $val= ord($cont[$pos+1+$i]) >> 4 & 3;
     outbits($tabla1[$velo][$val]);
@@ -80,7 +80,6 @@ echo $len."\n";
     $val= ord($cont[$pos+1+$i]) & 3;
     outbits($tabla1[$velo][$val^1]);
     outbits($tabla2[$velo][$val^1]);
-    $ini= 0;
   }
   outbits($termin[$muest&1][$velo]>>1);
   outbits($termin[$muest&1][$velo]-($termin[$muest&1][$velo]>>1));

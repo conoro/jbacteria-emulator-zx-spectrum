@@ -22,24 +22,26 @@ function pilot($val){
   while( $val-- )
     outbits_double($muest);
 }
-$tabla1= array( array(1,2,2,3),
-                array(1,2,3,4),
-                array(2,2,3,3),
-                array(2,3,4,5),
-                array(2,3,3,4),
-                array(2,3,4,5),
-                array(3,3,4,4),
-                array(3,4,5,6));
-$tabla2= array( array(1,1,2,2),
-                array(1,2,3,4),
-                array(1,2,2,3),
-                array(1,2,3,4),
-                array(2,2,3,3),
-                array(2,3,4,5),
-                array(2,3,3,4),
-                array(2,3,4,5));
-$termin= array( array( 20, 0, 0, 18, 0, 0, 0, 0),
-                array( 13, 0, 0,  0, 0, 0, 0, 0));
+$tabla1= array( array(1,2,2,3), // 0
+                array(2,2,3,3), // 1
+                array(2,3,3,4), // 2
+                array(3,3,4,4), // 3
+                array(1,2,3,4), // 4
+                array(2,3,4,5), // 5
+                array(2,3,4,5), // 6
+                array(3,4,5,6));// 7
+$tabla2= array( array(1,1,2,2), // 0
+                array(1,2,2,3), // 1
+                array(2,2,3,3), // 2
+                array(2,3,3,4), // 3
+                array(1,2,3,4), // 4
+                array(1,2,3,4), // 5
+                array(2,3,4,5), // 6
+                array(2,3,4,5));// 7
+$termin= array( array( 21, 22, 23, 24, 23, 24, 25, 26),  // 0 1 2 3 4 5 6 7
+                array( 13, 14, 15, 16, 15, 16, 17, 18)); // 0 1 2 3 4 5 6 7
+$byvel=  array( array( 0xed, 0xde, 0xd2, 0xc3, 0x00, 0x71, 0x62, 0x53),  // 0 1 2 3 4 5 6 7
+                array( 0xf1, 0xe2, 0xd6, 0xc7, 0x04, 0x78, 0x69, 0x5d)); // 0 1 2 3 4 5 6 7
 $cont= file_get_contents($_SERVER['argv'][1]);
 $velo= isset($_SERVER['argv'][2]) ? $_SERVER['argv'][2] : 3;
 $muest= $_SERVER['argv'][3]==48 ? 13 : 12;
@@ -78,16 +80,15 @@ $cont=  substr($cont, 0, $parche-0x3fe5).
         substr($cont, $parche+34-0x3fe5);
 pilot( 1000 );
 outbits_double(3);
-$c21= 24;
-$b21= $velo                           // velocidad
-    | $muest<<3&8                     // muestreo 44 ó 48khz
-    | 1<<7                            // snapshot flag
-    | $skip<<5                        // eludo checksum
-    | 0<<8                            // byte flag
-    | $checksum<<16;                  // checksum
-while( $c21-- ){
-  outbits_double( $b21&0x800000 ? 3 : 5 );
-  $b21<<= 1;
+$c26= 26;
+$b26= $byvel[$muest&1][$velo]         // byte velo
+    | 1<<8                            // bit snapshot activado
+    | 0<<9                            // bit checksum desactivado
+    | 0<<10                           // byte flag
+    | $checksum<<18;                  // checksum
+while( $c26-- ){
+  outbits_double( $b26&0x2000000 ? 3 : 6 );
+  $b26<<= 1;
 }
 outbits_double(2);
 while($pos<$long){
@@ -153,12 +154,11 @@ nei DEC SP
 390c 1
 39f3 8
 3a98 17
-;3abe 1
 3ac2 1
 3bfa 1
-;3bfe 1
-3cf2 7
+3c02 1
+3c05 4
 
-total 36
+total 34
 
 */

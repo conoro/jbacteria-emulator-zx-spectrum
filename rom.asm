@@ -8078,7 +8078,7 @@ L1B02:  DEFB    $06             ; Class-06 - A numeric expression must follow.
 
 ;; P-FORMAT
 L1B06:  DEFB    $00             ; Class-00 - No further operands.
-        DEFW    L3C02           ; Address: $3c02;
+        DEFW    L3C07           ; Address: $3c02;
         DEFB    $FF             ; Padding
         
 ;; P-MOVE
