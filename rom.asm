@@ -1463,27 +1463,22 @@ L046E:  DEFB    $89, $02, $D0, $12, $86;  261.625565290         C
 ;   cassette handling routines in this ROM.
 
 ;; zx81-name
-L04AA:  CALL    L24FB           ; routine SCANNING to evaluate expression.
-        LD      A,($5C3B)       ; fetch system variable FLAGS.
-        ADD     A,A             ; test bit 7 - syntax, bit 6 - result type.
-        JP      M,L1C8A         ; to REPORT-C if not string result
-                                ; 'Nonsense in BASIC'.
-
-        POP     HL              ; drop return address.
-        RET     NC              ; return early if checking syntax.
-
-        PUSH    HL              ; re-save return address.
-        CALL    L2BF1           ; routine STK-FETCH fetches string parameters.
-        LD      H,D             ; transfer start of filename
-        LD      L,E             ; to the HL register.
-        DEC     C               ; adjust to point to last character and
-        RET     M               ; return if the null string.
-                                ; or multiple of 256!
-
-        ADD     HL,BC           ; find last character of the filename.
-                                ; and also clear carry.
-        SET     7,(HL)          ; invert it.
-        RET                     ; return.
+L04AA:  DEC     BC
+        EXX
+        LD      A,E
+        CP      $18
+        JP      Z,L39C2
+        EXX
+        OUT     (C),A
+        INC     A
+        EXX
+        DEC     SP
+        DEC     SP
+        LD      E,A
+        EXX
+        LD      D,$C0
+        LD      B,$EF
+        JP      L3A98
 
 ; =========================================
 ;

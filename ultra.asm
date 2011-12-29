@@ -178,10 +178,15 @@ L39BF:  IN      L,(C)
 L39C2:  POP     HL
         LD      SP,HL
         POP     HL              ; reemplazo pila, 4 bytes
-        LD      ($FF48),HL
+        LD      ($BFFE),HL
         POP     HL
-        LD      ($FF4A),HL
-        POP     BC              ; BC'
+        LD      ($C000),HL
+        JR      C, L39CB
+        EXX
+        DEC     SP
+        POP     AF              ; last byte 7FFD
+        OUT     (C),A
+L39CB:  POP     BC              ; BC'
         POP     DE              ; DE'
         POP     HL              ; HL'
         EXX
@@ -211,7 +216,9 @@ L39E4:  PUSH    AF
         POP     AF              ; AF
         JP      (HL)
 
-L39F3:  DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF; 8 bytes
+        DEFB    $FF;, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+
+
 
 L39FB:  LD      C,$FE
         NOP
@@ -266,16 +273,19 @@ L3A2D:  CP      16              ; si el contador esta entre 10 y 16 es el tono g
         LD      L,A
         EXX
         LD      HL,$0040        ; leo 10 bits en HL
+        LD      D,A
+        LD      E,$FE
         CALL    L3A8E
         PUSH    HL
         POP     IX
         LD      A,$8D           ; A' tiene que valer esto para entrar en Raudo
         EX      AF,AF'
         AND     H
-        POP     DE              ; recupero en DE la direccion de comienzo del bloque
-        JR      Z,L3A5D
-        LD      DE,$4000
-L3A5D:  INC     C               ; pongo en flag Z el signo del pulso
+        JR      NZ,L3A5D
+        LD      SP,$C000
+        DEFB    $FE
+L3A5D:  POP     DE              ; recupero en DE la direccion de comienzo del bloque
+L3A5E:  INC     C               ; pongo en flag Z el signo del pulso
         LD      BC,$EFFE        ; este valor es el que necesita B para entrar en Raudo
         JR      Z,L3A6F
         LD      H,$3B+OFFS
@@ -289,7 +299,7 @@ L3A71:  IN      F,(C)
         CALL    L3A03           ; salto a Raudo
 L3A79:  AND     IXH             ; en caso de no verificar checksum me salto la rutina
         EXX                     ; ya se ha acabado la ultracarga (Raudo)
-        JR      NZ,L3A88
+        JR      Z,L3A88
 L3A7E:  LD      A,(BC)          ; verifico checksum
         XOR     H
         LD      H,A
@@ -310,10 +320,17 @@ L3A8E:  CALL    L3902
         JR      NC,L3A8E
         RET
 
-L3A98:  DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF; 17 bytes
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF;
+L3A98:  INC     C
+        LD      A,$8D           ; A' tiene que valer esto para entrar en Raudo
+        EX      AF,AF'
+        BIT     1,H
+        JP      NZ,L3BC3        ; salto a Raudo segun el signo del pulso en flag Z
+        JP      L3C05           ; salto a Raudo
 
+ nop
+ nop
+ nop
+        
 L3AA9:  CALL    L3BCD           ; EXO_GETPAIR, BC=offset
         POP     DE              ; DE=destination
         PUSH    HL    
@@ -323,7 +340,7 @@ L3AA9:  CALL    L3BCD           ; EXO_GETPAIR, BC=offset
         EX      AF,AF'
         PUSH    AF
         POP     BC              ; BC=lenght
-        LDIR
+;        LDIR
         POP     HL              ; keep HL, DE is updated
         JP      L38A9           ; EXO_MAINLOOP
 
@@ -470,7 +487,9 @@ L3C02:  DEFB    $FF; 1 bytes
 L3C03:  LD      (DE),A          ; Una de las dos opciones de subfuncion a llamar (En este caso pinta/borra pieza)
         RET
 
-L3C05:  DEFB    $FF, $FF, $FF, $FF; 4 bytes
+L3C05:  JP      L3A03
+
+        DEFB    $FF; 1 bytes
 
 L3C07:  AND     D
         RST     $10
