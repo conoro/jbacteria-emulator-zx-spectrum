@@ -1,4 +1,6 @@
 
+;        DEFINE  sinborde
+
 L386E:  LD      IXH,128
         LD      B,52
         LD      IY,$5B00        ; EXO_MAPBASEBITS
@@ -48,6 +50,25 @@ L38BB:  LD      C,$FE
         NOP
 
 L38BF:  INC     H               ;4      46/46
+    IFDEF sinborde
+        JP      C,L38CD        ;10
+        XOR     B               ;4
+        ADD     A,A             ;4
+        RET     C               ;5
+        ADD     A,A             ;4
+        EX      AF,AF'          ;4
+        IN      L,(C)           ;12
+        JP      (HL)            ;4
+        DEFB    $FF, $FF; 2 bytes
+L38CD:  XOR     B               ;4
+        LD      (DE),A          ;7
+        INC     DE              ;6
+        LD      A,$DC           ;7
+        EX      AF,AF'          ;4
+        IN      L,(C)           ;12
+        JP      (HL)            ;4
+        DEFB    $FF; 1 byte
+    ELSE
         JP      NC,L38CD        ;10
         XOR     B               ;4
         ADD     A,A             ;4
@@ -65,6 +86,7 @@ L38CD:  XOR     B               ;4
         EX      AF,AF'          ;4
         IN      L,(C)           ;12
         JP      (HL)            ;4
+    ENDIF
 
 L38D7:  RET     Z
         PUSH    DE
@@ -106,6 +128,10 @@ L3902:  LD      B,0             ; esta rutina lee 2 pulsos e inicializa el conta
         RET
 
         DEFB    $FF; 1 byte
+
+    IFDEF sinborde
+        DEFB    $7F; 1 byte
+    ENDIF
 
 L390D:  DEFB    $ED, $ED, $7F   ; 0D
         DEFB    $ED, $ED, $7F   ; 10
@@ -166,7 +192,11 @@ L390D:  DEFB    $ED, $ED, $7F   ; 0D
         DEFB    $EE, $EE, $7F   ; B0
         DEFB    $EE, $EE, $7F   ; B3
         DEFB    $EE, $EE, $7F   ; B6
-        DEFB    $EE, $7F        ; B9
+        DEFB    $EE             ; B9
+
+    IFNDEF sinborde
+        DEFB    $7F
+    ENDIF
 
 L39BB:  IN      L,(C)
         JP      (HL)
@@ -216,9 +246,7 @@ L39E4:  PUSH    AF
         POP     AF              ; AF
         JP      (HL)
 
-        DEFB    $FF;, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-
-
+        DEFB    $FF; 1 byte
 
 L39FB:  LD      C,$FE
         NOP
@@ -229,11 +257,19 @@ L39FF:  LD      A,R             ;9        49
 L3A03:  LD      B,(HL)          ;7
         LD      A,IXL           ;8
         LD      R,A             ;9
+    IFDEF sinborde
+        EX      AF,AF'          ;4
+        DEC     H               ;4
+        IN      L,(C)           ;12
+        JP      (HL)            ;4
+        DEFB    $FF; 1 byte
+    ELSE
         LD      A,B             ;4
         EX      AF,AF'          ;4
         DEC     H               ;4
         IN      L,(C)           ;12
         JP      (HL)            ;4
+    ENDIF
 
 L3A0D:  PUSH    IX
         POP     BC              ; pongo la direccion de comienzo en BC
@@ -278,6 +314,56 @@ L3A2D:  CP      16              ; si el contador esta entre 10 y 16 es el tono g
         CALL    L3A8E
         PUSH    HL
         POP     IX
+    IFDEF sinborde
+        XOR     A
+        LD      A,$D8           ; A' tiene que valer esto para entrar en Raudo
+        EX      AF,AF'
+        AND     H
+        JR      NZ,L3A5D
+        LD      SP,$C000
+        DEFB    $FE
+L3A5D:  POP     DE              ; recupero en DE la direccion de comienzo del bloque
+L3A5E:  INC     C               ; pongo en flag Z el signo del pulso
+        LD      BC,$EFFE        ; este valor es el que necesita B para entrar en Raudo
+        JR      Z,L3A6F
+        LD      H,$3B+OFFS
+L3A65:  IN      F,(C)
+        JP      PE,L3A65
+        CALL    L3BC3           ; salto a Raudo segun el signo del pulso en flag Z
+        JR      L3A79
+L3A6F:  LD      H,$39+OFFS      ; H tiene un valor 3B u otro 39 segun el signo del pulso
+L3A71:  IN      F,(C)
+        JP      PO,L3A71
+        CALL    L3A03           ; salto a Raudo
+L3A79:  AND     IXH             ; en caso de no verificar checksum me salto la rutina
+        EXX                     ; ya se ha acabado la ultracarga (Raudo)
+        JR      Z,L3A88
+L3A7E:  LD      A,(BC)          ; verifico checksum
+        XOR     H
+        LD      H,A
+        INC     BC
+        DEC     DE
+        LD      A,D
+        OR      E
+        JR      NZ,L3A7E
+        XOR     H               ; salgo con A=0 H=0 L=checksum y Carry activo si todo
+L3A88:  PUSH    BC              ; ha ido bien
+        POP     IX              ; IX debe apuntar al siguiente byte despues del bloque
+        RET     NZ              ; si no coincide el checksum salgo con Carry desactivado
+        SCF
+        RET
+L3A8E:  CALL    L3902
+        CP      6
+        ADC     HL,HL
+        JR      NC,L3A8E
+        RET
+L3A98:  INC     C
+        LD      A,$D8           ; A' tiene que valer esto para entrar en Raudo
+        EX      AF,AF'
+        BIT     1,H
+        JP      NZ,L3BC3        ; salto a Raudo segun el signo del pulso en flag Z
+        JP      L3C05           ; salto a Raudo
+    ELSE
         LD      A,$8D           ; A' tiene que valer esto para entrar en Raudo
         EX      AF,AF'
         AND     H
@@ -319,15 +405,14 @@ L3A8E:  CALL    L3902
         ADC     HL,HL
         JR      NC,L3A8E
         RET
-
 L3A98:  INC     C
         LD      A,$8D           ; A' tiene que valer esto para entrar en Raudo
         EX      AF,AF'
         BIT     1,H
         JP      NZ,L3BC3        ; salto a Raudo segun el signo del pulso en flag Z
         JP      L3C05           ; salto a Raudo
-
         DEFB    $FF;  1 byte
+    ENDIF
         
 L3AA9:  CALL    L3BCD           ; EXO_GETPAIR, BC=offset
         POP     DE              ; DE=destination
@@ -382,6 +467,26 @@ L3AC6:  CALL    L3902
 L3AF1:  XOR     B
         LD      (DE),A
         INC     DE
+    IFDEF sinborde
+        LD      A,$DC
+        EX      AF,AF'
+        IN      L,(C)
+        JP      (HL)
+        DEFB    $FF; 1 byte
+L3AFB:  LD      C,$FE
+        NOP
+        NOP
+L3AFF:  INC     H
+        JP      C,L3AF1
+        XOR     B
+        ADD     A,A
+        RET     C
+        ADD     A,A
+        EX      AF,AF'
+        IN      L,(C)           ;12
+        JP      (HL)            ;4
+        DEFB    $FF, $FF; 2 bytes
+    ELSE
         LD      A,$88
         SCF
         EX      AF,AF'
@@ -397,9 +502,14 @@ L3AFF:  INC     H
         RET     C
         ADD     A,A
         EX      AF,AF'
-        OUT     ($FE),A
-        IN      L,(C)
-        JP      (HL)
+        OUT     ($FE),A         ;11
+        IN      L,(C)           ;12
+        JP      (HL)            ;4
+    ENDIF
+
+    IFDEF sinborde
+        DEFB    $7F; 1 byte
+    ENDIF
 
 L3B0D:  DEFB    $ED, $ED, $7F, $ED, $ED, $7F, $ED, $ED;
         DEFB    $7F, $ED, $ED, $7F, $ED, $ED, $7F, $ED;
@@ -422,7 +532,11 @@ L3B0D:  DEFB    $ED, $ED, $7F, $ED, $ED, $7F, $ED, $ED;
         DEFB    $7F, $EF, $EF, $7F, $EF, $EF, $7F, $EF;
         DEFB    $EF, $7F, $EF, $EF, $7F, $EF, $EE, $7F;
         DEFB    $EE, $EE, $7F, $EE, $EE, $7F, $EE, $EE;
-        DEFB    $7F, $EE, $EE, $7F, $EE, $7F;
+        DEFB    $7F, $EE, $EE, $7F, $EE;
+
+    IFNDEF sinborde
+        DEFB    $7F; 1 byte
+    ENDIF
 
 L3BBB:  LD      C,$FE
         NOP
@@ -433,11 +547,20 @@ L3BBF:  LD      A,R
         LD      B,(HL)
 L3BC3:  LD      A,IXL
         LD      R,A
+
+    IFDEF sinborde
+        EX      AF,AF'
+        DEC     H
+        IN      L,(C)
+        JP      (HL)
+        DEFB    $FF; 1 byte
+    ELSE
         LD      A,B
         EX      AF,AF'
         DEC     H
         IN      L,(C)
         JP      (HL)
+    ENDIF
         
 ;; EXO_GETPAIR
 L3BCD:  LD      IYL,C
