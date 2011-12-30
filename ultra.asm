@@ -327,9 +327,7 @@ L3A98:  INC     C
         JP      NZ,L3BC3        ; salto a Raudo segun el signo del pulso en flag Z
         JP      L3C05           ; salto a Raudo
 
- nop
- nop
- nop
+        DEFB    $FF;  1 byte
         
 L3AA9:  CALL    L3BCD           ; EXO_GETPAIR, BC=offset
         POP     DE              ; DE=destination
@@ -340,7 +338,7 @@ L3AA9:  CALL    L3BCD           ; EXO_GETPAIR, BC=offset
         EX      AF,AF'
         PUSH    AF
         POP     BC              ; BC=lenght
-;        LDIR
+        LDIR
         POP     HL              ; keep HL, DE is updated
         JP      L38A9           ; EXO_MAINLOOP
 
