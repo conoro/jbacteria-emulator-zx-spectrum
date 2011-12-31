@@ -1,5 +1,5 @@
 
-        DEFINE  sinborde
+;        DEFINE  sinborde
 
 L386E:  LD      IXH,128
         LD      B,52
@@ -52,7 +52,7 @@ L38BB:  LD      C,$FE
 L38BF:  INC     H               ;4
     IFDEF sinborde
         EX      AF,AF'          ;4
-        JR      NC,L38CD        ;7/12   41/43
+        JR      NC,L38CC        ;7/12   41/43
         XOR     B               ;4
         LD      (DE),A          ;7
         INC     DE              ;6
@@ -60,7 +60,7 @@ L38BF:  INC     H               ;4
         EX      AF,AF'          ;4
         IN      L,(C)           ;12
         JP      (HL)            ;4
-L38CD:  XOR     B               ;4
+L38CC:  XOR     B               ;4
         ADD     A,A             ;4
         RET     C               ;5
         ADD     A,A             ;4
@@ -133,7 +133,7 @@ L3902:  LD      B,0             ; esta rutina lee 2 pulsos e inicializa el conta
         DEFB    $7F; 1 byte
     ENDIF
 
-L390D:  DEFB    $ED, $ED, $7F   ; 0D
+        DEFB    $ED, $ED, $7F   ; 0D
         DEFB    $ED, $ED, $7F   ; 10
         DEFB    $ED, $ED, $7F   ; 13
         DEFB    $ED, $ED, $7F   ; 16
@@ -211,12 +211,12 @@ L39C2:  POP     HL
         LD      ($BFFE),HL
         POP     HL
         LD      ($C000),HL
-        JR      C, L39CB
+        JR      C, L39D3
         EXX
         DEC     SP
         POP     AF              ; last byte 7FFD
         OUT     (C),A
-L39CB:  POP     BC              ; BC'
+L39D3:  POP     BC              ; BC'
         POP     DE              ; DE'
         POP     HL              ; HL'
         EXX
@@ -230,11 +230,11 @@ L39CB:  POP     BC              ; BC'
         LD      A,L
         LD      I,A
         POP     AF              ; IM,IFF
-        JR      NC,L39E1
+        JR      NC,L39E8
         IM      2
-L39E1:  JR      NZ,L39E4
+L39E8:  JR      NZ,L39EB
         EI
-L39E4:  PUSH    AF
+L39EB:  PUSH    AF
         DEC     SP
         POP     AF
         RRA
@@ -296,7 +296,7 @@ L3A2D:  CP      16              ; si el contador esta entre 10 y 16 es el tono g
         JR      NZ,L3A16        ; si detecto sincronismo sin 8 pulsos de tono guia retorno a bucle
         CALL    L05ED           ; leo pulso negativo de sincronismo
         LD      L,$01           ; HL vale 0001, marker para leer 16 bits en HL (checksum y byte flag)
-        CALL    L3A8E           ; leo 16 bits, ahora temporizo cada 2 pulsos
+        CALL    L3A93           ; leo 16 bits, ahora temporizo cada 2 pulsos
         POP     AF              ; machaco la direccion de retorno de la carga estandar
         EX      AF,AF'          ; A es el byte flag que espero
         CP      L               ; lo comparo con el que me encuentro en la ultracarga
@@ -310,7 +310,7 @@ L3A2D:  CP      16              ; si el contador esta entre 10 y 16 es el tono g
         LD      HL,$0040        ; leo 10 bits en HL
         LD      D,A
         LD      E,$FE
-        CALL    L3A8E
+        CALL    L3A93
         PUSH    HL
         POP     IX
     IFDEF sinborde
@@ -318,45 +318,45 @@ L3A2D:  CP      16              ; si el contador esta entre 10 y 16 es el tono g
         LD      A,$D8           ; A' tiene que valer esto para entrar en Raudo
         EX      AF,AF'
         AND     H
-        JR      NZ,L3A5D
+        JR      NZ,L3A61
         LD      SP,$C000
         DEFB    $FE
-L3A5D:  POP     DE              ; recupero en DE la direccion de comienzo del bloque
-L3A5E:  INC     C               ; pongo en flag Z el signo del pulso
+L3A61:  POP     DE              ; recupero en DE la direccion de comienzo del bloque
+        INC     C               ; pongo en flag Z el signo del pulso
         LD      BC,$EFFE        ; este valor es el que necesita B para entrar en Raudo
-        JR      Z,L3A6F
+        JR      Z,L3A74
         LD      H,$3B+OFFS
-L3A65:  IN      F,(C)
-        JP      PE,L3A65
+L3A6A:  IN      F,(C)
+        JP      PE,L3A6A
         CALL    L3BC3           ; salto a Raudo segun el signo del pulso en flag Z
-        JR      L3A79
-L3A6F:  LD      H,$39+OFFS      ; H tiene un valor 3B u otro 39 segun el signo del pulso
-L3A71:  IN      F,(C)
-        JP      PO,L3A71
+        JR      L3A7E
+L3A74:  LD      H,$39+OFFS      ; H tiene un valor 3B u otro 39 segun el signo del pulso
+L3A76:  IN      F,(C)
+        JP      PO,L3A76
         CALL    L3A03           ; salto a Raudo
-L3A79:  AND     IXH             ; en caso de no verificar checksum me salto la rutina
+L3A7E:  AND     IXH             ; en caso de no verificar checksum me salto la rutina
         EXX                     ; ya se ha acabado la ultracarga (Raudo)
-        JR      Z,L3A88
-L3A7E:  LD      A,(BC)          ; verifico checksum
+        JR      Z,L3A8D
+L3A83:  LD      A,(BC)          ; verifico checksum
         XOR     H
         LD      H,A
         INC     BC
         DEC     DE
         LD      A,D
         OR      E
-        JR      NZ,L3A7E
+        JR      NZ,L3A83
         XOR     H               ; salgo con A=0 H=0 L=checksum y Carry activo si todo
-L3A88:  PUSH    BC              ; ha ido bien
+L3A8D:  PUSH    BC              ; ha ido bien
         POP     IX              ; IX debe apuntar al siguiente byte despues del bloque
         RET     NZ              ; si no coincide el checksum salgo con Carry desactivado
         SCF
         RET
-L3A8E:  CALL    L3902
+L3A93:  CALL    L3902
         CP      6
         ADC     HL,HL
-        JR      NC,L3A8E
+        JR      NC,L3A93
         RET
-L3A98:  INC     C
+L3A9D:  INC     C
         LD      A,$D8           ; A' tiene que valer esto para entrar en Raudo
         EX      AF,AF'
         BIT     1,H
@@ -366,51 +366,51 @@ L3A98:  INC     C
         LD      A,$8D           ; A' tiene que valer esto para entrar en Raudo
         EX      AF,AF'
         AND     H
-        JR      NZ,L3A5D
+        JR      NZ,L3A60
         LD      SP,$C000
         DEFB    $FE
-L3A5D:  POP     DE              ; recupero en DE la direccion de comienzo del bloque
-L3A5E:  INC     C               ; pongo en flag Z el signo del pulso
+L3A60:  POP     DE              ; recupero en DE la direccion de comienzo del bloque
+        INC     C               ; pongo en flag Z el signo del pulso
         LD      BC,$EFFE        ; este valor es el que necesita B para entrar en Raudo
-        JR      Z,L3A6F
+        JR      Z,L3A73
         LD      H,$3B+OFFS
-L3A65:  IN      F,(C)
-        JP      PE,L3A65
+L3A69:  IN      F,(C)
+        JP      PE,L3A69
         CALL    L3BC3           ; salto a Raudo segun el signo del pulso en flag Z
-        JR      L3A79
-L3A6F:  LD      H,$39+OFFS      ; H tiene un valor 3B u otro 39 segun el signo del pulso
-L3A71:  IN      F,(C)
-        JP      PO,L3A71
+        JR      L3A7D
+L3A73:  LD      H,$39+OFFS      ; H tiene un valor 3B u otro 39 segun el signo del pulso
+L3A75:  IN      F,(C)
+        JP      PO,L3A75
         CALL    L3A03           ; salto a Raudo
-L3A79:  AND     IXH             ; en caso de no verificar checksum me salto la rutina
+L3A7D:  AND     IXH             ; en caso de no verificar checksum me salto la rutina
         EXX                     ; ya se ha acabado la ultracarga (Raudo)
-        JR      Z,L3A88
-L3A7E:  LD      A,(BC)          ; verifico checksum
+        JR      Z,L3A8C
+L3A82:  LD      A,(BC)          ; verifico checksum
         XOR     H
         LD      H,A
         INC     BC
         DEC     DE
         LD      A,D
         OR      E
-        JR      NZ,L3A7E
+        JR      NZ,L3A82
         XOR     H               ; salgo con A=0 H=0 L=checksum y Carry activo si todo
-L3A88:  PUSH    BC              ; ha ido bien
+L3A8C:  PUSH    BC              ; ha ido bien
         POP     IX              ; IX debe apuntar al siguiente byte despues del bloque
         RET     NZ              ; si no coincide el checksum salgo con Carry desactivado
         SCF
         RET
-L3A8E:  CALL    L3902
+        DEFB    $FF;  1 byte
+L3A93:  CALL    L3902
         CP      6
         ADC     HL,HL
-        JR      NC,L3A8E
+        JR      NC,L3A93
         RET
-L3A98:  INC     C
+L3A9D:  INC     C
         LD      A,$8D           ; A' tiene que valer esto para entrar en Raudo
         EX      AF,AF'
         BIT     1,H
         JP      NZ,L3BC3        ; salto a Raudo segun el signo del pulso en flag Z
         JP      L3C05           ; salto a Raudo
-        DEFB    $FF;  1 byte
     ENDIF
         
 L3AA9:  CALL    L3BCD           ; EXO_GETPAIR, BC=offset
@@ -514,7 +514,7 @@ L3AFF:  INC     H
         DEFB    $7F; 1 byte
     ENDIF
 
-L3B0D:  DEFB    $ED, $ED, $7F, $ED, $ED, $7F, $ED, $ED;
+        DEFB    $ED, $ED, $7F, $ED, $ED, $7F, $ED, $ED;
         DEFB    $7F, $ED, $ED, $7F, $ED, $ED, $7F, $ED;
         DEFB    $ED, $7F, $ED, $ED, $7F, $ED, $ED, $7F;
         DEFB    $ED, $ED, $7F, $EC, $EC, $7F, $EC, $EC;
@@ -614,25 +614,25 @@ L3C05:  JP      L3A03
 
         DEFB    $FF; 1 bytes
 
-L3C07:  AND     D
+L3C09:  AND     D
         RST     $10
         DEC     (IY+$02)
         LD      IXH,B
-L3C0E:  LD      B,23            ; Dibujar 22 lineas (el primer CR se salta) con "RANDOMIZE " en tinta y fondo negros (se ve una columna negra de 10 caracteres de ancho)
+L3C10:  LD      B,23            ; Dibujar 22 lineas (el primer CR se salta) con "RANDOMIZE " en tinta y fondo negros (se ve una columna negra de 10 caracteres de ancho)
         LD      A,$11           ; Funcion que cambia el color de fondo
         RST     $10
         DB      $3A             ; xor   a, Opcode para LD A, (NN). En la primera pasada se salta el CR y carga A con el valor 0 (fondo negro)
-L3C14:  RST     $10             ; Funcion imprime caracter por pantalla, el codigo ASCII se introduce en el registro A
+L3C16:  RST     $10             ; Funcion imprime caracter por pantalla, el codigo ASCII se introduce en el registro A
         LD      A,13            ; Codigo ASCII para CR (retorno de carro)
         LD      (IY-$0B),A      ; Pongo inicialmente a 13 la variable velo (velocidad) que en realidad es el retardo en frames de la caida de una pieza. Es necesario inicializarla porque durante el juego se decrementa y pierde su valor inicial (variable incrustada en codigo)
         RST     $10             ; Envio por pantalla el retorno de carro (fondo negro en primera iteracion)
         LD      A,249           ; Codigo ASCII para RANDOMIZE, lo uso porque es el token mas largo, que ademas me da el ancho de 10 cuadros que necesito (contando con el espacio del final)
-        DJNZ    L3C14           ; Repito el bucle 23 veces (dibujo 22 lineas). Si lo hago tras perder una partida se produce scroll (y la tipica pregunta scroll? mas?)
+        DJNZ    L3C16           ; Repito el bucle 23 veces (dibujo 22 lineas). Si lo hago tras perder una partida se produce scroll (y la tipica pregunta scroll? mas?)
         LD      HL,$0110        ; Inicializo las variables REPDEL, REPPER (frames para detectar una pulsacion continua y cadencia en frames del envio de la misma tecla) a unos valores mas optimos para jugar
         LD      ($5C09),HL      ; Los que usa la ROM por defecto son muy lentos para la dinamica del juego
-L3C25:  LD      A,R             ; Leo un numero pseudoaleatorio del registro R
-L3C27:  SUB     7               ; Estas dos lineas equivalen a un MOD 7
-        JR      NC,L3C27        ; o resto de dividir el byte entre 7, ya que necesito elegir una pieza al azar de entre las 7
+L3C27:  LD      A,R             ; Leo un numero pseudoaleatorio del registro R
+L3C29:  SUB     7               ; Estas dos lineas equivalen a un MOD 7
+        JR      NC,L3C29        ; o resto de dividir el byte entre 7, ya que necesito elegir una pieza al azar de entre las 7
         LD      L,A             ; Paso dicho valor al registro L para leer pieza de la tabla
         INC     A
         ADD     A,A             ; Multiplico por 9 (para usar el color tanto en tinta como en fondo, de lo contrario se verian los caracteres del RANDOMIZE)
@@ -647,54 +647,54 @@ L3C27:  SUB     7               ; Estas dos lineas equivalen a un MOD 7
         LD      H,B             ; Pongo H a cero, con lo que inicialmente la pieza (almacenada en HL) contiene algo asi 00000000XXXXXXXX
         CALL    $0E94           ; Multiplico por 16 o desplazo 4 bits para tener la pieza centrada y que no resulten extranas las rotaciones
         LD      C,D             ; Pongo C a un valor mayor de 4 con los bits 1 y 2 a cero (que indican que entro en el bucle principal desde nueva pieza)
-L3C3F:  LD      IXL,$F3         ; IX apunta a la subfuncion a llamar (dentro de la funcion L3CDC), en este caso es la que comprueba si hay colision antes de pintar la pieza
+L3C41:  LD      IXL,$F3         ; IX apunta a la subfuncion a llamar (dentro de la funcion L3CDC), en este caso es la que comprueba si hay colision antes de pintar la pieza
         CALL    L3CDC           ; Llamo a la funcion L3CDC para testear la pieza (con -1 ahorro un byte porque PUSH DE coincide con el ultimo byte de la instruccion anterior)
-        JR      Z,L3C51         ; Si no hay colision, salto a ncol
+        JR      Z,L3C53         ; Si no hay colision, salto a ncol
         POP     HL              ; Si hay colision, recupero los valores de posicion
         POP     DE              ; y pieza anteriores a la colision
         LD      SP,$FF40        ; Equilibro la pila, ya que la estaba desequilibrando con muchos PUSH HL,DE y un solo POP HL,DE
         BIT     2,C             ; Compruebo si en punto de entrada del bucle es haber
-        JR      Z,L3C0E         ; generado la pieza, en tal caso (con una colision nada mas generar la pieza) reinicio el juego
+        JR      Z,L3C10         ; generado la pieza, en tal caso (con una colision nada mas generar la pieza) reinicio el juego
         INC     C               ; Senalizo la colision poniendo a 1 el bit 1 del registro C
-L3C51:  LD      IXL,$03         ; IX apunta a la subfuncion pintar/borrar
+L3C53:  LD      IXL,$03         ; IX apunta a la subfuncion pintar/borrar
         EX      AF,AF'          ; recupero el color de A'
         CALL    L3CDC           ; pinto la pieza
         EX      AF,AF'          ; vuelvo a guardar el color en A'
         BIT     1,C             ; Compruebo si ha habido colision (del tipo colision contra el suelo, no vale contra paredes ni tras rotar)
         JR      NZ,L3C9E        ; Salto a L3C9E en caso de ese tipo de colision
         PUSH    DE              ; Guardo posicion en pila
-L3C5E:  LD      A,($5C78)       ; Leo contador de frames
+L3C60:  LD      A,($5C78)       ; Leo contador de frames
         LD      B,A             ; Lo guardo temporalmente en B
         SUB     (IY)            ; Comparo con referencia (valor de frames que tenia la pieza antes de descender)
         SUB     (IY-$0B)        ; Aplico un retardo (numero de frames que tarda la pieza en descender)
-        JR      Z,L3C73         ; Si se agota el tiempo, la pieza cae por gravedad, salto a "salt"
+        JR      Z,L3C75         ; Si se agota el tiempo, la pieza cae por gravedad, salto a "salt"
         BIT     5,(IY+1)        ; Mientras tanto voy leyendo si se ha pulsado una tecla
-        JR      Z,L3C5E         ; En tal caso, rompo el bucle de tiempo
+        JR      Z,L3C60         ; En tal caso, rompo el bucle de tiempo
         LD      A,($5C08)       ; Con el registro A conteniendo el codigo ASCII de la tecla pulsada
-L3C73:  PUSH    HL              ; Guardo pieza en pila
+L3C75:  PUSH    HL              ; Guardo pieza en pila
         CALL    L1F4F           ; res   5, (iy+1). Senalizo tecla leida. En este punto si A vale cero es que no se ha pulsado nada y la pieza cae por si sola
         PUSH    AF              ; Guardo tecla pulsada
         XOR     A               ; Borrar es pintar con color 0 (negro)
         CALL    L3CDC           ; Borra pieza
         POP     AF              ; Recupero tecla pulsada
         SUB     $6F             ; He pulsado izquierda?
-        JR      NZ,L3C82        ; No, pues salto y no hago nada
+        JR      NZ,L3C84        ; No, pues salto y no hago nada
         DEC     E               ; Si, pues decremento posicion
-L3C82:  DEC     A               ; He pulsado derecha? seria caracter 'p' justo despues de 'o', por eso basta con un decremento para comparar
-        JR      NZ,L3C86        ; No, pues salto y no hago nada
+L3C84:  DEC     A               ; He pulsado derecha? seria caracter 'p' justo despues de 'o', por eso basta con un decremento para comparar
+        JR      NZ,L3C88        ; No, pues salto y no hago nada
         INC     E               ; Si, pues incremento posicion
-L3C86:  DEC     A               ; He pulsado arriba (rotar)? seria caracter 'q', despues de 'p'
+L3C88:  DEC     A               ; He pulsado arriba (rotar)? seria caracter 'q', despues de 'p'
         LD      C,1             ; Inicializo A y C a cero y uno respectivamente, independientemente de si salto o no
         JR      Z,L3CCB         ; Si, pues salto a rota (con A y C inicializadas)
         ADD     $0F             ; Se ha pulsado una tecla que cae fuera del rango 'b'-'q'? Como por ejemplo 'a', acelerar caida
         LD      A,B             ; Pongo la actual variable FRAMES1 de B a A
-L3C8E:  LD      BC,$2004        ; Inicializo B a 32 (bajo posicion una fila completa) y C a 4 indicando que entro al bucle principal via pieza no acelerada
-        JR      C,L3C3F         ; Si la pieza cae por su peso (ninguna tecla pulsada), cierro bucle principal
+L3C90:  LD      BC,$2004        ; Inicializo B a 32 (bajo posicion una fila completa) y C a 4 indicando que entro al bucle principal via pieza no acelerada
+        JR      C,L3C41         ; Si la pieza cae por su peso (ninguna tecla pulsada), cierro bucle principal
         INC     C               ; Si se ha pulsado 'a' o equivalente, senalizo pieza acelerada en registro C
-L3C94:  INC     DE              ; Avanza la posicion en una fila (32 caracteres)
-        DJNZ    L3C94
+L3C96:  INC     DE              ; Avanza la posicion en una fila (32 caracteres)
+        DJNZ    L3C96
         LD      (IY),A          ; Pongo FRAMES1 (antes guardada en A) como referencia en time (variable incrustada en codigo)
-        JR      L3C3F           ; Cierro bucle principal
+        JR      L3C41           ; Cierro bucle principal
 L3C9E:  LD      HL,$5ABF        ; Parto desde una coordenada (31, 21) que es la parte inferior derecha de la pantalla
 L3CA1:  EX      DE,HL           ; Almaceno posicion en DE
         XOR     A               ; Pongo A a cero (lo usare en la instruccion CPIR)
@@ -708,7 +708,7 @@ L3CA1:  EX      DE,HL           ; Almaceno posicion en DE
         LD      C,L             ; Pongo BC con el valor justo para que el desplazamiento (machacar la linea completada con las lineas superiores) solo ocurra en la zona de la memoria de video que corresponde a atributos
         LD      A,H
         SUB     $58
-        JP      C,L3C25         ; Si me salgo de la zona de atributos es que ya he llegado a la primera linea y por tanto salgo del bucle (a generar una nueva pieza)
+        JP      C,L3C27         ; Si me salgo de la zona de atributos es que ya he llegado a la primera linea y por tanto salgo del bucle (a generar una nueva pieza)
         LD      B,A
         LDDR                    ; Hago el corrimiento de lineas
         RLC     (IY-$22)        ; Esto me permite aumentar el nivel de velocidad cada 8 lineas completadas
@@ -731,7 +731,7 @@ L3CCE:  ADD     HL,HL           ; Desplazo 4 veces HL a la izquierda
         POP     HL              ; Salgo del bucle, pero necesito equilibrar pila (no me importa el valor)
         LD      H,A             ; Finalmente la pieza rotada queda en (A, C), que la muevo a HL
         LD      L,C
-        JR      L3C8E           ; Salto al bucle principal (con indicador de pieza no acelerada)
+        JR      L3C90           ; Salto al bucle principal (con indicador de pieza no acelerada)
 L3CDC:  PUSH    DE              ; Guardo DE, HL y BC en pila
         PUSH    HL
         PUSH    BC
