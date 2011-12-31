@@ -1,0 +1,187 @@
+slow 2.5  2 4 6 8
+     3    3 5 7 9
+     3.5  4 6 8 10
+     4    5 7 9 11
+
+raudo  1.75  2 3 4 5
+       2.25  3 4 5 6
+       2.50  2 4 6 8
+       2.75  4 5 6 7
+
+2345 12
+
+21  r1.75
+22 sr2.5
+31  r2.25
+32  s3
+41  r2.75
+42  s3.5
+51   3.25
+52  s4
+
+fdff salto1
+fdbf escribe
+fe04 tabla
+febf salto0
+feff lee timings
+
+38bf escribe
+38ff salto1
+3904 tabla
+39bf salto0
+39ff lee timings
+
+3abf salto0
+3aff escribe
+3b04 tabla
+3bbf lee timings
+3bff salto1
+
+1110 11xx registro B  62 xor EF= 8D    / 88
+0110 0010 ini
+1000 1000 shi
+0110 01xx xor
+1001 xx00 shi
+0111 XXyy xor
+11XX yy00 shi
+00xX YYzz xor
+xXYY zz00 shi
+XxyY ZZww xor
+
+1110 11xx registro B  37 xor EF= D8    / DC
+0011 0111 ini
+1101 1100 shi
+0011 00xx xor
+1100 xx00 shi
+0010 XXyy xor
+10XX yy00 shi
+01xX YYzz xor
+xXYY zz00 shi
+XxyY ZZww xor
+
+
+
+ teclas problematicas
+ 6 7 9 0
+ Z X V Shift
+ A S F G
+
+ZxTapTimingInfo   48K        128K
+01 HP SAIMAZOOM   123        126
+02 D  213         3494400    234124
+03 HB saimazooms  123        234
+04 D  6914        1234       2142
+05 HB saimazoomc  123        321
+06 D  34502       Block      Block
+
+44 0 *ed a0 a3 - 21
+      f0 a3 a6 - 21
+     
+44 1 *de a0 a3 - 22
+      e1 a3 a6 - 22
+
+44 2  cf a0 a3 - 23
+     *d2 a3 a6 - 23
+
+44 3  c0 a0 a3 - 24
+     *c3 a3 a6 - 24
+
+83-86-89
+92-95-98
+a1-a4-a7
+b0-b3-b6
+
+44 5  00 a0 a3 - 24
+     *c3 a3 a6 - 24
+
+16-19
+34-37
+52-55
+70-73
+
+48 0  f1 - 13
+     
+48 1  e2 - 14
+
+48 2  d6 - 15
+
+48 3  c7 - 16
+
+84-87-*8a
+93-96
+9f-a2-*a5
+ae-b1
+
+48 4  f1 - 13
+
+17-1a-1d
+32-35-38
+4d-50-53
+   6b-6e
+
+
+
+
+  Hola Miguel Ángel
+
+  Ante todo, muchas gracias por tu colaboración.
+
+El 30/12/11 1:20, Miguel Angel Rodriguez Jodar escribió:
+> He visto que había otra persona en el CC (¿decicoder?) así que vuelvo a 
+> escribir para reiterar mi ofrecimiento a colaborar en este proyecto.
+> 
+> De paso, comentaros un par de cositas:
+> 
+> En la modificación de la ROM que habeis hecho, dado que usais el área al 
+> final de ella, ¿habéis tenido en cuenta esto que comento?
+> http://www.zonadepruebas.com/modules/newbb/viewtopic.php?topic_id=13312&forum=2#forumpost136168 
+> 
+> 
+> Concretamente, este párrafo es el importante:
+> "...En la ROM del +2A/+3, la zona desde 3900h hasta 39FFh no está a FFh. 
+> Por eso el parche consiste en buscar la instrucción donde se le da un 
+> valor al registro I, para que éste valga 3Bh en lugar de 39h. En el +2A 
+> de hecho toda la zona superior de la ROM está a 00h.... excepto dos 
+> bytes, situados estratégicamente en 39FFh y 3A00h, que valen ambos FFh. 
+> Esos dos bytes seguramente fueron puestos allí aposta para preservar la 
+> compatibilidad de los juegos que usaban vectores en ROM..."
+> 
+> Para que algunos juegos (Bomb Jack entre otros) sigan funcionando, es 
+> necesario que esos dos bytes en las direcciones 39FFh y 3A00h sigan 
+> siendo FFh como en la ROM original del 48K. Sería conveniente que 
+> vuestra modificación de la ROM tuviera en cuenta esto.
+
+  Sí, era consciente de este problema. Desafortunadamente la rutina Raudo (nombre original según nomeclatura k7zx) necesita ubicarse en 2 páginas en las posiciones XXBF y XXFF. La Raudo original tenía código automodificable en RAM que permitía trabajar si la señal está invertida. Al trabajar en ROM necesitamos 4 páginas, por tanto las posiciones 38BF, 38FF, 39BF, 39FF, 3ABF, 3AFF y 3BBF, 3BFF están ocupadas.
+
+  Así que se perderá compatibilidad con juegos que usen IM2 y aprovechen que estas páginas están a FF. En realidad se necesitan 257 bytes, o sea una página y el primer byte de la siguiente, por lo que solo son aptas las páginas 39XX, 3AXX, 3BXX. En modelos 128K (incluído el +2A) mantienen los 2 últimos bytes a FF (en 38FF-3900, 39FF-3A00, 3AFF-3B00 y 3BFF-3C00) porque el bus inactivo siempre está a FF.
+
+  La única solución a esto es usar Slow, una rutina que hace lo mismo que Raudo pero es menos precisa y no permite velocidades de carga tan altas.
+
+> 
+> La otra cosa que quería comentaros es que podeis también vosotros mismos 
+> hacer pruebas reales de la rutina de carga si teneis un Spectrum +2A o 
+> un +3, ya que estos modelos permiten mapear RAM en el espacio de ROM. Si 
+> ya las habeis hecho y lo que buscais son pruebas en máquinas más 
+> antiguas, perfecto, puedo ayudaros en eso (incluyendo pruebas de carga 
+> en un Inves Spectrum). Si no lo habiais hecho aun porque no esteis 
+> familiarizados con el sistema de paginación extendida del +2A/+3, 
+> también puedo ayudaros en eso :)
+> 
+> Saludos!
+
+  Gracias. Precisamente había pensado en ello y se lo había comentado a decicoder. Y además se puede probar todo excepto snapshots de 128K. Tendría que preparar los tests (no es complicado) y se tardaría más en probar, ya que habría que recargar un bloque de carga estandar de 16K en cada intento. De momento, no los hacemos.
+
+  Como veo que te interesa en el proyecto, no sólo en hacer las pruebas, te envío todos los fuentes.
+
+  Todos los fuentes los llevo al día en un repositorio, que se puede leer vía web, por ejemplo el archivo principal es este:
+http://emuscriptoria.svn.sourceforge.net/viewvc/emuscriptoria/ultra.asm?content-type=text%2Fplain
+
+  O si tienes cliente subversion, con esto:
+svn co https://emuscriptoria.svn.sourceforge.net/svnroot/emuscriptoria emuscriptoria
+
+  Puedes 
+-- 
+    ,       _            _       __   ___ _ _
+   /_\  _ _| |_ ___ _ _ (_)___   \ \ / (_) | |___ _ _  __ _
+  / _ \| ' \  _/ _ \ ' \| / _ \   \ V /| | | / -_) ' \/ _` |
+ /_/ \_\_||_\__\___/_||_|_\___/    \_/ |_|_|_\___|_||_\__,_|
