@@ -1,5 +1,5 @@
 
-;        DEFINE  sinborde
+        DEFINE  sinborde
 
 L386E:  LD      IXH,128
         LD      B,52
@@ -49,27 +49,27 @@ L38BB:  LD      C,$FE
         NOP
         NOP
 
-L38BF:  INC     H               ;4      46/46
+L38BF:  INC     H               ;4
     IFDEF sinborde
-        JP      C,L38CD        ;10
-        XOR     B               ;4
-        ADD     A,A             ;4
-        RET     C               ;5
-        ADD     A,A             ;4
         EX      AF,AF'          ;4
-        IN      L,(C)           ;12
-        JP      (HL)            ;4
-        DEFB    $FF, $FF; 2 bytes
-L38CD:  XOR     B               ;4
+        JR      NC,L38CD        ;7/12   41/43
+        XOR     B               ;4
         LD      (DE),A          ;7
         INC     DE              ;6
         LD      A,$DC           ;7
         EX      AF,AF'          ;4
         IN      L,(C)           ;12
         JP      (HL)            ;4
-        DEFB    $FF; 1 byte
+L38CD:  XOR     B               ;4
+        ADD     A,A             ;4
+        RET     C               ;5
+        ADD     A,A             ;4
+        EX      AF,AF'          ;4
+        IN      L,(C)           ;12
+        JP      (HL)            ;4
+        DEFB    $FF, $FF, $FF; 3 bytes
     ELSE
-        JP      NC,L38CD        ;10
+        JP      NC,L38CD        ;10     46/46
         XOR     B               ;4
         ADD     A,A             ;4
         RET     C               ;5
@@ -252,17 +252,16 @@ L39FB:  LD      C,$FE
         NOP
         NOP
 
-L39FF:  LD      A,R             ;9        49
+L39FF:  LD      A,R             ;9        49 (41 sin borde)
         LD      L,A             ;4
-L3A03:  LD      B,(HL)          ;7
-        LD      A,IXL           ;8
+        LD      B,(HL)          ;7
+L3A03:  LD      A,IXL           ;8
         LD      R,A             ;9
     IFDEF sinborde
-        EX      AF,AF'          ;4
         DEC     H               ;4
         IN      L,(C)           ;12
         JP      (HL)            ;4
-        DEFB    $FF; 1 byte
+        DEFB    $FF, $FF; 2 bytes
     ELSE
         LD      A,B             ;4
         EX      AF,AF'          ;4
@@ -464,29 +463,33 @@ L3AC6:  CALL    L3902
         LD      C,3
         JR      L3AC6
 
-L3AF1:  XOR     B
-        LD      (DE),A
-        INC     DE
     IFDEF sinborde
-        LD      A,$DC
-        EX      AF,AF'
-        IN      L,(C)
-        JP      (HL)
-        DEFB    $FF; 1 byte
-L3AFB:  LD      C,$FE
-        NOP
-        NOP
-L3AFF:  INC     H
-        JP      C,L3AF1
-        XOR     B
+L3AF1:  XOR     B
         ADD     A,A
         RET     C
         ADD     A,A
         EX      AF,AF'
+        IN      L,(C)
+        JP      (HL)
+        DEFB    $FF, $FF; 2 bytes
+L3AFB:  LD      C,$FE
+        NOP
+        NOP
+L3AFF:  INC     H
+        EX      AF,AF'          ;4
+        JR      NC,L3AF1
+        XOR     B
+        LD      (DE),A
+        INC     DE
+        LD      A,$DC
+        EX      AF,AF'
         IN      L,(C)           ;12
         JP      (HL)            ;4
-        DEFB    $FF, $FF; 2 bytes
+        DEFB    $FF; 1 byte
     ELSE
+L3AF1:  XOR     B
+        LD      (DE),A
+        INC     DE
         LD      A,$88
         SCF
         EX      AF,AF'
@@ -549,11 +552,10 @@ L3BC3:  LD      A,IXL
         LD      R,A
 
     IFDEF sinborde
-        EX      AF,AF'
         DEC     H
         IN      L,(C)
         JP      (HL)
-        DEFB    $FF; 1 byte
+        DEFB    $FF, $FF; 2 bytes
     ELSE
         LD      A,B
         EX      AF,AF'
