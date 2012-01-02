@@ -120,66 +120,27 @@ ae-b1
    6b-6e
 
 
+34D7 - 40 bytes GETPAIR,LEESTD,EDGE2
 
+3802 - 49 bytes 60-3 57 SNAP48
+3502 - 11 bytes
 
-  Hola Miguel Ángel
+35C2 - 61 bytes 46+14 CAT,EXOGETBITS
 
-  Ante todo, muchas gracias por tu colaboración.
+360D - 178 bytes (45) -
+36C2 - 51 bytes
+37CD - 50 bytes
 
-El 30/12/11 1:20, Miguel Angel Rodriguez Jodar escribió:
-> He visto que había otra persona en el CC (¿decicoder?) así que vuelvo a 
-> escribir para reiterar mi ofrecimiento a colaborar en este proyecto.
-> 
-> De paso, comentaros un par de cositas:
-> 
-> En la modificación de la ROM que habeis hecho, dado que usais el área al 
-> final de ella, ¿habéis tenido en cuenta esto que comento?
-> http://www.zonadepruebas.com/modules/newbb/viewtopic.php?topic_id=13312&forum=2#forumpost136168 
-> 
-> 
-> Concretamente, este párrafo es el importante:
-> "...En la ROM del +2A/+3, la zona desde 3900h hasta 39FFh no está a FFh. 
-> Por eso el parche consiste en buscar la instrucción donde se le da un 
-> valor al registro I, para que éste valga 3Bh en lugar de 39h. En el +2A 
-> de hecho toda la zona superior de la ROM está a 00h.... excepto dos 
-> bytes, situados estratégicamente en 39FFh y 3A00h, que valen ambos FFh. 
-> Esos dos bytes seguramente fueron puestos allí aposta para preservar la 
-> compatibilidad de los juegos que usaban vectores en ROM..."
-> 
-> Para que algunos juegos (Bomb Jack entre otros) sigan funcionando, es 
-> necesario que esos dos bytes en las direcciones 39FFh y 3A00h sigan 
-> siendo FFh como en la ROM original del 48K. Sería conveniente que 
-> vuestra modificación de la ROM tuviera en cuenta esto.
+EXO         - 129
+MAIN        - 133
+CAT         - 46
+EXO_GETBITS - 14
 
-  Sí, era consciente de este problema. Desafortunadamente la rutina Raudo (nombre original según nomeclatura k7zx) necesita ubicarse en 2 páginas en las posiciones XXBF y XXFF. La Raudo original tenía código automodificable en RAM que permitía trabajar si la señal está invertida. Al trabajar en ROM necesitamos 4 páginas, por tanto las posiciones 38BF, 38FF, 39BF, 39FF, 3ABF, 3AFF y 3BBF, 3BFF están ocupadas.
+SNAP48      - 56
 
-  Así que se perderá compatibilidad con juegos que usen IM2 y aprovechen que estas páginas están a FF. En realidad se necesitan 257 bytes, o sea una página y el primer byte de la siguiente, por lo que solo son aptas las páginas 39XX, 3AXX, 3BXX. En modelos 128K (incluído el +2A) mantienen los 2 últimos bytes a FF (en 38FF-3900, 39FF-3A00, 3AFF-3B00 y 3BFF-3C00) porque el bus inactivo siempre está a FF.
-
-  La única solución a esto es usar Slow, una rutina que hace lo mismo que Raudo pero es menos precisa y no permite velocidades de carga tan altas.
-
-> 
-> La otra cosa que quería comentaros es que podeis también vosotros mismos 
-> hacer pruebas reales de la rutina de carga si teneis un Spectrum +2A o 
-> un +3, ya que estos modelos permiten mapear RAM en el espacio de ROM. Si 
-> ya las habeis hecho y lo que buscais son pruebas en máquinas más 
-> antiguas, perfecto, puedo ayudaros en eso (incluyendo pruebas de carga 
-> en un Inves Spectrum). Si no lo habiais hecho aun porque no esteis 
-> familiarizados con el sistema de paginación extendida del +2A/+3, 
-> también puedo ayudaros en eso :)
-> 
-> Saludos!
-
-  Gracias. Precisamente había pensado en ello y se lo había comentado a decicoder. Y además se puede probar todo excepto snapshots de 128K. Tendría que preparar los tests (no es complicado) y se tardaría más en probar, ya que habría que recargar un bloque de carga estandar de 16K en cada intento. De momento, no los hacemos.
-
-  Como veo que te interesa en el proyecto, no sólo en hacer las pruebas, te envío todos los fuentes.
-
-  Todos los fuentes los llevo al día en un repositorio, que se puede leer vía web, por ejemplo el archivo principal es este:
-http://emuscriptoria.svn.sourceforge.net/viewvc/emuscriptoria/ultra.asm?content-type=text%2Fplain
-
-  O si tienes cliente subversion, con esto:
-svn co https://emuscriptoria.svn.sourceforge.net/svnroot/emuscriptoria emuscriptoria
-
-  Puedes 
+EXO_GETPAIR - 20
+LEE_STD     - 10
+EDGE2       - 10
 -- 
     ,       _            _       __   ___ _ _
    /_\  _ _| |_ ___ _ _ (_)___   \ \ / (_) | |___ _ _  __ _
