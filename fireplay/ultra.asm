@@ -1,27 +1,27 @@
 
 ;        DEFINE  sinborde
 
-L386E:  LD      IXH,128
+L386E:  LD      IY,$5B00        ; EXO_MAPBASEBITS
+        LD      A,128
         LD      B,52
-        LD      IY,$5B00        ; EXO_MAPBASEBITS
         PUSH    DE
-
 ;; EXO_INITBITS
-L3878:  LD      A, B
+L3878:  EX      AF,AF'
+        LD      A,B
         SUB     4
         AND     15
         JR      NZ,L3882
         LD      DE,1            ; DE=b2
 L3882:  LD      C,16
+        EX      AF,AF'
 L3884:  CALL    L3BEE           ; EXO_GETBIT
         RL      C
         JR      NC,L3884
         LD      (IY+0),C        ; bits[i]=b1
         PUSH    HL
-        INC     C
-        LD      HL,0
-        SCF
-L3894:  ADC     HL,HL
+        LD      HL,1
+        DEFB    $D2             ; 3 bytes nop (JP NC)
+L3894:  ADD     HL,HL
         DEC     C
         JR      NZ,L3894
         LD      (IY+52),E
@@ -41,13 +41,12 @@ L38A9:  CALL    L3BEE           ; EXO_GETBIT, literal?
 L38B0:  INC     C
         CALL    L3BEE           ; EXO_GETBIT
         JR      NC,L38B0
-        LD      A,C             ; C=index
-        CP      16
+        BIT     4,C
+        RET     NZ
+        PUSH    DE
+        CALL    L3BCD           ; EXO_GETPAIR
+        PUSH    BC
         JR      L38D7
-
-L38BB:  LD      C,$FE
-        NOP
-        NOP
 
 L38BF:  INC     H               ;4
     IFDEF sinborde
@@ -88,46 +87,41 @@ L38CD:  XOR     B               ;4
         JP      (HL)            ;4
     ENDIF
 
-L38D7:  RET     Z
-        PUSH    DE
-        CALL    L3BCD           ; EXO_GETPAIR
-        PUSH    BC
-        POP     AF
-        EX      AF,AF'          ; lenght in AF'
+L38D7:  POP     IX
         LD      DE,512+48       ; 1?
-        DEC     BC
-        LD      A,B
-        OR      C
+        INC     B
+        DJNZ    L38EE
+        DEC     C
         JR      Z,L38F1         ; EXO_GOFORIT
-        LD      DE,1024+32
-        DEC     BC              ; 2?
-        LD      A,B
-        OR      C
+        DEC     C
+L38EE:  LD      DE,1024+32
         JR      Z,L38F1         ; EXO_GOFORIT
         LD      E,16
 ;; EXO_GOFORIT
 L38F1:  CALL    L3BE0           ; EXO_GETBITS
+        EX      AF,AF'
         LD      A,E
         ADD     A,C
         LD      C,A
-        JP      L3AA9
-
-        DEFB    $FF; 1 byte
-
-L38FB:  IN      L,(C)
-        JP      (HL)
-        NOP
+        EX      AF,AF'
+        CALL    L3BCD           ; EXO_GETPAIR, BC=offset
+        POP     DE              ; DE=destination
+        PUSH    HL    
+        LD      H,D
+        LD      L,E
+        SBC     HL,BC           ; HL=origin
+        PUSH    IX
+        JR      L3902
 
 L38FF:  IN      L,(C)
         JP      (HL)
 
-L3902:  LD      B,0             ; esta rutina lee 2 pulsos e inicializa el contador de pulsos
-        CALL    $05ED
-        CALL    $05ED
-        LD      A,B
-        RET
+L3902:  POP     BC              ; BC=lenght
+        LDIR
+        POP     HL              ; keep HL, DE is updated
+        JR      L38A9           ; EXO_MAINLOOP
 
-        DEFB    $FF; 1 byte
+        DEFB    $FF, $FF, $FF, $FF, $FF; 5 bytes
 
     IFDEF sinborde
         DEFB    $7F; 1 byte
@@ -198,9 +192,7 @@ L3902:  LD      B,0             ; esta rutina lee 2 pulsos e inicializa el conta
         DEFB    $7F
     ENDIF
 
-L39BB:  IN      L,(C)
-        JP      (HL)
-        NOP
+        DEFB    $FF, $FF, $FF, $FF; 4 bytes
 
 L39BF:  IN      L,(C)
         JP      (HL)
@@ -246,11 +238,7 @@ L39EB:  PUSH    AF
         POP     AF              ; AF
         JP      (HL)
 
-        DEFB    $FF; 1 byte
-
-L39FB:  LD      C,$FE
-        NOP
-        NOP
+        DEFB    $FF, $FF, $FF, $FF, $FF; 5 bytes
 
 L39FF:  LD      A,R             ;9        49 (41 sin borde)
         LD      L,A             ;4
@@ -351,7 +339,7 @@ L3A8D:  PUSH    BC              ; ha ido bien
         RET     NZ              ; si no coincide el checksum salgo con Carry desactivado
         SCF
         RET
-L3A93:  CALL    L3902
+L3A93:  CALL    L3AA9
         CP      6
         ADC     HL,HL
         JR      NC,L3A93
@@ -400,7 +388,7 @@ L3A8C:  PUSH    BC              ; ha ido bien
         SCF
         RET
         DEFB    $FF;  1 byte
-L3A93:  CALL    L3902
+L3A93:  CALL    L3AA9
         CP      6
         ADC     HL,HL
         JR      NC,L3A93
@@ -413,22 +401,14 @@ L3A9D:  INC     C
         JP      L3C05           ; salto a Raudo
     ENDIF
         
-L3AA9:  CALL    L3BCD           ; EXO_GETPAIR, BC=offset
-        POP     DE              ; DE=destination
-        PUSH    HL    
-        LD      H,D
-        LD      L,E
-        SBC     HL,BC           ; HL=origin
-        EX      AF,AF'
-        PUSH    AF
-        POP     BC              ; BC=lenght
-        LDIR
-        POP     HL              ; keep HL, DE is updated
-        JP      L38A9           ; EXO_MAINLOOP
+L3AA9:  LD      B,0             ; esta rutina lee 2 pulsos e inicializa el contador de pulsos
+        CALL    $05ED
+        CALL    $05ED
+        LD      A,B
+        RET
 
-L3ABB:  IN      L,(C)
-        JP      (HL)
-        NOP
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF; 12 bytes
+        DEFB    $FF, $FF, $FF, $FF;
 
 L3ABF:  IN      L,(C)
         JP      (HL)
@@ -436,7 +416,7 @@ L3ABF:  IN      L,(C)
         DEFB    $FF;  1 byte
 
 L3AC3:  DEC     (IY+$02)
-L3AC6:  CALL    L3902
+L3AC6:  CALL    L3AA9
         JR      Z,L3AC6
         DEC     D
         JR      NZ,L3AC6
@@ -471,10 +451,7 @@ L3AF1:  XOR     B
         EX      AF,AF'
         IN      L,(C)
         JP      (HL)
-        DEFB    $FF, $FF; 2 bytes
-L3AFB:  LD      C,$FE
-        NOP
-        NOP
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF; 6 bytes
 L3AFF:  INC     H
         EX      AF,AF'          ;4
         JR      NC,L3AF1
@@ -495,9 +472,9 @@ L3AF1:  XOR     B
         EX      AF,AF'
         IN      L,(C)
         JP      (HL)
-L3AFB:  LD      C,$FE
-        NOP
-        NOP
+
+        DEFB    $FF, $FF, $FF, $FF; 4 bytes
+
 L3AFF:  INC     H
         JP      NC,L3AF1
         XOR     B
@@ -541,9 +518,7 @@ L3AFF:  INC     H
         DEFB    $7F; 1 byte
     ENDIF
 
-L3BBB:  LD      C,$FE
-        NOP
-        NOP
+        DEFB    $FF, $FF, $FF, $FF; 4 bytes
 
 L3BBF:  LD      A,R
         LD      L,A
@@ -568,12 +543,13 @@ L3BC3:  LD      A,IXL
 L3BCD:  LD      IYL,C
         LD      D,(IY+0)
         CALL    L3BE0           ; EXO_GETBITS
-        LD      A,C
-        ADD     A,(IY+52)
-        LD      C,A
-        LD      A,B
-        ADC     A,(IY+104)      ; always clear C flag
-        LD      B,A
+        PUSH    HL
+        LD      L,(IY+52)
+        LD      H,(IY+104)
+        ADD     HL,BC           ; always clear C flag
+        LD      B,H
+        LD      C,L
+        POP     HL
         RET
 
 ;; EXO_GETBITS
@@ -586,21 +562,14 @@ L3BE3:  DEC     D
         JR      L3BE3
 
 ;; EXO_GETBIT
-L3BEE:  LD      A,IXH           ; get one bit
-        ADD     A,A
-        LD      IXH,A
+L3BEE:  ADD     A,A             ; get one bit
         RET     NZ
         LD      A,(HL)
         INC     HL
-        RLA
-        LD      IXH,A
+        ADC     A,A
         RET
 
-        DEFB    $FF; 1 byte
-
-L3BFB:  IN      L,(C)
-        JP      (HL)
-        NOP
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF; 11 bytes
 
 L3BFF:  IN      L,(C)
         JP      (HL)
