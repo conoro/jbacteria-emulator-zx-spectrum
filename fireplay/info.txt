@@ -141,8 +141,6 @@ SNAP48      - 56
 EXO_GETPAIR - 20
 LEE_STD     - 10
 EDGE2       - 10
--- 
-    ,       _            _       __   ___ _ _
-   /_\  _ _| |_ ___ _ _ (_)___   \ \ / (_) | |___ _ _  __ _
-  / _ \| ' \  _/ _ \ ' \| / _ \   \ V /| | | / -_) ' \/ _` |
- /_/ \_\_||_\__\___/_||_|_\___/    \_/ |_|_|_\___|_||_\__,_|
+
+
+exo_raw.c match.c search.c optimal.c output.c membuf_io.c chunkpool.c radix.c exo_helper.c exodec.c progress.c exo_util.c getflag.c log.c membuf.c

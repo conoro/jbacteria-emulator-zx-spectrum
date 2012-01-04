@@ -1,6 +1,9 @@
 
 ; 06-12-2011 modificado para que compile con sjasmplus 1.07 rc7
 
+;        DEFINE  sinborde
+;        DEFINE  enram
+
         OUTPUT  48.rom
 
         DEFINE  OFFS  $00
@@ -1463,6 +1466,29 @@ L046E:  DEFB    $89, $02, $D0, $12, $86;  261.625565290         C
 ;   cassette handling routines in this ROM.
 
 ;; zx81-name
+      IFDEF enram
+L04AA:  CALL    L24FB           ; routine SCANNING to evaluate expression.
+        LD      A,($5C3B)       ; fetch system variable FLAGS.
+        ADD     A,A             ; test bit 7 - syntax, bit 6 - result type.
+        JP      M,L1C8A         ; to REPORT-C if not string result
+                                ; 'Nonsense in BASIC'.
+
+        POP     HL              ; drop return address.
+        RET     NC              ; return early if checking syntax.
+
+        PUSH    HL              ; re-save return address.
+        CALL    L2BF1           ; routine STK-FETCH fetches string parameters.
+        LD      H,D             ; transfer start of filename
+        LD      L,E             ; to the HL register.
+        DEC     C               ; adjust to point to last character and
+        RET     M               ; return if the null string.
+                                ; or multiple of 256!
+
+        ADD     HL,BC           ; find last character of the filename.
+                                ; and also clear carry.
+        SET     7,(HL)          ; invert it.
+        RET                     ; return.
+      ELSE
 L04AA:  DEC     BC
         EXX
         LD      A,E
@@ -1479,6 +1505,7 @@ L04AA:  DEC     BC
         LD      D,$C0
         LD      B,$EF
         JP      L3B08
+      ENDIF
 
 ; =========================================
 ;
@@ -8073,8 +8100,13 @@ L1B02:  DEFB    $06             ; Class-06 - A numeric expression must follow.
 
 ;; P-FORMAT
 L1B06:  DEFB    $00             ; Class-00 - No further operands.
+      IFDEF enram
+        DEFB    $0A             ; Class-0A - A string expression must follow.
+        DEFW    L1793           ; Address: $1793; Address: CAT-ETC
+      ELSE
         DEFW    L3C09           ; Address: $3c09;
         DEFB    $FF             ; Padding
+      ENDIF
         
 ;; P-MOVE
 L1B0A:  DEFB    $0A             ; Class-0A - A string expression must follow.
@@ -8090,7 +8122,11 @@ L1B10:  DEFB    $0A             ; Class-0A - A string expression must follow.
 
 ;; P-CAT
 L1B14:  DEFB    $00             ; Class-00 - No further operands.
-        DEFW    ASSYM           ; Address: $3AE8;
+      IFDEF enram
+        DEFW    L1793           ; Address: $1793; Address: CAT-ETC
+      ELSE
+        DEFW    ASSYM           ; Address: 
+      ENDIF
 
 ; * Note that a comma is required as a separator with the OPEN command
 ; but the Interface 1 programmers relaxed this allowing ';' as an
@@ -18606,20 +18642,25 @@ LEEBI:  ADD     A,A             ; get one bit
         ADC     A,A
         RET
 
-    IFDEF sinborde
+    IFDEF enram
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF; 12 bytes
+        DEFB    $FF, $FF, $FF, $FF;
+    ELSE
+      IFDEF sinborde
 L3B08:  INC     C               ; 12 bytes
         LD      A,$D8           ; A' tiene que valer esto para entrar en Raudo
         EX      AF,AF'
         BIT     1,H
         JP      NZ,L37C3        ; salto a Raudo segun el signo del pulso en flag Z
         JP      L3C05           ; salto a Raudo
-    ELSE
+      ELSE
 L3B08:  INC     C
         LD      A,$8D           ; A' tiene que valer esto para entrar en Raudo
         EX      AF,AF'
         BIT     1,H
         JP      NZ,L37C3        ; salto a Raudo segun el signo del pulso en flag Z
         JP      L3C05           ; salto a Raudo
+      ENDIF
     ENDIF
 
 ; -----------------------------
@@ -19159,9 +19200,44 @@ L3BFD:  DEFB    $38             ;;end-calc              last value is 1 or 0.
 
 ;; spare
 
+      IFDEF enram
+L3BFF:  DEFB    $FF, $FF, $FF, $FF, $FF; 5 bytes
+        RET
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF; 251 bytes
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF;
+      ELSE
 L3BFF:  include tetris.asm
-
-        ORG     $3D00
+      ENDIF
 
 ; -------------------------------
 ; THE 'ZX SPECTRUM CHARACTER SET'

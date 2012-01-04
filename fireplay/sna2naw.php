@@ -30,7 +30,7 @@ $regs=  substr($sna, 0xbffe-0x3fe5, 4).          // stack padding
         chr(0x31) . pack('v', $sp+2).             // SP
         chr(0xc3) . substr($sna, $sp-0x3fe5, 2); // PC
 $sna=  substr($sna, 0, 0xbffe-0x3fe5).
-        pack('vv', 0x39c2, $parche).
+        pack('vv', 0x3502, $parche).
         substr($sna, 0xc002-0x3fe5);
 $sna=  substr($sna, 0, 25).
         pack('v', 0xc9c9).                        // 11 00 10 01 longitud minima

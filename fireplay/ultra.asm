@@ -1,6 +1,4 @@
 
-;        DEFINE  sinborde
-
 L34BF:  INC     H               ;4
     IFDEF sinborde
         EX      AF,AF'          ;4
@@ -141,19 +139,25 @@ SNA48:  POP     HL              ; 56 bytes
         DEFB    $EE, $EE, $7F   ; B0
         DEFB    $EE, $EE, $7F   ; B3
         DEFB    $EE, $EE, $7F   ; B6
-        DEFB    $EE             ; B9
+        DEFB    $EE, $7F, $7F   ; B9
+        DEFB    $7F, $7F        ; BC
 
     IFNDEF sinborde
         DEFB    $7F
     ENDIF
 
-        DEFB    $FF, $FF, $FF, $FF; 4 bytes  rellenar tabla
-
 L35BF:  IN      L,(C)
         JP      (HL)
 
 ; 61 bytes
-
+      IFDEF enram
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;  46 bytes
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF;
+      ELSE
 ASSYM:  DEC     (IY+$02)        ; 46 bytes
 ASSY1:  CALL    EDGE2
         JR      Z,ASSY1
@@ -181,6 +185,7 @@ ASSY1:  CALL    EDGE2
         LD      D,A
         LD      C,3
         JR      ASSY1
+      ENDIF
 
         DEFB    $FF;  1 byte
 
@@ -455,13 +460,12 @@ L36FF:  INC     H
         DEFB    $7F, $EF, $EF, $7F, $EF, $EF, $7F, $EF;
         DEFB    $EF, $7F, $EF, $EF, $7F, $EF, $EE, $7F;
         DEFB    $EE, $EE, $7F, $EE, $EE, $7F, $EE, $EE;
-        DEFB    $7F, $EE, $EE, $7F, $EE;
+        DEFB    $7F, $EE, $EE, $7F, $EE, $7F, $7F, $7F;
+        DEFB    $7F;
 
     IFNDEF sinborde
         DEFB    $7F; 1 byte
     ENDIF
-
-        DEFB    $FF, $FF, $FF, $FF; 4 bytes
 
 L37BF:  LD      A,R
         LD      L,A
