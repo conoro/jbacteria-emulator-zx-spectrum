@@ -18648,14 +18648,14 @@ LEEBI:  ADD     A,A             ; get one bit
     ELSE
       IFDEF sinborde
 L3B08:  INC     C               ; 12 bytes
-        LD      A,$D8           ; A' tiene que valer esto para entrar en Raudo
+        LD      A,$01           ; A' tiene que valer esto para entrar en Raudo
         EX      AF,AF'
         BIT     1,H
         JP      NZ,L37C3        ; salto a Raudo segun el signo del pulso en flag Z
         JP      L3C05           ; salto a Raudo
       ELSE
 L3B08:  INC     C
-        LD      A,$8D           ; A' tiene que valer esto para entrar en Raudo
+        LD      A,$D8           ; A' tiene que valer esto para entrar en Raudo
         EX      AF,AF'
         BIT     1,H
         JP      NZ,L37C3        ; salto a Raudo segun el signo del pulso en flag Z

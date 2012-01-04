@@ -59,6 +59,17 @@ XxyY ZZww xor
 xXYY zz00 shi
 XxyY ZZww xor
 
+0000 00xx registro B  01 xor 00= 01    / 04
+0000 0001 ini
+0000 0100 shi
+0000 01xx xor
+0001 xx00 shi
+0001 xxyy xor
+01xx yy00 shi
+01xx yyzz xor
+xxyy zz00 shi
+xxyy zzww xor
+
 
 
  teclas problematicas

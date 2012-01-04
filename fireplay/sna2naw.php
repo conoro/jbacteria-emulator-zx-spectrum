@@ -52,20 +52,21 @@ while( $c26-- ){
 outbits_double(2);
 while($pos<$long){
   $val= ord($sna[$pos]) >> 6;
-  outbits($tabla1[$velo][$val^3]);
-  outbits($tabla2[$velo][$val^3]);
+  outbits($tabla1[$velo][$val]);
+  outbits($tabla2[$velo][$val]);
   $val= ord($sna[$pos]) >> 4 & 3;
   outbits($tabla1[$velo][$val]);
   outbits($tabla2[$velo][$val]);
   $val= ord($sna[$pos]) >> 2 & 3;
-  outbits($tabla1[$velo][$val^2]);
-  outbits($tabla2[$velo][$val^2]);
+  outbits($tabla1[$velo][$val]);
+  outbits($tabla2[$velo][$val]);
   $val= ord($sna[$pos++]) & 3;
-  outbits($tabla1[$velo][$val^1]);
-  outbits($tabla2[$velo][$val^1]);
+  outbits($tabla1[$velo][$val]);
+  outbits($tabla2[$velo][$val]);
 }
 outbits($termin[$muest&1][$velo]>>1);
 outbits($termin[$muest&1][$velo]-($termin[$muest&1][$velo]>>1));
+outbits_double(2);
 outbits_double(2);
 $longi= strlen($bytes);
 echo 'Hecho.';

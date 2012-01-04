@@ -70,17 +70,17 @@ $page[0]= pack('v', 0x04aa).$page[0];
 outbits_double(2);
 for($j= 0; $j<0x4002; $j++){
   $val= ord($page[0][$j]) >> 6;
-  outbits($tabla1[$velo][$val^3]);
-  outbits($tabla2[$velo][$val^3]);
+  outbits($tabla1[$velo][$val]);
+  outbits($tabla2[$velo][$val]);
   $val= ord($page[0][$j]) >> 4 & 3;
   outbits($tabla1[$velo][$val]);
   outbits($tabla2[$velo][$val]);
   $val= ord($page[0][$j]) >> 2 & 3;
-  outbits($tabla1[$velo][$val^2]);
-  outbits($tabla2[$velo][$val^2]);
+  outbits($tabla1[$velo][$val]);
+  outbits($tabla2[$velo][$val]);
   $val= ord($page[0][$j]) & 3;
-  outbits($tabla1[$velo][$val^1]);
-  outbits($tabla2[$velo][$val^1]);
+  outbits($tabla1[$velo][$val]);
+  outbits($tabla2[$velo][$val]);
 }
 outbits($termin[$muest&1][$velo]>>1);
 outbits($termin[$muest&1][$velo]-($termin[$muest&1][$velo]>>1));
@@ -88,17 +88,17 @@ outbits_double(2);
 for($i= 1; $i<8; $i++){
   for($j= 0; $j<0x4000; $j++){
     $val= ord($page[$i][$j]) >> 6;
-    outbits($tabla1[$velo][$val^3]);
-    outbits($tabla2[$velo][$val^3]);
+    outbits($tabla1[$velo][$val]);
+    outbits($tabla2[$velo][$val]);
     $val= ord($page[$i][$j]) >> 4 & 3;
     outbits($tabla1[$velo][$val]);
     outbits($tabla2[$velo][$val]);
     $val= ord($page[$i][$j]) >> 2 & 3;
-    outbits($tabla1[$velo][$val^2]);
-    outbits($tabla2[$velo][$val^2]);
+    outbits($tabla1[$velo][$val]);
+    outbits($tabla2[$velo][$val]);
     $val= ord($page[$i][$j]) & 3;
-    outbits($tabla1[$velo][$val^1]);
-    outbits($tabla2[$velo][$val^1]);
+    outbits($tabla1[$velo][$val]);
+    outbits($tabla2[$velo][$val]);
     $ini= 0;
   }
   outbits($termin[$muest&1][$velo]>>1);

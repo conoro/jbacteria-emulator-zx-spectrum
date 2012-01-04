@@ -26,17 +26,17 @@ while($pos<$long){
   outbits_double(2);
   for($i= 2; $i<$len; $i++){
     $val= ord($cont[$pos+1+$i]) >> 6;
-    outbits($tabla1[$velo][$val^3]);
-    outbits($tabla2[$velo][$val^3]);
+    outbits($tabla1[$velo][$val]);
+    outbits($tabla2[$velo][$val]);
     $val= ord($cont[$pos+1+$i]) >> 4 & 3;
     outbits($tabla1[$velo][$val]);
     outbits($tabla2[$velo][$val]);
     $val= ord($cont[$pos+1+$i]) >> 2 & 3;
-    outbits($tabla1[$velo][$val^2]);
-    outbits($tabla2[$velo][$val^2]);
+    outbits($tabla1[$velo][$val]);
+    outbits($tabla2[$velo][$val]);
     $val= ord($cont[$pos+1+$i]) & 3;
-    outbits($tabla1[$velo][$val^1]);
-    outbits($tabla2[$velo][$val^1]);
+    outbits($tabla1[$velo][$val]);
+    outbits($tabla2[$velo][$val]);
   }
   outbits($termin[$muest&1][$velo]>>1);
   outbits($termin[$muest&1][$velo]-($termin[$muest&1][$velo]>>1));
