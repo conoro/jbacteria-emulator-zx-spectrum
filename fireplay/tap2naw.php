@@ -45,6 +45,7 @@ while($pos<$long){
   $pos+= $len+2;
 }
 outbits_double(2);
+outbits_double(2);
 echo 'Hecho.';
 $longi= strlen($bytes);
 file_put_contents(substr($_SERVER['argv'][1],0,-4).'.tzx',
