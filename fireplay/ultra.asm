@@ -53,7 +53,7 @@ GETPA:  LD      IYL,C
         POP     HL
         RET
 GET16:  CALL    EDGE2
-        CP      6
+        CP      12
         ADC     HL,HL
         JR      NC,GET16
         RET

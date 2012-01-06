@@ -2,10 +2,14 @@
 require 'tablas.php';
 $sna= file_get_contents($_SERVER['argv'][1]);
 $velo= isset($_SERVER['argv'][2]) ? $_SERVER['argv'][2] : 3;
-$muest= $_SERVER['argv'][3]==48 ? 13 : 12;
+$mlow= $_SERVER['argv'][3]==24 || $_SERVER['argv'][3]==48 ? 1 : 0;
+$mhigh= $_SERVER['argv'][3]==22 || $_SERVER['argv'][3]==24 ? 0 : 1;
+if(!$mhigh)
+  $velo= 8;
+$states= array(array(159,146),array(79,73)); // 22 24 44 48
 $inibit= $_SERVER['argv'][4]==1 ? 1 : 0;
 $parche= isset($_SERVER['argv'][5]) ? hexdec($_SERVER['argv'][5]) : 0x5b00;
-$tzx= "ZXTape!\32\1\24\25".chr($muest&1?73:79)."\0\0\0\10";
+$tzx= "ZXTape!\32\1\24\25".chr($states[$mhigh][$mlow])."\0\0\0\10";
 $byte= 1;
 $pos= 25;
 $long= 49152+27;
@@ -38,18 +42,18 @@ $sna=  substr($sna, 0, 25).
         $regs.
         substr($sna, $parche+strlen($regs)-0x3fe5);
 pilot( 200 );
-outbits_double(3);
+outbits_double(1 << $mhigh);
 $c26= 26;
-$b26= $byvel[$muest&1][$velo]         // byte velo
+$b26= $byvel[$mlow][$velo]         // byte velo
     | 0<<8                            // bit snapshot activado
     | 1<<9                            // bit checksum desactivado
     | 0<<10                           // byte flag
     | 0x3f<<18;                       // start high byte
 while( $c26-- ){
-  outbits_double( $b26&0x2000000 ? 3 : 6 );
+  outbits_double( ($b26&0x2000000 ? 2 : 4) << $mhigh );
   $b26<<= 1;
 }
-outbits_double(2);
+outbits_double(1 << $mhigh);
 while($pos<$long){
   $val= ord($sna[$pos]) >> 6;
   outbits($tabla1[$velo][$val]);
@@ -64,10 +68,10 @@ while($pos<$long){
   outbits($tabla1[$velo][$val]);
   outbits($tabla2[$velo][$val]);
 }
-outbits($termin[$muest&1][$velo]>>1);
-outbits($termin[$muest&1][$velo]-($termin[$muest&1][$velo]>>1));
-outbits_double(2);
-outbits_double(2);
+outbits($termin[$mlow][$velo]>>1);
+outbits($termin[$mlow][$velo]-($termin[$mlow][$velo]>>1));
+outbits_double(1 << $mhigh);
+pilot(8);
 $longi= strlen($bytes);
 echo 'Hecho.';
 file_put_contents(substr($_SERVER['argv'][1],0,-4).'.tzx',

@@ -1466,7 +1466,7 @@ L046E:  DEFB    $89, $02, $D0, $12, $86;  261.625565290         C
 ;   cassette handling routines in this ROM.
 
 ;; zx81-name
-      IFDEF enram
+    IFDEF enram
 L04AA:  CALL    L24FB           ; routine SCANNING to evaluate expression.
         LD      A,($5C3B)       ; fetch system variable FLAGS.
         ADD     A,A             ; test bit 7 - syntax, bit 6 - result type.
@@ -1488,24 +1488,28 @@ L04AA:  CALL    L24FB           ; routine SCANNING to evaluate expression.
                                 ; and also clear carry.
         SET     7,(HL)          ; invert it.
         RET                     ; return.
-      ELSE
+    ELSE
 L04AA:  DEC     BC
         EXX
         LD      A,E
         CP      $18
         JP      Z,SNA48
+        AND     A
         EXX
         OUT     (C),A
-        INC     A
         EXX
         DEC     SP
         DEC     SP
-        LD      E,A
+        INC     E
         EXX
         LD      D,$C0
+      IFDEF sinborde
+        LD      B,$00
+      ELSE
         LD      B,$EF
-        JP      L3B08
       ENDIF
+        JP      L3B08
+    ENDIF
 
 ; =========================================
 ;
@@ -18658,8 +18662,8 @@ L3B08:  INC     C
         LD      A,$D8           ; A' tiene que valer esto para entrar en Raudo
         EX      AF,AF'
         BIT     1,H
-        JP      NZ,L37C3        ; salto a Raudo segun el signo del pulso en flag Z
-        JP      L3C05           ; salto a Raudo
+        JP      Z,L3C05         ; salto a Raudo segun el signo del pulso en flag Z
+        JP      L37C3           ; salto a Raudo
       ENDIF
     ENDIF
 
