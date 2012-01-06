@@ -17,7 +17,7 @@
         ld      hl, $5ccb+$55
         ld      bc, L37FF+3-L34BF
         ldir
-recar   ld      de, $1b00
+recar   ld      de, $1800
         ld      hl, $4000
         ld      a, ($0567)
         cp      $cd

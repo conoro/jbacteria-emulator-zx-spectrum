@@ -8,16 +8,7 @@ $page[$last]= substr($sna, 0x801b, 0x4000);
 for($i= 0; $i<8; $i++)
   if(($last!=$i)&&($i!=2)&&($i!=5))
     $page[$i]= substr($sna, 0xc01f+$next++*0x4000, 0x4000);
-$velo= isset($_SERVER['argv'][2]) ? $_SERVER['argv'][2] : 3;
-$mlow= $_SERVER['argv'][3]==24 || $_SERVER['argv'][3]==48 ? 1 : 0;
-$mhigh= $_SERVER['argv'][3]==22 || $_SERVER['argv'][3]==24 ? 0 : 1;
-if(!$mhigh)
-  $velo= 8;
-$states= array(array(159,146),array(79,73)); // 22 24 44 48
-$inibit= $_SERVER['argv'][4]==1 ? 1 : 0;
 $parche= isset($_SERVER['argv'][5]) ? hexdec($_SERVER['argv'][5]) : 0x5b00;
-$tzx= "ZXTape!\32\1\24\25".chr($states[$mhigh][$mlow])."\0\0\0\10";
-$byte= 1;
 $r= ord($sna[20]);
 $r= (($r&127)-5)&127 | $r&128;
 $regs=  substr($page[2], 0x3ffe).                 // stack padding
@@ -59,19 +50,12 @@ $page[2]= substr($page[2], 0, 0x3ffe).
 $page[7]= pack('v', $parche).
           substr($page[7], 2);
 pilot( 200 );
-outbits_double(1 << $mhigh);
-$c26= 26;
-$b26= $byvel[$mlow][$velo]         // byte velo
-    | 0<<8                            // bit snapshot activado
-    | 1<<9                            // bit checksum desactivado
-    | 0<<10                           // byte flag
-    | 0xbf<<18;                       // start high byte
-while( $c26-- ){
-  outbits_double( ($b26&0x2000000 ? 2 : 4) << $mhigh );
-  $b26<<= 1;
-}
+loadconf( $byvel[$mlow][$velo]            // byte velo
+        | 0<<8                            // bit snapshot activado
+        | 1<<9                            // bit checksum desactivado
+        | 0<<10                           // byte flag
+        | 0xbf<<18);                      // start high byte
 $page[0]= pack('v', 0x04aa).$page[0];
-outbits_double(1 << $mhigh);
 for($j= 0; $j<0x4002; $j++){
   $val= ord($page[0][$j]) >> 6;
   outbits($tabla1[$velo][$val]);

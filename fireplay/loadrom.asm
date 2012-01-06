@@ -19,8 +19,8 @@
         out     (c), a
         jp      $0000
 deexo   include depack.asm
-rom     incbin  comprimido_conborde.bin
-;rom     incbin  comprimido_sinborde.bin
+;rom     incbin  comprimido_conborde.bin
+rom     incbin  comprimido_sinborde.bin
 
 /*<?php require 'zx.inc.php';
   generate_basic('loadrom')?>*/
