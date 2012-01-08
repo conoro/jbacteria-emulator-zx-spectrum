@@ -28,7 +28,7 @@ $sna=   substr($sna, 0, 0xbffe-0x3fe5).
         pack('vv', 0x3502, $parche).
         substr($sna, 0xc002-0x3fe5);
 $sna=   substr($sna, 0, 25).
-        pack('v', 0).                           // longitud minima
+        pack('v', 0x3c42).                      // posiciones 3ffe-3fff de la ROM
         substr($sna, 27, $parche-0x4000).
         $regs.
         substr($sna, $parche+strlen($regs)-0x3fe5);
