@@ -257,16 +257,17 @@ GETB1:  DEC     D
 L35FF:  LD      A,R             ;9        49 (41 sin borde)
         LD      L,A             ;4
         LD      B,(HL)          ;7
-L3603:  DEC     H               ;4
-        LD      A,IXL           ;8
+L3603:  LD      A,IXL           ;8
         LD      R,A             ;9
       IFDEF sinborde
+        DEC     H               ;4
         IN      L,(C)           ;12
         JP      (HL)            ;4
         DEFB    $FF, $FF; 2 bytes
       ELSE
         LD      A,B             ;4
         EX      AF,AF'          ;4
+        DEC     H               ;4
         IN      L,(C)           ;12
         JP      (HL)            ;4
       ENDIF
@@ -615,16 +616,18 @@ L36FF:  INC     H
 L37BF:  LD      A,R
         LD      L,A
         LD      B,(HL)
-L37C3:  DEC     H
-        LD      A,IXL
+L37C3:  LD      A,IXL
         LD      R,A
+
       IFDEF sinborde
+        DEC     H
         IN      L,(C)
         JP      (HL)
         DEFB    $FF, $FF; 2 bytes
       ELSE
         LD      A,B
         EX      AF,AF'
+        DEC     H
         IN      L,(C)
         JP      (HL)
       ENDIF
