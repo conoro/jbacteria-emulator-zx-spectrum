@@ -1,4 +1,4 @@
-<!-- Fireplay v0.02 10-01-2012 -->
+<!-- Fireplay v0.03 11-01-2012 -->
 <!DOCTYPE HTML><html><head>
 <title>Fireplay</title>
 <meta http-equiv="Content-Type" content="text/html;charset=utf-8"/>
@@ -101,12 +101,13 @@ function play(){
     table= [1 << mhigh, 1 << mhigh];            // sincro1
     len= (game.charCodeAt(pos++) | game.charCodeAt(pos++)<<8)-2;
     conf= parseInt(document.getElementById('registroR').value, 16)  // byte velo
-        | 1<<8                                  // bit snapshot
-        | ( len==6912 ? skip : 1) << 9          // eludo checksum solo en bloques de pantalla
-        | (lastbl= game.charCodeAt(pos++))<<10  // byte flag
-        | game.charCodeAt(pos+len)<<18;         // checksum
-    for( i= 2; i<54; i++ )
-      table[i]= ((conf&0x2000000 ? 2 : 4) << mhigh) + ((i==3 || i==35) && mhigh ? 1 : 0),
+        | 0<<8                                  // pasar el valor directamente
+        | 1<<9                                  // bit snapshot
+        | ( len==6912 ? skip : 1) << 10         // eludo checksum solo en bloques de pantalla
+        | (lastbl= game.charCodeAt(pos++))<<11  // byte flag
+        | game.charCodeAt(pos+len)<<19;         // checksum
+    for( i= 2; i<56; i++ )
+      table[i]= ((conf&0x4000000 ? 2 : 4) << mhigh) + ((i==3 || i==35) && mhigh ? 1 : 0),
       i&1 && (conf<<= 1);
     table.push( 1 << mhigh, (1 << mhigh)+1,     // sincro2
                 termin[mlow][velo]>>1, termin[mlow][velo]-(termin[mlow][velo]>>1),// terminal
@@ -200,11 +201,11 @@ function audioUltra(e){
         table[i]= ((conf&0x10000 ? 2 : 4) << mhigh) + ((i==3 || i==35) && mhigh ? 1 : 0),
         i&1 && (conf<<= 1);
     }
-    else if( state==56 )
+    else if( state==58 )
       state= 64;
     else if( state==72 )
       pos++,
-      state= --len ? 64 : 56;
+      state= --len ? 64 : 58;
     if( state<60 )
       mues= table[state++];
     else if( state<72 )

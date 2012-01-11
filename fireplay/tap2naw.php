@@ -7,11 +7,13 @@ $lastbl= $pos= 0;
 while($pos<$long){
   $len= ord($cont[$pos])|ord($cont[$pos+1])<<8;
   pilot( $lastbl ? 1000 : 200 );
-  loadconf( $byvel[$mlow][$velo]            // byte velo
-          | 1<<8                            // bit snapshot
-          | ( $len==6914 ? $skip : 1) << 9  // eludo checksum solo en bloques de pantalla
-          | ord($cont[$pos+2])<<10          // byte flag
-          | ord($cont[$pos+$len+1])<<18);   // checksum
+  loadconf( $velo                           // velocidad
+          | $mlow<<3                        // frecuencia muestreo
+          | 0x1f<<4                         // 5 bits a 1
+          | 1<<9                            // bit snapshot
+          | ( $len==6914 ? $skip : 1) << 10 // eludo checksum solo en bloques de pantalla
+          | ord($cont[$pos+2])<<11          // byte flag
+          | ord($cont[$pos+$len+1])<<19);   // checksum
   for($i= 2; $i<$len; $i++){
     $val= ord($cont[$pos+1+$i]) >> 6;
     outbits($tabla1[$velo][$val]);

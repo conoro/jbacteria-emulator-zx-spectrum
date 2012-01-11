@@ -425,8 +425,8 @@ L0095:  DEFB    '?'+$80
         DEFB    'N'+$80
         DEFM    "CA"
         DEFB    'T'+$80
-        DEFM    "TETRI"
-        DEFB    'S'+$80
+        DEFM    "FORMA"
+        DEFB    'T'+$80
         DEFM    "MOV"
         DEFB    'E'+$80
         DEFM    "ERAS"
@@ -8104,13 +8104,8 @@ L1B02:  DEFB    $06             ; Class-06 - A numeric expression must follow.
 
 ;; P-FORMAT
 L1B06:  DEFB    $00             ; Class-00 - No further operands.
-      IFDEF enram
         DEFB    $0A             ; Class-0A - A string expression must follow.
         DEFW    L1793           ; Address: $1793; Address: CAT-ETC
-      ELSE
-        DEFW    L3C09           ; Address: $3c09;
-        DEFB    $FF             ; Padding
-      ENDIF
         
 ;; P-MOVE
 L1B0A:  DEFB    $0A             ; Class-0A - A string expression must follow.
@@ -8126,11 +8121,7 @@ L1B10:  DEFB    $0A             ; Class-0A - A string expression must follow.
 
 ;; P-CAT
 L1B14:  DEFB    $00             ; Class-00 - No further operands.
-      IFDEF enram
-        DEFW    L1793           ; Address: $1793; Address: CAT-ETC
-      ELSE
-        DEFW    ASSYM           ; Address: 
-      ENDIF
+        DEFW    L3C09           ; Address: $3c09;
 
 ; * Note that a comma is required as a separator with the OPEN command
 ; but the Interface 1 programmers relaxed this allowing ';' as an

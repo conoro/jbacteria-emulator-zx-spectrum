@@ -22,22 +22,21 @@ function pilot($val){
   while( $val-- )
     outbits_double( 6 << $mhigh );
 }
-function loadconf($b26){
+function loadconf($b27){
   global $mhigh;
   outbits_double(1 << $mhigh);
-  $c26= 26;
-  while( $c26-- ){
-    if (($c26==25 || $c26==9) && $mhigh){
-      outbits( $b26&0x2000000 ? 4 : 8 );
-      outbits( $b26&0x2000000 ? 5 : 9 );
+  $c27= 27;
+  while( $c27-- ){
+    if (($c27==26 || $c27==10) && $mhigh){
+      outbits( $b27&0x4000000 ? 4 : 8 );
+      outbits( $b27&0x4000000 ? 5 : 9 );
     }
     else
-      outbits_double( ($b26&0x2000000 ? 2 : 4) << $mhigh );
-    $b26<<= 1;
+      outbits_double( ($b27&0x4000000 ? 2 : 4) << $mhigh );
+    $b27<<= 1;
   }
   outbits(1 << $mhigh);
   outbits((1 << $mhigh)+1);
-//  outbits_double(1 << $mhigh);
 }
 $tabla1= array( array(1,2,2,3), // 0
                 array(2,2,3,3), // 1

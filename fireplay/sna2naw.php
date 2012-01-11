@@ -33,11 +33,13 @@ $sna=   substr($sna, 0, 25).
         $regs.
         substr($sna, $parche+strlen($regs)-0x3fe5);
 pilot( 200 );
-loadconf( $byvel[$mlow][$velo]            // byte velo
-        | 0<<8                            // bit snapshot activado
-        | 1<<9                            // bit checksum desactivado
-        | 0<<10                           // byte flag
-        | 0x3f<<18);                      // start high byte
+loadconf( $velo                           // velocidad
+        | $mlow<<3                        // frecuencia muestreo
+        | 0x1f<<4                         // 5 bits a 1
+        | 0<<9                            // bit snapshot activado
+        | 1<<10                           // bit checksum desactivado
+        | 0<<11                           // byte flag
+        | 0x3f<<19);                      // start high byte
 while($pos<$long){
   $val= ord($sna[$pos]) >> 6;
   outbits($tabla1[$velo][$val]);

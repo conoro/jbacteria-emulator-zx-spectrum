@@ -205,46 +205,6 @@ SNA48:  POP     HL              ; 56 bytes
 L35BF:  IN      L,(C)
         JP      (HL)
 
-; 61 bytes
-      IFDEF enram
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;  46 bytes
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF;
-      ELSE
-ASSYM:  DEC     (IY+$02)        ; 46 bytes
-ASSY1:  CALL    EDGE2
-        JR      Z,ASSY1
-        DEC     D
-        JR      NZ,ASSY1
-        LD      B,D
-        CALL    L05ED
-        PUSH    BC
-        CALL    L05ED
-        LD      E,B
-        CALL    L2CB3           ; STK-(PULSE0+PULSE1)
-        LD      D,B
-        POP     BC
-        LD      E,B
-        CALL    L2CB3           ; STK-PULSE0
-        RST     28H             ; FP-CALC      P0+P1, P0.
-        DEFB    $01             ; EXCHANGE     P0, P0+P1.
-        DEFB    $05             ; DIVISION     P0/(P0+P1).
-        DEFB    $A2             ; STK-HALF     P0/(P0+P1), 0.5.
-        DEFB    $03             ; SUBTRACT     P0/(P0+P1)-0.5.
-        DEFB    $38             ; END-CALC
-        CALL    L2DE3           ; ROUTINE PRINT-FP OUTPUTS THE NUMBER TO
-        LD      A,$0D
-        RST     10H
-        LD      D,A
-        LD      C,3
-        JR      ASSY1
-      ENDIF
-
-        DEFB    $FF;  1 byte
-
 ;; EXO_GETBITS
 GETBI:  LD      BC,0            ; get D bits in BC
 GETB1:  DEC     D
@@ -253,6 +213,15 @@ GETB1:  DEC     D
         RL      C
         RL      B
         JR      GETB1
+
+; Tabla
+L35D0:  DEFB    $ED, $DE, $D2, $C3, $00, $71, $62, $53;
+        DEFB    $F1, $E5, $D6, $C7, $04, $78, $69, $5D;
+
+L35E0:  DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF; 31 bytes
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF;
 
 L35FF:  LD      A,R             ;9        49 (41 sin borde)
         LD      L,A             ;4
@@ -311,30 +280,36 @@ L362D:  CP      16              ; si el contador esta entre 10 y 16 es el tono g
         LD      H,A
         LD      L,A
         EXX
-        LD      HL,$0040        ; leo 10 bits en HL
+        LD      HL,$0020        ; leo 11 bits en HL
         LD      D,A
         LD      E,$FE
         CALL    GET16
+        SRL     H
         PUSH    HL
+        LD      H,$35+OFFS
         POP     IX
-      IFDEF sinborde
+        JR      NC, L365E
+        RES     5, L
         XOR     A
-        LD      A,$01           ; A' tiene que valer esto para entrar en Raudo
+        LD      A,(HL)
+        LD      IXL,A
+
+      IFDEF sinborde
+L365E:  LD      A,$01           ; A' tiene que valer esto para entrar en Raudo
         EX      AF,AF'
-        AND     H
+        AND     IXH
         JR      NZ,L3661
         LD      SP,$C000
         DEFB    $FE
 L3661:  POP     DE              ; recupero en DE la direccion de comienzo del bloque
         INC     C               ; pongo en flag Z el signo del pulso
         LD      BC,$00FE        ; este valor es el que necesita B para entrar en Raudo
-        JR      Z,L3674
+        JR      Z,L3676
         LD      H,$37+OFFS
 L366A:  IN      F,(C)
         JP      PE,L366A
         CALL    L37C3           ; salto a Raudo segun el signo del pulso en flag Z
         JR      L367E
-L3674:  LD      H,$35+OFFS      ; H tiene un valor 3B u otro 39 segun el signo del pulso
 L3676:  IN      F,(C)
         JP      PO,L3676
         CALL    L3603           ; salto a Raudo
@@ -356,10 +331,9 @@ L368D:  PUSH    BC              ; ha ido bien
         SCF
         RET
       ELSE
-        XOR     A
-        LD      A,$D8           ; A' tiene que valer esto para entrar en Raudo
+L365E:  LD      A,$D8           ; A' tiene que valer esto para entrar en Raudo
         EX      AF,AF'
-        AND     H
+        AND     IXH
         JR      NZ,L3660
         LD      SP,$C000
         DEFB    $FE
@@ -395,8 +369,7 @@ L368C:  PUSH    BC              ; ha ido bien
         RET
       ENDIF
 
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;  13 bytes
-        DEFB    $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF; 1 byte
 
 EXOAA:  LD      IY,$5B00        ; EXO_MAPBASEBITS
         LD      A,128
@@ -432,9 +405,8 @@ EXOB1:  ADD     HL,HL
         EX      DE,HL
         INC     IY
         POP     HL
-      dec b
-      jp  nz, EXOA1
-;        DJNZ    EXOA1           ; EXO_INITBITS
+        DEC     B               ; EXO_INITBITS
+        JP      NZ,EXOA1
         POP     DE
 ;; EXO_LITERALCOPY
 EXOB2:  LDI

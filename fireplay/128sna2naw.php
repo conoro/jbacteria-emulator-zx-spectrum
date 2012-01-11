@@ -50,11 +50,13 @@ $page[2]= substr($page[2], 0, 0x3ffe).
 $page[7]= pack('v', $parche).
           substr($page[7], 2);
 pilot( 200 );
-loadconf( $byvel[$mlow][$velo]            // byte velo
-        | 0<<8                            // bit snapshot activado
-        | 1<<9                            // bit checksum desactivado
-        | 0<<10                           // byte flag
-        | 0xbf<<18);                      // start high byte
+loadconf( $velo                           // velocidad
+        | $mlow<<3                        // frecuencia muestreo
+        | 0x1f<<4                         // 5 bits a 1
+        | 0<<9                            // bit snapshot activado
+        | 1<<10                           // bit checksum desactivado
+        | 0<<11                           // byte flag
+        | 0xbf<<19);                      // start high byte
 $page[0]= pack('v', 0x04aa).$page[0];
 for($j= 0; $j<0x4002; $j++){
   $val= ord($page[0][$j]) >> 6;
