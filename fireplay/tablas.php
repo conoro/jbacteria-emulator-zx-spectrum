@@ -58,8 +58,6 @@ $tabla2= array( array(1,1,2,2), // 0
                 array(1,2,2,3));// 8
 $termin= array( array( 21, 22, 23, 24, 23, 24, 25, 26, 13),  // 0 1 2 3 4 5 6 7
                 array( 13, 14, 15, 16, 15, 16, 17, 18, 9)); // 0 1 2 3 4 5 6 7
-$byvel=  array( array( 0xed, 0xde, 0xd2, 0xc3, 0x00, 0x71, 0x62, 0x53, 0x62),  // 0 1 2 3 4 5 6 7
-                array( 0xf1, 0xe5, 0xd6, 0xc7, 0x04, 0x78, 0x69, 0x5d, 0x69)); // 0 1 2 3 4 5 6 7
 $velo= isset($_SERVER['argv'][2]) ? $_SERVER['argv'][2] : 3;
 $mlow= $_SERVER['argv'][3]==24 || $_SERVER['argv'][3]==48 ? 1 : 0;
 $mhigh= $_SERVER['argv'][3]==22 || $_SERVER['argv'][3]==24 ? 0 : 1;

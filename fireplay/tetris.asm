@@ -1,12 +1,11 @@
 
-        DEFB    $FF, $FF, $FF, $FF; 4 bytes
+        DEFB    $FF, $FF;
+        DEFB    $FF, $FF; 2 bytes
 
 L3C03:  LD      (DE),A          ; Una de las dos opciones de subfuncion a llamar (En este caso pinta/borra pieza)
         RET
 
-L3C05:  JP      L3603
-
-        DEFB    $FF; 1 bytes
+        DEFB    $FF, $FF, $FF, $FF; 4 bytes
 
 L3C09:  AND     D
         RST     $10

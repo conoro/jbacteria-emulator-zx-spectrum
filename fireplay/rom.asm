@@ -1,11 +1,6 @@
-
-; 06-12-2011 modificado para que compile con sjasmplus 1.07 rc7
-
 ;        DEFINE  sinborde
 ;        DEFINE  enram
-
         OUTPUT  48.rom
-
         DEFINE  OFFS  $00
 
 ;************************************************************************
@@ -279,8 +274,7 @@ L0077:  INC     HL              ; increase the character address by one.
 
 ;; TEMP-PTR2
 L0078:  LD      ($5C5D),HL      ; update CH_ADD with character address.
-
-X007B:  LD      A,(HL)          ; load character to A from HL.
+        LD      A,(HL)          ; load character to A from HL.
         RET                     ; and return.
 
 ; --------------------------
@@ -1466,7 +1460,6 @@ L046E:  DEFB    $89, $02, $D0, $12, $86;  261.625565290         C
 ;   cassette handling routines in this ROM.
 
 ;; zx81-name
-    IFDEF enram
 L04AA:  CALL    L24FB           ; routine SCANNING to evaluate expression.
         LD      A,($5C3B)       ; fetch system variable FLAGS.
         ADD     A,A             ; test bit 7 - syntax, bit 6 - result type.
@@ -1488,28 +1481,6 @@ L04AA:  CALL    L24FB           ; routine SCANNING to evaluate expression.
                                 ; and also clear carry.
         SET     7,(HL)          ; invert it.
         RET                     ; return.
-    ELSE
-L04AA:  DEC     BC
-        EXX
-        LD      A,E
-        CP      $18
-        JP      Z,SNA48
-        AND     A
-        EXX
-        OUT     (C),A
-        EXX
-        DEC     SP
-        DEC     SP
-        INC     E
-        EXX
-        LD      D,$C0
-      IFDEF sinborde
-        LD      B,$00
-      ELSE
-        LD      B,$EF
-      ENDIF
-        JP      L3B08
-    ENDIF
 
 ; =========================================
 ;
@@ -2729,7 +2700,7 @@ L08B6:  LD      C,(IX+$0B)      ; fetch length
         LD      A,$FF           ; signal data not a header.
         CALL    L0802           ; routine LD-BLOCK loads to workspace.
         POP     HL              ; restore first location in workspace to HL.
-X08CE   LD      DE,($5C53)      ; set DE from system variable PROG.
+        LD      DE,($5C53)      ; set DE from system variable PROG.
 
 ;   now enter a loop to merge the data block in workspace with the program and 
 ;   variables. 
@@ -4681,9 +4652,7 @@ L0F6C:  CALL    L15D4           ; routine WAIT-KEY for control.
 
 ;; ADD-CHAR
 L0F81:  RES     0,(IY+$07)      ; set MODE to 'L'
-
-X0F85:  LD      HL,($5C5B)      ; fetch address of keyboard cursor from K_CUR
-
+        LD      HL,($5C5B)      ; fetch address of keyboard cursor from K_CUR
         CALL    L1652           ; routine ONE-SPACE creates one space.
 
 ; either a continuation of above or from ED-CONTR with ED-LOOP on stack.
@@ -5780,8 +5749,7 @@ L133C:  CALL    L15EF           ; call routine OUT-CODE to print the code.
         LD      DE,L1391        ; address: rpt-mesgs.
 
         CALL    L0C0A           ; call routine PO-MSG to print the message.
-
-X1349:  XOR     A               ; clear accumulator to directly
+        XOR     A               ; clear accumulator to directly
         LD      DE,L1537 - 1    ; address the comma and space message.  
 
         CALL    L0C0A           ; routine PO-MSG prints ', ' although it would
@@ -8103,8 +8071,8 @@ L1B02:  DEFB    $06             ; Class-06 - A numeric expression must follow.
         DEFW    L16E5           ; Address: $16E5; Address: CLOSE
 
 ;; P-FORMAT
-L1B06:  DEFB    $00             ; Class-00 - No further operands.
-        DEFB    $0A             ; Class-0A - A string expression must follow.
+L1B06:  DEFB    $0A             ; Class-0A - A string expression must follow.
+        DEFB    $00             ; Class-00 - No further operands.
         DEFW    L1793           ; Address: $1793; Address: CAT-ETC
         
 ;; P-MOVE
@@ -17413,47 +17381,7 @@ L34B3:  CALL    L1E99           ; routine FIND-INT2 to fetch the
         RET                     ; make an indirect jump to the routine
                                 ; and, hopefully, to STACK-BC also.
 
-        DEFB    $FF, $FF, $FF; 3 bytes
-
         include ultra.asm
-
-; 49 bytes
-
-SNAP1:  LD      ($C000),HL
-        JR      C, SNAP2
-        EXX
-        DEC     SP
-        POP     AF              ; last byte 7FFD
-        OUT     (C),A
-SNAP2:  POP     BC              ; BC'
-        POP     DE              ; DE'
-        POP     HL              ; HL'
-        EXX
-        POP     AF              ; AF'
-        EX      AF,AF'
-        POP     BC              ; BC
-        POP     DE              ; DE
-        POP     HL              ; IR
-        POP     IX              ; IX
-        POP     IY              ; IY
-        LD      A,L
-        LD      I,A
-        POP     AF              ; IM,IFF
-        JR      NC,SNAP3
-        IM      2
-SNAP3:  JR      NZ,SNAP4
-        EI
-SNAP4:  PUSH    AF
-        DEC     SP
-        POP     AF
-        RRA
-        OUT     ($FE),A
-        LD      A,H
-        LD      HL,2
-        ADD     HL,SP
-        LD      R,A
-        POP     AF              ; AF
-        JP      (HL)
 
 ; -------------------------
 ; THE 'USR STRING' FUNCTION
@@ -18630,7 +18558,7 @@ L3AB9:  DEFB    $01             ;;exchange
 L3AFF:  DEFB    $FF, $FF, $FF; 3 bytes
 
 ;; EXO_GETBIT
-LEEBI:  ADD     A,A             ; get one bit
+L3B02:  ADD     A,A             ; get one bit
         RET     NZ
         LD      A,(HL)
         INC     HL
@@ -18647,13 +18575,13 @@ L3B08:  INC     C               ; 12 bytes
         EX      AF,AF'
         BIT     1,H
         JP      NZ,L37C3        ; salto a Raudo segun el signo del pulso en flag Z
-        JP      L3C05           ; salto a Raudo
+        JP      L34BC           ; salto a Raudo
       ELSE
 L3B08:  INC     C
         LD      A,$D8           ; A' tiene que valer esto para entrar en Raudo
         EX      AF,AF'
         BIT     1,H
-        JP      Z,L3C05         ; salto a Raudo segun el signo del pulso en flag Z
+        JP      Z,L34BC         ; salto a Raudo segun el signo del pulso en flag Z
         JP      L37C3           ; salto a Raudo
       ENDIF
     ENDIF

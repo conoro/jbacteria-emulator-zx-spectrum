@@ -1,21 +1,18 @@
 
         DEFINE  OFFS  $80
         DEFINE  L05ED $05ed
-        DEFINE  L2CB3 $2cb3
-        DEFINE  L2DE3 $2de3
-        DEFINE  L1F4F $1f4f
-        DEFINE  SNAP1 $0000
-        DEFINE  LEEBI $0000
+        DEFINE  L3B02 $3b02
+        DEFINE  L3B08 $3b08
         DEFINE  enram
 ;        DEFINE  sinborde
 
         output  "patrloader.bin"
-        org     $b4bf-$55
-        ld      de, $b4bf
+        org     $b4bc-$55
+        ld      de, $b4bc
         nop
         db      $de, $c0, $37, $0e, $8f, $39, $96 ;OVER USR 7 ($5ccb)
         ld      hl, $5ccb+$55
-        ld      bc, L37FF+3-L34BF
+        ld      bc, L37FF+6-L34BF
         ldir
 recar   ld      de, $1800
         ld      hl, $4000

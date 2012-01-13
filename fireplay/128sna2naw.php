@@ -46,7 +46,7 @@ else
             $regs.
             substr($page[2], $parche+strlen($regs)-0x8000);
 $page[2]= substr($page[2], 0, 0x3ffe).
-          pack('v', 0x04aa);
+          pack('v', 0x34d7);
 $page[7]= pack('v', $parche).
           substr($page[7], 2);
 pilot( 200 );
@@ -57,7 +57,7 @@ loadconf( $velo                           // velocidad
         | 1<<10                           // bit checksum desactivado
         | 0<<11                           // byte flag
         | 0xbf<<19);                      // start high byte
-$page[0]= pack('v', 0x04aa).$page[0];
+$page[0]= pack('v', 0x34d7).$page[0];
 for($j= 0; $j<0x4002; $j++){
   $val= ord($page[0][$j]) >> 6;
   outbits($tabla1[$velo][$val]);

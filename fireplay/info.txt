@@ -131,27 +131,37 @@ ae-b1
    6b-6e
 
 
-34D7 - 40 bytes GETPAIR,LEESTD,EDGE2
+3802 - 49 bytes 49 SNAP1
+3A01 - sobra 1
+3B01 - 19 bytes 6+12 LEEBI,SNA128_2 sobra 1
+3C01 - sobran 2
+3C05 - sobran 4
 
-3802 - 49 bytes 60-3 57 SNAP48
+34D7 - 40 bytes 24+16 SNAP128,EDGE2
+
+3802 - 49 bytes 49+10 SNAP48 sobra 1
 3502 - 11 bytes
 
-35C2 - 61 bytes 46+14 CAT,EXOGETBITS
+35C2 - 61 bytes 14+16+20 EXOGETBITS,TABLA,GETPAIR sobran 11
 
-360D - 178 bytes (45) -
-36C2 - 51 bytes
-37CD - 50 bytes
+360D - 178 bytes 146+32 MAIN,EXOAA
+36C2 - 51 bytes 51 EXOBB
+37CD - 50 bytes 45 EXOCC sobran 5
 
 EXO         - 129
-MAIN        - 133
-CAT         - 46
+  EXOAA     - 32
+  EXOBB     - 48
+  EXOCC     - 50
+MAIN        - 146
+
 EXO_GETBITS - 14
+SNAP128     - 24
 
 SNAP48      - 56
 
 EXO_GETPAIR - 20
-LEE_STD     - 10
-EDGE2       - 10
+EDGE2       - 16
 
+ABAJO,ENTER,usr2039,ENTER
 
 exo_raw.c match.c search.c optimal.c output.c membuf_io.c chunkpool.c radix.c exo_helper.c exodec.c progress.c exo_util.c getflag.c log.c membuf.c
