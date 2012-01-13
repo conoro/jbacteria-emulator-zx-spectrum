@@ -139,12 +139,14 @@ function audioStandard(e){
   data2= e.outputBuffer.getChannelData(1);
   j= mues= 0;
   while( j<quedan )
-    data1[j++]= data2[j]= bit;
+    data1[j]= bit,
+    data2[j++]= -bit;
   bit= -bit;
   do{
     if( mues ){
       while( mues-- )
-        data1[j++]= data2[j]= bit;
+        data1[j]= bit,
+        data2[j++]= -bit;
       bit= -bit;
     }
     if( state==32 ){
@@ -169,7 +171,8 @@ function audioStandard(e){
   while( j+mues<2048 );
   quedan= j+mues-2048;
   while( j<2048 )
-    data1[j++]= data2[j]= bit;
+    data1[j]= bit,
+    data2[j++]= -bit;
   tiempo+= paso;
   document.getElementById('tiempo').innerHTML= ponComa(tiempo, 2);
 }
@@ -179,12 +182,14 @@ function audioUltra(e){
   data2= e.outputBuffer.getChannelData(1);
   j= mues= 0;
   while( j<quedan )
-    data1[j++]= data2[j]= bit;
+    data1[j]= bit,
+    data2[j++]= -bit;
   bit= -bit;
   do{
     if( mues ){
       while( mues-- )
-        data1[j++]= data2[j]= bit;
+        data1[j]= bit,
+        data2[j++]= -bit;
       bit= -bit;
     }
     if( state==60 ){
@@ -218,7 +223,8 @@ function audioUltra(e){
   while( j+mues<2048 );
   quedan= j+mues-2048;
   while( j<2048 )
-    data1[j++]= data2[j]= bit;
+    data1[j]= bit,
+    data2[j++]= -bit;
   tiempo+= paso;
   document.getElementById('tiempo').innerHTML= ponComa(tiempo, 2);
 }
