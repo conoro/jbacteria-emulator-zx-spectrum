@@ -6,7 +6,7 @@ $long= strlen($cont);
 $lastbl= $pos= 0;
 while($pos<$long){
   $len= ord($cont[$pos])|ord($cont[$pos+1])<<8;
-  pilot( $lastbl ? 1000 : 200 );
+  pilot( $lastbl ? 1000+700 : 200+700 );
   loadconf( $velo                           // velocidad
           | $mlow<<3                        // frecuencia muestreo
           | 0x1f<<4                         // 5 bits a 1

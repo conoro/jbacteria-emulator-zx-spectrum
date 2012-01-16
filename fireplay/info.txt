@@ -162,6 +162,126 @@ SNAP48      - 56
 EXO_GETPAIR - 20
 EDGE2       - 16
 
+
+         Bit 2 =0    Bit 2 =0    Bit 2 =1    Bit 2 =1
+         Bit 1 =0    Bit 1 =1    Bit 1 =0    Bit 1 =1
+ 0xffff +--------+  +--------+  +--------+  +--------+
+        | Bank 3 |  | Bank 7 |  | Bank 3 |  | Bank 3 |
+        |        |  |        |  |        |  |        |
+        |        |  |        |  |        |  |        |
+        |        |  | screen |  |        |  |        |
+ 0xc000 +--------+  +--------+  +--------+  +--------+
+        | Bank 2 |  | Bank 6 |  | Bank 6 |  | Bank 6 |
+        |        |  |        |  |        |  |        |
+        |        |  |        |  |        |  |        |
+        |        |  |        |  |        |  |        |
+ 0x8000 +--------+  +--------+  +--------+  +--------+
+        | Bank 1 |  | Bank 5 |  | Bank 5 |  | Bank 7 |
+        |        |  |        |  |        |  |        |
+        |        |  |        |  |        |  |        |
+        |        |  | screen |  | screen |  | screen |
+ 0x4000 +--------+  +--------+  +--------+  +--------+
+        | Bank 0 |  | Bank 4 |  | Bank 4 |  | Bank 4 |
+        |        |  |        |  |        |  |        |
+        |        |  |        |  |        |  |        |
+        |        |  |        |  |        |  |        |
+ 0x0000 +--------+  +--------+  +--------+  +--------+
+
+4,0 0000-3fff
+5,1 4000-7fff
+6,2 8000-bfff
+3   c000-ffff
+7   memoria load""
+
+R520 0->2
+R524 2->4
+4563
+
+loadini
+4563  parcheo 6 y guardo en 4
+R524  muevo parche 4->2
+      parcheo 2
+R520  muevo parche 2->0
+R521  5->1 desde 2
+R526  6->2 desde 2
+0123  recupero 2 con parche en 0
+
+loadfin
+0123  parcheo 2 y guardo en 0
+R520  muevo parche 0->2
+R521  1->5 desde 2
+R526  2->6 desde 2
+R524  muevo parche 2->4
+4563  recupero 6 con parche en 4
+
+    ld    sp,hl   ; 6
+    pop   af      ; 10
+    ex    af,af   ; 4
+    pop   de      ; 10
+    pop   bc      ; 10
+    exx           ; 4
+    pop   af      ; 10
+    pop   de      ; 10
+    pop   bc      ; 10
+    pop   ix      ; 14
+
+                  ; 88
+
+    ld    sp,hl   ; 6
+    push  ix      ; 15
+    push  bc      ; 11
+    push  de      ; 11
+    push  af      ; 11
+    inc   h       ; 4
+    exx           ; 4
+    push  bc      ; 11
+    push  de      ; 11
+    ex    af,af   ; 4
+    push  af      ; 11
+    inc   h       ; 4
+
+                  ; 103
+
+                  ; 191/14= 13.64
+                  ; 162/12= 13.5
+                  ; 133/10= 13.3
+
+ 10*25+6*1
+
+    8*8, 16*4
+
+1   ld    sp,hl   ; 6
+    pop   de      ; 10
+    pop   bc      ; 10
+    exx           ; 4
+    pop   af      ; 10
+    pop   de      ; 10
+    pop   bc      ; 10
+    ld    sp,hl   ; 6
+    push  bc      ; 11
+    push  de      ; 11
+    push  af      ; 11
+    inc   h       ; 4
+    exx           ; 4
+    push  bc      ; 11
+    push  de      ; 11
+    inc   h       ; 4
+
+2   ld    sp,hl   ; 6
+    exx           ; 4
+    pop   af      ; 10
+    pop   de      ; 10
+    pop   bc      ; 10
+    ld    sp,hl   ; 6
+    push  bc      ; 11
+    push  de      ; 11
+    push  af      ; 11
+    inc   h       ; 4
+    exx           ; 4
+    inc   h       ; 4
+
+    
+
 ABAJO,ENTER,usr2039,ENTER
 
 exo_raw.c match.c search.c optimal.c output.c membuf_io.c chunkpool.c radix.c exo_helper.c exodec.c progress.c exo_util.c getflag.c log.c membuf.c

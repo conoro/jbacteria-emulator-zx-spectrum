@@ -44,6 +44,11 @@ L34CD:  XOR     B               ;4
         JP      (HL)            ;4
       ENDIF
 
+    IFDEF enram
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF; 24 bytes
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+    ELSE
 ;SNA128
 L34D7:  DEC     BC
         EXX
@@ -65,6 +70,7 @@ L34D7:  DEC     BC
         LD      B,$EF
       ENDIF
         JP      L3B08
+    ENDIF
 
 ;GET16
 L34EF:  LD      B,0             ; 10 bytes
@@ -315,7 +321,7 @@ L362C:  CP      16              ; si el contador esta entre 10 y 16 es el tono g
         LD      A,(HL)
         LD      IXL,A
 
-      IFDEF sinborde
+    IFDEF sinborde
 L3661:  LD      A,$01           ; A' tiene que valer esto para entrar en Raudo
         EX      AF,AF'
         AND     IXH
@@ -351,7 +357,7 @@ L3696:  PUSH    BC              ; ha ido bien
         RET     NZ              ; si no coincide el checksum salgo con Carry desactivado
         SCF
         RET
-      ELSE
+    ELSE
 L3661:  LD      A,$D8           ; A' tiene que valer esto para entrar en Raudo
         EX      AF,AF'
         AND     IXH
@@ -384,10 +390,14 @@ L368C:  LD      A,(BC)          ; verifico checksum
         XOR     H               ; salgo con A=0 H=0 L=checksum y Carry activo si todo
 L3696:  PUSH    BC              ; ha ido bien
         POP     IX              ; IX debe apuntar al siguiente byte despues del bloque
+      IFDEF enram
+        JP      FINUL
+      ELSE
         RET     NZ              ; si no coincide el checksum salgo con Carry desactivado
         SCF
         RET
       ENDIF
+    ENDIF
 
 ;EXO-A
 L369C:  LD      IY,$5B00        ; EXO_MAPBASEBITS

@@ -242,20 +242,25 @@ L0055:  LD      (IY+$00),L      ; Store it in the system variable ERR_NR.
 ;   placing two zeros in the NMIADD system variable.
 
 ;; RESET
-L0066:  PUSH    AF              ; save the
-        PUSH    HL              ; registers.
-        LD      HL,($5CB0)      ; fetch the system variable NMIADD.
-        LD      A,H             ; test address
-        OR      L               ; for zero.
+L0066:  LD      SP,0
+        LD      BC,$1FFD
+        LD      A,5
+        OUT     (C),A
+        RST     00H
+;        PUSH    AF              ; save the
+;        PUSH    HL              ; registers.
+;        LD      HL,($5CB0)      ; fetch the system variable NMIADD.
+;        LD      A,H             ; test address
+;        OR      L               ; for zero.
 
-        JR      NZ,L0070        ; skip to NO-RESET if NOT ZERO
+;        JR      NZ,L0070        ; skip to NO-RESET if NOT ZERO
 
         JP      (HL)            ; jump to routine ( i.e. L0000 )
 
 ;; NO-RESET
 L0070:  POP     HL              ; restore the
         POP     AF              ; registers.
-        RETN                    ; return to previous interrupt state.
+;        RETN                    ; return to previous interrupt state.
 
 ; ---------------------------
 ; THE 'CH ADD + 1' SUBROUTINE
@@ -1754,7 +1759,11 @@ L0556:  INC     D               ; reset the zero flag without disturbing carry.
         IN      A,($FE)         ; read the ear state - bit 6.
         RRA                     ; rotate to bit 5.
         AND     $20             ; isolate this bit.
+      IFDEF enram
+        CALL    L3C07
+      ELSE
         CALL    L360D
+      ENDIF
         CP      A               ; set the zero flag.
 
 ; 
@@ -8089,7 +8098,11 @@ L1B10:  DEFB    $0A             ; Class-0A - A string expression must follow.
 
 ;; P-CAT
 L1B14:  DEFB    $00             ; Class-00 - No further operands.
+      IFDEF enram
+        DEFW    L1793           ; Address: $1793; Address: CAT-ETC
+      ELSE
         DEFW    L3C09           ; Address: $3c09;
+      ENDIF
 
 ; * Note that a comma is required as a separator with the OPEN command
 ; but the Interface 1 programmers relaxed this allowing ';' as an
@@ -19126,7 +19139,80 @@ L3BFD:  DEFB    $38             ;;end-calc              last value is 1 or 0.
       IFDEF enram
 L3BFF:  DEFB    $FF, $FF, $FF, $FF, $FF; 5 bytes
         RET
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF; 251 bytes
+FINUL   ex      af, af
+        scf
+L3C07:  exx
+        ld      hl, $8000       ; guardo datos 6->4 / 2->0
+        ld      de, L3D00-pfin+pini
+        ld      bc, pfin-pini
+        ldir
+        ld      d, h            ; parcheo en 6 / 2
+        ld      c, l
+        ld      hl, pini
+        ldir
+        ld      hl, $79ed
+        ld      ($381e), hl     ; tengo que arreglar esto
+        ld      bc, $1ffd
+        ld      a, 4
+        ld      hl, conti+$c000
+        jp      $381e           ; R524 / R520
+conti   ld      l, pini AND $FF ; muevo parche 4->2 / 0->2
+        ld      bc, L3D00-pini
+        ld      e, b
+        ldir
+        ld      bc, $7ffd
+        ld      a, $10
+        ld      h, d
+        jp      (hl)
+pini    out     (c), a          ; R520
+        jr      nc, noin1
+        ld      de, L3D00-pfin+pini+$c000 ; muevo parche 2->0
+        ld      bc, pfin-pini
+        ldir
+        ld      bc, $7ffd
+noin1   inc     a
+        out     (c), a          ; R521
+        ld      hl, $4000       ; 5->1 desde 2
+        ld      b, h
+        ld      c, l
+        ld      de, $c000
+        jr      nc, noin2
+        ex      de, hl
+noin2   ldir
+        ld      bc, $7ffd
+        ld      a, $16
+        out     (c), a          ; R526
+        ld      d, $80
+        ld      h, $c0
+        ld      bc, $4000       ; 6->2 desde 2
+        ld      a, $10
+        jr      nc, noin3
+        ld      a, $14
+        ex      de, hl
+noin3   ldir
+        ld      bc, $7ffd
+        out     (c), a          ; R524
+        ld      a, 1
+        jr      nc, noin4
+        ld      a, 5
+        ld      h, $80          ; muevo parche 2->4
+        ld      de, L3D00-pfin+pini+$c000
+        ld      bc, pfin-pini
+        ldir
+noin4   ld      bc, $1ffd
+        out     (c), a          ; 0123
+        jp      pfin
+pfin    ld      hl, L3D00-pfin+pini     ; recupero 2 con parche en 0
+        ld      d, $80
+        ld      bc, pfin-pini
+        ldir
+        exx
+        jp      nc, L360D
+        ex      af, af
+        RET     NZ              ; si no coincide el checksum salgo con Carry desactivado
+        SCF
+        RET
+
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
@@ -19139,25 +19225,7 @@ L3BFF:  DEFB    $FF, $FF, $FF, $FF, $FF; 5 bytes
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF;
+        DEFB    $FF;
       ELSE
 L3BFF:  include tetris.asm
       ENDIF
