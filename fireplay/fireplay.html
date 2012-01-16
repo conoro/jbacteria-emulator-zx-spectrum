@@ -1,4 +1,4 @@
-<!-- Fireplay v0.03 11-01-2012 -->
+<!-- Fireplay v0.04 16-01-2012 -->
 <!DOCTYPE HTML><html><head>
 <title>Fireplay</title>
 <meta http-equiv="Content-Type" content="text/html;charset=utf-8"/>
@@ -112,7 +112,7 @@ function play(){
     table.push( 1 << mhigh, (1 << mhigh)+1,     // sincro2
                 termin[mlow][velo]>>1, termin[mlow][velo]-(termin[mlow][velo]>>1),// terminal
                 1 << mhigh, 1 << mhigh);        // sincro3
-    pilotlen= 2000; // longitud del tono guía al comienzo
+    pilotlen= 2000+1400; // longitud del tono guía al comienzo
     node.onaudioprocess= audioUltra;
   }
   else{
@@ -194,7 +194,7 @@ function audioUltra(e){
     }
     if( state==60 ){
       pos++;
-      pilotlen= lastbl ? 2000 : 400;
+      pilotlen= lastbl ? 2000+1400 : 400+1400;
       state= 73;
       len= (game.charCodeAt(pos++) | game.charCodeAt(pos++)<<8)-2;
       if( len==-2 )
