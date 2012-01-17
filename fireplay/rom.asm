@@ -1,5 +1,5 @@
 ;        DEFINE  sinborde
-;        DEFINE  enram
+        DEFINE  enram
         OUTPUT  48.rom
         DEFINE  OFFS  $00
 
@@ -19151,7 +19151,7 @@ L3C07:  exx
         ld      hl, pini
         ldir
         ld      hl, $79ed
-        ld      ($381e), hl     ; tengo que arreglar esto
+        ld      ($381e), hl
         ld      bc, $1ffd
         ld      a, 4
         ld      hl, conti+$c000
@@ -19202,7 +19202,9 @@ noin3   ldir
 noin4   ld      bc, $1ffd
         out     (c), a          ; 0123
         jp      pfin
-pfin    ld      hl, L3D00-pfin+pini     ; recupero 2 con parche en 0
+pfin    ld      hl, $ed02
+        ld      ($381e), hl
+        ld      hl, L3D00-pfin+pini     ; recupero 2 con parche en 0
         ld      d, $80
         ld      bc, pfin-pini
         ldir
@@ -19224,8 +19226,7 @@ pfin    ld      hl, L3D00-pfin+pini     ; recupero 2 con parche en 0
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF;
+        DEFB    $FF, $FF, $FF;
       ELSE
 L3BFF:  include tetris.asm
       ENDIF

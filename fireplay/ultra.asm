@@ -45,9 +45,11 @@ L34CD:  XOR     B               ;4
       ENDIF
 
     IFDEF enram
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF; 24 bytes
+L34D7:  POP     HL
+        JP      L3802           ;SNAP48-2
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF; 20 bytes
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF;
     ELSE
 ;SNA128
 L34D7:  DEC     BC
@@ -86,14 +88,22 @@ L34FF:  IN      L,(C)
         JP      (HL)
 
 ;SNA48
+      IFDEF enram
+L3502:  CALL    FINUL
+        POP     HL              ; 56 bytes
+        LD      SP,HL
+        POP     HL              ; reemplazo pila, 4 bytes
+        LD      ($BFFE),HL
+        JR      L34D7
+      ELSE
 L3502:  POP     HL              ; 56 bytes
         LD      SP,HL
         POP     HL              ; reemplazo pila, 4 bytes
         LD      ($BFFE),HL
         POP     HL
         JP      L3802           ;SNAP48-2
-
         DEFB    $FF; 1 byte
+      ENDIF
 
       IFDEF sinborde
         DEFB    $FF; 1 byte
