@@ -1,7 +1,8 @@
 ;        DEFINE  sinborde
-        DEFINE  enram
+;        DEFINE  enram
         OUTPUT  48.rom
         DEFINE  OFFS  $00
+        DEFINE  PAD   $FF
 
 ;************************************************************************
 ;** An Assembly File Listing to generate a 16K ROM for the ZX Spectrum **
@@ -18579,8 +18580,8 @@ L3B02:  ADD     A,A             ; get one bit
         RET
 
     IFDEF enram
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF; 12 bytes
-        DEFB    $FF, $FF, $FF, $FF;
+        DEFB    PAD, PAD, PAD, PAD, PAD, PAD, PAD, PAD; 12 bytes
+        DEFB    PAD, PAD, PAD, PAD;
     ELSE
       IFDEF sinborde
 L3B08:  INC     C               ; 12 bytes
@@ -19139,8 +19140,8 @@ L3BFD:  DEFB    $38             ;;end-calc              last value is 1 or 0.
       IFDEF enram
 L3BFF:  DEFB    $FF, $FF, $FF, $FF, $FF; 5 bytes
         RET
-FINUL   ex      af, af
-        scf
+L3C05:  ex      af, af
+L3C06:  scf
 L3C07:  exx
         ld      hl, $8000       ; guardo datos 6->4 / 2->0
         ld      de, L3D00-pfin+pini
@@ -19150,8 +19151,8 @@ L3C07:  exx
         ld      c, l
         ld      hl, pini
         ldir
-        ld      hl, $79ed
-        ld      ($381e), hl
+        ld      a, $79
+        ld      ($381f), a
         ld      bc, $1ffd
         ld      a, 4
         ld      hl, conti+$c000
@@ -19170,7 +19171,7 @@ pini    out     (c), a          ; R520
         ld      bc, pfin-pini
         ldir
         ld      bc, $7ffd
-noin1   inc     a
+noin1   ld      a, $11 ; inc a
         out     (c), a          ; R521
         ld      hl, $4000       ; 5->1 desde 2
         ld      b, h
@@ -19202,31 +19203,32 @@ noin3   ldir
 noin4   ld      bc, $1ffd
         out     (c), a          ; 0123
         jp      pfin
-pfin    ld      hl, $ed02
-        ld      ($381e), hl
+pfin    ld      a, $5e
+        ld      ($381f), a
         ld      hl, L3D00-pfin+pini     ; recupero 2 con parche en 0
         ld      d, $80
         ld      bc, pfin-pini
         ldir
         exx
         jp      nc, L360D
+        jp      z, L34D7
         ex      af, af
         RET     NZ              ; si no coincide el checksum salgo con Carry desactivado
         SCF
         RET
 
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF;
+        DEFB    PAD, PAD, PAD, PAD, PAD, PAD, PAD, PAD;
+        DEFB    PAD, PAD, PAD, PAD, PAD, PAD, PAD, PAD;
+        DEFB    PAD, PAD, PAD, PAD, PAD, PAD, PAD, PAD;
+        DEFB    PAD, PAD, PAD, PAD, PAD, PAD, PAD, PAD;
+        DEFB    PAD, PAD, PAD, PAD, PAD, PAD, PAD, PAD;
+        DEFB    PAD, PAD, PAD, PAD, PAD, PAD, PAD, PAD;
+        DEFB    PAD, PAD, PAD, PAD, PAD, PAD, PAD, PAD;
+        DEFB    PAD, PAD, PAD, PAD, PAD, PAD, PAD, PAD;
+        DEFB    PAD, PAD, PAD, PAD, PAD, PAD, PAD, PAD;
+        DEFB    PAD, PAD, PAD, PAD, PAD, PAD, PAD, PAD;
+        DEFB    PAD, PAD, PAD, PAD, PAD, PAD, PAD, PAD;
+        DEFB    PAD;
       ELSE
 L3BFF:  include tetris.asm
       ENDIF

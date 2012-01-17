@@ -1,6 +1,6 @@
 
       IFDEF enram
-        DEFB    $FF, $FF, $FF; 3 bytes
+        DEFB    PAD, PAD, PAD; 3 bytes
       ELSE
 L34BC:  JP      L3603
       ENDIF
@@ -23,7 +23,7 @@ L34CC:  XOR     B               ;4
         EX      AF,AF'          ;4
         IN      L,(C)           ;12
         JP      (HL)            ;4
-        DEFB    $FF, $FF, $FF; 3 bytes
+        DEFB    PAD, PAD, PAD; 3 bytes
       ELSE
         JR      NC,L34CD        ;7/12     46/48
         XOR     B               ;4
@@ -45,11 +45,14 @@ L34CD:  XOR     B               ;4
       ENDIF
 
     IFDEF enram
-L34D7:  POP     HL
-        JP      L3802           ;SNAP48-2
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF; 20 bytes
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF;
+L34D7:  POP     HL              ; 56 bytes
+        LD      SP,HL
+        POP     HL              ; reemplazo pila, 4 bytes
+        LD      ($BFFE),HL
+        POP     HL
+        JP      L3808           ;SNAP48-2
+        DEFB    PAD, PAD, PAD, PAD, PAD, PAD, PAD, PAD; 14 bytes
+        DEFB    PAD, PAD, PAD, PAD, PAD, PAD;
     ELSE
 ;SNA128
 L34D7:  DEC     BC
@@ -89,12 +92,9 @@ L34FF:  IN      L,(C)
 
 ;SNA48
       IFDEF enram
-L3502:  CALL    FINUL
-        POP     HL              ; 56 bytes
-        LD      SP,HL
-        POP     HL              ; reemplazo pila, 4 bytes
-        LD      ($BFFE),HL
-        JR      L34D7
+L3502:  XOR     A
+        JP      L3C06
+        DEFB    PAD, PAD, PAD, PAD, PAD, PAD, PAD; 7 bytes
       ELSE
 L3502:  POP     HL              ; 56 bytes
         LD      SP,HL
@@ -102,11 +102,11 @@ L3502:  POP     HL              ; 56 bytes
         LD      ($BFFE),HL
         POP     HL
         JP      L3802           ;SNAP48-2
-        DEFB    $FF; 1 byte
+        DEFB    PAD; 1 byte
       ENDIF
 
       IFDEF sinborde
-        DEFB    $FF; 1 byte
+        DEFB    PAD; 1 byte
         DEFB    $00, $00, $FF   ; 0D
         DEFB    $00, $00, $FF   ; 10
         DEFB    $00, $00, $FF   ; 13
@@ -259,8 +259,8 @@ L35E0:  LD      IYL,C
         POP     HL
         RET
 
-L35F4:  DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF; 11 bytes
-        DEFB    $FF, $FF, $FF;
+L35F4:  DEFB    PAD, PAD, PAD, PAD, PAD, PAD, PAD, PAD; 11 bytes
+        DEFB    PAD, PAD, PAD;
 
 L35FF:  LD      A,R             ;9        49 (41 sin borde)
         LD      L,A             ;4
@@ -271,7 +271,7 @@ L3603:  LD      A,IXL           ;8
         DEC     H               ;4
         IN      L,(C)           ;12
         JP      (HL)            ;4
-        DEFB    $FF, $FF; 2 bytes
+        DEFB    PAD, PAD; 2 bytes
       ELSE
         LD      A,B             ;4
         EX      AF,AF'          ;4
@@ -401,7 +401,7 @@ L368C:  LD      A,(BC)          ; verifico checksum
 L3696:  PUSH    BC              ; ha ido bien
         POP     IX              ; IX debe apuntar al siguiente byte despues del bloque
       IFDEF enram
-        JP      FINUL
+        JP      L3C05
       ELSE
         RET     NZ              ; si no coincide el checksum salgo con Carry desactivado
         SCF
@@ -472,7 +472,7 @@ L36F5:  XOR     B
         EX      AF,AF'
         IN      L,(C)
         JP      (HL)
-        DEFB    $FF, $FF; 2 bytes
+        DEFB    PAD, PAD; 2 bytes
 L36FF:  INC     H
         EX      AF,AF'          ;4
         JR      NC,L36F5
@@ -483,8 +483,8 @@ L36FF:  INC     H
         EX      AF,AF'
         IN      L,(C)           ;12
         JP      (HL)            ;4
-        DEFB    $FF; 1 byte
-        DEFB    $FF; 1 byte
+        DEFB    PAD; 1 byte
+        DEFB    PAD; 1 byte
         DEFB    $00, $00, $FF   ; 0D
         DEFB    $00, $00, $FF   ; 10
         DEFB    $00, $00, $FF   ; 13
@@ -636,7 +636,7 @@ L37C3:  LD      A,IXL
         DEC     H
         IN      L,(C)
         JP      (HL)
-        DEFB    $FF, $FF; 2 bytes
+        DEFB    PAD, PAD; 2 bytes
       ELSE
         LD      A,B
         EX      AF,AF'
@@ -645,7 +645,7 @@ L37C3:  LD      A,IXL
         JP      (HL)
       ENDIF
 
-        DEFB    $FF, $FF, $FF, $FF, $FF;  5 bytes
+        DEFB    PAD, PAD, PAD, PAD, PAD;  5 bytes
 
 ;EXO-C
 L37D2:  POP     IX
@@ -681,13 +681,19 @@ L37FF:  IN      L,(C)
         JP      (HL)
 
 ;SNA48-2
+      IFDEF enram
+        DEFB    PAD, PAD, PAD, PAD, PAD, PAD; 6 bytes
+L3808:  LD      ($C000),HL
+      ELSE
 L3802:  LD      ($C000),HL
         JR      C, L380C
         EXX
         DEC     SP
         POP     AF              ; last byte 7FFD
         OUT     (C),A
-L380C:  POP     BC              ; BC'
+L380C:  
+      ENDIF
+        POP     BC              ; BC'
         POP     DE              ; DE'
         POP     HL              ; HL'
         EXX
@@ -716,3 +722,7 @@ L3824:  PUSH    AF
         LD      R,A
         POP     AF              ; AF
         JP      (HL)
+
+      IFDEF enram
+        DEFB    PAD; 1 byte
+      ENDIF
