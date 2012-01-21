@@ -1,6 +1,6 @@
 
       IFDEF enram
-        DEFB    PAD, PAD, PAD; 3 bytes
+        DEFB    $C9, $C9, $C9; 3 bytes
       ELSE
 L34BC:  JP      L3603
       ENDIF
@@ -23,7 +23,7 @@ L34CC:  XOR     B               ;4
         EX      AF,AF'          ;4
         IN      L,(C)           ;12
         JP      (HL)            ;4
-        DEFB    PAD, PAD, PAD; 3 bytes
+        DEFB    $00, $00, $00; 3 bytes
       ELSE
         JR      NC,L34CD        ;7/12     46/48
         XOR     B               ;4
@@ -51,8 +51,8 @@ L34D7:  POP     HL              ; 56 bytes
         LD      ($BFFE),HL
         POP     HL
         JP      L3808           ;SNAP48-2
-        DEFB    PAD, PAD, PAD, PAD, PAD, PAD, PAD, PAD; 14 bytes
-        DEFB    PAD, PAD, PAD, PAD, PAD, PAD;
+        DEFB    $38, $38, $38, $38, $38, $38, $38, $38;
+        DEFB    $38, $38, $38, $38, $38, $38;
     ELSE
 ;SNA128
 L34D7:  DEC     BC
@@ -94,7 +94,7 @@ L34FF:  IN      L,(C)
       IFDEF enram
 L3502:  XOR     A
         JP      L3C06
-        DEFB    PAD, PAD, PAD, PAD, PAD, PAD, PAD; 7 bytes
+        DEFB    $3C, $3C, $3C, $3C, $3C, $3C, $3C; 7 bytes
       ELSE
 L3502:  POP     HL              ; 56 bytes
         LD      SP,HL
@@ -102,11 +102,11 @@ L3502:  POP     HL              ; 56 bytes
         LD      ($BFFE),HL
         POP     HL
         JP      L3802           ;SNAP48-2
-        DEFB    PAD; 1 byte
+        DEFB    $00; 1 byte
       ENDIF
 
       IFDEF sinborde
-        DEFB    PAD; 1 byte
+        DEFB    $00; 1 byte
         DEFB    $00, $00, $FF   ; 0D
         DEFB    $00, $00, $FF   ; 10
         DEFB    $00, $00, $FF   ; 13
@@ -259,9 +259,13 @@ L35E0:  LD      IYL,C
         POP     HL
         RET
 
-L35F4:  DEFB    PAD, PAD, PAD, PAD, PAD, PAD, PAD, PAD; 11 bytes
-        DEFB    PAD, PAD, PAD;
-
+L35F4:  DEFB    $C9, $C9, $C9, $C9, $C9, $C9; 6 bytes
+      IFDEF enram
+L35FA:  LD      C,$02
+        JP      L3C06
+      ELSE
+        DEFB    $C9, $C9, $C9, $C9, $C9; 5 bytes
+      ENDIF
 L35FF:  LD      A,R             ;9        49 (41 sin borde)
         LD      L,A             ;4
         LD      B,(HL)          ;7
@@ -271,7 +275,7 @@ L3603:  LD      A,IXL           ;8
         DEC     H               ;4
         IN      L,(C)           ;12
         JP      (HL)            ;4
-        DEFB    PAD, PAD; 2 bytes
+        DEFB    $00, $00; 2 bytes
       ELSE
         LD      A,B             ;4
         EX      AF,AF'          ;4
@@ -295,13 +299,20 @@ L3616:  LD      B,0
         CP      24
         RL      L
         JR      NZ,L362C
+      IFDEF enram
+L3628:  INC     L
+        EXX
+        JR      L35FA
+      ELSE
 L3628:  EXX
         LD      C,2
         RET
+      ENDIF
 L362C:  CP      16              ; si el contador esta entre 10 y 16 es el tono guia
         RR      H               ; de las ultracargas, si los ultimos 8 pulsos
         CP      10              ; son de tono guia H debe valer FF
         JR      NC,L3616
+        INC     H
         INC     H
         JR      NZ,L3616        ; si detecto sincronismo sin 8 pulsos de tono guia retorno a bucle
         CALL    L05ED           ; leo pulso negativo de sincronismo
@@ -426,14 +437,15 @@ L36B0:  LD      C,16
 L36B3:  CALL    L3B02           ; EXO_GETBIT
         RL      C
         JR      NC,L36B3
-        LD      (IY+0),C        ; bits[i]=b1
+        PUSH    HL
         JR      L36C2           ;EXO-B
+        DEFB    $00; 1 byte
 
 L36BF:  IN      L,(C)
         JP      (HL)
 
 ;EXO-B
-L36C2:  PUSH    HL
+L36C2:  LD      (IY+0),C        ; bits[i]=b1
         LD      HL,1
         DEFB    $D2             ; 3 bytes nop (JP NC)
 L36C7:  ADD     HL,HL
@@ -460,9 +472,8 @@ L36E4:  INC     C
         BIT     4,C
         RET     NZ
         PUSH    DE
-        CALL    L35E0           ; EXO_GETPAIR
-        PUSH    BC
         JP      L37D2           ;EXO-C
+        DEFB    $37, $37; 2 bytes
 
       IFDEF sinborde
 L36F5:  XOR     B
@@ -472,7 +483,7 @@ L36F5:  XOR     B
         EX      AF,AF'
         IN      L,(C)
         JP      (HL)
-        DEFB    PAD, PAD; 2 bytes
+        DEFB    $00, $00; 2 bytes
 L36FF:  INC     H
         EX      AF,AF'          ;4
         JR      NC,L36F5
@@ -483,8 +494,8 @@ L36FF:  INC     H
         EX      AF,AF'
         IN      L,(C)           ;12
         JP      (HL)            ;4
-        DEFB    PAD; 1 byte
-        DEFB    PAD; 1 byte
+        DEFB    $00; 1 byte
+        DEFB    $00; 1 byte
         DEFB    $00, $00, $FF   ; 0D
         DEFB    $00, $00, $FF   ; 10
         DEFB    $00, $00, $FF   ; 13
@@ -636,7 +647,7 @@ L37C3:  LD      A,IXL
         DEC     H
         IN      L,(C)
         JP      (HL)
-        DEFB    PAD, PAD; 2 bytes
+        DEFB    $00, $00; 2 bytes
       ELSE
         LD      A,B
         EX      AF,AF'
@@ -645,10 +656,12 @@ L37C3:  LD      A,IXL
         JP      (HL)
       ENDIF
 
-        DEFB    PAD, PAD, PAD, PAD, PAD;  5 bytes
+        DEFB    $00;  1 byte
 
 ;EXO-C
-L37D2:  POP     IX
+L37D2:  CALL    L35E0           ; EXO_GETPAIR
+        PUSH    BC
+        POP     IX
         LD      DE,512+48       ; 1?
         INC     B
         DJNZ    L37DE
@@ -682,7 +695,7 @@ L37FF:  IN      L,(C)
 
 ;SNA48-2
       IFDEF enram
-        DEFB    PAD, PAD, PAD, PAD, PAD, PAD; 6 bytes
+        DEFB    $00, $00, $00; 3 bytes
 L3808:  LD      ($C000),HL
       ELSE
 L3802:  LD      ($C000),HL
@@ -709,6 +722,12 @@ L380C:
         POP     AF              ; IM,IFF
         JR      NC,L3821
         IM      2
+
+      IFDEF enram
+        DEFB    $D2
+        OUT     (C),A
+      ENDIF
+
 L3821:  JR      NZ,L3824
         EI
 L3824:  PUSH    AF
@@ -724,5 +743,5 @@ L3824:  PUSH    AF
         JP      (HL)
 
       IFDEF enram
-        DEFB    PAD; 1 byte
+        DEFB    $00; 1 byte
       ENDIF

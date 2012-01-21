@@ -1,8 +1,7 @@
 ;        DEFINE  sinborde
-;        DEFINE  enram
+        DEFINE  enram
         OUTPUT  48.rom
         DEFINE  OFFS  $00
-        DEFINE  PAD   $FF
 
 ;************************************************************************
 ;** An Assembly File Listing to generate a 16K ROM for the ZX Spectrum **
@@ -243,25 +242,12 @@ L0055:  LD      (IY+$00),L      ; Store it in the system variable ERR_NR.
 ;   placing two zeros in the NMIADD system variable.
 
 ;; RESET
-L0066:  LD      SP,0
+L0066:  LD      SP,$FF54
         LD      BC,$1FFD
-        LD      A,5
+        LD      A,$03
         OUT     (C),A
-        RST     00H
-;        PUSH    AF              ; save the
-;        PUSH    HL              ; registers.
-;        LD      HL,($5CB0)      ; fetch the system variable NMIADD.
-;        LD      A,H             ; test address
-;        OR      L               ; for zero.
-
-;        JR      NZ,L0070        ; skip to NO-RESET if NOT ZERO
-
-        JP      (HL)            ; jump to routine ( i.e. L0000 )
-
-;; NO-RESET
-L0070:  POP     HL              ; restore the
-        POP     AF              ; registers.
-;        RETN                    ; return to previous interrupt state.
+        POP     DE
+        JP      L04AA
 
 ; ---------------------------
 ; THE 'CH ADD + 1' SUBROUTINE
@@ -1466,6 +1452,21 @@ L046E:  DEFB    $89, $02, $D0, $12, $86;  261.625565290         C
 ;   cassette handling routines in this ROM.
 
 ;; zx81-name
+
+      IFDEF enram
+L04AA:  LD      IY,$5C3A
+        IM      1
+        LD      HL,$C000
+        LD      B,D
+        LD      C,E
+        LDIR
+        LD      BC,$1FFD
+        INC     A
+        INC     A
+        OUT     (C),A
+        EI
+        JP      L1300
+      ELSE
 L04AA:  CALL    L24FB           ; routine SCANNING to evaluate expression.
         LD      A,($5C3B)       ; fetch system variable FLAGS.
         ADD     A,A             ; test bit 7 - syntax, bit 6 - result type.
@@ -1487,6 +1488,7 @@ L04AA:  CALL    L24FB           ; routine SCANNING to evaluate expression.
                                 ; and also clear carry.
         SET     7,(HL)          ; invert it.
         RET                     ; return.
+      ENDIF
 
 ; =========================================
 ;
@@ -1798,7 +1800,11 @@ L0574:  DJNZ    L0574           ; self loop to LD-WAIT (for 256 times)
                                 ; if no edges at all.
 
 ;; LD-LEADER
-L0580:  LD      B,$9C           ; set timing value.
+L0580:IFDEF enram
+        LD      B,$A4           ; two edges must be spaced apart.
+      ELSE
+        LD      B,$9C           ; two edges must be spaced apart.
+      ENDIF
         CALL    L05E3           ; routine LD-EDGE-2
         JR      NC,L056B        ; back to LD-BREAK if time-out
 
@@ -1814,7 +1820,11 @@ L0580:  LD      B,$9C           ; set timing value.
 ;   Now test every edge looking for the terminal sync signal.
 
 ;; LD-SYNC
-L058F:  LD      B,$C9           ; initial timing value in B.
+L058F:IFDEF enram
+        LD      B,$CD           ; two edges must be spaced apart.
+      ELSE
+        LD      B,$C9           ; two edges must be spaced apart.
+      ENDIF
         CALL    L05E7           ; routine LD-EDGE-1
         JR      NC,L056B        ; back to LD-BREAK with time-out.
 
@@ -1838,7 +1848,11 @@ L058F:  LD      B,$C9           ; initial timing value in B.
         LD      C,A             ; store the new long-term byte.
 
         LD      H,$00           ; set up parity byte as zero.
-        LD      B,$B0           ; timing.
+      IFDEF enram
+        LD      B,$B8           ; two edges must be spaced apart.
+      ELSE
+        LD      B,$B0           ; two edges must be spaced apart.
+      ENDIF
         JR      L05C8           ; forward to LD-MARKER 
                                 ; the loop mid entry point with the alternate 
                                 ; zero flag reset to indicate first byte 
@@ -1890,7 +1904,11 @@ L05C2:  INC     IX              ; increment byte pointer.
 ;; LD-DEC
 L05C4:  DEC     DE              ; decrement length.
         EX      AF,AF'          ; store the flags.
+      IFDEF enram
+        LD      B,$BA           ; timing.
+      ELSE
         LD      B,$B2           ; timing.
+      ENDIF
 
 ;   when starting to read 8 bits the receiving byte is marked with bit at right.
 ;   when this is rotated out again then 8 bits have been read.
@@ -1910,7 +1928,11 @@ L05CA:  CALL    L05E3           ; routine LD-EDGE-2 increments B relative to
 
         RL      L               ; rotate the carry bit into L.
 
+      IFDEF enram
+        LD      B,$B8           ; reset the B timer byte.
+      ELSE
         LD      B,$B0           ; reset the B timer byte.
+      ENDIF
         JP      NC,L05CA        ; JUMP back to LD-8-BITS
 
 ;   when carry set then marker bit has been passed out and byte is complete.
@@ -5695,7 +5717,7 @@ L12CF:  LD      HL,($5C59)      ; fetch the edit line address from E_LINE.
         SET     7,(IY+$01)      ; update FLAGS - signal running program.
         LD      (IY+$00),$FF    ; set ERR_NR to 'OK'.
         LD      (IY+$0A),$01    ; set NSPPC to one for first statement.
-        CALL    L1B8A           ; call routine LINE-RUN to run the line.
+L1300:  CALL    L1B8A           ; call routine LINE-RUN to run the line.
                                 ; sysvar ERR_SP therefore addresses MAIN-4
 
 ; Examples of direct commands are RUN, CLS, LOAD "", PRINT USR 40000,
@@ -18580,8 +18602,8 @@ L3B02:  ADD     A,A             ; get one bit
         RET
 
     IFDEF enram
-        DEFB    PAD, PAD, PAD, PAD, PAD, PAD, PAD, PAD; 12 bytes
-        DEFB    PAD, PAD, PAD, PAD;
+        DEFB    $C9, $C9, $C9, $C9, $C9, $C9, $C9, $C9; 12 bytes
+        DEFB    $C9, $C9, $C9, $C9;
     ELSE
       IFDEF sinborde
 L3B08:  INC     C               ; 12 bytes
@@ -19138,7 +19160,7 @@ L3BFD:  DEFB    $38             ;;end-calc              last value is 1 or 0.
 ;; spare
 
       IFDEF enram
-L3BFF:  DEFB    $FF, $FF, $FF, $FF, $FF; 5 bytes
+L3BFF:  DEFB    $FF, $FF, $C9, $FF, $FF; 5 bytes
         RET
 L3C05:  ex      af, af
 L3C06:  scf
@@ -19151,8 +19173,8 @@ L3C07:  exx
         ld      c, l
         ld      hl, pini
         ldir
-        ld      a, $79
-        ld      ($381f), a
+        nop                     ; magic nops
+        nop
         ld      bc, $1ffd
         ld      a, 4
         ld      hl, conti+$c000
@@ -19203,9 +19225,7 @@ noin3   ldir
 noin4   ld      bc, $1ffd
         out     (c), a          ; 0123
         jp      pfin
-pfin    ld      a, $5e
-        ld      ($381f), a
-        ld      hl, L3D00-pfin+pini     ; recupero 2 con parche en 0
+pfin    ld      hl, L3D00-pfin+pini     ; recupero 2 con parche en 0
         ld      d, $80
         ld      bc, pfin-pini
         ldir
@@ -19213,22 +19233,26 @@ pfin    ld      a, $5e
         jp      nc, L360D
         jp      z, L34D7
         ex      af, af
+        ld      b, a
+        ex      af, af
+        ld      a, b
+        ex      af, af
         RET     NZ              ; si no coincide el checksum salgo con Carry desactivado
         SCF
         RET
 
-        DEFB    PAD, PAD, PAD, PAD, PAD, PAD, PAD, PAD;
-        DEFB    PAD, PAD, PAD, PAD, PAD, PAD, PAD, PAD;
-        DEFB    PAD, PAD, PAD, PAD, PAD, PAD, PAD, PAD;
-        DEFB    PAD, PAD, PAD, PAD, PAD, PAD, PAD, PAD;
-        DEFB    PAD, PAD, PAD, PAD, PAD, PAD, PAD, PAD;
-        DEFB    PAD, PAD, PAD, PAD, PAD, PAD, PAD, PAD;
-        DEFB    PAD, PAD, PAD, PAD, PAD, PAD, PAD, PAD;
-        DEFB    PAD, PAD, PAD, PAD, PAD, PAD, PAD, PAD;
-        DEFB    PAD, PAD, PAD, PAD, PAD, PAD, PAD, PAD;
-        DEFB    PAD, PAD, PAD, PAD, PAD, PAD, PAD, PAD;
-        DEFB    PAD, PAD, PAD, PAD, PAD, PAD, PAD, PAD;
-        DEFB    PAD;
+        DEFB    $00, $00, $00, $00, $00, $00, $00, $00;
+        DEFB    $00, $00, $00, $00, $00, $00, $00, $00;
+        DEFB    $00, $00, $00, $00, $00, $00, $00, $00;
+        DEFB    $00, $00, $00, $00, $00, $00, $00, $00;
+        DEFB    $00, $00, $00, $00, $00, $00, $00, $00;
+        DEFB    $00, $00, $00, $00, $00, $00, $00, $00;
+        DEFB    $00, $00, $00, $00, $00, $00, $00, $00;
+        DEFB    $00, $00, $00, $00, $00, $00, $00, $00;
+        DEFB    $00, $00, $00, $00, $00, $00, $00, $00;
+        DEFB    $00, $00, $00, $00, $00, $00, $00, $00;
+        DEFB    $00, $00, $00, $00, $00, $00, $00, $00;
+        DEFB    $00, $00, $00, $00, $00;
       ELSE
 L3BFF:  include tetris.asm
       ENDIF

@@ -24,6 +24,8 @@ function pilot($val){
 }
 function loadconf($b27){
   global $mhigh;
+  outbits( 14 << $mhigh );
+  pilot( 3 );
   outbits_double(1 << $mhigh);
   $c27= 27;
   while( $c27-- ){
