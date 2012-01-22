@@ -1,4 +1,4 @@
-<!-- Fireplay v0.04 16-01-2012 -->
+<!-- Fireplay v0.05 22-01-2012 -->
 <!DOCTYPE HTML><html><head>
 <title>Fireplay</title>
 <meta http-equiv="Content-Type" content="text/html;charset=utf-8"/>
@@ -22,27 +22,6 @@
   <pre id="tiempo" style="border:solid 1px;width:100px;height:25px;padding:10px;text-align:right;margin:0 auto"></pre>
 </body>
 <script>
-
-function ponComa(numero, digitos){
-  numero= Math.round((''+numero).replace(/,/,'.')*Math.pow(10,digitos));
-  var valor= ''+Math.abs(numero);
-  if(valor.length<=digitos)
-    valor= sprint0(digitos+1, valor);
-  return (numero<0?'-':'')+valor.slice(0, -digitos)+','+valor.slice(-digitos);
-}
-
-function sprint0(a, b){
-  var i= Math.abs(a);
-  b= b.toString().substr(0, i);
-  i-= b.length;
-  if (a>0)
-    while (i-->0)
-      b= '0'+b;
-  else
-    while (i-->0)
-      b+= '0';
-  return b;
-}
 
 function cambiaVelo(elm){
   if( valor= elm.selectedIndex )
@@ -96,9 +75,13 @@ function play(){
     bit= document.getElementById('inibit').checked ? 1 : -1;
     skip= document.getElementById('skip').checked ? 1 : 0;
     tiempo= quedan= pos= 0;
-    state= 73;
+    state= 81;
     tab= tabvel[velo];
-    table= [1 << mhigh, 1 << mhigh];            // sincro1
+    table= [14 << mhigh,
+            6 << mhigh, 6 << mhigh,
+            6 << mhigh, 6 << mhigh,
+            6 << mhigh, 6 << mhigh,
+            1 << mhigh, 1 << mhigh];            // sincro1
     len= (game.charCodeAt(pos++) | game.charCodeAt(pos++)<<8)-2;
     conf= parseInt(document.getElementById('registroR').value, 16)  // byte velo
         | 0<<8                                  // pasar el valor directamente
@@ -106,9 +89,9 @@ function play(){
         | ( len==6912 ? skip : 1) << 10         // eludo checksum solo en bloques de pantalla
         | (lastbl= game.charCodeAt(pos++))<<11  // byte flag
         | game.charCodeAt(pos+len)<<19;         // checksum
-    for( i= 2; i<56; i++ )
-      table[i]= ((conf&0x4000000 ? 2 : 4) << mhigh) + ((i==3 || i==35) && mhigh ? 1 : 0),
-      i&1 && (conf<<= 1);
+    for( i= 9; i<63; i++ )
+      table[i]= ((conf&0x4000000 ? 2 : 4) << mhigh) + ((i==10 || i==42) && mhigh ? 1 : 0),
+      i&1 || (conf<<= 1);
     table.push( 1 << mhigh, (1 << mhigh)+1,     // sincro2
                 termin[mlow][velo]>>1, termin[mlow][velo]-(termin[mlow][velo]>>1),// terminal
                 1 << mhigh, 1 << mhigh);        // sincro3
@@ -140,12 +123,14 @@ function audioStandard(e){
   j= mues= 0;
   while( j<quedan )
     data1[j]= bit,
+//    data2[j++]= bit;
     data2[j++]= -bit;
   bit= -bit;
   do{
     if( mues ){
       while( mues-- )
         data1[j]= bit,
+//        data2[j++]= bit;
         data2[j++]= -bit;
       bit= -bit;
     }
@@ -172,9 +157,12 @@ function audioStandard(e){
   quedan= j+mues-2048;
   while( j<2048 )
     data1[j]= bit,
+//    data2[j++]= bit;
     data2[j++]= -bit;
   tiempo+= paso;
-  document.getElementById('tiempo').innerHTML= ponComa(tiempo, 2);
+  tiempostr= ''+parseInt(tiempo);
+  tiempostr= '000'.slice(0,-tiempostr.length)+tiempostr;
+  document.getElementById('tiempo').innerHTML= tiempostr.slice(0,-2)+','+tiempostr.slice(-2);
 }
 
 function audioUltra(e){
@@ -183,37 +171,39 @@ function audioUltra(e){
   j= mues= 0;
   while( j<quedan )
     data1[j]= bit,
+//    data2[j++]= bit;
     data2[j++]= -bit;
   bit= -bit;
   do{
     if( mues ){
       while( mues-- )
         data1[j]= bit,
+//        data2[j++]= bit;
         data2[j++]= -bit;
       bit= -bit;
     }
-    if( state==60 ){
+    if( state==69 ){
       pos++;
       pilotlen= lastbl ? 2000+1400 : 400+1400;
-      state= 73;
+      state= 81;
       len= (game.charCodeAt(pos++) | game.charCodeAt(pos++)<<8)-2;
       if( len==-2 )
         pilotlen= 8;
       conf= ( len==6912 ? skip : 1)               // eludo checksum solo en bloques de pantalla
           | (lastbl= game.charCodeAt(pos++))<<1   // byte flag
           | game.charCodeAt(pos+len)<<9;        // checksum
-      for( i= 2; i<36; i++ )
-        table[i]= ((conf&0x10000 ? 2 : 4) << mhigh) + ((i==3 || i==35) && mhigh ? 1 : 0),
-        i&1 && (conf<<= 1);
+      for( i= 9; i<43; i++ )
+        table[i]= ((conf&0x10000 ? 2 : 4) << mhigh) + ((i==10 || i==42) && mhigh ? 1 : 0),
+        i&1 || (conf<<= 1);
     }
-    else if( state==58 )
-      state= 64;
-    else if( state==72 )
+    else if( state==65 )
+      state= 72;
+    else if( state==80 )
       pos++,
-      state= --len ? 64 : 58;
-    if( state<60 )
+      state= --len ? 72 : 65;
+    if( state<69 )
       mues= table[state++];
-    else if( state<72 )
+    else if( state<80 )
       mues= tab[state&1][game.charCodeAt(pos) >> (6-(state++&6)) & 3];
     else
       mues= 6 << mhigh,
@@ -224,9 +214,12 @@ function audioUltra(e){
   quedan= j+mues-2048;
   while( j<2048 )
     data1[j]= bit,
+//    data2[j++]= bit;
     data2[j++]= -bit;
   tiempo+= paso;
-  document.getElementById('tiempo').innerHTML= ponComa(tiempo, 2);
+  tiempostr= ''+parseInt(tiempo);
+  tiempostr= '000'.slice(0,-tiempostr.length)+tiempostr;
+  document.getElementById('tiempo').innerHTML= tiempostr.slice(0,-2)+','+tiempostr.slice(-2);
 }
 
 document.ondragover= handleDragOver;
@@ -252,7 +245,7 @@ if(typeof webkitAudioContext == 'function'){
   node.connect(cts.destination);
   mlow= cts.sampleRate==24000 || cts.sampleRate==48000 ? 1 : 0;
   mhigh= cts.sampleRate==22050 || cts.sampleRate==24000 ? 0 : 1;
-  paso= 2048/cts.sampleRate;
+  paso= 204800/cts.sampleRate;
   document.getElementById('velo').innerHTML= mhigh
     ? '<option>Standard</option>'+
       '<option>v0 Reckless Red</option>'+

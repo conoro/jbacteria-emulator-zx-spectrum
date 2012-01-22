@@ -17811,13 +17811,13 @@ L38DB:  LD      A,H             ; test if the second string
         EX      (SP),HL         ; put length2 on stack, bring start2 to HL *.
         LD      A,B             ; hi byte of length1 to A
 
-        JR      NZ,L38EC        ; forward to SEC-PLUS if second not null.
+        JR      NZ,L38EB        ; forward to SEC-PLUS if second not null.
 
         OR      C               ; test length of first string.
 
 ;; SECND-LOW
 L38E2:  POP     BC              ; pop the second length off stack.
-        JR      Z,L38E9         ; forward to BOTH-NULL if first string is also
+        JR      Z,L38E8         ; forward to BOTH-NULL if first string is also
                                 ; of zero length.
 
 ; the true condition - first is longer than second (SECND-LESS)
@@ -17828,13 +17828,13 @@ L38E2:  POP     BC              ; pop the second length off stack.
                                 ; Inequality is true. By swapping or applying
                                 ; a terminal 'not', all comparisons have been
                                 ; manipulated so that this is success path. 
-        JR      L3901           ; forward to leave via STR-TEST
+        DEFB    $28             ; forward to leave via STR-TEST
 
 ; ---
 ; the branch was here with a match
 
 ;; BOTH-NULL
-L38E9:  POP     AF              ; restore carry - set for eql/neql
+L38E8:  POP     AF              ; restore carry - set for eql/neql
         JR      L3901           ; forward to STR-TEST
 
 ; ---  
@@ -17843,14 +17843,14 @@ L38E9:  POP     AF              ; restore carry - set for eql/neql
 
 
 ;; SEC-PLUS
-L38EC:  OR      C               ; test the length of first string.
-        JR      Z,L38FC         ; forward to FRST-LESS if length is zero.
+L38EB:  OR      C               ; test the length of first string.
+        JR      Z,L38FB         ; forward to FRST-LESS if length is zero.
 
 ; both strings have at least one character left.
 
         LD      A,(DE)          ; fetch character of first string. 
         SUB     (HL)            ; subtract with that of 2nd string.
-        JR      C,L38FC         ; forward to FRST-LESS if carry set
+        JR      C,L38FB         ; forward to FRST-LESS if carry set
 
         JR      NZ,L38E2        ; back to SECND-LOW and then STR-TEST
                                 ; if not exact match.
@@ -17867,9 +17867,10 @@ L38EC:  OR      C               ; test the length of first string.
 ; the false condition.
 
 ;; FRST-LESS
-L38FC:  POP     BC              ; discard length
+L38FB:  POP     BC              ; discard length
         POP     AF              ; pop A
         AND     A               ; clear the carry for false result.
+        DEFB    $DA
 
 L38FF:  DEFB    $FF, $FF; 2 bytes
 

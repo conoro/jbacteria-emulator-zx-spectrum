@@ -94,7 +94,12 @@ L34FF:  IN      L,(C)
       IFDEF enram
 L3502:  XOR     A
         JP      L3C06
-        DEFB    $3C, $3C, $3C, $3C, $3C, $3C, $3C; 7 bytes
+
+L3506:  EXX
+        LD      C,$02
+        JP      L3C06
+
+        DEFB    $3C; 1 byte
       ELSE
 L3502:  POP     HL              ; 56 bytes
         LD      SP,HL
@@ -233,23 +238,18 @@ L3502:  POP     HL              ; 56 bytes
 L35BF:  IN      L,(C)
         JP      (HL)
 
-;; EXO_GETBITS
-L35C2:  LD      BC,0            ; get D bits in BC
-L35C5:  DEC     D
-        RET     M
-        CALL    L3B02           ; EXO_GETBIT
-        RL      C
-        RL      B
-        JR      L35C5
+;; EXO_GETPAIR
+L35E0:  LD      IYL,C
+        LD      D,(IY+0)
+        JR      LL35E0
+        JP      L3942
+        DEFB    $00, $00, $00, $00; 4 bytes
 
 ; Tabla
 L35D0:  DEFB    $ED, $DE, $D2, $C3, $00, $71, $62, $53;
         DEFB    $F1, $E5, $D6, $C7, $04, $78, $69, $5D;
 
-;; EXO_GETPAIR
-L35E0:  LD      IYL,C
-        LD      D,(IY+0)
-        CALL    L35C2           ; EXO_GETBITS
+LL35E0: CALL    L35C2           ; EXO_GETBITS
         PUSH    HL
         LD      L,(IY+52)
         LD      H,(IY+104)
@@ -259,13 +259,17 @@ L35E0:  LD      IYL,C
         POP     HL
         RET
 
-L35F4:  DEFB    $C9, $C9, $C9, $C9, $C9, $C9; 6 bytes
-      IFDEF enram
-L35FA:  LD      C,$02
-        JP      L3C06
-      ELSE
-        DEFB    $C9, $C9, $C9, $C9, $C9; 5 bytes
-      ENDIF
+;; EXO_GETBITS
+L35C2:  LD      BC,0            ; get D bits in BC
+L35C5:  DEC     D
+        RET     M
+        CALL    L3B02           ; EXO_GETBIT
+        RL      C
+        RL      B
+        JR      L35C5
+
+        DEFB    $00, $00; 2 bytes
+
 L35FF:  LD      A,R             ;9        49 (41 sin borde)
         LD      L,A             ;4
         LD      B,(HL)          ;7
@@ -301,8 +305,7 @@ L3616:  LD      B,0
         JR      NZ,L362C
       IFDEF enram
 L3628:  INC     L
-        EXX
-        JR      L35FA
+        JP      L3506
       ELSE
 L3628:  EXX
         LD      C,2
