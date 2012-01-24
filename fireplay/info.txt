@@ -1,49 +1,3 @@
-
-34bc-386e -> 3833-3bff
-
-3297-346a -> 3833-3a10
-36a0-386e -> 3a10-3bff
-
-
-slow 2.5  2 4 6 8
-     3    3 5 7 9
-     3.5  4 6 8 10
-     4    5 7 9 11
-
-raudo  1.75  2 3 4 5
-       2.25  3 4 5 6
-       2.50  2 4 6 8
-       2.75  4 5 6 7
-
-2345 12
-
-21  r1.75
-22 sr2.5
-31  r2.25
-32  s3
-41  r2.75
-42  s3.5
-51   3.25
-52  s4
-
-fdff salto1
-fdbf escribe
-fe04 tabla
-febf salto0
-feff lee timings
-
-38bf escribe
-38ff salto1
-3904 tabla
-39bf salto0
-39ff lee timings
-
-3abf salto0
-3aff escribe
-3b04 tabla
-3bbf lee timings
-3bff salto1
-
 1110 11xx registro B  62 xor EF= 8D    / 88
 0110 0010 ini
 1000 1000 shi
@@ -77,12 +31,10 @@ XxyY ZZww xor
 xxyy zz00 shi
 xxyy zzww xor
 
-
-
  teclas problematicas
- 6 7 9 0
- Z X V Shift
- A S F G
+ 6 7 8 9 0
+ Z X C V Shift
+ A S D F G
 
 ZxTapTimingInfo   48K        128K
 01 HP SAIMAZOOM   123        126
@@ -92,113 +44,59 @@ ZxTapTimingInfo   48K        128K
 05 HB saimazoomc  123        321
 06 D  34502       Block      Block
 
-44 0 *ed a0 a3 - 21
-      f0 a3 a6 - 21
-     
-44 1 *de a0 a3 - 22
-      e1 a3 a6 - 22
+En ultra1.asm
+;  3293-32bf: 44 bytes int sna128b tan
+;  32d7-32ff: 40 bytes movefp stkcons asin
+;  3302-330c: 10 bytes acs+3
+;  33c2-33e0: 30 bytes exogetbits tabla
+;  33e0-33ff: 31 bytes constan exchang
+;  340d-346a: 93 bytes calcula skipcon
 
-44 2  cf a0 a3 - 23
-     *d2 a3 a6 - 23
+En ultra2.asm
+;  36a0-36bf: 31 bytes acs lockmem stacknu
+;  36c2-36f5: 51 bytes strpow stmemx
+;  37cd-37ff: 50 bytes restack
+;  3802-3892: 144 bytes ultra
+;  3892-38ff: 109 bytes sna48 seriesx getpair
+;  3901-39ff: 254 bytes ln atn getargt get16 exogetb
+;  3a01-3aff: 254 bytes tbladd stkdata cossin sna128a
+  3b01-3bff: 254 bytes
 
-44 3  c0 a0 a3 - 24
-     *c3 a3 a6 - 24
+En rom.asm
+;  32d7-335b: tbladd 132 bytes
+;  3a8f-3aff: ln     112 bytes
+;  3b73-3bc4: atn     81 bytes
+;  335b-33a9: calcula 78 bytes
+;sna48                56 bytes
+;  3293-32c5: restack 50 bytes
+;  33c6-33f7: stkdata 49 bytes
+;  3b3b-3b6b: cossin  48 bytes
+;  3b14-3b3b: getargt 39 bytes
+;  3bdb-3bff: sqrpow  36 bytes
+;  3449-3a1c: seriesx 33 bytes
+;sna128a              24 bytes
+;  3a2b-3a40: int     21 bytes
+;getpair              20 bytes
+;  32c5-32d7: constan 18 bytes
+;  341b-342d: stkcons 18 bytes
+;  3bc4-3bd4: asin    16 bytes
+;get16                16 bytes
+;  342d-343c: stmemxx 15 bytes
+;  33f7-3406: skipcon 15 bytes
+;  33b4-33c0: stacknu 12 bytes
+;  343c-3449: exchang 13 bytes
+;sna128b              12 bytes
+;  33a9-33b4: test5   11 bytes
+;  3406-340f: lockmem  8 bytes
+;  3b6b-3b73: tan      8 bytes
+;  3bd4-3bdb: acs      7 bytes
+;  33c0-33c6: movefp   6 bytes
+;exogetb               6 bytes
+  3a1c-3a2b: nmodm   15 bytes
+exo                 123 bytes
+  3a40-3a8f: exp     79 bytes
+  340f-341b: getmemx 12 bytes
 
-83-86-89
-92-95-98
-a1-a4-a7
-b0-b3-b6
-
-44 5  00 a0 a3 - 24
-     *c3 a3 a6 - 24
-
-16-19
-34-37
-52-55
-70-73
-
-48 0  f1 - 13
-     
-48 1  e2 - 14
-
-48 2  d6 - 15
-
-48 3  c7 - 16
-
-84-87-*8a
-93-96
-9f-a2-*a5
-ae-b1
-
-48 4  f1 - 13
-
-17-1a-1d
-32-35-38
-4d-50-53
-   6b-6e
-
-
-3802 - 49 bytes 49 SNAP1
-3A01 - sobra 1
-3B01 - 19 bytes 6+12 LEEBI,SNA128_2 sobra 1
-3C01 - sobran 2
-3C05 - sobran 4
-
-34D7 - 40 bytes 24+16 SNAP128,EDGE2
-
-3802 - 49 bytes 49+10 SNAP48 sobra 1
-3502 - 11 bytes
-
-35C2 - 61 bytes 14+16+20 EXOGETBITS,TABLA,GETPAIR sobran 11
-
-360D - 178 bytes 146+32 MAIN,EXOAA
-36C2 - 51 bytes 51 EXOBB
-37CD - 50 bytes 45 EXOCC sobran 5
-
-EXO         - 129
-  EXOAA     - 32
-  EXOBB     - 48
-  EXOCC     - 50
-MAIN        - 146
-
-EXO_GETBITS - 14
-SNAP128     - 24
-
-SNAP48      - 56
-
-EXO_GETPAIR - 20
-EDGE2       - 16
-
-
-         Bit 2 =0    Bit 2 =0    Bit 2 =1    Bit 2 =1
-         Bit 1 =0    Bit 1 =1    Bit 1 =0    Bit 1 =1
- 0xffff +--------+  +--------+  +--------+  +--------+
-        | Bank 3 |  | Bank 7 |  | Bank 3 |  | Bank 3 |
-        |        |  |        |  |        |  |        |
-        |        |  |        |  |        |  |        |
-        |        |  | screen |  |        |  |        |
- 0xc000 +--------+  +--------+  +--------+  +--------+
-        | Bank 2 |  | Bank 6 |  | Bank 6 |  | Bank 6 |
-        |        |  |        |  |        |  |        |
-        |        |  |        |  |        |  |        |
-        |        |  |        |  |        |  |        |
- 0x8000 +--------+  +--------+  +--------+  +--------+
-        | Bank 1 |  | Bank 5 |  | Bank 5 |  | Bank 7 |
-        |        |  |        |  |        |  |        |
-        |        |  |        |  |        |  |        |
-        |        |  | screen |  | screen |  | screen |
- 0x4000 +--------+  +--------+  +--------+  +--------+
-        | Bank 0 |  | Bank 4 |  | Bank 4 |  | Bank 4 |
-        |        |  |        |  |        |  |        |
-        |        |  |        |  |        |  |        |
-        |        |  |        |  |        |  |        |
- 0x0000 +--------+  +--------+  +--------+  +--------+
-
-4,0 0000-3fff
-5,1 4000-7fff
-6,2 8000-bfff
-3   c000-ffff
-7   memoria load""
 
 R520 0->2
 R524 2->4
@@ -221,74 +119,21 @@ R526  2->6 desde 2
 R524  muevo parche 2->4
 4563  recupero 6 con parche en 4
 
-    ld    sp,hl   ; 6
-    pop   af      ; 10
-    ex    af,af   ; 4
-    pop   de      ; 10
-    pop   bc      ; 10
-    exx           ; 4
-    pop   af      ; 10
-    pop   de      ; 10
-    pop   bc      ; 10
-    pop   ix      ; 14
-
-                  ; 88
-
-    ld    sp,hl   ; 6
-    push  ix      ; 15
-    push  bc      ; 11
-    push  de      ; 11
-    push  af      ; 11
-    inc   h       ; 4
-    exx           ; 4
-    push  bc      ; 11
-    push  de      ; 11
-    ex    af,af   ; 4
-    push  af      ; 11
-    inc   h       ; 4
-
-                  ; 103
-
-                  ; 191/14= 13.64
-                  ; 162/12= 13.5
-                  ; 133/10= 13.3
-
- 10*25+6*1
-
-    8*8, 16*4
-
-1   ld    sp,hl   ; 6
-    pop   de      ; 10
-    pop   bc      ; 10
-    exx           ; 4
-    pop   af      ; 10
-    pop   de      ; 10
-    pop   bc      ; 10
-    ld    sp,hl   ; 6
-    push  bc      ; 11
-    push  de      ; 11
-    push  af      ; 11
-    inc   h       ; 4
-    exx           ; 4
-    push  bc      ; 11
-    push  de      ; 11
-    inc   h       ; 4
-
-2   ld    sp,hl   ; 6
-    exx           ; 4
-    pop   af      ; 10
-    pop   de      ; 10
-    pop   bc      ; 10
-    ld    sp,hl   ; 6
-    push  bc      ; 11
-    push  de      ; 11
-    push  af      ; 11
-    inc   h       ; 4
-    exx           ; 4
-    inc   h       ; 4
-
-    
-
 ABAJO,ENTER,usr2039,ENTER
 
-exo_raw.c match.c search.c optimal.c output.c membuf_io.c chunkpool.c radix.c exo_helper.c exodec.c progress.c exo_util.c getflag.c log.c membuf.c
+exo_raw.c match.c search.c optimal.c output.c membuf_io.c chunkpool.c radix.c exo_helper.c
+exodec.c progress.c exo_util.c getflag.c log.c membuf.c
+
+
+      IFDEF enram
+        DEFB    $C9, $C9, $C9; 3 bytes
+      ELSE
+L32BC:  JP      L3403
+      ENDIF
+
+
+        DEFB    $00;  1 byte
+
+
+
+
