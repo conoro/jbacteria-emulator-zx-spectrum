@@ -1,18 +1,17 @@
 ;        DEFINE  sinborde
-        DEFINE  enram
+;        DEFINE  enram
 
-        DEFINE  plus
+;        DEFINE  plus
 ;        DEFINE  spanish
 
         OUTPUT  48.rom
-        DEFINE  OFFS  $00
 
 ;************************************************************************
 ;** An Assembly File Listing to generate a 16K ROM for the ZX Spectrum **
 ;************************************************************************
 
 ; -------------------------
-; Last updated: 11-DEC-2011
+; Last updated: 05-FEB-2012
 ; -------------------------
 
 
@@ -18917,7 +18916,7 @@ ULT11:  XOR     (HL)
         RET     NZ              ; si no coincide el checksum salgo con Carry desactivado
         SCF
         RET
-        DEFB    $00, $00, $00; 3 bytes
+L3B8C:  JP      L3403
       ENDIF
 
 ; ------------------------
@@ -21328,8 +21327,11 @@ L3D00:  DEFB    %00000000
 ; Alex Pallero Gonzales     for corrections.
 ; Mike Dailly               for comments.
 ; Alvin Albrecht            for comments.
-; Andy Styles               for full relocatability implementation and testing.                    testing.
+; Andy Styles               for full relocatability implementation and testing.
 ; Andrew Owen               for ZASM compatibility and format improvements.
+; Francisco Villa           for CargandoLeches main ultraloader code.
+; Metalbrain                for CargandoLeches exomizer decrunch routine.
+; Antonio Villena           for CargandoLeches rest of code.
 
 ;   For other assemblers you may have to add directives like these near the 
 ;   beginning - see accompanying documentation.
@@ -21342,3 +21344,8 @@ L3D00:  DEFB    %00000000
 ;   Note. The Sinclair Interface 1 ROM written by Dr. Ian Logan and Martin 
 ;   Brennan calls numerous routines in this ROM.  
 ;   Non-standard entry points have a label beginning with X. 
+
+;   CargandoLeches modification: The file assembles well in sjasmplus, delete
+;   or comment the first directive "OUTPUT 48.rom" and conditional assembly
+;   directives "IFDEF,ELSE,ENDIF" if you have problems with your assembler.
+
