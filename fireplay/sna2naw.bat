@@ -1,1 +1,0 @@
-\xampp\php\php sna2naw.php %1 %2 %3 %4 %5 %6
