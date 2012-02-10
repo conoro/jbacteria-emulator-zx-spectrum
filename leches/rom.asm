@@ -20058,7 +20058,7 @@ L3C8A:  LD      HL,$3CAC        ; RECUPERO 2 CON PARCHE EN 0
         DEFB    $00, $00, $00, $00, $00, $00, $00, $00;
         DEFB    $00, $00, $00, $00, $00;
       ELSE
-        DEFB    '-FirePlay-'
+        DEFB    'CargLeches'
 L3BFF:  DEFB    $FF, $FF;
         DEFB    $FF, $FF; 2 bytes
 L3C03:  LD      (DE),A          ; Una de las dos opciones de subfuncion a llamar (En este caso pinta/borra pieza)
