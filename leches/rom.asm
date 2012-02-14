@@ -218,12 +218,6 @@ L0055:  LD      (IY+$00),L      ; Store it in the system variable ERR_NR.
                                 ; variables area and then indirectly to MAIN-4, 
                                 ; etc.
 
-; ---
-
-        DEFB    $FF, $FF, $FF   ; Unused locations
-        DEFB    $FF, $FF, $FF   ; before the fixed-position
-        DEFB    $FF             ; NMI routine.
-
 ; ------------------------------------
 ; THE 'NON-MASKABLE INTERRUPT' ROUTINE
 ; ------------------------------------
@@ -254,13 +248,19 @@ L0055:  LD      (IY+$00),L      ; Store it in the system variable ERR_NR.
 
 ;; RESET
       IFDEF enram
-L0066:  LD      SP,$FF54
-        LD      BC,$1FFD
+L005F:  LDDR
+L0061:  LD      SP,$FF56
         LD      A,$03
+L0066:  DJNZ    L0061
+        NOP
+        LD      BC,$1FFD
         OUT     (C),A
-        POP     DE
+        LD      DE,$4000
         JP      L04AA
       ELSE
+L005F:  DEFB    $FF, $FF, $FF   ; Unused locations
+        DEFB    $FF, $FF, $FF   ; before the fixed-position
+        DEFB    $FF             ; NMI routine.
 L0066:  PUSH    AF              ; save the
         PUSH    HL              ; registers.
         LD      HL,($5CB0)      ; fetch the system variable NMIADD.
@@ -19976,29 +19976,31 @@ L3C07:  EXX
         LDIR
         LD      D,H             ; PARCHEO EN 6 / 2
         LD      C,L
-        LD      HL,$3C36
+        LD      HL,$3C3E
         LDIR
-        NOP                     ; MAGIC NOPS
-        NOP
         LD      BC,$1FFD
         LD      A,4
-        LD      HL,$FC27
-        JP      L381E           ; R524 / R520
-        LD      L,$36           ; MUEVO PARCHE 4->2 / 0->2
-        LD      BC,$00CA
+        LD      HL,$FC25
+        JP      L381E           ; R52x
+        JR      NC,L3C20
+        LD      D,$40
+L3C20:  LD      L,$3E           ; MUEVO PARCHE 4->2 / 0->2
+        LD      BC,$00C2
         LD      E,B
         LDIR
         LD      BC,$7FFD
-        LD      A,$10
         LD      H,D
-        JP      (HL)
-        OUT     (C),A           ; R520
-        JR      NC,L3C45
+        JP      $8000
+        LD      A,$10
+        JR      NC,L3C30
+        LD      A,$14
+L3C30:  OUT     (C),A           ; R520 / R524
         LD      DE,$FCAC        ; MUEVO PARCHE 2->0
+        LD      L,$6E
         LD      BC,$0054
         LDIR
         LD      BC,$7FFD
-L3C45:  LD      A,$11
+        LD      A,$11
         OUT     (C),A           ; R521
         LD      HL,$4000        ; 5->1 DESDE 2
         LD      B,H
@@ -20013,20 +20015,17 @@ L3C54:  LDIR
         LD      D,$80
         LD      H,$C0
         LD      BC,$4000        ; 6->2 DESDE 2
-        LD      A,$10
         JR      NC,L3C6B
-        LD      A,$14
         EX      DE,HL
 L3C6B:  LDIR
         LD      BC,$7FFD
-        OUT     (C),A           ; R524
+        LD      A,$10
+        JR      NC,L3C70
+        LD      A,$14
+L3C70:  OUT     (C),A           ; R524 / R520
         LD      A,1
         JR      NC,L3C82
         LD      A,5
-        LD      H,$80           ; MUEVO PARCHE 2->4
-        LD      DE,$FCAC
-        LD      BC,$0054
-        LDIR
 L3C82:  LD      BC,$1FFD
         OUT     (C),A           ; 0123
         JP      L3C8A
