@@ -18803,7 +18803,7 @@ ULTRA:  PUSH    IX              ; 133 bytes
         POP     HL              ; pongo la direccion de comienzo en HL
         EXX                     ; salvo DE, en caso de volver al cargador estandar y para hacer luego el checksum
         LD      C,$00
-        DEFB    $2A
+ULTR0:  DEFB    $2A
 ULTR1:  JR      NZ,ULTR3        ; return if at any time space is pressed.
 ULTR2:  LD      B,0
         CALL    L05ED           ; leo la duracion de un pulso (positivo o negativo)
@@ -18830,7 +18830,7 @@ ULTR4:  CP      16              ; si el contador esta entre 10 y 16 es el tono g
         JR      NC,ULTR2
         INC     H
         INC     H
-        JR      NZ,ULTR2        ; si detecto sincronismo sin 8 pulsos de tono guia retorno a bucle
+        JR      NZ,ULTR0        ; si detecto sincronismo sin 8 pulsos de tono guia retorno a bucle
         CALL    L05ED           ; leo pulso negativo de sincronismo
         LD      L,$01           ; HL vale 0001, marker para leer 16 bits en HL (checksum y byte flag)
         CALL    L39E9           ; leo 16 bits, ahora temporizo cada 2 pulsos
