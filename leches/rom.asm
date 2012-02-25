@@ -1,5 +1,6 @@
 ;        DEFINE  sinborde
 ;        DEFINE  enram
+        DEFINE  copymsg
 
 ;        DEFINE  plus
 ;        DEFINE  spanish
@@ -3057,7 +3058,11 @@ L09C0:  DEFB    '.'+$80
         DEFB    ' '+$80
     ELSE
 L09A1:  DEFB    $80
+      IFDEF plus
         DEFM    "Press REC & PLAY, then any key"
+      ELSE
+        DEFM    "Start tape, then press any key"
+      ENDIF
 L09C0:  DEFB    '.'+$80
         DEFB    $0D
         DEFM    "Program:"
@@ -5906,7 +5911,7 @@ L1386:  LD      (IY+$0A),$FF    ; update NSPPC - signal 'no jump'.
 ;; rpt-mesgs
 L1391:  DEFB    $80
         DEFB    'O','K'+$80                             ; 0
-    IFDEF spanish
+  IFDEF spanish
         DEFM    "NEXT SIN FO"
         DEFB    'R'+$80                                 ; 1
         DEFM    "VARIABLE NO DEFINID"
@@ -5967,7 +5972,7 @@ L1537:  DEFB    ',',' '+$80                             ; used in report line.
 L1539:  DEFB    $7F                                     ; copyright
         DEFM    " 1982 Amstra"
 L1547:  DEFB    'd'+$80
-    ELSE
+  ELSE
         DEFM    "NEXT without FO"
         DEFB    'R'+$80                                 ; 1
         DEFM    "Variable not foun"
@@ -6026,14 +6031,19 @@ L1536:  DEFB    'r'+$80                                 ; R
 L1537:  DEFB    ',',' '+$80                             ; used in report line.
 ;; copyright
 L1539:  DEFB    $7F                                     ; copyright
-      IFDEF plus
+    IFDEF plus
         DEFM    " 1982 Amstrad             "
 L1547:  DEFB    ' '+$80
+    ELSE
+      IFDEF copymsg
+        DEFM    " 2012 ROM CargandoLeches  "
+        DEFB    ' '+$80
       ELSE
         DEFM    " 1982 Sinclair Research Lt"
         DEFB    'd'+$80
       ENDIF
     ENDIF
+  ENDIF
 
 ; -------------
 ; REPORT-G
