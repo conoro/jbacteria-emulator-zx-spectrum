@@ -19195,7 +19195,7 @@ ULTR5:  CP      16              ; si el contador esta entre 10 y 16 es el tono g
         INC     H
         JR      NZ,ULTR1        ; si detecto sincronismo sin 8 pulsos de tono guia retorno a bucle
         CALL    L05ED           ; leo pulso negativo de sincronismo
-        LD      IXL,$C1         ; 48000Hz
+        LD      IXL,$C4         ; 48000Hz
         BIT     3,B
         JR      Z,ULTR6
         LD      IXL,$BD         ; 44100Hz
