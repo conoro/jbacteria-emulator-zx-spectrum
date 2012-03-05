@@ -1,0 +1,1 @@
+\xampp\php\php fireplay.php %1 %2 %3
