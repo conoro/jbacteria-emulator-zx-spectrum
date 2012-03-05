@@ -8090,7 +8090,7 @@ L1B10:  DEFB    $0A             ; Class-0A - A string expression must follow.
 
 ;; P-CAT
 L1B14:  DEFB    $00             ; Class-00 - No further operands.
-        DEFW    L1793           ; Address: $1793; Address: CAT-ETC
+        DEFW    L3A01           ; Address: $3A01
 
 ; * Note that a comma is required as a separator with the OPEN command
 ; but the Interface 1 programmers relaxed this allowing ';' as an
@@ -19138,20 +19138,20 @@ LOWD:   LD      A,R             ;9
         EXX                     ;4
         LD      L,A             ;4
         EX      AF,AF'          ;4
-        JR      NC,NOFUL        ;7  12
+        JR      NC,LOW2         ;7  12
         OR      (HL)            ;7
         EXX                     ;4
         LD      (DE),A          ;7
         INC     DE              ;6
-L3403:  LD      A,4             ;7
+LOW1:   LD      A,$04           ;7
         EX      AF,AF'          ;4
         LD      A,IXL           ;8
         LD      R,A             ;9
-        LD      A,10             ;7
-        OUT     ($FE),A         ;11= 98, 124
+        LD      A,$0A           ;7
+        OUT     ($FE),A         ;11= 98
         IN      L,(C)
         JP      (HL)
-NOFUL:  OR      (HL)            ;7
+LOW2:   OR      (HL)            ;7
         EXX                     ;4
         ADD     A,A             ;4
         RET     C               ;5
@@ -19159,8 +19159,8 @@ NOFUL:  OR      (HL)            ;7
         EX      AF,AF'          ;4
         LD      A,IXL           ;8
         LD      R,A             ;9
-        LD      A,14            ;7
-        OUT     ($FE),A         ;11= 96, 122
+        LD      A,$0E           ;7
+        OUT     ($FE),A         ;11= 96
         IN      L,(C)
         JP      (HL)
 
@@ -19173,40 +19173,40 @@ ULTRA:  PUSH    IX
         POP     BC              ; pongo la direccion de comienzo en HL
         EXX                     ; salvo DE, en caso de volver al cargador estandar y para hacer luego el checksum
         LD      C,$00
-ULTR0:  DEFB    $2A
-ULTR1:  JR      NZ,ULTR3        ; return if at any time space is pressed.
-ULTR2:  LD      B,0
+ULTR1:  DEFB    $2A
+ULTR2:  JR      NZ,ULTR4        ; return if at any time space is pressed.
+ULTR3:  LD      B,0
         CALL    L05ED           ; leo la duracion de un pulso (positivo o negativo)
-        JR      NC,ULTR1        ; si el pulso es muy largo retorno a bucle
+        JR      NC,ULTR2        ; si el pulso es muy largo retorno a bucle
         LD      A, B
         CP      40              ; si el contador esta entre 24 y 40
-        JR      NC,ULTR4        ; y se reciben 8 pulsos (me falta inicializar HL a 00FF)
+        JR      NC,ULTR5        ; y se reciben 8 pulsos (me falta inicializar HL a 00FF)
         CP      24
         RL      L
-        JR      NZ,ULTR4
-ULTR3:  EXX
+        JR      NZ,ULTR5
+ULTR4:  EXX
         LD      C,2
         RET
-ULTR4:  CP      16              ; si el contador esta entre 10 y 16 es el tono guia
+ULTR5:  CP      16              ; si el contador esta entre 10 y 16 es el tono guia
         RR      H               ; de las ultracargas, si los ultimos 8 pulsos
         CP      10              ; son de tono guia H debe valer FF
-        JR      NC,ULTR2
+        JR      NC,ULTR3
         INC     H
         INC     H
-        JR      NZ,ULTR0        ; si detecto sincronismo sin 8 pulsos de tono guia retorno a bucle
+        JR      NZ,ULTR1        ; si detecto sincronismo sin 8 pulsos de tono guia retorno a bucle
         CALL    L05ED           ; leo pulso negativo de sincronismo
         LD      IXL,$C1         ; 48000Hz
         BIT     3,B
-        JR      Z,ULT45
+        JR      Z,ULTR6
         LD      IXL,$BD         ; 44100Hz
-ULT45:  LD      L,$01           ; HL vale 0001, marker para leer 16 bits en HL (checksum y byte flag)
-ULTR5:  LD      B,0             ; 16 bytes
+ULTR6:  LD      L,$01           ; HL vale 0001, marker para leer 16 bits en HL (checksum y byte flag)
+ULTR7:  LD      B,0             ; 16 bytes
         CALL    L05ED           ; esta rutina lee 2 pulsos e inicializa el contador de pulsos
         CALL    L05ED
         LD      A,B
         CP      12
         ADC     HL,HL
-        JR      NC,ULTR5
+        JR      NC,ULTR7
         POP     AF              ; machaco la direccion de retorno de la carga estandar
         EX      AF,AF'          ; A es el byte flag que espero
         CP      L               ; lo comparo con el que me encuentro en la ultracarga
@@ -19217,33 +19217,33 @@ ULTR5:  LD      B,0             ; 16 bytes
         PUSH    BC              ; pongo direccion de comienzo en pila
         LD      H,$39
         EXX
-ULTR6:  POP     DE              ; recupero en DE la direccion de comienzo del bloque
+        POP     DE              ; recupero en DE la direccion de comienzo del bloque
         INC     C               ; pongo en flag Z el signo del pulso
         LD      BC,$FFFE        ; este valor es el que necesita B para entrar en Raudo
         LD      H,$37
-        JR      Z,ULT75
-ULTR7:  IN      F,(C)
-        JP      PE,ULTR7
-        JR      ULTR9
-ULT75:  DEC     H
+        JR      Z,ULTR9
 ULTR8:  IN      F,(C)
-        JP      PO,ULTR8
-        JR      ULTR9
-ULTR9:  CALL    L3403           ; salto a Raudo segun el signo del pulso en flag Z
+        JP      PE,ULTR8
+        JR      ULT11
+ULTR9:  DEC     H
+ULT10:  IN      F,(C)
+        JP      PO,ULT10
+        JR      ULT11
+ULT11:  CALL    LOW1            ; salto a Raudo segun el signo del pulso en flag Z
         EXX
-ULT10:  LD      H,B
+        LD      H,B
         LD      L,C
         LD      B,E
         LD      C,D
         XOR     A
         CP      B
-        JR      Z,ULT11
+        JR      Z,ULT12
         INC     C
-ULT11:  XOR     (HL)
+ULT12:  XOR     (HL)
         INC     HL
-        DJNZ    ULT11
+        DJNZ    ULT12
         DEC     C
-        JP      NZ,ULT11
+        JP      NZ,ULT12
         PUSH    HL              ; ha ido bien
         LD      L,A
         XOR     IXH
@@ -19284,15 +19284,46 @@ ULT11:  XOR     (HL)
         DEFB    $03, $03, $FF   ; 36
         DEFB    $03, $FF, $FF   ; 39
 
-L3A01:  DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+L3A01:  DI
+        DEC     (IY+$02)
+L3A05:  LD      HL,L3BD7
+        ADD     A,(HL)
+        INC     HL
+        JR      NZ,L3A05+1
+        LD      B,$20
+L3A0E:  LD      A,$85
+        RST     10H
+        DJNZ    L3A0E
+L3A13:  LD      H, B
+        LD      L, C
+        LD      BC, $7FFE
+        LD      DE, $1820
+L3A1B:  IN      A, (C)
+        JP      PO,L3A23
+        JP      L3A25
+L3A23:  LD      A, D
+        INC     HL
+L3A25:  XOR     $10
+        OUT     (C), A
+        DJNZ    L3A1B
+        DEC     E
+        JR      NZ, L3A1B
+        RL      L
+        LD      A, H
+        LD      DE, $591E
+        LD      HL, $591F
+        LD      C, L
+        LD      (HL), B
+        LDDR
+        LD      L, A
+        LD      (HL), $5B
+        JR      NC,L3A13
+        LD      (HL), $43
+        INC     L
+        LD      (HL), D
+        JR      L3A13
+
+        DEFB    $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
@@ -19428,13 +19459,19 @@ L3BAA:  ADD     A,A             ; get one bit
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+L3BD0:  DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+L3BD7:  DEFB    $16-$0d, $07-$16, $0C-$07 ; locate cursor at 7, 12
+        DEFB    $10-$0C, $04-$10          ; ink 4 (green)
+        DEFB    $11-$10, $04-$11          ; paper 4 (green)
+        DEFB    $DC-$40, $0D-$24          ; print "BRIGHT"+CR (only see green blocks)
+        DEFB    $00;                      ; end
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+L3C00:  DEFB    $FF, $FF, $FF, $FF;
+L3C04:  RET
+        DEFB    $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
