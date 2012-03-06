@@ -5883,8 +5883,8 @@ L1391:  DEFB    $80
 L1537:  DEFB    ',',' '+$80                             ; used in report line.
 ;; copyright
 L1539:  DEFB    $7F                                     ; copyright
-        DEFM    " 1982 Sinclair Research Lt"
-        DEFB    'd'+$80
+        DEFM    " 2012 ROM FirePlay 27429bp"
+        DEFB    's'+$80
 
 
 ; -------------
@@ -19195,10 +19195,10 @@ ULTR5:  CP      16              ; si el contador esta entre 10 y 16 es el tono g
         INC     H
         JR      NZ,ULTR1        ; si detecto sincronismo sin 8 pulsos de tono guia retorno a bucle
         CALL    L05ED           ; leo pulso negativo de sincronismo
-        LD      IXL,$C4         ; 48000Hz
+        LD      IXL,$C1         ; 48000Hz
         BIT     3,B
         JR      Z,ULTR6
-        LD      IXL,$BD         ; 44100Hz
+        LD      IXL,$BD         ; 44100Hz también vale $BA
 ULTR6:  LD      L,$01           ; HL vale 0001, marker para leer 16 bits en HL (checksum y byte flag)
 ULTR7:  LD      B,0             ; 16 bytes
         CALL    L05ED           ; esta rutina lee 2 pulsos e inicializa el contador de pulsos
@@ -19229,7 +19229,7 @@ ULTR9:  DEC     H
 ULT10:  IN      F,(C)
         JP      PO,ULT10
         JR      ULT11
-ULT11:  CALL    LOW1            ; salto a Raudo segun el signo del pulso en flag Z
+ULT11:  CALL    LOW1
         EXX
         LD      H,B
         LD      L,C
@@ -19244,7 +19244,7 @@ ULT12:  XOR     (HL)
         DJNZ    ULT12
         DEC     C
         JP      NZ,ULT12
-        PUSH    HL              ; ha ido bien
+        PUSH    HL
         LD      L,A
         XOR     IXH
         LD      H,B
@@ -19263,26 +19263,26 @@ ULT12:  XOR     (HL)
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         
-        DEFB    $00, $00, $FF   ; 00
-        DEFB    $00, $00, $FF   ; 03
-        DEFB    $00, $00, $FF   ; 06
-        DEFB    $00, $00, $FF   ; 09
-        DEFB    $00, $00, $FF   ; 0C
-        DEFB    $01, $01, $FF   ; 0F
-        DEFB    $01, $01, $FF   ; 12
-        DEFB    $01, $01, $FF   ; 15
-        DEFB    $01, $01, $FF   ; 18
-        DEFB    $01, $02, $FF   ; 1B --
-        DEFB    $02, $02, $FF   ; 1E
-        DEFB    $02, $02, $FF   ; 21
-        DEFB    $02, $02, $FF   ; 24
-        DEFB    $02, $02, $FF   ; 27
-        DEFB    $02, $03, $FF   ; 2A
-        DEFB    $03, $03, $FF   ; 2D
-        DEFB    $03, $03, $FF   ; 30
-        DEFB    $03, $03, $FF   ; 33
-        DEFB    $03, $03, $FF   ; 36
-        DEFB    $03, $FF, $FF   ; 39
+        DEFB    $00, $00, $FF   ; C5 C6
+        DEFB    $00, $00, $FF   ; C8 C9
+        DEFB    $00, $00, $FF   ; CB CC
+        DEFB    $00, $00, $FF   ; CE CF
+        DEFB    $00, $00, $FF   ; D1 D2
+        DEFB    $01, $01, $FF   ; D4 D5
+        DEFB    $01, $01, $FF   ; D7 D8
+        DEFB    $01, $01, $FF   ; DA DB
+        DEFB    $01, $01, $FF   ; DD DE
+        DEFB    $01, $02, $FF   ; E0 E1 --
+        DEFB    $02, $02, $FF   ; E3 E4
+        DEFB    $02, $02, $FF   ; E6 E7
+        DEFB    $02, $02, $FF   ; E9 EA
+        DEFB    $02, $02, $FF   ; EC ED
+        DEFB    $02, $03, $FF   ; EF F0
+        DEFB    $03, $03, $FF   ; F2 F3
+        DEFB    $03, $03, $FF   ; F5 F6
+        DEFB    $03, $03, $FF   ; F8 F9
+        DEFB    $03, $03, $FF   ; FB FC
+        DEFB    $03, $FF, $FF   ; FE FF
 
 L3A01:  DI
         DEC     (IY+$02)
