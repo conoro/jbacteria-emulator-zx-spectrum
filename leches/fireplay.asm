@@ -19164,7 +19164,7 @@ LOW2:   OR      (HL)            ;7
         IN      L,(C)
         JP      (HL)
 
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF; 32 bytes
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
@@ -19195,14 +19195,16 @@ ULTR5:  CP      16              ; si el contador esta entre 10 y 16 es el tono g
         INC     H
         JR      NZ,ULTR1        ; si detecto sincronismo sin 8 pulsos de tono guia retorno a bucle
         CALL    L05ED           ; leo pulso negativo de sincronismo
-        CALL    READB
-        SBC     A,A
-        ADD     A,A
-        ADD     A,A
-        ADD     A,$C1
-        LD      IXL,A
+        LD      IXL,$C1         ; 48000Hz
+        BIT     3,B
+        JR      Z,ULTR6
+        LD      IXL,$BD         ; 44100Hz también vale $BA
 ULTR6:  LD      L,$01           ; HL vale 0001, marker para leer 16 bits en HL (checksum y byte flag)
-ULTR7:  CALL    READB
+ULTR7:  LD      B,0             ; 16 bytes
+        CALL    L05ED           ; esta rutina lee 2 pulsos e inicializa el contador de pulsos
+        CALL    L05ED
+        LD      A,B
+        CP      12
         ADC     HL,HL
         JR      NC,ULTR7
         POP     AF              ; machaco la direccion de retorno de la carga estandar
@@ -19253,14 +19255,7 @@ ULT12:  XOR     (HL)
         SCF
         RET
 
-READB:  LD      B,0
-        CALL    L05ED           ; esta rutina lee 2 pulsos e inicializa el contador de pulsos
-        CALL    L05ED
-        LD      A,B
-        CP      12
-        RET
-
-        DEFB    $FF, $FF; 50 bytes
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
@@ -19328,7 +19323,7 @@ L3A25:  XOR     $10
         LD      (HL), D
         JR      L3A13
 
-        DEFB    $FF, $FF; 199 bytes
+        DEFB    $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
@@ -19460,27 +19455,23 @@ L3BAA:  ADD     A,A             ; get one bit
         ADC     A,A
         RET
 
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF; 39 bytes
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+L3BD0:  DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF;
 L3BD7:  DEFB    $16-$0d, $07-$16, $0C-$07 ; locate cursor at 7, 12
         DEFB    $10-$0C, $04-$10          ; ink 4 (green)
         DEFB    $11-$10, $04-$11          ; paper 4 (green)
         DEFB    $DC-$40, $0D-$24          ; print "BRIGHT"+CR (only see green blocks)
         DEFB    $00;                      ; end
-
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF; 35 bytes
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF;
-
+L3C00:  DEFB    $FF, $FF, $FF, $FF;
 L3C04:  RET
-
-        DEFB    $FF, $FF, $FF; 251 bytes
+        DEFB    $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
