@@ -6036,8 +6036,13 @@ L1539:  DEFB    $7F                                     ; copyright
 L1547:  DEFB    ' '+$80
     ELSE
       IFDEF copymsg
+        IFDEF sinborde
+        DEFM    "12 CargandoLeches sin bord"
+        DEFB    'e'+$80
+        ELSE
         DEFM    " 2012 ROM CargandoLeches  "
         DEFB    ' '+$80
+        ENDIF
       ELSE
         DEFM    " 1982 Sinclair Research Lt"
         DEFB    'd'+$80
