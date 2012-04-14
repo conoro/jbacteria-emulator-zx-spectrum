@@ -5423,6 +5423,10 @@ L11CB:  LD      B,A             ; Save the flag to control later branching.
         NOP
         NOP
         NOP
+        NOP
+        NOP
+        NOP
+        NOP
 
 ; -----------------------
 ; THE 'RAM CHECK' SECTION
@@ -5442,13 +5446,8 @@ L11DA:  LD      (HL),$01        ; Load memory with $01 - blue ink on black paper
         CP      H               ; Have we reached ROM - $3F ?
         JP      NZ,L11DA        ; Back to RAM-FILL if not.
 
-        XOR     A               ; New stop condition, reach $0000 upwards
-
 ;; RAM-READ
-L11E2:  CP      H               ; Have we reached ROM - $0000 ?
-        INC     HL              ; increment for next iteration.
-        JR      Z,L11EA         ; forward to RAM-DONE if we've got back to
-                                ; starting point with no errors.
+L11E2:  INC     HL              ; increment for next iteration.
 
         DEC     (HL)            ; decrement to zero.
         JP      Z,L11E2         ; back to RAM-READ if zero flag was set.
