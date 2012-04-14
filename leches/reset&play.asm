@@ -5441,16 +5441,16 @@ L11CB:  LD      B,A             ; Save the flag to control later branching.
         EX      DE,HL
 
 ;; RAM-FILL
-L11DA:  LD      (HL),$01        ; Load memory with $01 - blue ink on black paper.
+L11DE:  LD      (HL),$01        ; Load memory with $01 - blue ink on black paper.
         DEC     HL              ; Decrement memory address.
         CP      H               ; Have we reached ROM - $3F ?
-        JP      NZ,L11DA        ; Back to RAM-FILL if not.
+        JP      NZ,L11DE        ; Back to RAM-FILL if not.
 
 ;; RAM-READ
-L11E2:  INC     HL              ; increment for next iteration.
+L11E5:  INC     HL              ; increment for next iteration.
 
         DEC     (HL)            ; decrement to zero.
-        JP      Z,L11E2         ; back to RAM-READ if zero flag was set.
+        JP      Z,L11E5         ; back to RAM-READ if zero flag was set.
 
 ;; RAM-DONE
 L11EA:  DEC     HL              ; step back to last valid location.
