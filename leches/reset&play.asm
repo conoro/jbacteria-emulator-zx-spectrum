@@ -5394,6 +5394,7 @@ L11B7:  DI                      ; Disable Interrupts - machine stack will be
         LD      DE,($5CB2)      ; Fetch RAMTOP as top value.
         EXX                     ; Switch in alternate set.
         LD      BC,($5CB4)      ; Fetch P-RAMT differs on 16K/48K machines.
+        LD      DE,($5C38)      ; Fetch RASP/PIP.
         LD      HL,($5C7B)      ; Fetch UDG    differs on 16K/48K machines.
         EXX                     ; Switch back to main set and continue into...
 
@@ -5406,32 +5407,15 @@ L11B7:  DI                      ; Disable Interrupts - machine stack will be
 ;   if coming from START or NEW.
 
 ;; START-NEW
-L11CB:  ex      af, af'
+L11CB:  LD      B,A             ; Save the flag to control later branching.
+
+        LD      A,$07           ; Select a white border
+        OUT     ($FE),A         ; and set it now by writing to a port.
+
         LD      A,$3F           ; Load the accumulator with last page in ROM.
         LD      I,A             ; Set the I register - this remains constant
-        out     ($fe),a         ; and set it now by writing to a port.
                                 ; and can't be in the range $40 - $7F as 'snow'
                                 ; appears on the screen.
-
-        nop                     ;
-        nop                     ;
-        nop                     ;
-        nop                     ;
-        nop                     ;
-        nop                     ;
-        nop                     ;
-        nop                     ;
-        nop                     ;
-        nop                     ;
-        nop                     ;
-        nop                     ;
-        nop                     ;
-        nop                     ;
-        nop                     ;
-        nop                     ;
-        nop                     ;
-        nop                     ;
-        nop                     ;
 
         NOP                     ; These seem unnecessary.
         NOP                     ;
@@ -5453,39 +5437,50 @@ L11CB:  ex      af, af'
 L11DA:  LD      H,D             ; Transfer the top value to the HL register
         LD      L,E             ; pair.
 
-        LD      IY,$5C3A        ; set IY to ERR_NR. IY can reach all standard
-                                ; system variables but shadow ROM system
-                                ; variables will be mostly out of range.
-
-        ld      bc, $a7
-        
-
 ;; RAM-FILL
-L11DC:  LD      (hl), b         ; Load memory with $00
-        dec     hl              ; Decrement memory address.
-        cp      h               ; Have we reached ROM - $3F ?
+L11DC:  LD      (HL),$02        ; Load memory with $02 - red ink on black paper.
+        DEC     HL              ; Decrement memory address.
+        CP      H               ; Have we reached ROM - $3F ?
         JR      NZ,L11DC        ; Back to RAM-FILL if not.
 
-        ex      de, hl
-
-        cp      (hl)
-        jr      nc, L11E2
-        ld      h, $7f
 ;; RAM-READ
-L11E2:  EXX                     ; regardless of state, set up possibly
+L11E2:  AND     A               ; Clear carry - prepare to subtract.
+        SBC     HL,DE           ; subtract and add back setting
+        ADD     HL,DE           ; carry when back at start.
+        INC     HL              ; and increment for next iteration.
+        JR      NC,L11EF        ; forward to RAM-DONE if we've got back to
+                                ; starting point with no errors.
+
+        DEC     (HL)            ; decrement to 1.
+        JR      Z,L11EF         ; forward to RAM-DONE if faulty.
+
+        DEC     (HL)            ; decrement to zero.
+        JR      Z,L11E2         ; back to RAM-READ if zero flag was set.
+
+;; RAM-DONE
+L11EF:  DEC     HL              ; step back to last valid location.
+        EXX                     ; regardless of state, set up possibly
                                 ; stored system variables in case from NEW.
         LD      ($5CB4),BC      ; insert P-RAMT.
+        LD      ($5C38),DE      ; insert RASP/PIP.
         LD      ($5C7B),HL      ; insert UDG.
         EXX                     ; switch in main set.
-        ex      af, af'
-        jr      nz, L1219
-L1210:  LD      ($5CB4),HL      ; set P-RAMT to the highest working RAM
-        ex      de, hl
-        ld      hl, $3eaf
-        lddr
-        ex      de, hl
+        INC     B               ; now test if we arrived here from NEW.
+        JR      Z,L1219         ; forward to RAM-SET if we did.
+
+;   This section applies to START only.
+
+        LD      ($5CB4),HL      ; set P-RAMT to the highest working RAM
+                                ; address.
+        LD      DE,$3EAF        ; address of last byte of 'U' bitmap in ROM.
+        LD      BC,$00A7        ; there are 21 user defined graphics.
+        EX      DE,HL           ; switch pointers and make the UDGs a
+        LDDR                    ; copy of the standard characters A - U.
+        EX      DE,HL           ; switch the pointer to HL.
+
         LD      ($5C7B),HL      ; make UDG system variable address the first
-        dec     hl
+                                ; bitmap.
+        DEC     HL              ; point at RAMTOP again.
 
 ;   The NEW command path rejoins here.
 
@@ -5516,52 +5511,54 @@ L121C:  LD      (HL),D          ; top of user ram holds GOSUB end marker
 
         IM      1               ; select interrupt mode 1.
 
+        LD      IY,$5C3A        ; set IY to ERR_NR. IY can reach all standard
+                                ; system variables but shadow ROM system
+                                ; variables will be mostly out of range.
+
         EI                      ; enable interrupts now that we have a stack.
 
 ;   If, as suggested above, the NMI service routine pointed to this section of
 ;   code then a decision would have to be made at this point to jump forward, 
 ;   in a Warm Restart scenario, to produce a report code, leaving any program 
 ;   intact.
-        ld      hl, $403c
-        ld      ($5C37), hl      ; character set, CHARS - as no printing yet.
+
+        LD      HL,$403C
+        LD      ($5C37),HL      ; character set, CHARS - as no printing yet.
 
         LD      HL,$5CB6        ; The address of the channels - initially
                                 ; following system variables.
         LD      ($5C4F),HL      ; Set the CHANS system variable.
 
         LD      DE,L15AF        ; Address: init-chan in ROM.
-        ld      c, d            ; There are 21 bytes of initial data in ROM.
+        LD      C,D             ; There are 21 bytes of initial data in ROM.
         EX      DE,HL           ; swap the pointers.
         LDIR                    ; Copy the bytes to RAM.
 
         EX      DE,HL           ; Swap pointers. HL points to program area.
         DEC     HL              ; Decrement address.
         LD      ($5C57),HL      ; Set DATADD to location before program area.
-        ld      a, (hl)
+        LD      A,(HL)
         INC     HL              ; Increment again.
-
         LD      ($5C53),HL      ; Set PROG the location where BASIC starts.
         LD      ($5C4B),HL      ; Set VARS to same location with a
-        ld      (hl), a         ; variables end-marker.
-        ld      ($5cd0), a      ; variables end-marker.
-        inc     hl
+        LD      (HL),A
+        LD      ($5CD0),A
+        INC     HL
         LD      ($5C59),HL      ; Set E_LINE, where the edit line
                                 ; will be created.
                                 ; Note. it is not strictly necessary to
                                 ; execute the next fifteen bytes of code
                                 ; as this will be done by the call to SET-MIN.
                                 ; --
-        ld      l, $d1          ; Advance address.
+        LD      L,$D1           ; Advance address.
         LD      ($5C61),HL      ; set WORKSP - empty workspace.
         LD      ($5C63),HL      ; set STKBOT - bottom of the empty stack.
         LD      ($5C65),HL      ; set STKEND to the end of the empty stack.
 
-
-        ld      hl, $22ef
-        ld      ($5ccc), hl
-        ld      hl, $0d22
-        ld      ($5cce), hl
-
+        LD      HL,$22EF
+        LD      ($5CCC),HL
+        LD      HL,$0D22
+        LD      ($5CCE),HL
                                 ; --
         LD      A,$38           ; the colour system is set to white paper,
                                 ; black ink, no flash or bright.
@@ -5575,18 +5572,18 @@ L121C:  LD      (HL),D          ; top of user ram holds GOSUB end marker
 
         DEC     (IY-$3A)        ; set KSTATE-0 to $FF - keyboard map available.
         DEC     (IY-$36)        ; set KSTATE-4 to $FF - keyboard map available.
-        inc     (IY+$0A)        ; set NSPPC next statement to $01
+        INC     (IY+$0A)        ; set NSPPC next statement to $01
 
-        ld      hl, $5c0e
-        ex      de, hl
-        ld      c, $10          ; copy the 14 bytes of initial 7 streams data
+        LD      HL,$5C0E
+        EX      DE,HL
+        LD      C,$10           ; copy the 14 bytes of initial 7 streams data
         LDIR                    ; from ROM to RAM.
 
-        ld      (IY+$01),$02    ; update FLAGS  - signal printer in use.
+        SET     1,(IY+$01)      ; update FLAGS  - signal printer in use.
         CALL    L0EDF           ; call routine CLEAR-PRB to initialize system
                                 ; variables associated with printer.
                                 ; The buffer is clear.
-        ld      (IY+$01),$8c
+        LD      (IY+$01),$8C
 
         LD      (IY+$31),$02    ; set DF_SZ the lower screen display size to
                                 ; two lines
