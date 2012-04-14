@@ -34,8 +34,8 @@
 ;; START
 L0000:  DI                      ; Disable Interrupts.
         XOR     A               ; Signal coming from START.
-        LD      DE,$FFFF        ; Set pointer to top of possible physical RAM.
-        JP      L11CB           ; Jump forward to common code at START-NEW.
+        LD      HL,$FFFF        ; Set pointer to top of possible physical RAM.
+        JP      L11C8           ; Jump forward to common code at START-NEW.
 
 ; -------------------
 ; THE 'ERROR' RESTART
@@ -5390,8 +5390,7 @@ L11A7:  LD      A,(HL)          ; fetch character
 ;; NEW
 L11B7:  DI                      ; Disable Interrupts - machine stack will be
                                 ; cleared.
-        LD      A,$FF           ; Flag coming from NEW.
-        LD      DE,($5CB2)      ; Fetch RAMTOP as top value.
+        LD      HL,($5CB2)      ; Fetch RAMTOP as top value.
         EXX                     ; Switch in alternate set.
         LD      BC,($5CB4)      ; Fetch P-RAMT differs on 16K/48K machines.
         LD      DE,($5C38)      ; Fetch RASP/PIP.
@@ -5407,7 +5406,7 @@ L11B7:  DI                      ; Disable Interrupts - machine stack will be
 ;   if coming from START or NEW.
 
 ;; START-NEW
-L11CB:  LD      B,A             ; Save the flag to control later branching.
+L11C8:  EX      AF,AF'          ; Save the flag to control later branching.
 
         LD      A,$3F           ; Select a white border
         OUT     ($FE),A         ; and set it now by writing to a port.
@@ -5415,18 +5414,6 @@ L11CB:  LD      B,A             ; Save the flag to control later branching.
         LD      I,A             ; Set the I register - this remains constant
                                 ; and can't be in the range $40 - $7F as 'snow'
                                 ; appears on the screen.
-
-        NOP                     ; These seem unnecessary.
-        NOP
-        NOP
-        NOP
-        NOP
-        NOP
-        NOP
-        NOP
-        NOP
-        NOP
-        NOP
 
 ; -----------------------
 ; THE 'RAM CHECK' SECTION
@@ -5438,37 +5425,36 @@ L11CB:  LD      B,A             ; Save the flag to control later branching.
 ;   sometimes red stripes on black paper just visible.
 
 ;; ram-check
-        EX      DE,HL
-
 ;; RAM-FILL
-L11DE:  LD      (HL),$01        ; Load memory with $01 - blue ink on black paper.
+L11CF:  LD      (HL),$01        ; Load memory with $01 - blue ink on black paper.
         DEC     HL              ; Decrement memory address.
         CP      H               ; Have we reached ROM - $3F ?
-        JP      NZ,L11DE        ; Back to RAM-FILL if not.
+        JR      NZ,L11CF        ; Back to RAM-FILL if not.
 
 ;; RAM-READ
-L11E5:  INC     HL              ; increment for next iteration.
+L11D5:  INC     HL              ; increment for next iteration.
 
         DEC     (HL)            ; decrement to zero.
-        JP      Z,L11E5         ; back to RAM-READ if zero flag was set.
+        JR      Z,L11D5         ; back to RAM-READ if zero flag was set.
 
 ;; RAM-DONE
-L11EA:  DEC     HL              ; step back to last valid location.
+        DEC     HL              ; step back to last valid location.
+        LD      B,(HL)          ; B=0
         EXX                     ; regardless of state, set up possibly
                                 ; stored system variables in case from NEW.
         LD      ($5CB4),BC      ; insert P-RAMT.
         LD      ($5C38),DE      ; insert RASP/PIP.
         LD      ($5C7B),HL      ; insert UDG.
         EXX                     ; switch in main set.
-        INC     B               ; now test if we arrived here from NEW.
+        EX      AF,AF'          ; now test if we arrived here from NEW.
         LD      DE,$3EAF        ; address of last byte of 'U' bitmap in ROM.
-        JR      Z,L1212         ; forward to RAM-SET if we did.
+        JR      NZ,L1201        ; forward to RAM-SET if we did.
 
 ;   This section applies to START only.
 
         LD      ($5CB4),HL      ; set P-RAMT to the highest working RAM
                                 ; address.
-        LD      BC,$00A7        ; there are 21 user defined graphics.
+        LD      C,$A7           ; there are 21 user defined graphics.
         EX      DE,HL           ; switch pointers and make the UDGs a
         LDDR                    ; copy of the standard characters A - U.
         EX      DE,HL           ; switch the pointer to HL.
@@ -5483,7 +5469,7 @@ L11EA:  DEC     HL              ; step back to last valid location.
 ;   The NEW command path rejoins here.
 
 ;; RAM-SET
-L1212:  LD      ($5CB2),HL      ; set system variable RAMTOP to HL.
+L1201:  LD      ($5CB2),HL      ; set system variable RAMTOP to HL.
 
 ;   
 ;   Note. this entry point is a disabled Warm Restart that was almost certainly
@@ -5520,8 +5506,7 @@ L1212:  LD      ($5CB2),HL      ; set system variable RAMTOP to HL.
 ;   in a Warm Restart scenario, to produce a report code, leaving any program 
 ;   intact.
 
-        LD      A,$3C
-        LD      ($5C37),A       ; character set, CHARS - as no printing yet.
+        LD      (IY-3),$3C      ; character set, CHARS - as no printing yet.
 
         LD      HL,$5CB6        ; The address of the channels - initially
                                 ; following system variables.
@@ -5532,31 +5517,38 @@ L1212:  LD      ($5CB2),HL      ; set system variable RAMTOP to HL.
         EX      DE,HL           ; swap the pointers.
         LDIR                    ; Copy the bytes to RAM.
 
-        EX      DE,HL           ; Swap pointers. HL points to program area.
-        DEC     HL              ; Decrement address.
+        LD      E,$0E           ; set destination to system variable STRMS-FD
+        LD      C,$10           ; copy the 14 bytes of initial 7 streams data
+        LDIR                    ; from ROM to RAM.
+
+        LD      HL,$0523        ; The keyboard repeat and delay values are 
+        LD      C,H
+        LD      (IY+$31),C      ; set DF_SZ the lower screen display size to
+                                ; five lines
+        LD      ($5C09),HL      ; loaded to REPDEL and REPPER.
+
+        LD      HL,$5CCA
         LD      ($5C57),HL      ; Set DATADD to location before program area.
-        LD      A,(HL)          ; A= $80
-        INC     HL              ; Increment again.
+        INC     L               ; Increment again.
         LD      ($5C53),HL      ; Set PROG the location where BASIC starts.
         LD      ($5C4B),HL      ; Set VARS to same location with a
-        LD      (HL),A          ; put $80 marker at (HL)
-        LD      ($5CD0),A       ; put $80 marker at $5CD0
-        INC     HL              ; Increment again.
+        LD      (HL),$80        ; put $80 marker at (HL)
+        INC     L               ; Increment again.
         LD      ($5C59),HL      ; Set E_LINE, where the edit line
                                 ; will be created.
                                 ; Note. it is not strictly necessary to
                                 ; execute the next fifteen bytes of code
                                 ; as this will be done by the call to SET-MIN.
                                 ; --
-        LD      L,$D1           ; Advance address.
+
+        LD      DE,L129D
+        EX      DE,HL
+        LDIR
+        EX      DE,HL
+
         LD      ($5C61),HL      ; set WORKSP - empty workspace.
         LD      ($5C63),HL      ; set STKBOT - bottom of the empty stack.
         LD      ($5C65),HL      ; set STKEND to the end of the empty stack.
-
-        LD      HL,$22EF        ; Put LOAD "" in memory
-        LD      ($5CCC),HL
-        LD      HL,$0D22
-        LD      ($5CCE),HL
                                 ; --
         LD      A,$38           ; the colour system is set to white paper,
                                 ; black ink, no flash or bright.
@@ -5565,26 +5557,17 @@ L1212:  LD      ($5CB2),HL      ; set system variable RAMTOP to HL.
         LD      ($5C48),A       ; set BORDCR the border colour/lower screen
                                 ; attributes.
 
-        LD      HL,$0523        ; The keyboard repeat and delay values are 
-        LD      ($5C09),HL      ; loaded to REPDEL and REPPER.
-
         DEC     (IY-$3A)        ; set KSTATE-0 to $FF - keyboard map available.
         DEC     (IY-$36)        ; set KSTATE-4 to $FF - keyboard map available.
         INC     (IY+$0A)        ; set NSPPC next statement to $01
 
-        LD      HL,$5C0E        ; set destination to system variable STRMS-FD
-        EX      DE,HL
-        LD      C,$10           ; copy the 14 bytes of initial 7 streams data
-        LDIR                    ; from ROM to RAM.
-
-        SET     1,(IY+$01)      ; update FLAGS  - signal printer in use.
+        
+        CALL    L164D           ; update FLAGS  - signal printer in use.
         CALL    L0EDF           ; call routine CLEAR-PRB to initialize system
                                 ; variables associated with printer.
                                 ; The buffer is clear.
         LD      (IY+$01),$8C    ; update FLAGS again
 
-        LD      (IY+$31),$02    ; set DF_SZ the lower screen display size to
-                                ; two lines
         CALL    L0D6B           ; call routine CLS to set up system
                                 ; variables associated with screen and clear
                                 ; the screen and set attributes.
@@ -5592,10 +5575,17 @@ L1212:  LD      ($5CB2),HL      ; set system variable RAMTOP to HL.
         CALL    L0C0A           ; routine PO-MSG puts
                                 ; 'Press PLAY or SPACE to break'
                                 ; at bottom of display.
-        SET     5,(IY+$02)      ; update TV_FLAG  - signal lower screen will
+        CALL    L0308+3         ; update TV_FLAG  - signal lower screen will
                                 ; require clearing.
 
         JR      L1303-3         ; jump to one instruction before MAIN-4
+
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF;
+
+L129D:  DEFB    $EF, $22, $22, $0D, $80; LOAD "" + Enter + $80
 
 ; -------------------------
 ; THE 'MAIN EXECUTION LOOP'
