@@ -5409,20 +5409,20 @@ L11B7:  DI                      ; Disable Interrupts - machine stack will be
 ;; START-NEW
 L11CB:  LD      B,A             ; Save the flag to control later branching.
 
-        LD      A,$07           ; Select a white border
+        LD      A,$3F           ; Select a white border
         OUT     ($FE),A         ; and set it now by writing to a port.
 
-        LD      A,$3F           ; Load the accumulator with last page in ROM.
         LD      I,A             ; Set the I register - this remains constant
                                 ; and can't be in the range $40 - $7F as 'snow'
                                 ; appears on the screen.
 
         NOP                     ; These seem unnecessary.
-        NOP                     ;
-        NOP                     ;
-        NOP                     ;
-        NOP                     ;
-        NOP                     ;
+        NOP
+        NOP
+        NOP
+        NOP
+        NOP
+        NOP
 
 ; -----------------------
 ; THE 'RAM CHECK' SECTION
@@ -5434,31 +5434,27 @@ L11CB:  LD      B,A             ; Save the flag to control later branching.
 ;   sometimes red stripes on black paper just visible.
 
 ;; ram-check
-L11DA:  LD      H,D             ; Transfer the top value to the HL register
-        LD      L,E             ; pair.
+        EX      DE,HL
 
 ;; RAM-FILL
-L11DC:  LD      (HL),$02        ; Load memory with $02 - red ink on black paper.
+L11DA:  LD      (HL),$01        ; Load memory with $01 - blue ink on black paper.
         DEC     HL              ; Decrement memory address.
         CP      H               ; Have we reached ROM - $3F ?
-        JR      NZ,L11DC        ; Back to RAM-FILL if not.
+        JP      NZ,L11DA        ; Back to RAM-FILL if not.
+
+        XOR     A               ; New stop condition, reach $0000 upwards
 
 ;; RAM-READ
-L11E2:  AND     A               ; Clear carry - prepare to subtract.
-        SBC     HL,DE           ; subtract and add back setting
-        ADD     HL,DE           ; carry when back at start.
-        INC     HL              ; and increment for next iteration.
-        JR      NC,L11EF        ; forward to RAM-DONE if we've got back to
+L11E2:  CP      H               ; Have we reached ROM - $0000 ?
+        INC     HL              ; increment for next iteration.
+        JR      Z,L11EA         ; forward to RAM-DONE if we've got back to
                                 ; starting point with no errors.
 
-        DEC     (HL)            ; decrement to 1.
-        JR      Z,L11EF         ; forward to RAM-DONE if faulty.
-
         DEC     (HL)            ; decrement to zero.
-        JR      Z,L11E2         ; back to RAM-READ if zero flag was set.
+        JP      Z,L11E2         ; back to RAM-READ if zero flag was set.
 
 ;; RAM-DONE
-L11EF:  DEC     HL              ; step back to last valid location.
+L11EA:  DEC     HL              ; step back to last valid location.
         EXX                     ; regardless of state, set up possibly
                                 ; stored system variables in case from NEW.
         LD      ($5CB4),BC      ; insert P-RAMT.
@@ -5466,13 +5462,13 @@ L11EF:  DEC     HL              ; step back to last valid location.
         LD      ($5C7B),HL      ; insert UDG.
         EXX                     ; switch in main set.
         INC     B               ; now test if we arrived here from NEW.
-        JR      Z,L1219         ; forward to RAM-SET if we did.
+        LD      DE,$3EAF        ; address of last byte of 'U' bitmap in ROM.
+        JR      Z,L1212         ; forward to RAM-SET if we did.
 
 ;   This section applies to START only.
 
         LD      ($5CB4),HL      ; set P-RAMT to the highest working RAM
                                 ; address.
-        LD      DE,$3EAF        ; address of last byte of 'U' bitmap in ROM.
         LD      BC,$00A7        ; there are 21 user defined graphics.
         EX      DE,HL           ; switch pointers and make the UDGs a
         LDDR                    ; copy of the standard characters A - U.
@@ -5482,10 +5478,13 @@ L11EF:  DEC     HL              ; step back to last valid location.
                                 ; bitmap.
         DEC     HL              ; point at RAMTOP again.
 
+        LD      C,$40           ; set the values of
+        LD      ($5C38),BC      ; the PIP and RASP system variables.
+
 ;   The NEW command path rejoins here.
 
 ;; RAM-SET
-L1219:  LD      ($5CB2),HL      ; set system variable RAMTOP to HL.
+L1212:  LD      ($5CB2),HL      ; set system variable RAMTOP to HL.
 
 ;   
 ;   Note. this entry point is a disabled Warm Restart that was almost certainly
@@ -5494,7 +5493,7 @@ L1219:  LD      ($5CB2),HL      ; set system variable RAMTOP to HL.
 ;   below.
 
 ;; NMI_VECT
-L121C:  LD      (HL),D          ; top of user ram holds GOSUB end marker
+        LD      (HL),D          ; top of user ram holds GOSUB end marker
                                 ; an impossible line number - see RETURN.
                                 ; no significance in the number $3E. It has
                                 ; been traditional since the ZX80.
@@ -5522,8 +5521,8 @@ L121C:  LD      (HL),D          ; top of user ram holds GOSUB end marker
 ;   in a Warm Restart scenario, to produce a report code, leaving any program 
 ;   intact.
 
-        LD      HL,$403C
-        LD      ($5C37),HL      ; character set, CHARS - as no printing yet.
+        LD      A,$3C
+        LD      ($5C37),A       ; character set, CHARS - as no printing yet.
 
         LD      HL,$5CB6        ; The address of the channels - initially
                                 ; following system variables.
@@ -5537,13 +5536,13 @@ L121C:  LD      (HL),D          ; top of user ram holds GOSUB end marker
         EX      DE,HL           ; Swap pointers. HL points to program area.
         DEC     HL              ; Decrement address.
         LD      ($5C57),HL      ; Set DATADD to location before program area.
-        LD      A,(HL)
+        LD      A,(HL)          ; A= $80
         INC     HL              ; Increment again.
         LD      ($5C53),HL      ; Set PROG the location where BASIC starts.
         LD      ($5C4B),HL      ; Set VARS to same location with a
-        LD      (HL),A
-        LD      ($5CD0),A
-        INC     HL
+        LD      (HL),A          ; put $80 marker at (HL)
+        LD      ($5CD0),A       ; put $80 marker at $5CD0
+        INC     HL              ; Increment again.
         LD      ($5C59),HL      ; Set E_LINE, where the edit line
                                 ; will be created.
                                 ; Note. it is not strictly necessary to
@@ -5555,7 +5554,7 @@ L121C:  LD      (HL),D          ; top of user ram holds GOSUB end marker
         LD      ($5C63),HL      ; set STKBOT - bottom of the empty stack.
         LD      ($5C65),HL      ; set STKEND to the end of the empty stack.
 
-        LD      HL,$22EF
+        LD      HL,$22EF        ; Put LOAD "" in memory
         LD      ($5CCC),HL
         LD      HL,$0D22
         LD      ($5CCE),HL
@@ -5574,7 +5573,7 @@ L121C:  LD      (HL),D          ; top of user ram holds GOSUB end marker
         DEC     (IY-$36)        ; set KSTATE-4 to $FF - keyboard map available.
         INC     (IY+$0A)        ; set NSPPC next statement to $01
 
-        LD      HL,$5C0E
+        LD      HL,$5C0E        ; set destination to system variable STRMS-FD
         EX      DE,HL
         LD      C,$10           ; copy the 14 bytes of initial 7 streams data
         LDIR                    ; from ROM to RAM.
@@ -5583,7 +5582,7 @@ L121C:  LD      (HL),D          ; top of user ram holds GOSUB end marker
         CALL    L0EDF           ; call routine CLEAR-PRB to initialize system
                                 ; variables associated with printer.
                                 ; The buffer is clear.
-        LD      (IY+$01),$8C
+        LD      (IY+$01),$8C    ; update FLAGS again
 
         LD      (IY+$31),$02    ; set DF_SZ the lower screen display size to
                                 ; two lines
@@ -5592,12 +5591,12 @@ L121C:  LD      (HL),D          ; top of user ram holds GOSUB end marker
                                 ; the screen and set attributes.
         LD      DE,L1539 - 1    ; the message table directly.
         CALL    L0C0A           ; routine PO-MSG puts
-                                ; ' ©  1982 Sinclair Research Ltd'
+                                ; 'Press PLAY or SPACE to break'
                                 ; at bottom of display.
         SET     5,(IY+$02)      ; update TV_FLAG  - signal lower screen will
                                 ; require clearing.
 
-        JR      L1303-3
+        JR      L1303-3         ; jump to one instruction before MAIN-4
 
 ; -------------------------
 ; THE 'MAIN EXECUTION LOOP'
@@ -20315,6 +20314,7 @@ L3D00:  DEFB    %00000000
 ; Alvin Albrecht            for comments.
 ; Andy Styles               for full relocatability implementation and testing.                    testing.
 ; Andrew Owen               for ZASM compatibility and format improvements.
+; Antonio Villena           for Reset & Play feature.
 
 ;   For other assemblers you may have to add directives like these near the 
 ;   beginning - see accompanying documentation.
