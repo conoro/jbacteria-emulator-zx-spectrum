@@ -1,4 +1,3 @@
-;        DEFINE  sinborde
 ;        DEFINE  enram
         DEFINE  copymsg
 
@@ -6036,13 +6035,8 @@ L1539:  DEFB    $7F                                     ; copyright
 L1547:  DEFB    ' '+$80
     ELSE
       IFDEF copymsg
-        IFDEF sinborde
-        DEFM    "12 CargandoLeches sin bord"
-        DEFB    'e'+$80
-        ELSE
         DEFM    " 2012 ROM CargandoLeches  "
         DEFB    ' '+$80
-        ENDIF
       ELSE
         DEFM    " 1982 Sinclair Research Lt"
         DEFB    'd'+$80
@@ -16666,17 +16660,9 @@ L32A9:  DEFB    $38             ;;end-calc              -4.
 
         RET                     ; return.
 
-    IFDEF enram
+      IFDEF enram
 L32AB:  DEFB    $C9, $C9, $C9, $C9, $C9, $C9, $C9, $C9; 12 bytes
         DEFB    $C9, $C9, $C9, $C9;
-    ELSE
-      IFDEF sinborde
-L32AB:  INC     C               ; 12 bytes
-        LD      A,$01           ; A' tiene que valer esto para entrar en Raudo
-        EX      AF,AF'
-        BIT     1,H
-        JP      Z,L3B8C         ; salto a Raudo segun el signo del pulso en flag Z
-        JP      L37C3           ; salto a Raudo
       ELSE
 L32AB:  INC     C
         LD      A,$D8           ; A' tiene que valer esto para entrar en Raudo
@@ -16685,7 +16671,6 @@ L32AB:  INC     C
         JP      Z,L3B8C         ; salto a Raudo segun el signo del pulso en flag Z
         JP      L37C3           ; salto a Raudo
       ENDIF
-    ENDIF
 
 ; ----------------------
 ; THE 'TANGENT' FUNCTION
@@ -16723,25 +16708,6 @@ L32B7:  RST     28H             ;; FP-CALC          x.
         RET                     ; return.
 
 L32BF:  INC     H               ;4
-      IFDEF sinborde
-        EX      AF,AF'          ;4
-        JR      NC,L32CC        ;7/12   41/43
-        XOR     B               ;4
-        LD      (DE),A          ;7
-        INC     DE              ;6
-        LD      A,$04           ;7
-        EX      AF,AF'          ;4
-        IN      L,(C)           ;12
-        JP      (HL)            ;4
-L32CC:  XOR     B               ;4
-        ADD     A,A             ;4
-        RET     C               ;5
-        ADD     A,A             ;4
-        EX      AF,AF'          ;4
-        IN      L,(C)           ;12
-        JP      (HL)            ;4
-        DEFB    $00, $00, $00; 3 bytes
-      ELSE
         JR      NC,L32CD        ;7/12     46/48
         XOR     B               ;4
         XOR     $9C             ;7
@@ -16759,7 +16725,6 @@ L32CD:  XOR     B               ;4
         OUT     ($FE),A         ;11
         IN      L,(C)           ;12
         JP      (HL)            ;4
-      ENDIF
 
 ; ---------------------------------
 ; Move a floating point number (31)
@@ -16895,69 +16860,6 @@ L3302:  PUSH    DE              ; save
         POP     DE              ; registers.
         RET                     ; return with BC set at 5.
 
-      IFDEF sinborde
-        DEFB    $00; 1 byte
-        DEFB    $00, $00, $FF   ; 0D
-        DEFB    $00, $00, $FF   ; 10
-        DEFB    $00, $00, $FF   ; 13
-        DEFB    $00, $00, $FF   ; 16
-        DEFB    $00, $00, $FF   ; 19
-        DEFB    $00, $00, $FF   ; 1C
-        DEFB    $00, $00, $FF   ; 1F
-        DEFB    $00, $00, $FF   ; 22
-        DEFB    $00, $00, $FF   ; 25
-        DEFB    $01, $01, $FF   ; 28
-        DEFB    $01, $01, $FF   ; 2B
-        DEFB    $01, $01, $FF   ; 2E
-        DEFB    $01, $01, $FF   ; 31
-        DEFB    $01, $01, $FF   ; 34
-        DEFB    $01, $01, $FF   ; 37
-        DEFB    $01, $01, $FF   ; 3A
-        DEFB    $01, $01, $FF   ; 3D
-        DEFB    $01, $01, $FF   ; 40
-        DEFB    $01, $02, $FF   ; 43 --
-        DEFB    $02, $02, $FF   ; 46 --
-        DEFB    $02, $02, $FF   ; 49
-        DEFB    $02, $02, $FF   ; 4C
-        DEFB    $02, $02, $FF   ; 4F
-        DEFB    $02, $02, $FF   ; 52
-        DEFB    $02, $02, $FF   ; 55
-        DEFB    $02, $02, $FF   ; 58
-        DEFB    $02, $02, $FF   ; 5B
-        DEFB    $02, $03, $FF   ; 5E
-        DEFB    $02, $03, $FF   ; 61
-        DEFB    $03, $03, $FF   ; 64
-        DEFB    $03, $03, $FF   ; 67
-        DEFB    $03, $03, $FF   ; 6A
-        DEFB    $03, $03, $FF   ; 6D
-        DEFB    $03, $03, $FF   ; 70
-        DEFB    $03, $03, $FF   ; 73
-        DEFB    $03, $03, $FF   ; 76
-        DEFB    $03, $FF, $FF   ; 79
-        DEFB    $03, $FF, $FF   ; 7C
-        DEFB    $03             ; 7F
-        DEFB    $00, $00, $FF   ; 80
-        DEFB    $00, $00, $FF   ; 83
-        DEFB    $00, $00, $FF   ; 86
-        DEFB    $00, $00, $FF   ; 89
-        DEFB    $00, $00, $FF   ; 8C
-        DEFB    $01, $01, $FF   ; 8F
-        DEFB    $01, $01, $FF   ; 92
-        DEFB    $01, $01, $FF   ; 95
-        DEFB    $01, $01, $FF   ; 98
-        DEFB    $01, $02, $FF   ; 9B --
-        DEFB    $02, $02, $FF   ; 9E
-        DEFB    $02, $02, $FF   ; A1
-        DEFB    $02, $02, $FF   ; A4
-        DEFB    $02, $02, $FF   ; A7
-        DEFB    $02, $03, $FF   ; AA
-        DEFB    $03, $03, $FF   ; AD
-        DEFB    $03, $03, $FF   ; B0
-        DEFB    $03, $03, $FF   ; B3
-        DEFB    $03, $03, $FF   ; B6
-        DEFB    $03, $FF, $FF   ; B9
-        DEFB    $FF, $FF        ; BC
-      ELSE
         DEFB    $EC, $EC, $7F   ; 0D
         DEFB    $EC, $EC, $7F   ; 10
         DEFB    $EC, $EC, $7F   ; 13
@@ -17018,7 +16920,6 @@ L3302:  PUSH    DE              ; save
         DEFB    $EF, $EF, $7F   ; B6
         DEFB    $EF, $7F, $7F   ; B9
         DEFB    $7F, $7F, $7F   ; BC
-      ENDIF
 
 L33BF:  IN      L,(C)
         JP      (HL)
@@ -17104,18 +17005,11 @@ L33FF:  LD      A,R             ;9        49 (41 sin borde)
         LD      B,(HL)          ;7
 L3403:  LD      A,IXL           ;8
         LD      R,A             ;9
-      IFDEF sinborde
-        DEC     H               ;4
-        IN      L,(C)           ;12
-        JP      (HL)            ;4
-        DEFB    $00, $00; 2 bytes
-      ELSE
         LD      A,B             ;4
         EX      AF,AF'          ;4
         DEC     H               ;4
         IN      L,(C)           ;12
         JP      (HL)            ;4
-      ENDIF
 
 ; --------------
 ; The Calculator
@@ -18487,88 +18381,6 @@ L36E6:  PUSH    HL              ; save the result pointer.
         POP     HL              ; restore original result pointer
         RET                     ; return.
 
-      IFDEF sinborde
-L36F5:  XOR     B
-        ADD     A,A
-        RET     C
-        ADD     A,A
-        EX      AF,AF'
-        IN      L,(C)
-        JP      (HL)
-        DEFB    $00, $00; 2 bytes
-L36FF:  INC     H
-        EX      AF,AF'          ;4
-        JR      NC,L36F5
-        XOR     B
-        LD      (DE),A
-        INC     DE
-        LD      A,$04
-        EX      AF,AF'
-        IN      L,(C)           ;12
-        JP      (HL)            ;4
-        DEFB    $00; 1 byte
-        DEFB    $00; 1 byte
-        DEFB    $00, $00, $FF   ; 0D
-        DEFB    $00, $00, $FF   ; 10
-        DEFB    $00, $00, $FF   ; 13
-        DEFB    $00, $00, $FF   ; 16
-        DEFB    $00, $00, $FF   ; 19
-        DEFB    $00, $00, $FF   ; 1C
-        DEFB    $00, $00, $FF   ; 1F
-        DEFB    $00, $00, $FF   ; 22
-        DEFB    $00, $00, $FF   ; 25
-        DEFB    $01, $01, $FF   ; 28
-        DEFB    $01, $01, $FF   ; 2B
-        DEFB    $01, $01, $FF   ; 2E
-        DEFB    $01, $01, $FF   ; 31
-        DEFB    $01, $01, $FF   ; 34
-        DEFB    $01, $01, $FF   ; 37
-        DEFB    $01, $01, $FF   ; 3A
-        DEFB    $01, $01, $FF   ; 3D
-        DEFB    $01, $01, $FF   ; 40
-        DEFB    $01, $02, $FF   ; 43 --
-        DEFB    $02, $02, $FF   ; 46 --
-        DEFB    $02, $02, $FF   ; 49
-        DEFB    $02, $02, $FF   ; 4C
-        DEFB    $02, $02, $FF   ; 4F
-        DEFB    $02, $02, $FF   ; 52
-        DEFB    $02, $02, $FF   ; 55
-        DEFB    $02, $02, $FF   ; 58
-        DEFB    $02, $02, $FF   ; 5B
-        DEFB    $02, $03, $FF   ; 5E
-        DEFB    $02, $03, $FF   ; 61
-        DEFB    $03, $03, $FF   ; 64
-        DEFB    $03, $03, $FF   ; 67
-        DEFB    $03, $03, $FF   ; 6A
-        DEFB    $03, $03, $FF   ; 6D
-        DEFB    $03, $03, $FF   ; 70
-        DEFB    $03, $03, $FF   ; 73
-        DEFB    $03, $03, $FF   ; 76
-        DEFB    $03, $FF, $FF   ; 79
-        DEFB    $03, $FF, $FF   ; 7C
-        DEFB    $03             ; 7F
-        DEFB    $00, $00, $FF   ; 80
-        DEFB    $00, $00, $FF   ; 83
-        DEFB    $00, $00, $FF   ; 86
-        DEFB    $00, $00, $FF   ; 89
-        DEFB    $00, $00, $FF   ; 8C
-        DEFB    $01, $01, $FF   ; 8F
-        DEFB    $01, $01, $FF   ; 92
-        DEFB    $01, $01, $FF   ; 95
-        DEFB    $01, $01, $FF   ; 98
-        DEFB    $01, $02, $FF   ; 9B --
-        DEFB    $02, $02, $FF   ; 9E
-        DEFB    $02, $02, $FF   ; A1
-        DEFB    $02, $02, $FF   ; A4
-        DEFB    $02, $02, $FF   ; A7
-        DEFB    $02, $03, $FF   ; AA
-        DEFB    $03, $03, $FF   ; AD
-        DEFB    $03, $03, $FF   ; B0
-        DEFB    $03, $03, $FF   ; B3
-        DEFB    $03, $03, $FF   ; B6
-        DEFB    $03, $FF, $FF   ; B9
-        DEFB    $FF, $FF        ; BC
-      ELSE
 L36F5:  XOR     B
         ADD     A,A
         RET     C
@@ -18647,26 +18459,17 @@ L36FF:  INC     H
         DEFB    $EF, $EF, $7F   ; B6
         DEFB    $EF, $7F, $7F   ; B9
         DEFB    $7F, $7F, $7F   ; BC
-      ENDIF
 
 L37BF:  LD      A,R
         LD      L,A
         LD      B,(HL)
 L37C3:  LD      A,IXL
         LD      R,A
-
-      IFDEF sinborde
-        DEC     H
-        IN      L,(C)
-        JP      (HL)
-        DEFB    $00, $00; 2 bytes
-      ELSE
         LD      A,B
         EX      AF,AF'
         DEC     H
         IN      L,(C)
         JP      (HL)
-      ENDIF
 
 ; ----------------------------------
 ; Storage of numbers in 5 byte form.
@@ -18872,17 +18675,6 @@ ULTR4:  CP      16              ; si el contador esta entre 10 y 16 es el tono g
         LD      A,(HL)
         LD      IXL,A
 
-    IFDEF sinborde
-ULTR5:  LD      A,$01           ; A' tiene que valer esto para entrar en Raudo
-        EX      AF,AF'
-        AND     IXH
-        JR      NZ,ULTR6
-        LD      SP,$C000
-        DEFB    $FE
-ULTR6:  POP     DE              ; recupero en DE la direccion de comienzo del bloque
-        INC     C               ; pongo en flag Z el signo del pulso
-        LD      BC,$00FE        ; este valor es el que necesita B para entrar en Raudo
-    ELSE
 ULTR5:  LD      A,$D8           ; A' tiene que valer esto para entrar en Raudo
         EX      AF,AF'
         AND     IXH
@@ -18892,8 +18684,6 @@ ULTR5:  LD      A,$D8           ; A' tiene que valer esto para entrar en Raudo
 ULTR6:  POP     DE              ; recupero en DE la direccion de comienzo del bloque
         INC     C               ; pongo en flag Z el signo del pulso
         LD      BC,$EFFE        ; este valor es el que necesita B para entrar en Raudo
-    ENDIF
-
         JR      Z,ULTR8
         LD      H,$37
 ULTR7:  IN      F,(C)
@@ -19698,7 +19488,7 @@ L3AC3:  DEFB    $31             ;;duplicate
         RET                     ; return.
 
 ;3AE6
-    IFDEF enram
+      IFDEF enram
 SN128:  POP     HL              ; 56 bytes
         LD      SP,HL
         POP     HL              ; reemplazo pila, 4 bytes
@@ -19707,7 +19497,7 @@ SN128:  POP     HL              ; 56 bytes
         JP      SNA41           ;SNAP48-2
         DEFB    $38, $38, $38, $38, $38, $38, $38, $38;
         DEFB    $38, $38, $38, $38, $38, $38;
-    ELSE
+      ELSE
 SN128:  DEC     BC
         EXX
         LD      A,E
@@ -19722,13 +19512,9 @@ SN128:  DEC     BC
         INC     E
         EXX
         LD      D,$C0
-      IFDEF sinborde
-        LD      B,$00
-      ELSE
         LD      B,$EF
-      ENDIF
         JP      L32AB
-    ENDIF
+      ENDIF
 
         DEFB    $FF; 1 byte
 
