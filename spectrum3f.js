@@ -17,14 +17,7 @@ function init() {
   fdcinit();
   a= b= c= d= h= l= fa= fb= fr= ff= r7=
   a_=b_=c_=d_=h_=l_=fa_=fb_=fr_=e_= r= pc= iff= im= halted= t= u= 0;
-  e=  0x11;
-  ff_= 0x100;
-  xh= 0x5c;
-  xl= 0xe2;
-  yh= 0x5c;
-  yl= 0x3a;
-  i=  0x3f;
-  sp= 0xff46;
+  e= ff_= xh= xl= yh= yl= i= sp= 0;
   pbf= ' / '+('0'+parseInt(pbf/3000)).slice(-2)+':'+('0'+parseInt(pbf/50)%60).slice(-2);
   if( ifra ){
     put= document.createElement('div');
@@ -63,13 +56,13 @@ function init() {
       ; r++ )
     rom[r>>14][r&0x3fff]= emul.charCodeAt(0x18018+r) & 0xff;
   for (j= 0; j < 0x24000; j++)        // fill memory
-    ram[j>>14][j&16383]= 1 << (j>>14) & 161 ? emul.charCodeAt(0x18018+r++) & 255 : 0;
+    ram[j>>14][j&16383]= 0;
   m[1]= mw[1]= ram[5];
   m[2]= mw[2]= ram[2];
 /*  if(game)                               // emulate LOAD ""
     p1= 4,
     pc= 1388;*/
-  wp(0x7ffd, game ? 16 : 0);
+  wp(0x7ffd, 0);
   document.ondragover= handleDragOver;
   document.ondrop= handleFileSelect;
   document.onkeydown= kdown;          // key event handling
@@ -231,6 +224,7 @@ function wp(addr, val) {                // write port, only border color emulati
       fdcdw(val);
     else if( pag && addr&0x1000 ){
       p1= val;
+      fdcmw(val>>3);
       if(val&1)
         m[0]= mw[0]= ram[val&6 ? 4 : 0],
         m[1]= mw[1]= ram['1557'[val>>1 & 3]],
@@ -333,13 +327,24 @@ function wm() {
 function handleFileSelect(evt) {
   evt.stopPropagation();
   evt.preventDefault();
-  if(evt.dataTransfer.files[0].name.slice(-3).toLowerCase()!='z80')
-    return alert('Invalid Z80 file');
-  var reader= new FileReader();
-  reader.onloadend = function(ev) {
-    o= ev.target.result;
-    if(rm(o))
-      return alert('Invalid Z80 file');
+  switch(evt.dataTransfer.files[0].name.slice(-3).toLowerCase()){
+    case 'z80':
+      var reader= new FileReader();
+      reader.onloadend = function(ev) {
+        o= ev.target.result;
+        if(rm(o))
+          return alert('Invalid Z80 file');
+      }
+      reader.readAsBinaryString(evt.dataTransfer.files[0]);
+      break;
+    default:
+      return alert(evt.dataTransfer.files[0].name+' has an invalid extension');
+    case 'dsk':
+      var reader= new FileReader();
+      reader.onloadend = function(ev) {
+        game= ev.target.result;
+        fdcinit();
+      }
+      reader.readAsBinaryString(evt.dataTransfer.files[0]);
   }
-  reader.readAsBinaryString(evt.dataTransfer.files[0]);
 }
