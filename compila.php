@@ -254,7 +254,6 @@
   file_put_contents('aa.rom', file_get_contents('rom/k-spectrum.pal').
                               file_get_contents('rom/k-spectrum.bin').
                               file_get_contents('rom/+2A.rom').
-                              file_get_contents('rom/+2A.mem').
                               file_get_contents('+3.js'));
   unlink('+3.js');
   exec('kzip -y temp.zip aa.rom');
@@ -265,7 +264,6 @@
   file_put_contents('aa.rom', file_get_contents('rom/k-spectrum.pal').
                               file_get_contents('rom/k-spectrum.bin').
                               file_get_contents('rom/+2A.rom').
-                              file_get_contents('rom/+2A.mem').
                               file_get_contents('+3s.js'));
   unlink('+3s.js');
   exec('kzip -y temp.zip aa.rom');
@@ -475,14 +473,14 @@
   file_put_contents('+2As.html.deflate', substr(file_get_contents('temp.zip'), 36, -75));
 ///*
   error_log("+3.html");
-  ob_start();$x='+3';$y=0x1C000;
+  ob_start();$x='+3';$y=0x10000;
   require'emu.php';
   file_put_contents('aa.rom', ob_get_contents());
   exec('kzip -y temp.zip aa.rom');
   file_put_contents('+3.html.deflate', substr(file_get_contents('temp.zip'), 36, -75));
 ///*
   error_log("+3s.html");
-  ob_start();$x='+3s';$y=0x1C000;
+  ob_start();$x='+3s';$y=0x10000;
   require'emu.php';
   file_put_contents('aa.rom', ob_get_contents());
   exec('kzip -y temp.zip aa.rom');

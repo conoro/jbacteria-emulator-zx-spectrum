@@ -1,7 +1,7 @@
 spectrum128.js
 spec128s1.js
 spectrum3f.js
-fdc.js
+fdc_buggy.js
 ay.js
 z80mp.js
 dom.js
