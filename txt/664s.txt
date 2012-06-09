@@ -1,6 +1,5 @@
 jcpc.js
 j664.js
-screen0.js
 out664s0.js
 ay.js
 z80pc.js

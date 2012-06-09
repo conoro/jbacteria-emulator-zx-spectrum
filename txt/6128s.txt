@@ -1,6 +1,5 @@
 jcpc.js
 j6128.js
-screen0_6128.js
 out6128s0.js
 ay.js
 z80pc.js
