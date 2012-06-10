@@ -723,7 +723,7 @@ function init() {
     cts= new webkitAudioContext();
     if( cts.sampleRate>44000 && cts.sampleRate<50000 )
       trein*= 50*1024/cts.sampleRate,
-      node= cts.createJavaScriptNode(1024),
+      node= cts.createJavaScriptNode(1024, 1, 1),
       node.onaudioprocess= audioprocess,
       node.connect(cts.destination);
     else

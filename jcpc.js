@@ -318,26 +318,24 @@ function kpress(ev) {
 }
 
 function audioprocess0(e){
-  data1= e.outputBuffer.getChannelData(0);
-  data2= e.outputBuffer.getChannelData(1);
+  data= e.outputBuffer.getChannelData(0);
   j= 0;
   while( j<1024 )
-    data1[j++]= data2[j]= 0;
+    data[j++]= 0;
 }
 
 function audioprocess(e){
   run();
-  data1= e.outputBuffer.getChannelData(0);
-  data2= e.outputBuffer.getChannelData(1);
+  data= e.outputBuffer.getChannelData(0);
   j= 0;
   if( localStorage.ft & 4 )
     while( j<1024 ) // 48000/1024= 46.875  19968/1024= 19.5. 19.5/4=5
       aymute(),
       aymute(),
-      data1[j++]= data2[j]= aystep();
+      data[j++]= aystep();
   else
     while( j<1024 )
-      data1[j++]= data2[j]= 0;
+      data[j++]= 0;
 }
 
 function mozrun(){

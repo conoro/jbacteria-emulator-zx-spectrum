@@ -76,7 +76,7 @@ function init() {
     if( cts.sampleRate>44000 && cts.sampleRate<50000 )
       trein*= 50*1024/cts.sampleRate,
       paso= 70908/1024,
-      node= cts.createJavaScriptNode(1024, 0, 1),
+      node= cts.createJavaScriptNode(1024, 1, 1),
       node.onaudioprocess= audioprocess,
       node.connect(cts.destination);
     else
@@ -101,25 +101,23 @@ function init() {
 }
 
 function audioprocess0(e){
-  data1= e.outputBuffer.getChannelData(0);
-  data2= e.outputBuffer.getChannelData(1);
+  data= e.outputBuffer.getChannelData(0);
   j= 0;
   while( j<1024 )
-    data1[j++]= data2[j]= 0;
+    data[j++]= 0;
 }
 
 function audioprocess(e){
   vbp= play= playp= 0;
   run();
-  data1= e.outputBuffer.getChannelData(0);
-  data2= e.outputBuffer.getChannelData(1);
+  data= e.outputBuffer.getChannelData(0);
   j= 0;
   if( localStorage.ft & 4 )
     while( j<1024 ){ // 48000/1024= 46.875  70908/1024= 69.24
       aymute();
       aymute();
       aymute();
-      data1[j++]= data2[j]= (aystep()+sample)/2;
+      data[j++]= (aystep()+sample)/2;
       play+= paso;
       if( play > vb[playp] && playp<vbp )
         playp++,
@@ -127,7 +125,7 @@ function audioprocess(e){
     }
   else
     while( j<1024 )
-      data1[j++]= data2[j]= 0;
+      data[j++]= 0;
 }
 
 function mozrun(){

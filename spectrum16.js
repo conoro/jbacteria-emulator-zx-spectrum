@@ -68,7 +68,7 @@ function init() {
     if( cts.sampleRate>44000 && cts.sampleRate<50000 )
       trein*= 50*1024/cts.sampleRate,
       paso= 69888/1024,
-      node= cts.createJavaScriptNode(1024, 0, 1),
+      node= cts.createJavaScriptNode(1024, 1, 1),
       node.onaudioprocess= audioprocess,
       node.connect(cts.destination);
     else
