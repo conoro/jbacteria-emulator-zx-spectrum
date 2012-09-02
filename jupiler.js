@@ -1,6 +1,6 @@
 na= 'jupiler ';
 m= bytes(65536);
-vm= words(6144);
+//vm= words(6144);
 vb= [];
 data= [];
 kb= [0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff]; // keyboard state
@@ -104,71 +104,6 @@ pal= [[  0,   0,   0],
       [226, 226, 226],
       [255, 255, 255]];
 
-ulap=[[  0,   0,   0],
-      [  0,   0, 202],
-      [202,   0,   0],
-      [202,   0, 202],
-      [  0, 202,   0],
-      [  0, 202, 202],
-      [202, 202,   0],
-      [197, 199, 197],
-      [  0,   0,   0],
-      [  0,   0, 202],
-      [202,   0,   0],
-      [202,   0, 202],
-      [  0, 202,   0],
-      [  0, 202, 202],
-      [202, 202,   0],
-      [197, 199, 197],
-      [  0,   0,   0],
-      [  0,   0, 255],
-      [255,   0,   0],
-      [255,   0, 255],
-      [  0, 255,   0],
-      [  0, 255, 255],
-      [255, 255,   0],
-      [255, 255, 255],
-      [  0,   0,   0],
-      [  0,   0, 255],
-      [255,   0,   0],
-      [255,   0, 255],
-      [  0, 255,   0],
-      [  0, 255, 255],
-      [255, 255,   0],
-      [255, 255, 255],
-      [  0,   0,   0],
-      [  0,   0, 202],
-      [202,   0,   0],
-      [202,   0, 202],
-      [  0, 202,   0],
-      [  0, 202, 202],
-      [202, 202,   0],
-      [197, 199, 197],
-      [  0,   0,   0],
-      [  0,   0, 202],
-      [202,   0,   0],
-      [202,   0, 202],
-      [  0, 202,   0],
-      [  0, 202, 202],
-      [202, 202,   0],
-      [197, 199, 197],
-      [  0,   0,   0],
-      [  0,   0, 255],
-      [255,   0,   0],
-      [255,   0, 255],
-      [  0, 255,   0],
-      [  0, 255, 255],
-      [255, 255,   0],
-      [255, 255, 255],
-      [  0,   0,   0],
-      [  0,   0, 255],
-      [255,   0,   0],
-      [255,   0, 255],
-      [  0, 255,   0],
-      [  0, 255, 255],
-      [255, 255,   0],
-      [255, 255, 255]];
-
 function bytes(a) {
   try{
     return new Uint8Array(a);
@@ -243,16 +178,8 @@ document.body.style.backgroundColor= '#111';
     localStorage.ft= 4;
   if ( localStorage.ft & 8 )
     rotapal();
-  a= b= c= d= h= l= fa= fb= fr= ff= r7=
-  a_=b_=c_=d_=h_=l_=fa_=fb_=fr_=e_= r= pc= iff= im= halted= t= u= 0;
-  e=  0x11;
-  ff_= 0x100;
-  xh= 0x5c;
-  xl= 0xe2;
-  yh= 0x5c;
-  yl= 0x3a;
-  i=  0x3f;
-  sp= 0xff4a;
+  a= b= c= d= e= h= l= fa= fb= fr= ff= xl= xh= r7= i= sp= 
+  a_=b_=c_=d_=e_=h_=l_=fa_=fb_=fr_=ff_=yl= yh= r= pc= iff= im= halted= t= u= 0;
   pbf= ' / '+('0'+parseInt(pbf/3000)).slice(-2)+':'+('0'+parseInt(pbf/50)%60).slice(-2);
   if( ifra ){
     put= document.createElement('div');
@@ -286,7 +213,7 @@ document.body.style.backgroundColor= '#111';
       ; j < 0x2000
       ; j++ )        // fill memory
     m[j]= emul.charCodeAt(j+0xc00c);
-  game && (pc= 0x56c, tp());
+  game && tp();
   document.ondragover= handleDragOver;
   document.ondrop= handleFileSelect;
   document.onkeydown= kdown;          // key event handling
@@ -595,31 +522,19 @@ function onresize(ev) {
 
 function rp(addr) {
   j= 0xff;
-  if( !(addr & 0xe0) )                    // read kempston
+/*if( !(addr & 0xe0) )                    // read kempston
     j^= ks[8];
-  else if( ~addr & 1 ){                   // read keyboard
+  else*/
+  if( ~addr & 1 ){                   // read keyboard
+    if ( !bor )
+      bor= 1,
+      vb[vbp++]= st;
     j= 0xbf;
     for ( k= 8
         ; k < 16
         ; k++ )
       if( ~addr & 1<<k )            // scan row
         j&= ks[k-8];
-  }
-  else{
-    t= parseInt(st/224);
-    u= st%224;
-    if( u<0xc0
-     && t<124
-     && !(t&4) )
-      j=  m [ t>>1 & 1 
-            | t>>2 
-            | ( t&1 
-                ?   0x1800
-                  | u<<2 & 0x3e0
-                :   u    & 0x1800
-                  | u<<2 & 0xe0
-                  | u<<8 & 0x700
-              )];
   }
   return j;
 }
@@ -766,13 +681,8 @@ function rotapal(){
     u= pal[t],
     pal[t]= pal[t+16],
     pal[t+16]= u;
-  for (t= 0; t < 0x1800; t++)
-    vm[t]= -1;
-  document.body.style.backgroundColor=  'rgb('
-                                      + ( paintScreen==paintNormal
-                                            ? pal[bor&7]
-                                            : ulap[8|bor&7] )
-                                      + ')';
+//  for (t= 0; t < 0x1800; t++)
+//    vm[t]= -1;
 }
 
 function rt(f){
@@ -828,6 +738,7 @@ function paintNormal(){
 }
 
 function wp(addr, val){
-  if( ~addr & 1 ){
-  }
+  if( ~addr & 1 && bor )
+    bor= 0,
+    vb[vbp++]= st;
 }

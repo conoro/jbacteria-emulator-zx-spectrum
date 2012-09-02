@@ -39,6 +39,6 @@
 ?>if(k)<?
   ?>t++,<?
   ?>ajax('games/'+location.href.substr(k,location.href.length-k-ifra));<?
-?>ajax('_<?=$x?>');<?
+?>ajax('_<?=$x?>.rom');<?
 ?></script><?
 ?></html>
