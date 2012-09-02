@@ -158,7 +158,6 @@ RASPTEST:
                 
         LD      A,(23608)       ;+ Fetch System Variable RASP
         RRCA                    ;+ Test if user has altered the value       
-FIRSTRET:
         RET                     ;+ Return - with carry set if so.
 
 
@@ -1281,13 +1280,12 @@ L03B5:  DI                      ; Disable Interrupts so they don't disturb timin
         ADD     IX,BC           ;   IX holds address of entry into the loop
                                 ;   the loop will contain 0-3 NOPs, implementing
                                 ;   the fine part of the tone period.
-        LD      A,$08
-;        LD      A,($5C48)       ; BORDCR
-;        AND     $38             ; bits 5..3 contain border colour
-;        RRCA                    ; border colour bits moved to 2..0
-;        RRCA                    ;   to match border bits on port #FE
-;        RRCA                    ;
-;        OR       $08            ; bit 3 set (tape output bit on port #FE)
+        LD      A,($5C48)       ; BORDCR
+        AND     $38             ; bits 5..3 contain border colour
+        RRCA                    ; border colour bits moved to 2..0
+        RRCA                    ;   to match border bits on port #FE
+        RRCA                    ;
+        OR       $08            ; bit 3 set (tape output bit on port #FE)
                                 ;   for loud sound output
 ;; BE-IX+3
 L03D1:  NOP              ;(4)   ; optionally executed NOPs for small
@@ -1804,13 +1802,13 @@ L053C:  DJNZ    L053C           ; self loop to SA-DELAY
 
 ;; SA/LD-RET
 L053F:  PUSH    AF              ; preserve accumulator throughout.
-;        LD      A,($5C48)       ; fetch border colour from BORDCR.
-;        AND     $38             ; mask off paper bits.
-;        RRCA                    ; rotate
-;        RRCA                    ; to the
-;        RRCA                    ; range 0-7.
+        LD      A,($5C48)       ; fetch border colour from BORDCR.
+        AND     $38             ; mask off paper bits.
+        RRCA                    ; rotate
+        RRCA                    ; to the
+        RRCA                    ; range 0-7.
 
-;        OUT     ($FE),A         ; change the border colour.
+        OUT     ($FE),A         ; change the border colour.
 
         LD      A,$7F           ; read from port address $7FFE the
         IN      A,($FE)         ; row with the space key at outside.
@@ -8186,7 +8184,7 @@ L1AC1:  DEFB    $09             ; Class-09 - Two comma-separated numeric
                                 ; expressions required with optional colour
                                 ; items.
         DEFB    $00             ; Class-00 - No further operands.
-        DEFW    FIRSTRET        ; Address: $22DC; Address: PLOT
+        DEFW    L22DC           ; Address: $22DC; Address: PLOT
 
 ;; P-PAUSE
 L1AC5:  DEFB    $06             ; Class-06 - A numeric expression must follow.
@@ -8214,7 +8212,7 @@ L1AD2:  DEFB    $09             ; Class-09 - Two comma-separated numeric
                                 ; items.
         DEFB    $05             ; Class-05 - Variable syntax checked
                                 ; by routine.
-        DEFW    FIRSTRET        ; Address: $2382; Address: DRAW
+        DEFW    L2382           ; Address: $2382; Address: DRAW
 
 ;; P-COPY
 L1AD6:  DEFB    $00             ; Class-00 - No further operands.
@@ -8258,7 +8256,7 @@ L1AE7:  DEFB    $09             ; Class-09 - Two comma-separated numeric
                                 ; items.
         DEFB    $05             ; Class-05 - Variable syntax checked
                                 ; by routine.
-        DEFW    FIRSTRET        ; Address: $2320; Address: CIRCLE
+        DEFW    L2320           ; Address: $2320; Address: CIRCLE
 
 ;; P-INK
 L1AEB:  DEFB    $07             ; Class-07 - Offset address is converted to
@@ -10896,7 +10894,7 @@ L2294:  CALL    L1E94           ; routine FIND-INT1
 
 ;   Note. The next location is called from the Opus Discovery disk interface.
 
-x229B:  ;OUT     ($FE),A         ; outputting to port effects an immediate change
+x229B:  OUT     ($FE),A         ; outputting to port effects an immediate change
 
         RLCA                    ; shift the colour to
         RLCA                    ; the paper bits setting the
@@ -10911,6 +10909,143 @@ x229B:  ;OUT     ($FE),A         ; outputting to port effects an immediate chang
 ;; BORDER-1
 L22A6:  LD      ($5C48),A       ; update BORDCR with new paper/ink
         RET                     ; return.
+
+; -----------------
+; Get pixel address
+; -----------------
+;
+;
+
+;; PIXEL-ADD
+L22AA:  LD      A,$AF           ; load with 175 decimal.
+        SUB     B               ; subtract the y value.
+        JP      C,L24F9         ; jump forward to REPORT-Bc if greater.
+                                ; 'Integer out of range'
+
+; the high byte is derived from Y only.
+; the first 3 bits are always 010
+; the next 2 bits denote in which third of the screen the byte is.
+; the last 3 bits denote in which of the 8 scan lines within a third
+; the byte is located. There are 24 discrete values.
+
+
+        LD      B,A             ; the line number from top of screen to B.
+        AND     A               ; clear carry (already clear)
+        RRA                     ;                     0xxxxxxx
+        SCF                     ; set carry flag
+        RRA                     ;                     10xxxxxx
+        AND     A               ; clear carry flag
+        RRA                     ;                     010xxxxx
+
+        XOR     B               ;
+        AND     $F8             ; keep the top 5 bits 11111000
+        XOR     B               ;                     010xxbbb
+        LD      H,A             ; transfer high byte to H.
+
+; the low byte is derived from both X and Y.
+
+        LD      A,C             ; the x value 0-255.
+        RLCA                    ;
+        RLCA                    ;
+        RLCA                    ;
+        XOR     B               ; the y value
+        AND     $C7             ; apply mask             11000111
+        XOR     B               ; restore unmasked bits  xxyyyxxx
+        RLCA                    ; rotate to              xyyyxxxx
+        RLCA                    ; required position.     yyyxxxxx
+        LD      L,A             ; low byte to L.
+
+; finally form the pixel position in A.
+
+        LD      A,C             ; x value to A
+        AND     $07             ; mod 8
+        RET                     ; return
+
+; ----------------
+; Point Subroutine
+; ----------------
+; The point subroutine is called from s-point via the scanning functions
+; table.
+
+;; POINT-SUB
+L22CB:  
+;;;     CALL    L2307           ; routine STK-TO-BC
+
+        CALL    BC_POSTVE       ;+ New routine ensures parameters are as 
+                                ;+ defined in the ZX Spectrum manual.
+        XOR     A               ; point always return 0 in BASCOLACE
+
+;        CALL    L22AA           ; routine PIXEL-ADD finds address of pixel.
+;        LD      B,A             ; pixel position to B, 0-7.
+;        INC     B               ; increment to give rotation count 1-8.
+;        LD      A,(HL)          ; fetch byte from screen.
+
+;; POINT-LP
+;L22D4:  RLCA                    ; rotate and loop back
+;        DJNZ    L22D4           ; to POINT-LP until pixel at right.
+
+;        AND     $01             ; test to give zero or one.
+        JP      L2D28           ; jump forward to STACK-A to save result.
+
+; ------------------
+; THE 'PLOT' COMMAND
+; ------------------
+; Command Syntax example: PLOT 128,88
+;
+
+;; PLOT
+L22DC:  
+;;;     CALL    L2307           ; routine STK-TO-BC
+        CALL    BC_POSTVE       ;+ New routine ensures parameters are as 
+                                ;+ defined in the ZX Spectrum manual.
+
+        CALL    L22E5           ; routine PLOT-SUB
+        JP      L0D4D           ; to TEMPS
+
+; -------------------
+; The Plot subroutine
+; -------------------
+; A screen byte holds 8 pixels so it is necessary to rotate a mask
+; into the correct position to leave the other 7 pixels unaffected.
+; However all 64 pixels in the character cell take any embedded colour
+; items.
+; A pixel can be reset (inverse 1), toggled (over 1), or set ( with inverse
+; and over switches off). With both switches on, the byte is simply put
+; back on the screen though the colours may change.
+
+;; PLOT-SUB
+L22E5:  LD      ($5C7D),BC      ; store new x/y values in COORDS
+        CALL    L22AA           ; routine PIXEL-ADD gets address in HL,
+                                ; count from left 0-7 in B.
+;        LD      B,A             ; transfer count to B.
+;        INC     B               ; increase 1-8.
+;        LD      A,$FE           ; 11111110 in A.
+
+;; PLOT-LOOP
+;L22F0:  RRCA                    ; rotate mask.
+;        DJNZ    L22F0           ; to PLOT-LOOP until B circular rotations.
+
+;        LD      B,A             ; load mask to B
+;        LD      A,(HL)          ; fetch screen byte to A
+
+;        LD      C,(IY+$57)      ; P_FLAG to C
+;        BIT     0,C             ; is it to be OVER 1 ?
+;        JR      NZ,L22FD        ; forward to PL-TST-IN if so.
+
+; was over 0
+
+;        AND     B               ; combine with mask to blank pixel.
+
+;; PL-TST-IN
+;L22FD:  BIT     2,C             ; is it inverse 1 ?
+;        JR      NZ,L2303        ; to PLOT-END if so.
+
+;        XOR     B               ; switch the pixel
+;        CPL                     ; restore other 7 bits
+
+;; PLOT-END
+;L2303:  LD      (HL),A          ; load byte to the screen.
+        JP      L0BDB           ; exit to PO-ATTR to set colours for cell.
 
 ; ------------------------------
 ; Put two numbers in BC register
@@ -10947,6 +11082,956 @@ L2314:  CALL    L2DD5           ; routine FP-TO-A compresses last value into
         LD      C,$FF           ; prepare negative sign byte and
         RET                     ; return.
 
+
+; --------------------
+; THE 'CIRCLE' COMMAND
+; --------------------
+;   "Goe not Thou about to Square eyther circle" -
+;   - John Donne, Cambridge educated theologian, 1624
+;
+;   The CIRCLE command draws a circle as a series of straight lines.
+;   In some ways it can be regarded as a polygon, but the first line is drawn 
+;   as a tangent, taking the radius as its distance from the centre.
+;
+;   Both the CIRCLE algorithm and the ARC drawing algorithm make use of the
+;   'ROTATION FORMULA' (see later).  It is only necessary to work out where 
+;   the first line will be drawn and how long it is and then the rotation 
+;   formula takes over and calculates all other rotated points.
+;
+;   All Spectrum circles consist of two vertical lines at each side and two 
+;   horizontal lines at the top and bottom. The number of lines is calculated
+;   from the radius of the circle and is always divisible by 4. For complete 
+;   circles it will range from 4 for a square circle to 32 for a circle of 
+;   radius 87. The Spectrum can attempt larger circles e.g. CIRCLE 0,14,255
+;   but these will error as they go off-screen after four lines are drawn.
+;   At the opposite end, CIRCLE 128,88,1.23 will draw a circle as a perfect 3x3
+;   square using 4 straight lines although very small circles are just drawn as 
+;   a dot on the screen.
+;
+;   The first chord drawn is the vertical chord on the right of the circle.
+;   The starting point is at the base of this chord which is drawn upwards and
+;   the circle continues in an anti-clockwise direction. As noted earlier the 
+;   x-coordinate of this point measured from the centre of the circle is the 
+;   radius. 
+;
+;   The CIRCLE command makes extensive use of the calculator and as part of
+;   process of drawing a large circle, free memory is checked 1315 times.
+;   When drawing a large arc, free memory is checked 928 times.
+;   A single call to 'sin' involves 63 memory checks and so values of sine 
+;   and cosine are pre-calculated and held in the mem locations. As a 
+;   clever trick 'cos' is derived from 'sin' using simple arithmetic operations
+;   instead of the more expensive 'cos' function.
+;
+;   Initially, the syntax has been partly checked using the class for the DRAW 
+;   command which stacks the origin of the circle (X,Y).
+
+;; CIRCLE
+L2320:  RST     18H             ; GET-CHAR              x, y.
+        CP      $2C             ; Is character the required comma ?
+        JP      NZ,L1C8A        ; Jump, if not, to REPORT-C
+                                ; 'Nonsense in basic'
+
+        RST     20H             ; NEXT-CHAR advances the parsed character address.
+        CALL    L1C82           ; routine EXPT-1NUM stacks radius in runtime.
+        CALL    L1BEE           ; routine CHECK-END will return here in runtime
+                                ; if nothing follows the command.
+
+;   Now make the radius positive and ensure that it is in floating point form 
+;   so that the exponent byte can be accessed for quick testing.
+
+        RST     28H             ;; FP-CALC              x, y, r.
+        DEFB    $2A             ;;abs                   x, y, r.
+        DEFB    $3D             ;;re-stack              x, y, r.
+        DEFB    $38             ;;end-calc              x, y, r.
+
+        LD      A,(HL)          ; Fetch first, floating-point, exponent byte.
+        CP      $81             ; Compare to one.
+        JR      NC,L233B        ; Forward to C-R-GRE-1 
+                                ; if circle radius is greater than one.
+
+;    The circle is no larger than a single pixel so delete the radius from the
+;    calculator stack and plot a point at the centre.
+
+        RST     28H             ;; FP-CALC              x, y, r.
+        DEFB    $02             ;;delete                x, y.                  
+        DEFB    $38             ;;end-calc              x, y.
+
+        JR      L22DC           ; back to PLOT routine to just plot x,y.
+
+; ---
+
+;   Continue when the circle's radius measures greater than one by forming 
+;   the angle 2 * PI radians which is 360 degrees.
+
+;; C-R-GRE-1
+L233B:  RST     28H             ;; FP-CALC      x, y, r
+        DEFB    $A3             ;;stk-pi/2      x, y, r, pi/2.
+        DEFB    $38             ;;end-calc      x, y, r, pi/2.
+
+;   Change the exponent of pi/2 from $81 to $83 giving 2*PI the central angle.
+;   This is quicker than multiplying by four.
+
+        LD      (HL),$83        ;               x, y, r, 2*PI.
+
+;   Now store this important constant in mem-5 and delete so that other 
+;   parameters can be derived from it, by a routine shared with DRAW.
+
+        RST     28H             ;; FP-CALC      x, y, r, 2*PI.
+        DEFB    $C5             ;;st-mem-5      store 2*PI in mem-5
+        DEFB    $02             ;;delete        x, y, r.
+        DEFB    $38             ;;end-calc      x, y, r.
+
+;   The parameters derived from mem-5 (A) and from the radius are set up in 
+;   four of the other mem locations by the CIRCLE DRAW PARAMETERS routine which 
+;   also returns the number of straight lines in the B register.
+
+        CALL    L247D           ; routine CD-PRMS1
+
+                                ; mem-0 ; A/No of lines (=a)            unused  
+                                ; mem-1 ; sin(a/2)  will be moving x    var
+                                ; mem-2 ; -         will be moving y    var
+                                ; mem-3 ; cos(a)                        const
+                                ; mem-4 ; sin(a)                        const
+                                ; mem-5 ; Angle of rotation (A) (2*PI)  const
+                                ; B     ; Number of straight lines.
+
+        PUSH    BC              ; Preserve the number of lines in B.
+
+;   Next calculate the length of half a chord by multiplying the sine of half 
+;   the central angle by the radius of the circle.
+
+        RST     28H             ;; FP-CALC      x, y, r.
+        DEFB    $31             ;;duplicate     x, y, r, r.
+        DEFB    $E1             ;;get-mem-1     x, y, r, r, sin(a/2).
+        DEFB    $04             ;;multiply      x, y, r, half-chord.
+        DEFB    $38             ;;end-calc      x, y, r, half-chord.
+
+        LD      A,(HL)          ; fetch exponent  of the half arc to A.
+        CP      $80             ; compare to a half pixel
+        JR      NC,L235A        ; forward, if greater than .5, to C-ARC-GE1
+
+;   If the first line is less than .5 then 4 'lines' would be drawn on the same 
+;   spot so tidy the calculator stack and machine stack and plot the centre.
+
+        RST     28H             ;; FP-CALC      x, y, r, hc.
+        DEFB    $02             ;;delete        x, y, r.
+        DEFB    $02             ;;delete        x, y.
+        DEFB    $38             ;;end-calc      x, y.
+
+        POP     BC              ; Balance machine stack by taking chord-count.
+
+        JP      L22DC           ; JUMP to PLOT
+
+; ---
+
+;   The arc is greater than 0.5 so the circle can be drawn.
+
+;; C-ARC-GE1
+L235A:  RST     28H             ;; FP-CALC      x, y, r, hc.
+        DEFB    $C2             ;;st-mem-2      x, y, r, half chord to mem-2.
+        DEFB    $01             ;;exchange      x, y, hc, r.
+        DEFB    $C0             ;;st-mem-0      x, y, hc, r.
+        DEFB    $02             ;;delete        x, y, hc.
+
+;   Subtract the length of the half-chord from the absolute y coordinate to
+;   give the starting y coordinate sy. 
+;   Note that for a circle this is also the end coordinate.
+
+        DEFB    $03             ;;subtract      x, y-hc.  (The start y-coord)
+        DEFB    $01             ;;exchange      sy, x.
+
+;   Next simply add the radius to the x coordinate to give a fuzzy x-coordinate.
+;   Strictly speaking, the radius should be multiplied by cos(a/2) first but
+;   doing it this way makes the circle slightly larger.
+
+        DEFB    $E0             ;;get-mem-0     sy, x, r.
+        DEFB    $0F             ;;addition      sy, x+r.  (The start x-coord)
+
+;   We now want three copies of this pair of values on the calculator stack.
+;   The first pair remain on the stack throughout the circle routine and are 
+;   the end points. The next pair will be the moving absolute values of x and y
+;   that are updated after each line is drawn. The final pair will be loaded 
+;   into the COORDS system variable so that the first vertical line starts at 
+;   the right place.
+
+        DEFB    $C0             ;;st-mem-0      sy, sx.
+        DEFB    $01             ;;exchange      sx, sy.
+        DEFB    $31             ;;duplicate     sx, sy, sy.
+        DEFB    $E0             ;;get-mem-0     sx, sy, sy, sx.
+        DEFB    $01             ;;exchange      sx, sy, sx, sy.
+        DEFB    $31             ;;duplicate     sx, sy, sx, sy, sy.
+        DEFB    $E0             ;;get-mem-0     sx, sy, sx, sy, sy, sx.
+
+;   Locations mem-1 and mem-2 are the relative x and y values which are updated
+;   after each line is drawn. Since we are drawing a vertical line then the rx
+;   value in mem-1 is zero and the ry value in mem-2 is the full chord.
+
+        DEFB    $A0             ;;stk-zero      sx, sy, sx, sy, sy, sx, 0.
+        DEFB    $C1             ;;st-mem-1      sx, sy, sx, sy, sy, sx, 0.
+        DEFB    $02             ;;delete        sx, sy, sx, sy, sy, sx.
+
+;   Although the three pairs of x/y values are the same for a circle, they 
+;   will be labelled terminating, absolute and start coordinates.
+
+        DEFB    $38             ;;end-calc      tx, ty, ax, ay, sy, sx.
+
+;   Use the exponent manipulating trick again to double the value of mem-2.
+
+        INC     (IY+$62)        ; Increment MEM-2-1st doubling half chord.
+
+;   Note. this first vertical chord is drawn at the radius so circles are
+;   slightly displaced to the right.
+;   It is only necessary to place the values (sx) and (sy) in the system 
+;   variable COORDS to ensure that drawing commences at the correct pixel.
+;   Note. a couple of LD (COORDS),A instructions would have been quicker, and 
+;   simpler, than using LD (COORDS),HL.
+
+        CALL    L1E94           ; routine FIND-INT1 fetches sx from stack to A.
+
+        LD      L,A             ; place X value in L.
+        PUSH    HL              ; save the holding register.
+
+        CALL    L1E94           ; routine FIND-INT1 fetches sy to A
+
+        POP     HL              ; restore the holding register.
+        LD      H,A             ; and place y value in high byte.
+
+        LD      ($5C7D),HL      ; Update the COORDS system variable.
+                                ;
+                                ;               tx, ty, ax, ay.
+
+        POP     BC              ; restore the chord count  
+                                ; values 4,8,12,16,20,24,28 or 32.
+
+        JP      L2420           ; forward to DRW-STEPS
+                                ;               tx, ty, ax, ay.
+
+;   Note. the jump to DRW-STEPS is just to decrement B and jump into the 
+;   middle of the arc-drawing loop. The arc count which includes the first 
+;   vertical arc draws one less than the perceived number of arcs. 
+;   The final arc offsets are obtained by subtracting the final COORDS value
+;   from the initial sx and sy values which are kept at the base of the
+;   calculator stack throughout the arc loop. 
+;   This ensures that the final line finishes exactly at the starting pixel 
+;   removing the possibility of any inaccuracy.
+;   Since the initial sx and sy values are not required until the final arc
+;   is drawn, they are not shown until then.
+;   As the calculator stack is quite busy, only the active parts are shown in 
+;   each section.
+
+
+; ------------------
+; THE 'DRAW' COMMAND
+; ------------------
+;   The Spectrum's DRAW command is overloaded and can take two parameters sets.
+;
+;   With two parameters, it simply draws an approximation to a straight line
+;   at offset x,y using the LINE-DRAW routine.
+;
+;   With three parameters, an arc is drawn to the point at offset x,y turning 
+;   through an angle, in radians, supplied by the third parameter.
+;   The arc will consist of 4 to 252 straight lines each one of which is drawn 
+;   by calls to the DRAW-LINE routine.
+
+;; DRAW
+L2382:  RST     18H             ; GET-CHAR
+        CP      $2C             ; is it the comma character ?
+        JR      Z,L238D         ; forward, if so, to DR-3-PRMS
+
+;   There are two parameters e.g. DRAW 255,175
+
+        CALL    L1BEE           ; routine CHECK-END
+
+        JP      L2477           ; jump forward to LINE-DRAW
+
+; ---
+
+;    There are three parameters e.g. DRAW 255, 175, .5
+;    The first two are relative coordinates and the third is the angle of 
+;    rotation in radians (A).
+
+;; DR-3-PRMS
+L238D:  RST     20H             ; NEXT-CHAR skips over the 'comma'.
+
+        CALL    L1C82           ; routine EXPT-1NUM stacks the rotation angle.
+
+        CALL    L1BEE           ; routine CHECK-END
+
+;   Now enter the calculator and store the complete rotation angle in mem-5 
+
+        RST     28H             ;; FP-CALC      x, y, A.
+        DEFB    $C5             ;;st-mem-5      x, y, A.
+
+;   Test the angle for the special case of 360 degrees.
+
+        DEFB    $A2             ;;stk-half      x, y, A, 1/2.
+        DEFB    $04             ;;multiply      x, y, A/2.
+        DEFB    $1F             ;;sin           x, y, sin(A/2).
+        DEFB    $31             ;;duplicate     x, y, sin(A/2),sin(A/2)
+        DEFB    $30             ;;not           x, y, sin(A/2), (0/1).
+        DEFB    $30             ;;not           x, y, sin(A/2), (1/0).
+        DEFB    $00             ;;jump-true     x, y, sin(A/2).
+
+        DEFB    $06             ;;forward to L23A3, DR-SIN-NZ
+                                ; if sin(r/2) is not zero.
+
+;   The third parameter is 2*PI (or a multiple of 2*PI) so a 360 degrees turn
+;   would just be a straight line.  Eliminating this case here prevents 
+;   division by zero at later stage.
+
+        DEFB    $02             ;;delete        x, y.
+        DEFB    $38             ;;end-calc      x, y.
+
+        JP      L2477           ; forward to LINE-DRAW
+
+; ---
+
+;   An arc can be drawn.
+
+;; DR-SIN-NZ
+L23A3:  DEFB    $C0             ;;st-mem-0      x, y, sin(A/2).   store mem-0
+        DEFB    $02             ;;delete        x, y.
+
+;   The next step calculates (roughly) the diameter of the circle of which the 
+;   arc will form part.  This value does not have to be too accurate as it is
+;   only used to evaluate the number of straight lines and then discarded.
+;   After all for a circle, the radius is used. Consequently, a circle of 
+;   radius 50 will have 24 straight lines but an arc of radius 50 will have 20
+;   straight lines - when drawn in any direction.
+;   So that simple arithmetic can be used, the length of the chord can be 
+;   calculated as X+Y rather than by Pythagoras Theorem and the sine of the
+;   nearest angle within reach is used.
+
+        DEFB    $C1             ;;st-mem-1      x, y.             store mem-1
+        DEFB    $02             ;;delete        x.
+
+        DEFB    $31             ;;duplicate     x, x.
+        DEFB    $2A             ;;abs           x, x (+ve).
+        DEFB    $E1             ;;get-mem-1     x, X, y.
+        DEFB    $01             ;;exchange      x, y, X.
+        DEFB    $E1             ;;get-mem-1     x, y, X, y.
+        DEFB    $2A             ;;abs           x, y, X, Y (+ve).
+        DEFB    $0F             ;;addition      x, y, X+Y.
+        DEFB    $E0             ;;get-mem-0     x, y, X+Y, sin(A/2).
+        DEFB    $05             ;;division      x, y, X+Y/sin(A/2).
+        DEFB    $2A             ;;abs           x, y, X+Y/sin(A/2) = D.
+
+;    Bring back sin(A/2) from mem-0 which will shortly get trashed.
+;    Then bring D to the top of the stack again.
+
+        DEFB    $E0             ;;get-mem-0     x, y, D, sin(A/2).
+        DEFB    $01             ;;exchange      x, y, sin(A/2), D.
+
+;   Note. that since the value at the top of the stack has arisen as a result
+;   of division then it can no longer be in integer form and the next re-stack
+;   is unnecessary. Only the Sinclair ZX80 had integer division.
+
+        DEFB    $3D             ;;re-stack      (unnecessary)
+
+        DEFB    $38             ;;end-calc      x, y, sin(A/2), D.
+
+;   The next test avoids drawing 4 straight lines when the start and end pixels
+;   are adjacent (or the same) but is probably best dispensed with.
+
+        LD      A,(HL)          ; fetch exponent byte of D.
+        CP      $81             ; compare to 1
+        JR      NC,L23C1        ; forward, if > 1,  to DR-PRMS
+
+;   else delete the top two stack values and draw a simple straight line.
+
+        RST     28H             ;; FP-CALC
+        DEFB    $02             ;;delete
+        DEFB    $02             ;;delete
+        DEFB    $38             ;;end-calc      x, y.
+
+        JP      L2477           ; to LINE-DRAW
+
+; ---
+
+;   The ARC will consist of multiple straight lines so call the CIRCLE-DRAW
+;   PARAMETERS ROUTINE to pre-calculate sine values from the angle (in mem-5)
+;   and determine also the number of straight lines from that value and the
+;   'diameter' which is at the top of the calculator stack.
+
+;; DR-PRMS
+L23C1:  CALL    L247D           ; routine CD-PRMS1
+
+                                ; mem-0 ; (A)/No. of lines (=a) (step angle)
+                                ; mem-1 ; sin(a/2) 
+                                ; mem-2 ; -
+                                ; mem-3 ; cos(a)                        const
+                                ; mem-4 ; sin(a)                        const
+                                ; mem-5 ; Angle of rotation (A)         in
+                                ; B     ; Count of straight lines - max 252.
+
+        PUSH    BC              ; Save the line count on the machine stack.
+
+;   Remove the now redundant diameter value D.
+
+        RST     28H             ;; FP-CALC      x, y, sin(A/2), D.
+        DEFB    $02             ;;delete        x, y, sin(A/2).
+
+;   Dividing the sine of the step angle by the sine of the total angle gives
+;   the length of the initial chord on a unary circle. This factor f is used
+;   to scale the coordinates of the first line which still points in the 
+;   direction of the end point and may be larger.
+
+        DEFB    $E1             ;;get-mem-1     x, y, sin(A/2), sin(a/2)
+        DEFB    $01             ;;exchange      x, y, sin(a/2), sin(A/2)
+        DEFB    $05             ;;division      x, y, sin(a/2)/sin(A/2)
+        DEFB    $C1             ;;st-mem-1      x, y. f.
+        DEFB    $02             ;;delete        x, y.
+
+;   With the factor stored, scale the x coordinate first.
+
+        DEFB    $01             ;;exchange      y, x.
+        DEFB    $31             ;;duplicate     y, x, x.
+        DEFB    $E1             ;;get-mem-1     y, x, x, f.
+        DEFB    $04             ;;multiply      y, x, x*f    (=xx)
+        DEFB    $C2             ;;st-mem-2      y, x, xx.
+        DEFB    $02             ;;delete        y. x.
+
+;   Now scale the y coordinate.
+
+        DEFB    $01             ;;exchange      x, y.
+        DEFB    $31             ;;duplicate     x, y, y.
+        DEFB    $E1             ;;get-mem-1     x, y, y, f
+        DEFB    $04             ;;multiply      x, y, y*f    (=yy)
+
+;   Note. 'sin' and 'cos' trash locations mem-0 to mem-2 so fetch mem-2 to the 
+;   calculator stack for safe keeping.
+
+        DEFB    $E2             ;;get-mem-2     x, y, yy, xx.
+
+;   Once we get the coordinates of the first straight line then the 'ROTATION
+;   FORMULA' used in the arc loop will take care of all other points, but we
+;   now use a variation of that formula to rotate the first arc through (A-a)/2
+;   radians. 
+;   
+;       xRotated = y * sin(angle) + x * cos(angle)
+;       yRotated = y * cos(angle) - x * sin(angle)
+;
+ 
+        DEFB    $E5             ;;get-mem-5     x, y, yy, xx, A.
+        DEFB    $E0             ;;get-mem-0     x, y, yy, xx, A, a.
+        DEFB    $03             ;;subtract      x, y, yy, xx, A-a.
+        DEFB    $A2             ;;stk-half      x, y, yy, xx, A-a, 1/2.
+        DEFB    $04             ;;multiply      x, y, yy, xx, (A-a)/2. (=angle)
+        DEFB    $31             ;;duplicate     x, y, yy, xx, angle, angle.
+        DEFB    $1F             ;;sin           x, y, yy, xx, angle, sin(angle)
+        DEFB    $C5             ;;st-mem-5      x, y, yy, xx, angle, sin(angle)
+        DEFB    $02             ;;delete        x, y, yy, xx, angle
+
+        DEFB    $20             ;;cos           x, y, yy, xx, cos(angle).
+
+;   Note. mem-0, mem-1 and mem-2 can be used again now...
+
+        DEFB    $C0             ;;st-mem-0      x, y, yy, xx, cos(angle).
+        DEFB    $02             ;;delete        x, y, yy, xx.
+
+        DEFB    $C2             ;;st-mem-2      x, y, yy, xx.
+        DEFB    $02             ;;delete        x, y, yy.
+
+        DEFB    $C1             ;;st-mem-1      x, y, yy.
+        DEFB    $E5             ;;get-mem-5     x, y, yy, sin(angle)
+        DEFB    $04             ;;multiply      x, y, yy*sin(angle).
+        DEFB    $E0             ;;get-mem-0     x, y, yy*sin(angle), cos(angle)
+        DEFB    $E2             ;;get-mem-2     x, y, yy*sin(angle), cos(angle), xx.
+        DEFB    $04             ;;multiply      x, y, yy*sin(angle), xx*cos(angle).
+        DEFB    $0F             ;;addition      x, y, xRotated.
+        DEFB    $E1             ;;get-mem-1     x, y, xRotated, yy.
+        DEFB    $01             ;;exchange      x, y, yy, xRotated.
+        DEFB    $C1             ;;st-mem-1      x, y, yy, xRotated.
+        DEFB    $02             ;;delete        x, y, yy.
+
+        DEFB    $E0             ;;get-mem-0     x, y, yy, cos(angle).
+        DEFB    $04             ;;multiply      x, y, yy*cos(angle).
+        DEFB    $E2             ;;get-mem-2     x, y, yy*cos(angle), xx.
+        DEFB    $E5             ;;get-mem-5     x, y, yy*cos(angle), xx, sin(angle).
+        DEFB    $04             ;;multiply      x, y, yy*cos(angle), xx*sin(angle).
+        DEFB    $03             ;;subtract      x, y, yRotated.
+        DEFB    $C2             ;;st-mem-2      x, y, yRotated.
+
+;   Now the initial x and y coordinates are made positive and summed to see 
+;   if they measure up to anything significant.
+
+        DEFB    $2A             ;;abs           x, y, yRotated'.
+        DEFB    $E1             ;;get-mem-1     x, y, yRotated', xRotated.
+        DEFB    $2A             ;;abs           x, y, yRotated', xRotated'.
+        DEFB    $0F             ;;addition      x, y, yRotated+xRotated.
+        DEFB    $02             ;;delete        x, y. 
+
+        DEFB    $38             ;;end-calc      x, y. 
+
+;   Although the test value has been deleted it is still above the calculator
+;   stack in memory and conveniently DE which points to the first free byte
+;   addresses the exponent of the test value.
+
+        LD      A,(DE)          ; Fetch exponent of the length indicator.
+        CP      $81             ; Compare to that for 1
+
+        POP     BC              ; Balance the machine stack
+
+        JP      C,L2477         ; forward, if the coordinates of first line
+                                ; don't add up to more than 1, to LINE-DRAW 
+
+;   Continue when the arc will have a discernable shape.
+
+        PUSH    BC              ; Restore line counter to the machine stack.
+
+;   The parameters of the DRAW command were relative and they are now converted 
+;   to absolute coordinates by adding to the coordinates of the last point 
+;   plotted. The first two values on the stack are the terminal tx and ty 
+;   coordinates.  The x-coordinate is converted first but first the last point 
+;   plotted is saved as it will initialize the moving ax, value. 
+
+        RST     28H             ;; FP-CALC      x, y.
+        DEFB    $01             ;;exchange      y, x.
+        DEFB    $38             ;;end-calc      y, x.
+
+        LD      A,($5C7D)       ; Fetch System Variable COORDS-x
+        CALL    L2D28           ; routine STACK-A
+
+        RST     28H             ;; FP-CALC      y, x, last-x.
+
+;   Store the last point plotted to initialize the moving ax value.
+
+        DEFB    $C0             ;;st-mem-0      y, x, last-x.
+        DEFB    $0F             ;;addition      y, absolute x.
+        DEFB    $01             ;;exchange      tx, y.
+        DEFB    $38             ;;end-calc      tx, y.
+
+        LD      A,($5C7E)       ; Fetch System Variable COORDS-y
+        CALL    L2D28           ; routine STACK-A
+
+        RST     28H             ;; FP-CALC      tx, y, last-y.
+
+;   Store the last point plotted to initialize the moving ay value.
+
+        DEFB    $C5             ;;st-mem-5      tx, y, last-y.
+        DEFB    $0F             ;;addition      tx, ty.
+
+;   Fetch the moving ax and ay to the calculator stack.
+
+        DEFB    $E0             ;;get-mem-0     tx, ty, ax.
+        DEFB    $E5             ;;get-mem-5     tx, ty, ax, ay.
+        DEFB    $38             ;;end-calc      tx, ty, ax, ay.
+
+        POP     BC              ; Restore the straight line count.
+
+; -----------------------------------
+; THE 'CIRCLE/DRAW CONVERGENCE POINT'
+; -----------------------------------
+;   The CIRCLE and ARC-DRAW commands converge here. 
+;
+;   Note. for both the CIRCLE and ARC commands the minimum initial line count 
+;   is 4 (as set up by the CD_PARAMS routine) and so the zero flag will never 
+;   be set and the loop is always entered.  The first test is superfluous and
+;   the jump will always be made to ARC-START.
+
+;; DRW-STEPS
+L2420:  DEC     B               ; decrement the arc count (4,8,12,16...).            
+
+        JR      Z,L245F         ; forward, if zero (not possible), to ARC-END
+
+        JR      L2439           ; forward to ARC-START
+
+; --------------
+; THE 'ARC LOOP'
+; --------------
+;
+;   The arc drawing loop will draw up to 31 straight lines for a circle and up 
+;   251 straight lines for an arc between two points. In both cases the final
+;   closing straight line is drawn at ARC_END, but it otherwise loops back to 
+;   here to calculate the next coordinate using the ROTATION FORMULA where (a)
+;   is the previously calculated, constant CENTRAL ANGLE of the arcs.
+;
+;       Xrotated = x * cos(a) - y * sin(a)
+;       Yrotated = x * sin(a) + y * cos(a)
+;
+;   The values cos(a) and sin(a) are pre-calculated and held in mem-3 and mem-4 
+;   for the duration of the routine.
+;   Memory location mem-1 holds the last relative x value (rx) and mem-2 holds
+;   the last relative y value (ry) used by DRAW.
+;
+;   Note. that this is a very clever twist on what is after all a very clever,
+;   well-used formula.  Normally the rotation formula is used with the x and y
+;   coordinates from the centre of the circle (or arc) and a supplied angle to 
+;   produce two new x and y coordinates in an anticlockwise direction on the 
+;   circumference of the circle.
+;   What is being used here, instead, is the relative X and Y parameters from
+;   the last point plotted that are required to get to the current point and 
+;   the formula returns the next relative coordinates to use. 
+
+;; ARC-LOOP
+L2425:  RST     28H             ;; FP-CALC      
+        DEFB    $E1             ;;get-mem-1     rx.
+        DEFB    $31             ;;duplicate     rx, rx.
+        DEFB    $E3             ;;get-mem-3     cos(a)
+        DEFB    $04             ;;multiply      rx, rx*cos(a).
+        DEFB    $E2             ;;get-mem-2     rx, rx*cos(a), ry.
+        DEFB    $E4             ;;get-mem-4     rx, rx*cos(a), ry, sin(a). 
+        DEFB    $04             ;;multiply      rx, rx*cos(a), ry*sin(a).
+        DEFB    $03             ;;subtract      rx, rx*cos(a) - ry*sin(a)
+        DEFB    $C1             ;;st-mem-1      rx, new relative x rotated.
+        DEFB    $02             ;;delete        rx.
+
+        DEFB    $E4             ;;get-mem-4     rx, sin(a).
+        DEFB    $04             ;;multiply      rx*sin(a)
+        DEFB    $E2             ;;get-mem-2     rx*sin(a), ry.
+        DEFB    $E3             ;;get-mem-3     rx*sin(a), ry, cos(a).
+        DEFB    $04             ;;multiply      rx*sin(a), ry*cos(a).
+        DEFB    $0F             ;;addition      rx*sin(a) + ry*cos(a).
+        DEFB    $C2             ;;st-mem-2      new relative y rotated.
+        DEFB    $02             ;;delete        .
+        DEFB    $38             ;;end-calc      .  
+
+;   Note. the calculator stack actually holds   tx, ty, ax, ay
+;   and the last absolute values of x and y 
+;   are now brought into play.
+;
+;   Magically, the two new rotated coordinates rx and ry are all that we would
+;   require to draw a circle or arc - on paper!
+;   The Spectrum DRAW routine draws to the rounded x and y coordinate and so 
+;   repetitions of values like 3.49 would mean that the fractional parts 
+;   would be lost until eventually the draw coordinates might differ from the 
+;   floating point values used above by several pixels.
+;   For this reason the accurate offsets calculated above are added to the 
+;   accurate, absolute coordinates maintained in ax and ay and these new 
+;   coordinates have the integer coordinates of the last plot position 
+;   ( from System Variable COORDS ) subtracted from them to give the relative 
+;   coordinates required by the DRAW routine.
+
+;   The mid entry point.
+
+;; ARC-START
+L2439:  PUSH    BC              ; Preserve the arc counter on the machine stack.
+
+;   Store the absolute ay in temporary variable mem-0 for the moment.
+
+        RST     28H             ;; FP-CALC      ax, ay.
+        DEFB    $C0             ;;st-mem-0      ax, ay.
+        DEFB    $02             ;;delete        ax.
+
+;   Now add the fractional relative x coordinate to the fractional absolute
+;   x coordinate to obtain a new fractional x-coordinate.
+
+        DEFB    $E1             ;;get-mem-1     ax, xr.
+        DEFB    $0F             ;;addition      ax+xr (= new ax).  
+        DEFB    $31             ;;duplicate     ax, ax.
+        DEFB    $38             ;;end-calc      ax, ax. 
+
+        LD      A,($5C7D)       ; COORDS-x      last x    (integer ix 0-255)
+        CALL    L2D28           ; routine STACK-A
+
+        RST     28H             ;; FP-CALC      ax, ax, ix.
+        DEFB    $03             ;;subtract      ax, ax-ix  = relative DRAW Dx.
+
+;   Having calculated the x value for DRAW do the same for the y value.
+
+        DEFB    $E0             ;;get-mem-0     ax, Dx, ay.
+        DEFB    $E2             ;;get-mem-2     ax, Dx, ay, ry.
+        DEFB    $0F             ;;addition      ax, Dx, ay+ry (= new ay).
+        DEFB    $C0             ;;st-mem-0      ax, Dx, ay.
+        DEFB    $01             ;;exchange      ax, ay, Dx,
+        DEFB    $E0             ;;get-mem-0     ax, ay, Dx, ay.
+        DEFB    $38             ;;end-calc      ax, ay, Dx, ay.
+
+        LD      A,($5C7E)       ; COORDS-y      last y (integer iy 0-175)
+        CALL    L2D28           ; routine STACK-A
+
+        RST     28H             ;; FP-CALC      ax, ay, Dx, ay, iy.
+        DEFB    $03             ;;subtract      ax, ay, Dx, ay-iy ( = Dy).
+        DEFB    $38             ;;end-calc      ax, ay, Dx, Dy.
+
+        CALL    L24B7           ; Routine DRAW-LINE draws (Dx,Dy) relative to
+                                ; the last pixel plotted leaving absolute x 
+                                ; and y on the calculator stack.
+                                ;               ax, ay.
+
+        POP     BC              ; Restore the arc counter from the machine stack.
+
+        DJNZ    L2425           ; Decrement and loop while > 0 to ARC-LOOP
+
+; -------------
+; THE 'ARC END'
+; -------------
+
+;   To recap the full calculator stack is       tx, ty, ax, ay.
+
+;   Just as one would do if drawing the curve on paper, the final line would
+;   be drawn by joining the last point plotted to the initial start point 
+;   in the case of a CIRCLE or to the calculated end point in the case of 
+;   an ARC.
+;   The moving absolute values of x and y are no longer required and they
+;   can be deleted to expose the closing coordinates.
+
+;; ARC-END
+L245F:  RST     28H             ;; FP-CALC      tx, ty, ax, ay.
+        DEFB    $02             ;;delete        tx, ty, ax.
+        DEFB    $02             ;;delete        tx, ty.
+        DEFB    $01             ;;exchange      ty, tx.
+        DEFB    $38             ;;end-calc      ty, tx.
+
+;   First calculate the relative x coordinate to the end-point.
+
+        LD      A,($5C7D)       ; COORDS-x
+        CALL    L2D28           ; routine STACK-A
+
+        RST     28H             ;; FP-CALC      ty, tx, coords_x.
+        DEFB    $03             ;;subtract      ty, rx.
+
+;   Next calculate the relative y coordinate to the end-point.
+
+        DEFB    $01             ;;exchange      rx, ty.
+        DEFB    $38             ;;end-calc      rx, ty.
+
+        LD      A,($5C7E)       ; COORDS-y
+        CALL    L2D28           ; routine STACK-A
+
+        RST     28H             ;; FP-CALC      rx, ty, coords_y
+        DEFB    $03             ;;subtract      rx, ry.
+        DEFB    $38             ;;end-calc      rx, ry.
+
+;   Finally draw the last straight line.
+
+;; LINE-DRAW
+L2477:  CALL    L24B7           ; routine DRAW-LINE draws to the relative 
+                                ; coordinates (rx, ry).
+
+        JP      L0D4D           ; jump back and exit via TEMPS          >>>
+
+
+; --------------------------------------------
+; THE 'INITIAL CIRCLE/DRAW PARAMETERS' ROUTINE
+; --------------------------------------------
+;   Begin by calculating the number of chords which will be returned in B.
+;   A rule of thumb is employed that uses a value z which for a circle is the
+;   radius and for an arc is the diameter with, as it happens, a pinch more if 
+;   the arc is on a slope.
+;
+;   NUMBER OF STRAIGHT LINES = ANGLE OF ROTATION * SQUARE ROOT ( Z ) / 2
+
+;; CD-PRMS1
+L247D:  RST     28H             ;; FP-CALC      z.
+        DEFB    $31             ;;duplicate     z, z.
+        DEFB    $28             ;;sqr           z, sqr(z).
+        DEFB    $34             ;;stk-data      z, sqr(z), 2.
+        DEFB    $32             ;;Exponent: $82, Bytes: 1
+        DEFB    $00             ;;(+00,+00,+00)
+        DEFB    $01             ;;exchange      z, 2, sqr(z).
+        DEFB    $05             ;;division      z, 2/sqr(z).
+        DEFB    $E5             ;;get-mem-5     z, 2/sqr(z), ANGLE.
+        DEFB    $01             ;;exchange      z, ANGLE, 2/sqr (z)
+        DEFB    $05             ;;division      z, ANGLE*sqr(z)/2 (= No. of lines)
+        DEFB    $2A             ;;abs           (for arc only)
+        DEFB    $38             ;;end-calc      z, number of lines.
+
+;    As an example for a circle of radius 87 the number of lines will be 29.
+
+        CALL    L2DD5           ; routine FP-TO-A
+
+;    The value is compressed into A register, no carry with valid circle.
+
+        JR      C,L2495         ; forward, if over 256, to USE-252
+
+;    now make a multiple of 4 e.g. 29 becomes 28
+
+        AND     $FC             ; AND 252
+
+;    Adding 4 could set carry for arc, for the circle example, 28 becomes 32.
+
+        ADD     A,$04           ; adding 4 could set carry if result is 256.
+        
+        JR      NC,L2497        ; forward if less than 256 to DRAW-SAVE
+
+;    For an arc, a limit of 252 is imposed.
+
+;; USE-252
+L2495:  LD      A,$FC           ; Use a value of 252 (for arc).
+
+
+;   For both arcs and circles, constants derived from the central angle are
+;   stored in the 'mem' locations.  Some are not relevant for the circle.
+
+;; DRAW-SAVE
+L2497:  PUSH    AF              ; Save the line count (A) on the machine stack.
+
+        CALL    L2D28           ; Routine STACK-A stacks the modified count(A).
+
+        RST     28H             ;; FP-CALC      z, A.
+        DEFB    $E5             ;;get-mem-5     z, A, ANGLE.
+        DEFB    $01             ;;exchange      z, ANGLE, A.
+        DEFB    $05             ;;division      z, ANGLE/A. (Angle/count = a)
+        DEFB    $31             ;;duplicate     z, a, a. 
+
+;  Note. that cos (a) could be formed here directly using 'cos' and stored in 
+;  mem-3 but that would spoil a good story and be slightly slower, as also 
+;  would using square roots to form cos (a) from sin (a).
+
+        DEFB    $1F             ;;sin           z, a, sin(a)
+        DEFB    $C4             ;;st-mem-4      z, a, sin(a)
+        DEFB    $02             ;;delete        z, a.
+        DEFB    $31             ;;duplicate     z, a, a.            
+        DEFB    $A2             ;;stk-half      z, a, a, 1/2.
+        DEFB    $04             ;;multiply      z, a, a/2.
+        DEFB    $1F             ;;sin           z, a, sin(a/2).
+
+;   Note. after second sin, mem-0 and mem-1 become free.
+
+        DEFB    $C1             ;;st-mem-1      z, a, sin(a/2).
+        DEFB    $01             ;;exchange      z, sin(a/2), a.
+        DEFB    $C0             ;;st-mem-0      z, sin(a/2), a.  (for arc only)
+
+;   Now form cos(a) from sin(a/2) using the 'DOUBLE ANGLE FORMULA'.
+
+        DEFB    $02             ;;delete        z, sin(a/2).
+        DEFB    $31             ;;duplicate     z, sin(a/2), sin(a/2).
+        DEFB    $04             ;;multiply      z, sin(a/2)*sin(a/2).
+        DEFB    $31             ;;duplicate     z, sin(a/2)*sin(a/2),
+                                ;;                           sin(a/2)*sin(a/2).
+        DEFB    $0F             ;;addition      z, 2*sin(a/2)*sin(a/2).
+        DEFB    $A1             ;;stk-one       z, 2*sin(a/2)*sin(a/2), 1.
+        DEFB    $03             ;;subtract      z, 2*sin(a/2)*sin(a/2)-1.
+
+        DEFB    $1B             ;;negate        z, 1-2*sin(a/2)*sin(a/2).  
+
+        DEFB    $C3             ;;st-mem-3      z, cos(a).
+        DEFB    $02             ;;delete        z.
+        DEFB    $38             ;;end-calc      z.
+
+;   The radius/diameter is left on the calculator stack.
+
+        POP     BC              ; Restore the line count to the B register.
+
+        RET                     ; Return.
+
+; --------------------------
+; THE 'DOUBLE ANGLE FORMULA'
+; --------------------------
+;   This formula forms cos(a) from sin(a/2) using simple arithmetic.
+;
+;   THE GEOMETRIC PROOF OF FORMULA   cos (a) = 1 - 2 * sin(a/2) * sin(a/2)
+;                                                                    
+;                                                                   
+;                                            A                     
+;                                                                 
+;                                         . /|\                      
+;                                     .    / | \                     
+;                                  .      /  |  \                    
+;                               .        /   |a/2\                   
+;                            .          /    |    \                  
+;                         .          1 /     |     \                 
+;                      .              /      |      \                
+;                   .                /       |       \               
+;                .                  /        |        \              
+;             .  a/2             D / a      E|-+       \             
+;          B ---------------------/----------+-+--------\ C
+;            <-         1       -><-       1           ->           
+;
+;   cos a = 1 - 2 * sin(a/2) * sin(a/2)
+;
+;   The figure shows a right triangle that inscribes a circle of radius 1 with
+;   centre, or origin, D.  Line BC is the diameter of length 2 and A is a point 
+;   on the circle. The periphery angle BAC is therefore a right angle by the 
+;   Rule of Thales 640-546 B.C.  
+;   Line AC is a chord touching two points on the circle and the angle at the 
+;   centre is (a).
+;   Since the vertex of the largest triangle B touches the circle, the 
+;   inscribed angle (a/2) is half the central angle (a).
+;   The cosine of (a) is the length DE as the hypotenuse is of length 1.
+;   This can also be expressed as 1-length CE.  Examining the triangle at the
+;   right, the top angle is also (a/2) as angle BAE and EBA add to give a right
+;   angle as do BAE and EAC.
+;   So cos (a) = 1 - AC * sin(a/2) 
+;   Looking at the largest triangle, side AC can be expressed as 
+;   AC = 2 * sin(a/2)   and so combining these we get 
+;   cos (a) = 1 - 2 * sin(a/2) * sin(a/2).
+;
+; --------------------------
+; THE 'LINE DRAWING' ROUTINE
+; --------------------------
+;
+;
+
+;; DRAW-LINE
+L24B7:  CALL    L2307           ; routine STK-TO-BC
+        LD      A,C             ;
+        CP      B               ;
+        JR      NC,L24C4        ; to DL-X-GE-Y
+
+        LD      L,C             ;
+        PUSH    DE              ;
+        XOR     A               ;
+        LD      E,A             ;
+        JR      L24CB           ; to DL-LARGER
+
+; ---
+
+;; DL-X-GE-Y
+L24C4:  OR      C               ;
+        RET     Z               ;
+
+        LD      L,B             ;
+        LD      B,C             ;
+        PUSH    DE              ;
+        LD      D,$00           ;
+
+;; DL-LARGER
+L24CB:  LD      H,B             ;
+        LD      A,B             ;
+        RRA                     ;
+
+;; D-L-LOOP
+L24CE:  ADD     A,L             ;
+        JR      C,L24D4         ; to D-L-DIAG
+
+        CP      H               ;
+        JR      C,L24DB         ; to D-L-HR-VT
+
+;; D-L-DIAG
+L24D4:  SUB     H               ;
+        LD      C,A             ;
+        EXX                     ;
+        POP     BC              ;
+        PUSH    BC              ;
+        JR      L24DF           ; to D-L-STEP
+
+; ---
+
+;; D-L-HR-VT
+L24DB:  LD      C,A             ;
+        PUSH    DE              ;
+        EXX                     ;
+        POP     BC              ;
+
+;; D-L-STEP
+L24DF:  LD      HL,($5C7D)      ; COORDS
+        LD      A,B             ;
+        ADD     A,H             ;
+        LD      B,A             ;
+        LD      A,C             ;
+        INC     A               ;
+        ADD     A,L             ;
+        JR      C,L24F7         ; to D-L-RANGE
+
+        JR      Z,L24F9         ; to REPORT-Bc
+
+;; D-L-PLOT
+L24EC:  DEC     A               ;
+        LD      C,A             ;
+        CALL    L22E5           ; routine PLOT-SUB
+        EXX                     ;
+        LD      A,C             ;
+        DJNZ    L24CE           ; to D-L-LOOP
+
+        POP     DE              ;
+        RET                     ;
+
+; ---
+
+;; D-L-RANGE
+L24F7:  JR      Z,L24EC         ; to D-L-PLOT
 
 
 ;; REPORT-Bc
@@ -11476,7 +12561,7 @@ L2672:  CALL    L2522           ; routine S-2-COORD
 ; ->
 ;; S-POINT
 L267B:  CALL    L2522           ; routine S-2-COORD
-;        CALL    NZ,L22CB        ; routine POINT-SUB
+        CALL    NZ,L22CB        ; routine POINT-SUB
 
         RST     20H             ; NEXT-CHAR
         JR      L26C3           ; forward to S-NUMERIC
