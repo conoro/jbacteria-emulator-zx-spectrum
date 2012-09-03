@@ -85,23 +85,6 @@ pal= [[  0,   0,   0],
       [  0, 255,   0],
       [  0, 255, 255],
       [255, 255,   0],
-      [255, 255, 255],
-// grayscale
-      [  0,   0,   0],
-      [ 23,  23,  23],
-      [ 60,  60,  60],
-      [ 83,  83,  83],
-      [119, 119, 119],
-      [142, 142, 142],
-      [179, 179, 179],
-      [198, 198, 198],
-      [  0,   0,   0],
-      [ 29,  29,  29],
-      [ 76,  76,  76],
-      [105, 105, 105],
-      [150, 150, 150],
-      [179, 179, 179],
-      [226, 226, 226],
       [255, 255, 255]];
 
 function bytes(a) {
@@ -167,7 +150,6 @@ function run() {
 }
 
 function init() {
-  paintScreen= paintNormal;
 document.body.style.backgroundColor= '#111';
   cv.setAttribute('style', 'image-rendering:'+( localStorage.ft & 1
                                                 ? 'optimizeSpeed'
@@ -176,8 +158,7 @@ document.body.style.backgroundColor= '#111';
   scrl= ula= sample= pbcs= pbc= cts= playp= vbp= bor= f1= f3= f4= st= time= flash= 0;
   if( localStorage.ft==undefined )
     localStorage.ft= 4;
-  if ( localStorage.ft & 8 )
-    rotapal();
+  paintScreen= localStorage.ft&8 ? paintBascolace : paintNormal;
   a= b= c= d= e= h= l= fa= fb= fr= ff= xl= xh= r7= i= sp= 
   a_=b_=c_=d_=e_=h_=l_=fa_=fb_=fr_=ff_=yl= yh= r= pc= iff= im= halted= t= u= 0;
   pbf= ' / '+('0'+parseInt(pbf/3000)).slice(-2)+':'+('0'+parseInt(pbf/50)%60).slice(-2);
@@ -213,6 +194,15 @@ document.body.style.backgroundColor= '#111';
       ; j < 0x2000
       ; j++ )        // fill memory
     m[j]= emul.charCodeAt(j+0xc00c);
+  run();
+  run();
+  run();
+  run();
+  run();
+  for ( j= 0
+      ; j < 0x2000
+      ; j++ )        // fill memory
+    m[j]= emul.charCodeAt(j+0xe00c);
   game && tp();
   document.ondragover= handleDragOver;
   document.ondrop= handleFileSelect;
@@ -438,8 +428,8 @@ function kdown(ev) {
       }
       break;
     case 118: // F7
+      paintScreen= paintScreen==paintNormal ? paintBascolace : paintNormal;
       localStorage.ft^= 8;
-      rotapal();
       break;
     case 119: // F8
       paintScreen= paintNormal;
@@ -676,15 +666,6 @@ function loadblock() {
   pt.selectedIndex= tapei;
 }
 
-function rotapal(){
-  for (t= 0; t < 16; t++)
-    u= pal[t],
-    pal[t]= pal[t+16],
-    pal[t+16]= u;
-//  for (t= 0; t < 0x1800; t++)
-//    vm[t]= -1;
-}
-
 function rt(f){
   rm(f);
   pbcs= pbc= pbt;
@@ -703,13 +684,13 @@ function paintNormal(){
   t= -1;
   while( t++ < 0x2ff )
     if( (u=m[t+0x2000]) & 0x80 )
-      for ( v= u<<3 | 0x2800
+      for ( u= u<<3 | 0x2800
           , o= t>>5 << 13
              | t<<5 & 0x3ff
           , n= 8
           ; n--
           ; o+= 0x400 )
-        k= m[v++],
+        k= m[u++],
         eld[o   ]= eld[o+1 ]= eld[o+2 ]= k&0x80 ? 0 : 0xff,
         eld[o+4 ]= eld[o+5 ]= eld[o+6 ]= k&0x40 ? 0 : 0xff,
         eld[o+8 ]= eld[o+9 ]= eld[o+10]= k&0x20 ? 0 : 0xff,
@@ -719,13 +700,13 @@ function paintNormal(){
         eld[o+24]= eld[o+25]= eld[o+26]= k&0x02 ? 0 : 0xff,
         eld[o+28]= eld[o+29]= eld[o+30]= k&0x01 ? 0 : 0xff;
     else
-      for ( v= u<<3 | 0x2800
+      for ( u= u<<3 | 0x2800
           , o= t>>5 << 13
              | t<<5 & 0x3ff
           , n= 8
           ; n--
           ; o+= 0x400 )
-        k= m[v++],
+        k= m[u++],
         eld[o   ]= eld[o+1 ]= eld[o+2 ]= k&0x80 ? 0xff : 0,
         eld[o+4 ]= eld[o+5 ]= eld[o+6 ]= k&0x40 ? 0xff : 0,
         eld[o+8 ]= eld[o+9 ]= eld[o+10]= k&0x20 ? 0xff : 0,
@@ -734,6 +715,89 @@ function paintNormal(){
         eld[o+20]= eld[o+21]= eld[o+22]= k&0x04 ? 0xff : 0,
         eld[o+24]= eld[o+25]= eld[o+26]= k&0x02 ? 0xff : 0,
         eld[o+28]= eld[o+29]= eld[o+30]= k&0x01 ? 0xff : 0;
+  ct.putImageData(elm, 0, 0);
+}
+
+function paintBascolace(){
+  t= -1;
+  while( t++ < 0x2ff )
+    for ( u= m[t+0x2000]
+        , v= u & 0x80 ? 255 : 0
+        , fo= pal[ m[t+0x4000]>>3 & 15 ]
+        , ti= pal[ m[t+0x4000]>>3 & 8 
+                 | m[t+0x4000]    & 7 ]
+        , u= u<<3 | 0x2800
+        , o= t>>5 << 13
+           | t<<5 & 0x3ff
+        , n= 8
+        ; n--
+        ; o+= 0x400 ){
+      k= m[u++]^v;
+      if( k&128 )
+        eld[o  ]= ti[0],
+        eld[o+1]= ti[1],
+        eld[o+2]= ti[2];
+      else
+        eld[o  ]= fo[0],
+        eld[o+1]= fo[1],
+        eld[o+2]= fo[2];
+      if( k&64 )
+        eld[o+4]= ti[0],
+        eld[o+5]= ti[1],
+        eld[o+6]= ti[2];
+      else
+        eld[o+4]= fo[0],
+        eld[o+5]= fo[1],
+        eld[o+6]= fo[2];
+      if( k&32 )
+        eld[o+8 ]= ti[0],
+        eld[o+9 ]= ti[1],
+        eld[o+10]= ti[2];
+      else
+        eld[o+8 ]= fo[0],
+        eld[o+9 ]= fo[1],
+        eld[o+10]= fo[2];
+      if( k&16 )
+        eld[o+12]= ti[0],
+        eld[o+13]= ti[1],
+        eld[o+14]= ti[2];
+      else
+        eld[o+12]= fo[0],
+        eld[o+13]= fo[1],
+        eld[o+14]= fo[2];
+      if( k&8 )
+        eld[o+16]= ti[0],
+        eld[o+17]= ti[1],
+        eld[o+18]= ti[2];
+      else
+        eld[o+16]= fo[0],
+        eld[o+17]= fo[1],
+        eld[o+18]= fo[2];
+      if( k&4 )
+        eld[o+20]= ti[0],
+        eld[o+21]= ti[1],
+        eld[o+22]= ti[2];
+      else
+        eld[o+20]= fo[0],
+        eld[o+21]= fo[1],
+        eld[o+22]= fo[2];
+      if( k&2 )
+        eld[o+24]= ti[0],
+        eld[o+25]= ti[1],
+        eld[o+26]= ti[2];
+      else
+        eld[o+24]= fo[0],
+        eld[o+25]= fo[1],
+        eld[o+26]= fo[2];
+      if( k&1 )
+        eld[o+28]= ti[0],
+        eld[o+29]= ti[1],
+        eld[o+30]= ti[2];
+      else
+        eld[o+28]= fo[0],
+        eld[o+29]= fo[1],
+        eld[o+30]= fo[2];
+    }
   ct.putImageData(elm, 0, 0);
 }
 
