@@ -3610,7 +3610,10 @@ L0B76:  LD      H,$00           ; set high byte to 0
 ;   BC=line/column
 
 ;; PR-ALL
-L0B7F:  LD      A,C             ; column to A
+L0B7F:  bit     1,(iy+$01)      ; test FLAGS  - Is printer in use
+        jr      nz,L0B83        ; to PR-ALL-1 so
+        ld      (hl), a
+L0B83:  LD      A,C             ; column to A
         DEC     A               ; move right
         LD      A,$21           ; pre-load with leftmost position
         JR      NZ,L0B93        ; but if not zero to PR-ALL-1
@@ -3632,6 +3635,10 @@ L0B93:  CP      C               ; this test is really for screen - new line ?
         CALL    Z,L0C55         ; routine PO-SCR considers scrolling
 
         POP     DE              ; restore source
+
+        bit     1, (iy+$01)     ; test FLAGS  - is printer in use
+        jr      z, L0BCC        ; to PR-ALL-1 if not
+
         PUSH    BC              ; save line/column
         PUSH    HL              ; and destination
         LD      A,($5C91)       ; fetch P_FLAG to accumulator
@@ -3682,7 +3689,7 @@ L0BC1:  INC     HL              ; address next character byte
                                 ; corresponding colour attribute.
         POP     HL              ; restore original screen/printer position
         POP     BC              ; and line column
-        DEC     C               ; move column to right
+L0BCC:  DEC     C               ; move column to right
         INC     HL              ; increase screen/printer position
         RET                     ; return and continue into PO-STORE
                                 ; within PO-ABLE
@@ -4145,7 +4152,7 @@ L0D6E:  LD      HL,$5C3C        ; address System Variable TV_FLAG.
         RES     5,(HL)          ; TV_FLAG - signal do not clear lower screen.
         SET     0,(HL)          ; TV_FLAG - signal lower screen in use.
 
-        CALL    L0D4D           ; routine TEMPS applies permanent attributes,
+;        CALL    L0D4D           ; routine TEMPS applies permanent attributes,
                                 ; in this case BORDCR to ATTR_T.
                                 ; Note. this seems unnecessary and is repeated 
                                 ; within CL-LINE.
@@ -4156,7 +4163,8 @@ L0D6E:  LD      HL,$5C3C        ; address System Variable TV_FLAG.
                                 ; display and sets attributes from BORDCR while
                                 ; preserving the B register.
 
-        LD      HL,$5AC0        ; set initial attribute address to the leftmost 
+        ld      hl, $27c0       ; set initial attribute address to the leftmost 
+;        LD      HL,$5AC0        ; set initial attribute address to the leftmost 
                                 ; cell of second line up.
 
         LD      A,($5C8D)       ; fetch permanent attribute from ATTR_P.
@@ -4374,46 +4382,66 @@ L0E19:  EX      DE,HL           ; save source in DE.
 ;; CL-LINE
 L0E44:  PUSH    BC              ; save line count
         CALL    L0E9B           ; routine CL-ADDR gets top address
-        LD      C,$08           ; there are eight screen lines to a text line.
+;        LD      C,$08           ; there are eight screen lines to a text line.
 
 ;; CL-LINE-1
-L0E4A:  PUSH    BC              ; save pixel line count
-        PUSH    HL              ; and save the address
-        LD      A,B             ; transfer the line to A (1-24).
+L0E4A:  ;PUSH    BC              ; save pixel line count
+        ;PUSH    HL              ; and save the address
+        ld      (hl), 0
+        ex      de, hl
+        ld      hl, $26ff
+        sbc     hl, de
+        ld      b, h
+        ld      c, l
+        ld      h, d
+        ld      l, e
+        inc     de
+        push    hl
+        push    bc
+        ldir
+        pop     bc
+        pop     hl
+        ld      a, h
+        add     a, $1c
+        ld      h, a
+        ld      d, h
+        ld      e, l
+
+;        LD      A,B             ; transfer the line to A (1-24).
 
 ;; CL-LINE-2
-L0E4D:  AND     $07             ; mask 0-7 to consider thirds at a time
-        RRCA                    ; multiply
-        RRCA                    ; by 32  (same as five RLCA instructions)
-        RRCA                    ; now 32 - 256(0)
-        LD      C,A             ; store result in C
-        LD      A,B             ; save line in A (1-24)
-        LD      B,$00           ; set high byte to 0, prepare for ldir.
-        DEC     C               ; decrement count 31-255.
-        LD      D,H             ; copy HL
-        LD      E,L             ; to DE.
-        LD      (HL),$00        ; blank the first byte.
-        INC     DE              ; make DE point to next byte.
-        LDIR                    ; ldir will clear lines.
-        LD      DE,$0701        ; now address next third adjusting
-        ADD     HL,DE           ; register E to address left hand side
-        DEC     A               ; decrease the line count.
-        AND     $F8             ; will be 16, 8 or 0  (AND $18 will do).
-        LD      B,A             ; transfer count to B.
-        JR      NZ,L0E4D        ; back to CL-LINE-2 if 16 or 8 to do
-                                ; the next third.
+;L0E4D:  AND     $07             ; mask 0-7 to consider thirds at a time
+;        RRCA                    ; multiply
+;        RRCA                    ; by 32  (same as five RLCA instructions)
+;        RRCA                    ; now 32 - 256(0)
+;        LD      C,A             ; store result in C
+;        LD      A,B             ; save line in A (1-24)
+;        LD      B,$00           ; set high byte to 0, prepare for ldir.
+;        DEC     C               ; decrement count 31-255.
+;        LD      D,H             ; copy HL
+;        LD      E,L             ; to DE.
+;        LD      (HL),$00        ; blank the first byte.
+;        INC     DE              ; make DE point to next byte.
+;        LDIR                    ; ldir will clear lines.
+;        LD      DE,$0701        ; now address next third adjusting
+;        ADD     HL,DE           ; register E to address left hand side
+;        DEC     A               ; decrease the line count.
+;        AND     $F8             ; will be 16, 8 or 0  (AND $18 will do).
+;        LD      B,A             ; transfer count to B.
+;        JR      NZ,L0E4D        ; back to CL-LINE-2 if 16 or 8 to do
+;                                ; the next third.
 
-        POP     HL              ; restore start address.
-        INC     H               ; address next line down.
-        POP     BC              ; fetch counts.
-        DEC     C               ; decrement pixel line count
-        JR      NZ,L0E4A        ; back to CL-LINE-1 till all done.
+;        POP     HL              ; restore start address.
+;        INC     H               ; address next line down.
+;        POP     BC              ; fetch counts.
+;        DEC     C               ; decrement pixel line count
+;        JR      NZ,L0E4A        ; back to CL-LINE-1 till all done.
 
-        CALL    L0E88           ; routine CL-ATTR gets attribute address
+;        CALL    L0E88           ; routine CL-ATTR gets attribute address
                                 ; in DE and B * 32 in BC.
 
-        LD      H,D             ; transfer the address
-        LD      L,E             ; to HL.
+;        LD      H,D             ; transfer the address
+;        LD      L,E             ; to HL.
 
         INC     DE              ; make DE point to next location.
 
@@ -4425,10 +4453,10 @@ L0E4D:  AND     $07             ; mask 0-7 to consider thirds at a time
 
 ;; CL-LINE-3
 L0E80:  LD      (HL),A          ; put attribute in first byte.
-        DEC     BC              ; decrement the counter.
+;        DEC     BC              ; decrement the counter.
         LDIR                    ; copy bytes to set all attributes.
         POP     BC              ; restore the line $01-$24.
-        LD      C,$21           ; make column $21. (No use is made of this)
+;        LD      C,$21           ; make column $21. (No use is made of this)
         RET                     ; return to the calling routine.
 
 ; ------------------
@@ -4474,21 +4502,27 @@ L0E88:  LD      A,H             ; fetch H to A - $48, $50, or $58.
 ;; CL-ADDR
 L0E9B:  LD      A,$18           ; reverse the line number
         SUB     B               ; to range $00 - $17.
-        LD      D,A             ; save line in D for later.
-        RRCA                    ; multiply
-        RRCA                    ; by
-        RRCA                    ; thirty-two.
 
-        AND     $E0             ; mask off low bits to make
+;        LD      D,A             ; save line in D for later.
+;        RRCA                    ; multiply
+;        RRCA                    ; by
+;        RRCA                    ; thirty-two.
+
+;        AND     $E0             ; mask off low bits to make
         LD      L,A             ; L a multiple of 32.
+        add     hl, hl
+        add     hl, hl
+        add     hl, hl
+        ld      h, 9
+        add     hl, hl
+        add     hl, hl
+;        LD      A,D             ; bring back the line to A.
 
-        LD      A,D             ; bring back the line to A.
+;        AND     $18             ; now $00, $08 or $10.
 
-        AND     $18             ; now $00, $08 or $10.
+;        OR      $40             ; add the base address of screen.
 
-        OR      $40             ; add the base address of screen.
-
-        LD      H,A             ; HL now has the correct address.
+;        LD      H,A             ; HL now has the correct address.
         RET                     ; return.
 
 ; -------------------
@@ -5897,6 +5931,8 @@ L133C:  CALL    L15EF           ; call routine OUT-CODE to print the code.
 
 ;;;     LD      A,$20           ; followed by a space.
 ;;;     RST     10H             ; PRINT-A
+
+ ;; abcd tstmsg es 6380 y cae fuera de RAM
 
         JP      TSTMSG          ;+ New routine considers the NMI message.
 
@@ -10016,6 +10052,13 @@ L1FF5:  CALL    L1FC3           ; routine UNSTACK-Z
         ldir
         jp      $4700
 
+        ld      d, $29
+twti    ld      b, 3
+        ld      hl, $1D00
+        ldir
+        bit     5, d
+        ld      d, $44
+        jr      nz, twti
 again   ld      a, (bc)
         cp      $f3
         jr      nz, again
@@ -10870,17 +10913,17 @@ L2294:  CALL    L1E94           ; routine FIND-INT1
 
 ;   Note. The next location is called from the Opus Discovery disk interface.
 
-x229B:  OUT     ($FE),A         ; outputting to port effects an immediate change
+x229B:  ;OUT     ($FE),A         ; outputting to port effects an immediate change
 
-        RLCA                    ; shift the colour to
-        RLCA                    ; the paper bits setting the
-        RLCA                    ; ink colour black.
+        ;RLCA                    ; shift the colour to
+        ;RLCA                    ; the paper bits setting the
+        ;RLCA                    ; ink colour black.
 
-        BIT     5,A             ; is the number light coloured ?
+        ;BIT     5,A             ; is the number light coloured ?
                                 ; i.e. in the range green to white.
-        JR      NZ,L22A6        ; skip to BORDER-1 if so
+        ;JR      NZ,L22A6        ; skip to BORDER-1 if so
 
-        XOR     $07             ; make the ink white.
+        ;XOR     $07             ; make the ink white.
 
 ;; BORDER-1
 L22A6:  LD      ($5C48),A       ; update BORDCR with new paper/ink
