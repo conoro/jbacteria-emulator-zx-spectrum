@@ -8,7 +8,15 @@
 
 ; Tamaño inicial                                              $386e
 ; Cambiando rutina inicio por Reset & Play                    $3854
-; voy por $37c3, si borro lo de L0EDF me da error be9
+; Quitando manejo de impresora                                $3793
+; Desactivo BORDER,POINT,PLOT,CIRCLE,DRAW                     $3766
+; Quito 'ZX81 NAME'                                           $374e
+; Quito código en LLIST y LPRINT                              $3740
+; Quitar nombres de comandos no usados                        $3726
+; Quito temporalmente la orden SAVE                           $3674
+; Quito rutina 'FREE MEMORY' y REC-EDIT                       $3664
+; Quito algo de CLOSE, no estoy seguro si está bien           $3644
+
 ;************************************************************************
 ;** An Assembly File Listing to generate a 16K ROM for the ZX Spectrum **
 ;************************************************************************
@@ -426,14 +434,18 @@ L0095:  DEFB    '?'+$80
         DEFB    'P'+$80
         DEFM    "DEF F"
         DEFB    'N'+$80
-        DEFM    "CA"
-        DEFB    'T'+$80
-        DEFM    "FORMA"
-        DEFB    'T'+$80
-        DEFM    "MOV"
-        DEFB    'E'+$80
-        DEFM    "ERAS"
-        DEFB    'E'+$80
+        DEFB    '~'+$80
+;        DEFM    "CA"
+;        DEFB    'T'+$80
+        DEFB    '~'+$80
+;        DEFM    "FORMA"
+;        DEFB    'T'+$80
+        DEFB    '~'+$80
+;        DEFM    "MOV"
+;        DEFB    'E'+$80
+        DEFB    '~'+$80
+;        DEFM    "ERAS"
+;        DEFB    'E'+$80
         DEFM    "OPEN "
         DEFB    '#'+$80
         DEFM    "CLOSE "
@@ -460,10 +472,12 @@ L0095:  DEFB    '?'+$80
         DEFB    'R'+$80
         DEFM    "OU"
         DEFB    'T'+$80
-        DEFM    "LPRIN"
-        DEFB    'T'+$80
-        DEFM    "LLIS"
-        DEFB    'T'+$80
+;        DEFM    "LPRIN"
+;        DEFB    'T'+$80
+        DEFB    '~'+$80
+;        DEFM    "LLIS"
+;        DEFB    'T'+$80
+        DEFB    '~'+$80
         DEFM    "STO"
         DEFB    'P'+$80
         DEFM    "REA"
@@ -521,8 +535,9 @@ L0095:  DEFB    '?'+$80
         DEFB    'R'+$80
         DEFM    "RETUR"
         DEFB    'N'+$80
-        DEFM    "COP"
-        DEFB    'Y'+$80
+        DEFB    '~'+$80
+;        DEFM    "COP"
+;        DEFB    'Y'+$80
 
 ; ----------------
 ; THE 'KEY' TABLES
@@ -1469,27 +1484,27 @@ L046E:  DEFB    $89, $02, $D0, $12, $86;  261.625565290         C
 ;   cassette handling routines in this ROM.
 
 ;; zx81-name
-L04AA:  CALL    L24FB           ; routine SCANNING to evaluate expression.
-        LD      A,($5C3B)       ; fetch system variable FLAGS.
-        ADD     A,A             ; test bit 7 - syntax, bit 6 - result type.
-        JP      M,L1C8A         ; to REPORT-C if not string result
-                                ; 'Nonsense in BASIC'.
+;L04AA:  CALL    L24FB           ; routine SCANNING to evaluate expression.
+;        LD      A,($5C3B)       ; fetch system variable FLAGS.
+;        ADD     A,A             ; test bit 7 - syntax, bit 6 - result type.
+;        JP      M,L1C8A         ; to REPORT-C if not string result
+;                                ; 'Nonsense in BASIC'.
 
-        POP     HL              ; drop return address.
-        RET     NC              ; return early if checking syntax.
+;        POP     HL              ; drop return address.
+;        RET     NC              ; return early if checking syntax.
 
-        PUSH    HL              ; re-save return address.
-        CALL    L2BF1           ; routine STK-FETCH fetches string parameters.
-        LD      H,D             ; transfer start of filename
-        LD      L,E             ; to the HL register.
-        DEC     C               ; adjust to point to last character and
-        RET     M               ; return if the null string.
-                                ; or multiple of 256!
+;        PUSH    HL              ; re-save return address.
+;        CALL    L2BF1           ; routine STK-FETCH fetches string parameters.
+;        LD      H,D             ; transfer start of filename
+;        LD      L,E             ; to the HL register.
+;        DEC     C               ; adjust to point to last character and
+;        RET     M               ; return if the null string.
+;                                ; or multiple of 256!
 
-        ADD     HL,BC           ; find last character of the filename.
-                                ; and also clear carry.
-        SET     7,(HL)          ; invert it.
-        RET                     ; return.
+;        ADD     HL,BC           ; find last character of the filename.
+;                                ; and also clear carry.
+;        SET     7,(HL)          ; invert it.
+;        RET                     ; return.
 
 ; =========================================
 ;
@@ -1515,83 +1530,83 @@ L04AA:  CALL    L24FB           ; routine SCANNING to evaluate expression.
 ;   The accumulator is set to  $00 for a header, $FF for data.
 
 ;; SA-BYTES
-L04C2:  LD      HL,L053F        ; address: SA/LD-RET
-        PUSH    HL              ; is pushed as common exit route.
-                                ; however there is only one non-terminal exit 
-                                ; point.
+;L04C2:  LD      HL,L053F        ; address: SA/LD-RET
+;        PUSH    HL              ; is pushed as common exit route.
+;                                ; however there is only one non-terminal exit 
+;                                ; point.
 
-        LD      HL,$1F80        ; a timing constant H=$1F, L=$80
-                                ; inner and outer loop counters
-                                ; a five second lead-in is used for a header.
+;        LD      HL,$1F80        ; a timing constant H=$1F, L=$80
+;                                ; inner and outer loop counters
+;                                ; a five second lead-in is used for a header.
 
-        BIT     7,A             ; test one bit of accumulator.
-                                ; (AND A ?)
-        JR      Z,L04D0         ; skip to SA-FLAG if a header is being saved.
+;        BIT     7,A             ; test one bit of accumulator.
+;                                ; (AND A ?)
+;        JR      Z,L04D0         ; skip to SA-FLAG if a header is being saved.
 
 ;   else is data bytes and a shorter lead-in is used.
 
-        LD      HL,$0C98        ; another timing value H=$0C, L=$98.
-                                ; a two second lead-in is used for the data.
+;        LD      HL,$0C98        ; another timing value H=$0C, L=$98.
+;                                ; a two second lead-in is used for the data.
 
 
 ;; SA-FLAG
-L04D0:  EX      AF,AF'          ; save flag
-        INC     DE              ; increase length by one.
-        DEC     IX              ; decrease start.
+;L04D0:  EX      AF,AF'          ; save flag
+;        INC     DE              ; increase length by one.
+;        DEC     IX              ; decrease start.
 
-        DI                      ; disable interrupts
+;        DI                      ; disable interrupts
 
-        LD      A,$02           ; select red for border, microphone bit on.
-        LD      B,A             ; also does as an initial slight counter value.
+;        LD      A,$02           ; select red for border, microphone bit on.
+;        LD      B,A             ; also does as an initial slight counter value.
 
 ;; SA-LEADER
-L04D8:  DJNZ    L04D8           ; self loop to SA-LEADER for delay.
-                                ; after initial loop, count is $A4 (or $A3)
+;L04D8:  DJNZ    L04D8           ; self loop to SA-LEADER for delay.
+;                                ; after initial loop, count is $A4 (or $A3)
 
-        OUT     ($FE),A         ; output byte $02/$0D to tape port.
+;        OUT     ($FE),A         ; output byte $02/$0D to tape port.
 
-        XOR     $0F             ; switch from RED (mic on) to CYAN (mic off).
+;        XOR     $0F             ; switch from RED (mic on) to CYAN (mic off).
 
-        LD      B,$A4           ; hold count. also timed instruction.
+;        LD      B,$A4           ; hold count. also timed instruction.
 
-        DEC     L               ; originally $80 or $98.
-                                ; but subsequently cycles 256 times.
-        JR      NZ,L04D8        ; back to SA-LEADER until L is zero.
+;        DEC     L               ; originally $80 or $98.
+;                                ; but subsequently cycles 256 times.
+;        JR      NZ,L04D8        ; back to SA-LEADER until L is zero.
 
 ;   the outer loop is counted by H
 
-        DEC     B               ; decrement count
-        DEC     H               ; originally  twelve or thirty-one.
-        JP      P,L04D8         ; back to SA-LEADER until H becomes $FF
+;        DEC     B               ; decrement count
+;        DEC     H               ; originally  twelve or thirty-one.
+;        JP      P,L04D8         ; back to SA-LEADER until H becomes $FF
 
 ;   now send a sync pulse. At this stage mic is off and A holds value
 ;   for mic on.
 ;   A sync pulse is much shorter than the steady pulses of the lead-in.
 
-        LD      B,$2F           ; another short timed delay.
+;        LD      B,$2F           ; another short timed delay.
 
 ;; SA-SYNC-1
-L04EA:  DJNZ    L04EA           ; self loop to SA-SYNC-1
+;L04EA:  DJNZ    L04EA           ; self loop to SA-SYNC-1
 
-        OUT     ($FE),A         ; switch to mic on and red.
-        LD      A,$0D           ; prepare mic off - cyan
-        LD      B,$37           ; another short timed delay.
+;        OUT     ($FE),A         ; switch to mic on and red.
+;        LD      A,$0D           ; prepare mic off - cyan
+;        LD      B,$37           ; another short timed delay.
 
 ;; SA-SYNC-2
-L04F2:  DJNZ    L04F2           ; self loop to SA-SYNC-2
+;L04F2:  DJNZ    L04F2           ; self loop to SA-SYNC-2
 
-        OUT     ($FE),A         ; output mic off, cyan border.
-        LD      BC,$3B0E        ; B=$3B time(*), C=$0E, YELLOW, MIC OFF.
+;        OUT     ($FE),A         ; output mic off, cyan border.
+;        LD      BC,$3B0E        ; B=$3B time(*), C=$0E, YELLOW, MIC OFF.
 
 ; 
 
-        EX      AF,AF'          ; restore saved flag
-                                ; which is 1st byte to be saved.
+;        EX      AF,AF'          ; restore saved flag
+;                                ; which is 1st byte to be saved.
 
-        LD      L,A             ; and transfer to L.
-                                ; the initial parity is A, $FF or $00.
-        JP      L0507           ; JUMP forward to SA-START     ->
-                                ; the mid entry point of loop.
+;        LD      L,A             ; and transfer to L.
+;                                ; the initial parity is A, $FF or $00.
+;        JP      L0507           ; JUMP forward to SA-START     ->
+;                                ; the mid entry point of loop.
 
 ; -------------------------
 ;   During the save loop a parity byte is maintained in H.
@@ -1599,30 +1614,30 @@ L04F2:  DJNZ    L04F2           ; self loop to SA-SYNC-2
 ;   the final parity byte is saved reducing count to $FFFF.
 
 ;; SA-LOOP
-L04FE:  LD      A,D             ; fetch high byte
-        OR      E               ; test against low byte.
-        JR      Z,L050E         ; forward to SA-PARITY if zero.
+;L04FE:  LD      A,D             ; fetch high byte
+;        OR      E               ; test against low byte.
+;        JR      Z,L050E         ; forward to SA-PARITY if zero.
 
-        LD      L,(IX+$00)      ; load currently addressed byte to L.
+;        LD      L,(IX+$00)      ; load currently addressed byte to L.
 
 ;; SA-LOOP-P
-L0505:  LD      A,H             ; fetch parity byte.
-        XOR     L               ; exclusive or with new byte.
+;L0505:  LD      A,H             ; fetch parity byte.
+;        XOR     L               ; exclusive or with new byte.
 
 ; -> the mid entry point of loop.
 
 ;; SA-START
-L0507:  LD      H,A             ; put parity byte in H.
-        LD      A,$01           ; prepare blue, mic=on.
-        SCF                     ; set carry flag ready to rotate in.
-        JP      L0525           ; JUMP forward to SA-8-BITS            -8->
+;L0507:  LD      H,A             ; put parity byte in H.
+;        LD      A,$01           ; prepare blue, mic=on.
+;        SCF                     ; set carry flag ready to rotate in.
+;        JP      L0525           ; JUMP forward to SA-8-BITS            -8->
 
 ; ---
 
 ;; SA-PARITY
-L050E:  LD      L,H             ; transfer the running parity byte to L and
-        JR      L0505           ; back to SA-LOOP-P 
-                                ; to output that byte before quitting normally.
+;L050E:  LD      L,H             ; transfer the running parity byte to L and
+;        JR      L0505           ; back to SA-LOOP-P 
+;                                ; to output that byte before quitting normally.
 
 ; ---
 
@@ -1634,69 +1649,69 @@ L050E:  LD      L,H             ; transfer the running parity byte to L and
 ;   maintains the state of the bit to be saved.
 
 ;; SA-BIT-2
-L0511:  LD      A,C             ; fetch 'mic on and yellow' which is 
-                                ; held permanently in C.
-        BIT     7,B             ; set the zero flag. B holds $3E.
+;L0511:  LD      A,C             ; fetch 'mic on and yellow' which is 
+;                                ; held permanently in C.
+;        BIT     7,B             ; set the zero flag. B holds $3E.
 
 ;   The entry point to save 1 entire bit. For first bit B holds $3B(*).
 ;   Carry is set if saved bit is 1. zero is reset NZ on entry.
 
 ;; SA-BIT-1
-L0514:  DJNZ    L0514           ; self loop for delay to SA-BIT-1
+;L0514:  DJNZ    L0514           ; self loop for delay to SA-BIT-1
 
-        JR      NC,L051C        ; forward to SA-OUT if bit is 0.
+;        JR      NC,L051C        ; forward to SA-OUT if bit is 0.
 
 ;   but if bit is 1 then the mic state is held for longer.
 
-        LD      B,$42           ; set timed delay. (66 decimal)
+;        LD      B,$42           ; set timed delay. (66 decimal)
 
 ;; SA-SET
-L051A:  DJNZ    L051A           ; self loop to SA-SET 
-                                ; (roughly an extra 66*13 clock cycles)
+;L051A:  DJNZ    L051A           ; self loop to SA-SET 
+;                                ; (roughly an extra 66*13 clock cycles)
 
 ;; SA-OUT
-L051C:  OUT     ($FE),A         ; blue and mic on OR  yellow and mic off.
+;L051C:  OUT     ($FE),A         ; blue and mic on OR  yellow and mic off.
 
-        LD      B,$3E           ; set up delay
-        JR      NZ,L0511        ; back to SA-BIT-2 if zero reset NZ (first pass)
+;        LD      B,$3E           ; set up delay
+;        JR      NZ,L0511        ; back to SA-BIT-2 if zero reset NZ (first pass)
 
 ;   proceed when the blue and yellow bands have been output.
 
-        DEC     B               ; change value $3E to $3D.
-        XOR     A               ; clear carry flag (ready to rotate in).
-        INC     A               ; reset zero flag i.e. NZ.
+;        DEC     B               ; change value $3E to $3D.
+;        XOR     A               ; clear carry flag (ready to rotate in).
+;        INC     A               ; reset zero flag i.e. NZ.
 
 ; -8-> 
 
 ;; SA-8-BITS
-L0525:  RL      L               ; rotate left through carry
+;L0525:  RL      L               ; rotate left through carry
                                 ; C<76543210<C  
-        JP      NZ,L0514        ; JUMP back to SA-BIT-1 
+;        JP      NZ,L0514        ; JUMP back to SA-BIT-1 
                                 ; until all 8 bits done.
 
 ;   when the initial set carry is passed out again then a byte is complete.
 
-        DEC     DE              ; decrease length
-        INC     IX              ; increase byte pointer
-        LD      B,$31           ; set up timing.
+;        DEC     DE              ; decrease length
+;        INC     IX              ; increase byte pointer
+;        LD      B,$31           ; set up timing.
 
-        LD      A,$7F           ; test the space key and
-        IN      A,($FE)         ; return to common exit (to restore border)
-        RRA                     ; if a space is pressed
-        RET     NC              ; return to SA/LD-RET.   - - >
+;        LD      A,$7F           ; test the space key and
+;        IN      A,($FE)         ; return to common exit (to restore border)
+;        RRA                     ; if a space is pressed
+;        RET     NC              ; return to SA/LD-RET.   - - >
 
 ;   now test if byte counter has reached $FFFF.
 
-        LD      A,D             ; fetch high byte
-        INC     A               ; increment.
-        JP      NZ,L04FE        ; JUMP to SA-LOOP if more bytes.
+;        LD      A,D             ; fetch high byte
+;        INC     A               ; increment.
+;        JP      NZ,L04FE        ; JUMP to SA-LOOP if more bytes.
 
-        LD      B,$3B           ; a final delay. 
+;        LD      B,$3B           ; a final delay. 
 
 ;; SA-DELAY
-L053C:  DJNZ    L053C           ; self loop to SA-DELAY
+;L053C:  DJNZ    L053C           ; self loop to SA-DELAY
 
-        RET                     ; return - - >
+;        RET                     ; return - - >
 
 ; ------------------------------
 ; THE 'SAVE/LOAD RETURN' ROUTINE
@@ -2207,9 +2222,11 @@ L06A0:  CP      $AA             ; is character the token 'SCREEN$' ?
 ;   continue in runtime.
 
         LD      (IX+$0B),$00    ; set descriptor length
-        LD      (IX+$0C),$1B    ; to $1b00 to include bitmaps and attributes.
+        ld      (ix+$0c),$03    ; to $0300 to include bitmaps and attributes.
+;        LD      (IX+$0C),$1B    ; to $1b00 to include bitmaps and attributes.
 
-        LD      HL,$4000        ; set start to display file start.
+        ld      hl,$2400        ; set start to display file start.
+;        LD      HL,$4000        ; set start to display file start.
         LD      (IX+$0D),L      ; place start in
         LD      (IX+$0E),H      ; the descriptor.
         JR      L0710           ; forward to SA-TYPE-3
@@ -2359,8 +2376,8 @@ L073A:  LD      (IX+$00),$00    ; place type zero - program in descriptor.
 
 ;; SA-ALL
 L075A:  LD      A,($5C74)       ; fetch command from T_ADDR
-        AND     A               ; test for zero - SAVE.
-        JP      Z,L0970         ; jump forward to SA-CONTRL with SAVE  ->
+;        AND     A               ; test for zero - SAVE.
+;        JP      Z,L0970         ; jump forward to SA-CONTRL with SAVE  ->
 
 ; ---
 ;   continue with LOAD, MERGE and VERIFY.
@@ -2919,40 +2936,40 @@ L0958:  INC     HL              ; address next?
 ;   IX points to start of descriptor.
 
 ;; SA-CONTRL
-L0970:  PUSH    HL              ; save start of data
+;L0970:  PUSH    HL              ; save start of data
 
-        LD      A,$FD           ; select system channel 'S'
-        CALL    L1601           ; routine CHAN-OPEN
+;        LD      A,$FD           ; select system channel 'S'
+;        CALL    L1601           ; routine CHAN-OPEN
 
-        XOR     A               ; clear to address table directly
-        LD      DE,L09A1        ; address: tape-msgs
-        CALL    L0C0A           ; routine PO-MSG -
-                                ; 'Start tape then press any key.'
+;        XOR     A               ; clear to address table directly
+;        LD      DE,L09A1        ; address: tape-msgs
+;        CALL    L0C0A           ; routine PO-MSG -
+;                                ; 'Start tape then press any key.'
 
-        SET     5,(IY+$02)      ; TV_FLAG  - Signal lower screen requires
-                                ; clearing
-        CALL    L15D4           ; routine WAIT-KEY
+;        SET     5,(IY+$02)      ; TV_FLAG  - Signal lower screen requires
+;                                ; clearing
+;        CALL    L15D4           ; routine WAIT-KEY
 
-        PUSH    IX              ; save pointer to descriptor.
-        LD      DE,$0011        ; there are seventeen bytes.
-        XOR     A               ; signal a header.
-        CALL    L04C2           ; routine SA-BYTES
+;        PUSH    IX              ; save pointer to descriptor.
+;        LD      DE,$0011        ; there are seventeen bytes.
+;        XOR     A               ; signal a header.
+;        CALL    L04C2           ; routine SA-BYTES
 
-        POP     IX              ; restore descriptor pointer.
+;        POP     IX              ; restore descriptor pointer.
 
-        LD      B,$32           ; wait for a second - 50 interrupts.
+;        LD      B,$32           ; wait for a second - 50 interrupts.
 
 ;; SA-1-SEC
-L0991:  HALT                    ; wait for interrupt
-        DJNZ    L0991           ; back to SA-1-SEC until pause complete.
+;L0991:  HALT                    ; wait for interrupt
+;        DJNZ    L0991           ; back to SA-1-SEC until pause complete.
 
-        LD      E,(IX+$0B)      ; fetch length of bytes from the
-        LD      D,(IX+$0C)      ; descriptor.
+;        LD      E,(IX+$0B)      ; fetch length of bytes from the
+;        LD      D,(IX+$0C)      ; descriptor.
 
-        LD      A,$FF           ; signal data bytes.
+;        LD      A,$FF           ; signal data bytes.
 
-        POP     IX              ; retrieve pointer to start
-        JP      L04C2           ; jump back to SA-BYTES
+;        POP     IX              ; retrieve pointer to start
+;        JP      L04C2           ; jump back to SA-BYTES
 
 
 ;   Arrangement of two headers in workspace.
@@ -3085,9 +3102,9 @@ L0A23:  INC     C               ; move left one column.
         CP      C               ; have we passed ?
         JR      NZ,L0A3A        ; to PO-BACK-3 if not and store new position.
 
-        BIT     1,(IY+$01)      ; test FLAGS  - is printer in use ?
-        JR      NZ,L0A38        ; to PO-BACK-2 if so, as we are unable to
-                                ; backspace from the leftmost position.
+;        BIT     1,(IY+$01)      ; test FLAGS  - is printer in use ?
+;        JR      NZ,L0A38        ; to PO-BACK-2 if so, as we are unable to
+;                                ; backspace from the leftmost position.
 
 
         INC     B               ; move up one screen line
@@ -3238,8 +3255,8 @@ L0A87:  LD      DE,L09F4        ; Address: PRINT-OUT
         ADD     A,$02           ; transform to system range $02-$21
         LD      C,A             ; and place in column register.
 
-        BIT     1,(IY+$01)      ; test FLAGS  - is printer in use ?
-        JR      NZ,L0ABF        ; to PO-AT-SET as line can be ignored.
+;        BIT     1,(IY+$01)      ; test FLAGS  - is printer in use ?
+;        JR      NZ,L0ABF        ; to PO-AT-SET as line can be ignored.
 
         LD      A,$16           ; 22 decimal
         SUB     B               ; subtract line number to reverse
@@ -3313,8 +3330,8 @@ L0AD9:  CALL    L0B24           ; routine PO-ANY
 ;   the lower screen/input buffer or the ZX printer.
 
 ;; PO-STORE
-L0ADC:  BIT     1,(IY+$01)      ; Test FLAGS - is printer in use ?
-        JR      NZ,L0AFC        ; Forward, if so, to PO-ST-PR
+L0ADC:  ;BIT     1,(IY+$01)      ; Test FLAGS - is printer in use ?
+;        JR      NZ,L0AFC        ; Forward, if so, to PO-ST-PR
 
         BIT     0,(IY+$02)      ; Test TV_FLAG - is lower screen in use ?
         JR      NZ,L0AF0        ; Forward, if so, to PO-ST-E
@@ -3341,10 +3358,10 @@ L0AF0:  LD      ($5C8A),BC      ; Update SPOSNL line/column lower screen
 ;   This section deals with the ZX Printer.
 
 ;; PO-ST-PR
-L0AFC:  LD      (IY+$45),C      ; Update P_POSN column position printer
-        LD      ($5C80),HL      ; Update PR_CC - full printer buffer memory 
-                                ; address
-        RET                     ; Return.
+;L0AFC:  LD      (IY+$45),C      ; Update P_POSN column position printer
+;        LD      ($5C80),HL      ; Update PR_CC - full printer buffer memory 
+;                                ; address
+;        RET                     ; Return.
 
 ;   Note. that any values stored in location 23681 will be overwritten with 
 ;   the value 91 decimal. 
@@ -4474,10 +4491,10 @@ L0E9B:  LD      A,$18           ; reverse the line number
 ; of PR_CC_hi.
 
 ;; CLEAR-PRB
-L0EDF:  LD      HL,$5B00        ; the location of the buffer.
-        LD      (IY+$46),L      ; update PR_CC_lo - set to zero - superfluous.
-        XOR     A               ; clear the accumulator.
-        LD      B,A             ; set count to 256 bytes.
+L0EDF:  ;LD      HL,$5B00        ; the location of the buffer.
+;        LD      (IY+$46),L      ; update PR_CC_lo - set to zero - superfluous.
+;        XOR     A               ; clear the accumulator.
+;        LD      B,A             ; set count to 256 bytes.
 
 ;; PRB-BYTES
 ;L0EE7:  LD      (HL),A          ; set addressed location to zero.
@@ -5523,7 +5540,7 @@ L1201:  LD      ($5CB2),HL      ; set system variable RAMTOP to HL.
         LD      ($5C4F),HL      ; Set the CHANS system variable.
 
         LD      DE,L15AF        ; Address: init-chan in ROM.
-        LD      C,D             ; There are 21 bytes of initial data in ROM.
+        LD      C,$15           ; There are 21 bytes of initial data in ROM.
         EX      DE,HL           ; swap the pointers.
         LDIR                    ; Copy the bytes to RAM.
 
@@ -5572,7 +5589,7 @@ L1201:  LD      ($5CB2),HL      ; set system variable RAMTOP to HL.
         INC     (IY+$0A)        ; set NSPPC next statement to $01
 
         
-        CALL    L164D           ; update FLAGS  - signal printer in use.
+;        CALL    L164D           ; update FLAGS  - signal printer in use.
 ;        CALL    L0EDF           ; call routine CLEAR-PRB to initialize system
                                 ; variables associated with printer.
                                 ; The buffer is clear.
@@ -6025,7 +6042,8 @@ L15C6:  DEFB    $01, $00        ; stream $FD offset to channel 'K'
         DEFB    $01, $00        ; stream $00 offset to channel 'K'
         DEFB    $01, $00        ; stream $01 offset to channel 'K'
         DEFB    $06, $00        ; stream $02 offset to channel 'S'
-        DEFB    $10, $00        ; stream $03 offset to channel 'P'
+        DEFB    $06, $00        ; stream $02 offset to channel 'P'
+;        DEFB    $10, $00        ; stream $03 offset to channel 'P'
 
 ; ------------------------------
 ; THE 'INPUT CONTROL' SUBROUTINE
@@ -6186,7 +6204,8 @@ L162C:  JP      (HL)            ; jump to the routine
 ;; chn-cd-lu
 L162D:  DEFB    'K', L1634-$-1  ; offset $06 to CHAN-K
         DEFB    'S', L1642-$-1  ; offset $12 to CHAN-S
-        DEFB    'P', L164D-$-1  ; offset $1B to CHAN-P
+        DEFB    'P', L1642-$-1  ; offset $12 to CHAN-S
+;        DEFB    'P', L164D-$-1  ; offset $1B to CHAN-P
 
         DEFB    $00             ; end marker.
 
@@ -6210,7 +6229,7 @@ L1634:  SET     0,(IY+$02)      ; update TV_FLAG  - signal lower screen in use
 L1642:  RES     0,(IY+$02)      ; TV_FLAG  - signal main screen in use
 
 ;; CHAN-S-1
-L1646:  RES     1,(IY+$01)      ; update FLAGS  - signal printer not in use
+L1646:  ;RES     1,(IY+$01)      ; update FLAGS  - signal printer not in use
         JP      L0D4D           ; jump back to TEMPS and exit via that
                                 ; routine after setting temporary attributes.
 ; --------------
@@ -6221,8 +6240,8 @@ L1646:  RES     1,(IY+$01)      ; update FLAGS  - signal printer not in use
 ; This status remains in force until reset by the routine above.
 
 ;; CHAN-P
-L164D:  SET     1,(IY+$01)      ; update FLAGS  - signal printer in use
-        RET                     ; return
+;L164D:  SET     1,(IY+$01)      ; update FLAGS  - signal printer in use
+;        RET                     ; return
 
 ; --------------------------
 ; THE 'ONE SPACE' SUBROUTINE
@@ -6421,8 +6440,8 @@ L16C5:  LD      HL,($5C63)      ; fetch STKBOT value
 ; On entry, HL must point to the end of the something to be deleted.
 
 ;; REC-EDIT
-L16D4:  LD      DE,($5C59)      ; fetch start of edit line from E_LINE.
-        JP      L19E5           ; jump forward to RECLAIM-1.
+;L16D4:  LD      DE,($5C59)      ; fetch start of edit line from E_LINE.
+;        JP      L19E5           ; jump forward to RECLAIM-1.
 
 ; --------------------------
 ; The Table INDEXING routine
@@ -6491,7 +6510,7 @@ L16E5:  CALL    L171E           ; routine STR-DATA fetches parameter
                                 ; generated, for example,
                                 ; Report S 'Stream status closed'.
 
-        CALL    L1701           ; routine CLOSE-2 would perform any actions
+;        CALL    L1701           ; routine CLOSE-2 would perform any actions
                                 ; peculiar to that stream without disturbing
                                 ; data pointer to STRMS entry in HL.
 
@@ -6537,40 +6556,40 @@ L16FC:  EX      DE,HL           ; address of stream to HL.
 ;   credit: Martin Wren-Hilton 1982.
 
 ;; CLOSE-2
-L1701:  PUSH    HL              ; * save address of stream data pointer
-                                ; in STRMS on the machine stack.
-        LD      HL,($5C4F)      ; fetch CHANS address to HL
-        ADD     HL,BC           ; add the offset to address the second
-                                ; byte of the output routine hopefully.
-        INC     HL              ; step past
-        INC     HL              ; the input routine.
+L1701:;  PUSH    HL              ; * save address of stream data pointer
+;                                ; in STRMS on the machine stack.
+;        LD      HL,($5C4F)      ; fetch CHANS address to HL
+;        ADD     HL,BC           ; add the offset to address the second
+;                                ; byte of the output routine hopefully.
+;        INC     HL              ; step past
+;        INC     HL              ; the input routine.
 
 ;    Note. When the Sinclair Interface1 is fitted then an instruction fetch 
 ;    on the next address pages this ROM out and the shadow ROM in.
 
 ;; ROM_TRAP
-L1708:  INC     HL              ; to address channel's letter
-        LD      C,(HL)          ; pick it up in C.
-                                ; Note. but if stream is already closed we
-                                ; get the value $10 (the byte preceding 'K').
+;L1708:  INC     HL              ; to address channel's letter
+;        LD      C,(HL)          ; pick it up in C.
+;                                ; Note. but if stream is already closed we
+;                                ; get the value $10 (the byte preceding 'K').
 
-        EX      DE,HL           ; save the pointer to the letter in DE.
+;        EX      DE,HL           ; save the pointer to the letter in DE.
 
 ;   Note. The string pointer is saved but not used!!
 
-        LD      HL,L1716        ; address: cl-str-lu in ROM.
-        CALL    L16DC           ; routine INDEXER uses the code to get 
-                                ; the 8-bit offset from the current point to
-                                ; the address of the closing routine in ROM.
-                                ; Note. it won't find $10 there!
+;        LD      HL,L1716        ; address: cl-str-lu in ROM.
+;        CALL    L16DC           ; routine INDEXER uses the code to get 
+;                                ; the 8-bit offset from the current point to
+;                                ; the address of the closing routine in ROM.
+;                                ; Note. it won't find $10 there!
 
-        LD      C,(HL)          ; transfer the offset to C.
-        LD      B,$00           ; prepare to add.
-        ADD     HL,BC           ; add offset to point to the address of the
-                                ; routine that closes the stream.
-                                ; (and presumably removes any buffers that
-                                ; are associated with it.)
-        JP      (HL)            ; jump to that routine.
+;        LD      C,(HL)          ; transfer the offset to C.
+;        LD      B,$00           ; prepare to add.
+;        ADD     HL,BC           ; add offset to point to the address of the
+;                                ; routine that closes the stream.
+;                                ; (and presumably removes any buffers that
+;                                ; are associated with it.)
+;        JP      (HL)            ; jump to that routine.
 
 ; --------------------------------
 ; THE 'CLOSE STREAM LOOK-UP' TABLE
@@ -6583,9 +6602,9 @@ L1708:  INC     HL              ; to address channel's letter
 ;   picked up from a channel that has an open stream.
 
 ;; cl-str-lu
-L1716:  DEFB    'K', L171C-$-1  ; offset 5 to CLOSE-STR
-        DEFB    'S', L171C-$-1  ; offset 3 to CLOSE-STR
-        DEFB    'P', L171C-$-1  ; offset 1 to CLOSE-STR
+;L1716:  DEFB    'K', L171C-$-1  ; offset 5 to CLOSE-STR
+;        DEFB    'S', L171C-$-1  ; offset 3 to CLOSE-STR
+;        DEFB    'P', L171C-$-1  ; offset 1 to CLOSE-STR
 
 
 ; ------------------------------
@@ -6595,8 +6614,8 @@ L1716:  DEFB    'K', L171C-$-1  ; offset 5 to CLOSE-STR
 ; which is not surprising with regard to 'K' and 'S'.
 
 ;; CLOSE-STR                    
-L171C:  POP     HL              ; * now just restore the stream data pointer
-        RET                     ; in STRMS and return.
+;L171C:  POP     HL              ; * now just restore the stream data pointer
+;        RET                     ; in STRMS and return.
 
 ; -----------
 ; Stream data
@@ -6744,7 +6763,8 @@ L1767:  PUSH    BC              ; save the length of the string.
 ;; op-str-lu
 L177A:  DEFB    'K', L1781-$-1  ; $06 offset to OPEN-K
         DEFB    'S', L1785-$-1  ; $08 offset to OPEN-S
-        DEFB    'P', L1789-$-1  ; $0A offset to OPEN-P
+        DEFB    'P', L1785-$-1  ; $08 offset to OPEN-S
+;        DEFB    'P', L1789-$-1  ; $0A offset to OPEN-P
 
         DEFB    $00             ; end-marker.
 
@@ -6789,7 +6809,7 @@ L1781:  LD      E,$01           ; 01 is offset to second byte of channel 'K'.
 
 ;; OPEN-S
 L1785:  LD      E,$06           ; 06 is offset to 2nd byte of channel 'S'
-        JR      L178B           ; to OPEN-END
+;        JR      L178B           ; to OPEN-END
 
 ; -----------------
 ; OPEN-P Subroutine
@@ -6797,7 +6817,7 @@ L1785:  LD      E,$06           ; 06 is offset to 2nd byte of channel 'S'
 ; Open Printer stream.
 
 ;; OPEN-P
-L1789:  LD      E,$10           ; 16d is offset to 2nd byte of channel 'P'
+;L1789:  LD      E,$10           ; 16d is offset to 2nd byte of channel 'P'
 
 ;; OPEN-END
 L178B:  DEC     BC              ; the stored length of 'K','S','P' or
@@ -6915,8 +6935,8 @@ L17ED:  CALL    L1833           ; routine LIST-ALL                >>>
 ; A short form of LIST #3. The listing goes to stream 3 - default printer.
 
 ;; LLIST
-L17F5:  LD      A,$03           ; the usual stream for ZX Printer
-        JR      L17FB           ; forward to LIST-1
+;L17F5:  LD      A,$03           ; the usual stream for ZX Printer
+;        JR      L17FB           ; forward to LIST-1
 
 ; -----------
 ; Handle LIST
@@ -7775,8 +7795,10 @@ L1A48:  DEFB    L1AF9 - $       ; B1 offset to Address: P-DEF-FN
         DEFB    L1AEF - $       ; 98 offset to Address: P-INVERSE
         DEFB    L1AF0 - $       ; 98 offset to Address: P-OVER
         DEFB    L1AF1 - $       ; 98 offset to Address: P-OUT
-        DEFB    L1AD9 - $       ; 7F offset to Address: P-LPRINT
-        DEFB    L1ADC - $       ; 81 offset to Address: P-LLIST
+;        DEFB    L1AD9 - $       ; 7F offset to Address: P-LPRINT
+        DEFB    L1A9C - $       ; 2D offset to Address: P-PRINT
+;        DEFB    L1ADC - $       ; 81 offset to Address: P-LLIST
+        DEFB    L1AAE - $       ; 44 offset to Address: P-LIST
         DEFB    L1A8A - $       ; 2E offset to Address: P-STOP
         DEFB    L1AC9 - $       ; 6C offset to Address: P-READ
         DEFB    L1ACC - $       ; 6E offset to Address: P-DATA
@@ -7974,14 +7996,14 @@ L1AD6:  DEFB    $00             ; Class-00 - No further operands.
 ;        DEFW    L0EAC           ; Address: $0EAC; Address: COPY
 
 ;; P-LPRINT
-L1AD9:  DEFB    $05             ; Class-05 - Variable syntax checked entirely
-                                ; by routine.
-        DEFW    L1FC9           ; Address: $1FC9; Address: LPRINT
+;L1AD9:  DEFB    $05             ; Class-05 - Variable syntax checked entirely
+;                                ; by routine.
+;        DEFW    L1FC9           ; Address: $1FC9; Address: LPRINT
 
 ;; P-LLIST
-L1ADC:  DEFB    $05             ; Class-05 - Variable syntax checked entirely
-                                ; by routine.
-        DEFW    L17F5           ; Address: $17F5; Address: LLIST
+;L1ADC:  DEFB    $05             ; Class-05 - Variable syntax checked entirely
+;                                ; by routine.
+;        DEFW    L17F5           ; Address: $17F5; Address: LLIST
 
 ;; P-SAVE
 L1ADF:  DEFB    $0B             ; Class-0B - Offset address converted to tape
@@ -9482,13 +9504,13 @@ L1F15:  LD      L,$03           ; prepare 'Out of Memory'
 ; approximate free memory with PRINT 65536 - USR 7962.
 
 ;; free-mem
-L1F1A:  LD      BC,$0000        ; allow no overhead.
+;L1F1A:  LD      BC,$0000        ; allow no overhead.
 
-        CALL    L1F05           ; routine TEST-ROOM.
+;        CALL    L1F05           ; routine TEST-ROOM.
 
-        LD      B,H             ; transfer the result
-        LD      C,L             ; to the BC register.
-        RET                     ; the USR function returns value of BC.
+;        LD      B,H             ; transfer the result
+;        LD      C,L             ; to the BC register.
+;        RET                     ; the USR function returns value of BC.
 
 ; --------------------
 ; THE 'RETURN' COMMAND
@@ -9734,8 +9756,8 @@ L1FC3:  CALL    L2530           ; routine SYNTAX-Z sets zero flag if syntax
 ; An extra UDG might have been better.
 
 ;; LPRINT
-L1FC9:  LD      A,$03           ; the printer channel
-        JR      L1FCF           ; forward to PRINT-1
+;L1FC9:  LD      A,$03           ; the printer channel
+;        JR      L1FCF           ; forward to PRINT-1
 
 ; ---------------------
 ; Handle PRINT commands
@@ -10646,16 +10668,16 @@ L2294:  CALL    L1E94           ; routine FIND-INT1
         JR      NC,L2244        ; back to REPORT-K if not
                                 ; 'Invalid colour'.
 
-        OUT     ($FE),A         ; outputting to port effects an immediate
-                                ; change.
-        RLCA                    ; shift the colour to
-        RLCA                    ; the paper bits setting the
-        RLCA                    ; ink colour black.
-        BIT     5,A             ; is the number light coloured ?
-                                ; i.e. in the range green to white.
-        JR      NZ,L22A6        ; skip to BORDER-1 if so
+;        OUT     ($FE),A         ; outputting to port effects an immediate
+;                                ; change.
+;        RLCA                    ; shift the colour to
+;        RLCA                    ; the paper bits setting the
+;        RLCA                    ; ink colour black.
+;        BIT     5,A             ; is the number light coloured ?
+;                                ; i.e. in the range green to white.
+;        JR      NZ,L22A6        ; skip to BORDER-1 if so
 
-        XOR     $07             ; make the ink white.
+;        XOR     $07             ; make the ink white.
 
 ;; BORDER-1
 L22A6:  LD      ($5C48),A       ; update BORDCR with new paper/ink
@@ -10720,16 +10742,17 @@ L22AA:  LD      A,$AF           ; load with 175 decimal.
 
 ;; POINT-SUB
 L22CB:  CALL    L2307           ; routine STK-TO-BC
-        CALL    L22AA           ; routine PIXEL-ADD finds address of pixel.
-        LD      B,A             ; pixel position to B, 0-7.
-        INC     B               ; increment to give rotation count 1-8.
-        LD      A,(HL)          ; fetch byte from screen.
+        xor     a               ; point always return 0 in BASCOLACE
+;        CALL    L22AA           ; routine PIXEL-ADD finds address of pixel.
+;        LD      B,A             ; pixel position to B, 0-7.
+;        INC     B               ; increment to give rotation count 1-8.
+;        LD      A,(HL)          ; fetch byte from screen.
 
 ;; POINT-LP
-L22D4:  RLCA                    ; rotate and loop back
-        DJNZ    L22D4           ; to POINT-LP until pixel at right.
+;L22D4:  RLCA                    ; rotate and loop back
+;        DJNZ    L22D4           ; to POINT-LP until pixel at right.
 
-        AND      $01            ; test to give zero or one.
+;        AND      $01            ; test to give zero or one.
         JP      L2D28           ; jump forward to STACK-A to save result.
 
 ; -------------------
@@ -10758,34 +10781,34 @@ L22DC:  CALL    L2307           ; routine STK-TO-BC
 L22E5:  LD      ($5C7D),BC      ; store new x/y values in COORDS
         CALL    L22AA           ; routine PIXEL-ADD gets address in HL,
                                 ; count from left 0-7 in B.
-        LD      B,A             ; transfer count to B.
-        INC     B               ; increase 1-8.
-        LD      A,$FE           ; 11111110 in A.
+;        LD      B,A             ; transfer count to B.
+;        INC     B               ; increase 1-8.
+;        LD      A,$FE           ; 11111110 in A.
 
 ;; PLOT-LOOP
-L22F0:  RRCA                    ; rotate mask.
-        DJNZ    L22F0           ; to PLOT-LOOP until B circular rotations.
+;L22F0:  RRCA                    ; rotate mask.
+;        DJNZ    L22F0           ; to PLOT-LOOP until B circular rotations.
 
-        LD      B,A             ; load mask to B
-        LD      A,(HL)          ; fetch screen byte to A
+;        LD      B,A             ; load mask to B
+;        LD      A,(HL)          ; fetch screen byte to A
 
-        LD      C,(IY+$57)      ; P_FLAG to C
-        BIT     0,C             ; is it to be OVER 1 ?
-        JR      NZ,L22FD        ; forward to PL-TST-IN if so.
+;        LD      C,(IY+$57)      ; P_FLAG to C
+;        BIT     0,C             ; is it to be OVER 1 ?
+;        JR      NZ,L22FD        ; forward to PL-TST-IN if so.
 
 ; was over 0
 
-        AND     B               ; combine with mask to blank pixel.
+;        AND     B               ; combine with mask to blank pixel.
 
 ;; PL-TST-IN
-L22FD:  BIT     2,C             ; is it inverse 1 ?
-        JR      NZ,L2303        ; to PLOT-END if so.
+;L22FD:  BIT     2,C             ; is it inverse 1 ?
+;        JR      NZ,L2303        ; to PLOT-END if so.
 
-        XOR     B               ; switch the pixel
-        CPL                     ; restore other 7 bits
+;        XOR     B               ; switch the pixel
+;        CPL                     ; restore other 7 bits
 
 ;; PLOT-END
-L2303:  LD      (HL),A          ; load byte to the screen.
+;L2303:  LD      (HL),A          ; load byte to the screen.
         JP      L0BDB           ; exit to PO-ATTR to set colours for cell.
 
 ; ------------------------------
