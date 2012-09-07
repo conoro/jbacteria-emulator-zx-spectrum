@@ -16,6 +16,7 @@
 ; Quito temporalmente la orden SAVE                           $3674
 ; Quito rutina 'FREE MEMORY' y REC-EDIT                       $3664
 ; Quito algo de CLOSE, no estoy seguro si está bien           $3644
+; Quito COPY-LINE                                             $360F
 
 ;************************************************************************
 ;** An Assembly File Listing to generate a 16K ROM for the ZX Spectrum **
@@ -4519,63 +4520,63 @@ L0EDF:  ;LD      HL,$5B00        ; the location of the buffer.
 ; bit 1 reset - normal speed.
 
 ;; COPY-LINE
-L0EF4:  LD      A,B             ; fetch the counter 1-8 or 1-176
-        CP      $03             ; is it 01 or 02 ?.
-        SBC     A,A             ; result is $FF if so else $00.
-        AND     $02             ; result is 02 now else 00.
-                                ; bit 1 set slows the printer.
-        OUT     ($FB),A         ; slow the printer for the
-                                ; last two lines.
-        LD      D,A             ; save the mask to control the printer later.
+;L0EF4:  LD      A,B             ; fetch the counter 1-8 or 1-176
+;        CP      $03             ; is it 01 or 02 ?.
+;        SBC     A,A             ; result is $FF if so else $00.
+;        AND     $02             ; result is 02 now else 00.
+;                                ; bit 1 set slows the printer.
+;        OUT     ($FB),A         ; slow the printer for the
+;                                ; last two lines.
+;        LD      D,A             ; save the mask to control the printer later.
 
 ;; COPY-L-1
-L0EFD:  CALL    L1F54           ; call BREAK-KEY to read keyboard immediately.
-        JR      C,L0F0C         ; forward to COPY-L-2 if 'break' not pressed.
+;L0EFD:  CALL    L1F54           ; call BREAK-KEY to read keyboard immediately.
+;        JR      C,L0F0C         ; forward to COPY-L-2 if 'break' not pressed.
 
-        LD      A,$04           ; else stop the
-        OUT     ($FB),A         ; printer motor.
-        EI                      ; enable interrupts.
+;        LD      A,$04           ; else stop the
+;        OUT     ($FB),A         ; printer motor.
+;        EI                      ; enable interrupts.
 ;        CALL    L0EDF           ; call routine CLEAR-PRB.
-                                ; Note. should not be cleared if COPY in use.
+;                                ; Note. should not be cleared if COPY in use.
 
 ;; REPORT-Dc
-L0F0A:  RST     08H             ; ERROR-1
-        DEFB    $0C             ; Error Report: BREAK - CONT repeats
+;L0F0A:  RST     08H             ; ERROR-1
+;        DEFB    $0C             ; Error Report: BREAK - CONT repeats
 
 ;; COPY-L-2
-L0F0C:  IN      A,($FB)         ; test now to see if
-        ADD     A,A             ; a printer is attached.
-        RET     M               ; return if not - but continue with parent
-                                ; command.
+;L0F0C:  IN      A,($FB)         ; test now to see if
+;        ADD     A,A             ; a printer is attached.
+;        RET     M               ; return if not - but continue with parent
+;                                ; command.
 
-        JR      NC,L0EFD        ; back to COPY-L-1 if stylus of printer not
-                                ; in position.
+;        JR      NC,L0EFD        ; back to COPY-L-1 if stylus of printer not
+;                                ; in position.
 
-        LD      C,$20           ; set count to 32 bytes.
+;        LD      C,$20           ; set count to 32 bytes.
 
 ;; COPY-L-3
-L0F14:  LD      E,(HL)          ; fetch a byte from line.
-        INC     HL              ; address next location. Note. not INC L.
-        LD      B,$08           ; count the bits.
+;L0F14:  LD      E,(HL)          ; fetch a byte from line.
+;        INC     HL              ; address next location. Note. not INC L.
+;        LD      B,$08           ; count the bits.
 
 ;; COPY-L-4
-L0F18:  RL      D               ; prepare mask to receive bit.
-        RL      E               ; rotate leftmost print bit to carry
-        RR      D               ; and back to bit 7 of D restoring bit 1
+;L0F18:  RL      D               ; prepare mask to receive bit.
+;        RL      E               ; rotate leftmost print bit to carry
+;        RR      D               ; and back to bit 7 of D restoring bit 1
 
 ;; COPY-L-5
-L0F1E:  IN      A,($FB)         ; read the port.
-        RRA                     ; bit 0 to carry.
-        JR      NC,L0F1E        ; back to COPY-L-5 if stylus not in position.
+;L0F1E:  IN      A,($FB)         ; read the port.
+;        RRA                     ; bit 0 to carry.
+;        JR      NC,L0F1E        ; back to COPY-L-5 if stylus not in position.
 
-        LD      A,D             ; transfer command bits to A.
-        OUT     ($FB),A         ; and output to port.
-        DJNZ    L0F18           ; loop back to COPY-L-4 for all 8 bits.
+;        LD      A,D             ; transfer command bits to A.
+;        OUT     ($FB),A         ; and output to port.
+;        DJNZ    L0F18           ; loop back to COPY-L-4 for all 8 bits.
 
-        DEC     C               ; decrease the byte count.
-        JR      NZ,L0F14        ; back to COPY-L-3 until 256 bits done.
+;        DEC     C               ; decrease the byte count.
+;        JR      NZ,L0F14        ; back to COPY-L-3 until 256 bits done.
 
-        RET                     ; return to calling routine COPY/COPY-BUFF.
+;        RET                     ; return to calling routine COPY/COPY-BUFF.
 
 
 ; ----------------------------------
