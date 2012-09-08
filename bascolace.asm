@@ -1,3 +1,6 @@
+
+        DEFINE  spectrum
+
         MACRO PADORG addr
           IF $ < addr
             BLOCK addr-$
@@ -3518,7 +3521,10 @@ L0B76:  LD      H,$00           ; set high byte to 0
 ;   BC=line/column
 
 ;; PR-ALL
-L0B7F:  LD      A,C             ; column to A
+L0B7F:IFNDEF spectrum
+        ld      (hl), a
+      ENDIF
+        LD      A,C             ; column to A
         DEC     A               ; move right
         LD      A,$21           ; pre-load with leftmost position
         JR      NZ,L0B93        ; but if not zero to PR-ALL-1
@@ -3535,6 +3541,7 @@ L0B7F:  LD      A,C             ; column to A
 
 ;; PR-ALL-1
 L0B93:  CP      C               ; this test is really for screen - new line ?
+      IFDEF spectrum
         PUSH    DE              ; save source
 
         CALL    Z,L0C55         ; routine PO-SCR considers scrolling
@@ -3585,8 +3592,11 @@ L0BC1:  INC     HL              ; address next character byte
 
         EX      DE,HL           ; destination to HL
         DEC     H               ; bring back to last updated screen position
-;        BIT     1,(IY+$01)      ; test FLAGS  - is printer in use ?
-;        CALL    Z,L0BDB         ; if not, call routine PO-ATTR to update
+      ELSE
+        CALL    Z,L0C55         ; routine PO-SCR considers scrolling
+        PUSH    BC              ; save line/column
+        PUSH    HL              ; and destination
+      ENDIF
         call    L0BDB           ; call routine PO-ATTR to update
                                 ; corresponding colour attribute.
         POP     HL              ; restore original screen/printer position
@@ -3620,11 +3630,15 @@ L0BC1:  INC     HL              ; address next character byte
 
 ;; PO-ATTR
 L0BDB:  LD       A,H            ; fetch high byte $40 - $57
+      IFNDEF spectrum
+        add     a, $1c
+      ELSE
         RRCA                    ; shift
         RRCA                    ; bits 3 and 4
         RRCA                    ; to right.
         AND     $03             ; range is now 0 - 2
         OR      $58             ; form correct high byte for third of screen
+      ENDIF
         LD      H,A             ; HL is now correct
         LD      DE,($5C8F)      ; make D hold ATTR_T, E hold MASK-T
         LD      A,(HL)          ; fetch existing attribute
@@ -4052,7 +4066,7 @@ L0D6E:  LD      HL,$5C3C        ; address System Variable TV_FLAG.
         RES     5,(HL)          ; TV_FLAG - signal do not clear lower screen.
         SET     0,(HL)          ; TV_FLAG - signal lower screen in use.
 
-        CALL    L0D4D           ; routine TEMPS applies permanent attributes,
+;        CALL    L0D4D           ; routine TEMPS applies permanent attributes,
                                 ; in this case BORDCR to ATTR_T.
                                 ; Note. this seems unnecessary and is repeated 
                                 ; within CL-LINE.
@@ -4063,8 +4077,12 @@ L0D6E:  LD      HL,$5C3C        ; address System Variable TV_FLAG.
                                 ; display and sets attributes from BORDCR while
                                 ; preserving the B register.
 
-        LD      HL,$5AC0        ; set initial attribute address to the leftmost 
+      IFDEF spectrum
+        LD      HL,$5AC0        ; set initial attribute address to the leftmost
+      ELSE
+        ld      hl, $27c0       ; set initial attribute address to the leftmost
                                 ; cell of second line up.
+      ENDIF
 
         LD      A,($5C8D)       ; fetch permanent attribute from ATTR_P.
 
@@ -4282,6 +4300,7 @@ L0E19:  EX      DE,HL           ; save source in DE.
 ;; CL-LINE
 L0E44:  PUSH    BC              ; save line count
         CALL    L0E9B           ; routine CL-ADDR gets top address
+      IFDEF spectrum
         LD      C,$08           ; there are eight screen lines to a text line.
 
 ;; CL-LINE-1
@@ -4322,6 +4341,27 @@ L0E4D:  AND     $07             ; mask 0-7 to consider thirds at a time
 
         LD      H,D             ; transfer the address
         LD      L,E             ; to HL.
+      ELSE
+        ld      (hl), 0
+        ex      de, hl
+        ld      hl, $26ff
+        sbc     hl, de
+        ld      b, h
+        ld      c, l
+        ld      h, d
+        ld      l, e
+        inc     de
+        push    hl
+        push    bc
+        ldir
+        pop     bc
+        pop     hl
+        ld      a, h
+        add     a, $1c
+        ld      h, a
+        ld      d, h
+        ld      e, l
+      ENDIF
 
         INC     DE              ; make DE point to next location.
 
@@ -4333,10 +4373,12 @@ L0E4D:  AND     $07             ; mask 0-7 to consider thirds at a time
 
 ;; CL-LINE-3
 L0E80:  LD      (HL),A          ; put attribute in first byte.
+      IFDEF spectrum
         DEC     BC              ; decrement the counter.
+      ENDIF
         LDIR                    ; copy bytes to set all attributes.
         POP     BC              ; restore the line $01-$24.
-        LD      C,$21           ; make column $21. (No use is made of this)
+;        LD      C,$21           ; make column $21. (No use is made of this)
         RET                     ; return to the calling routine.
 
 ; ------------------
@@ -4382,14 +4424,16 @@ L0E88:  LD      A,H             ; fetch H to A - $48, $50, or $58.
 ;; CL-ADDR
 L0E9B:  LD      A,$18           ; reverse the line number
         SUB     B               ; to range $00 - $17.
+      IFDEF spectrum
         LD      D,A             ; save line in D for later.
         RRCA                    ; multiply
         RRCA                    ; by
         RRCA                    ; thirty-two.
 
         AND     $E0             ; mask off low bits to make
+      ENDIF
         LD      L,A             ; L a multiple of 32.
-
+      IFDEF spectrum
         LD      A,D             ; bring back the line to A.
 
         AND     $18             ; now $00, $08 or $10.
@@ -4397,6 +4441,14 @@ L0E9B:  LD      A,$18           ; reverse the line number
         OR      $40             ; add the base address of screen.
 
         LD      H,A             ; HL now has the correct address.
+      ELSE
+        add     hl, hl
+        add     hl, hl
+        add     hl, hl
+        ld      h, 9
+        add     hl, hl
+        add     hl, hl
+      ENDIF
         RET                     ; return.
 
 ; -------------------
@@ -5437,11 +5489,17 @@ L11B7:  DI                      ; Disable Interrupts - machine stack will be
 L11C8:  EX      AF,AF'          ; Save the flag to control later branching.
 
         LD      A,$3F           ; Select a white border
+      IFDEF spectrum
         OUT     ($FE),A         ; and set it now by writing to a port.
+
 
         LD      I,A             ; Set the I register - this remains constant
                                 ; and can't be in the range $40 - $7F as 'snow'
                                 ; appears on the screen.
+      ELSE
+        LD      I,A             ; Set the I register - this remains constant
+        ld      a,$5b           ; Load the accumulator with last page in firmware.
+      ENDIF
 
 ; -----------------------
 ; THE 'RAM CHECK' SECTION
@@ -10470,6 +10528,28 @@ L21FC:  SUB     $C9             ; reduce to control character $10 (INK)
         RST     10H             ; PRINT-A outputs parameter.
         RET                     ; return. ->
 
+      IFNDEF spectrum
+        PADORG  $4700-15
+        ld      hl, 15
+        di
+        ld      de, $4700
+        ld      bc, $1400
+        ldir
+        jp      $4700
+
+        ld      d, $29
+twti    ld      b, 3
+        ld      hl, $1D00
+        ldir
+        bit     5, d
+        ld      d, $44
+        jr      nz, twti
+again   ld      a, (bc)
+        cp      $f3
+        jr      nz, again
+        rst     0
+      ENDIF
+
 ; -------------------------------------------------------------------------
 ;
 ;         {fl}{br}{   paper   }{  ink    }    The temporary colour attributes
@@ -10561,6 +10641,10 @@ L223E:  LD      C,A             ; value to C
 ;; REPORT-K
 L2244:  RST     08H             ; ERROR-1
         DEFB    $13             ; Error Report: Invalid colour
+
+
+
+
 
 ;; CO-TEMP-9
 L2246:  LD      HL,$5C8F        ; address system variable ATTR_T initially.
@@ -18471,102 +18555,102 @@ L370E:  RST     28H             ;; FP-CALC
 ;   Error A if the argument is 0 or negative.
 
 ;; ln
-L3713:  RST     28H             ;; FP-CALC
-        DEFB    $3D             ;;re-stack
-        DEFB    $31             ;;duplicate
-        DEFB    $37             ;;greater-0
-        DEFB    $00             ;;jump-true
-        DEFB    $04             ;;to L371C, VALID
+L3713:  ;RST     28H             ;; FP-CALC
+;        DEFB    $3D             ;;re-stack
+;        DEFB    $31             ;;duplicate
+;        DEFB    $37             ;;greater-0
+;        DEFB    $00             ;;jump-true
+;        DEFB    $04             ;;to L371C, VALID
 
-        DEFB    $38             ;;end-calc
+;        DEFB    $38             ;;end-calc
 
 
 ;; REPORT-Ab
-L371A:  RST     08H             ; ERROR-1
-        DEFB    $09             ; Error Report: Invalid argument
+;L371A:  RST     08H             ; ERROR-1
+;        DEFB    $09             ; Error Report: Invalid argument
 
 ;; VALID
-L371C:  DEFB    $A0             ;;stk-zero              Note. not 
-        DEFB    $02             ;;delete                necessary.
-        DEFB    $38             ;;end-calc
-        LD      A,(HL)          ;
+;L371C:  DEFB    $A0             ;;stk-zero              Note. not 
+;        DEFB    $02             ;;delete                necessary.
+;        DEFB    $38             ;;end-calc
+;        LD      A,(HL)          ;
 
-        LD      (HL),$80        ;
-        CALL    L2D28           ; routine STACK-A
+;        LD      (HL),$80        ;
+;        CALL    L2D28           ; routine STACK-A
 
-        RST     28H             ;; FP-CALC
-        DEFB    $34             ;;stk-data
-        DEFB    $38             ;;Exponent: $88, Bytes: 1
-        DEFB    $00             ;;(+00,+00,+00)
-        DEFB    $03             ;;subtract
-        DEFB    $01             ;;exchange
-        DEFB    $31             ;;duplicate
-        DEFB    $34             ;;stk-data
-        DEFB    $F0             ;;Exponent: $80, Bytes: 4
-        DEFB    $4C,$CC,$CC,$CD ;;
-        DEFB    $03             ;;subtract
-        DEFB    $37             ;;greater-0
-        DEFB    $00             ;;jump-true
-        DEFB    $08             ;;to L373D, GRE.8
+;        RST     28H             ;; FP-CALC
+;        DEFB    $34             ;;stk-data
+;        DEFB    $38             ;;Exponent: $88, Bytes: 1
+;        DEFB    $00             ;;(+00,+00,+00)
+;        DEFB    $03             ;;subtract
+;        DEFB    $01             ;;exchange
+;        DEFB    $31             ;;duplicate
+;        DEFB    $34             ;;stk-data
+;        DEFB    $F0             ;;Exponent: $80, Bytes: 4
+;        DEFB    $4C,$CC,$CC,$CD ;;
+;        DEFB    $03             ;;subtract
+;        DEFB    $37             ;;greater-0
+;        DEFB    $00             ;;jump-true
+;        DEFB    $08             ;;to L373D, GRE.8
 
-        DEFB    $01             ;;exchange
-        DEFB    $A1             ;;stk-one
-        DEFB    $03             ;;subtract
-        DEFB    $01             ;;exchange
-        DEFB    $38             ;;end-calc
+;        DEFB    $01             ;;exchange
+;        DEFB    $A1             ;;stk-one
+;        DEFB    $03             ;;subtract
+;        DEFB    $01             ;;exchange
+;        DEFB    $38             ;;end-calc
 
-        INC     (HL)            ;
+;        INC     (HL)            ;
 
-        RST     28H             ;; FP-CALC
+;        RST     28H             ;; FP-CALC
 
 ;; GRE.8
-L373D:  DEFB    $01             ;;exchange
-        DEFB    $34             ;;stk-data
-        DEFB    $F0             ;;Exponent: $80, Bytes: 4
-        DEFB    $31,$72,$17,$F8 ;;
-        DEFB    $04             ;;multiply
-        DEFB    $01             ;;exchange
-        DEFB    $A2             ;;stk-half
-        DEFB    $03             ;;subtract
-        DEFB    $A2             ;;stk-half
-        DEFB    $03             ;;subtract
-        DEFB    $31             ;;duplicate
-        DEFB    $34             ;;stk-data
-        DEFB    $32             ;;Exponent: $82, Bytes: 1
-        DEFB    $20             ;;(+00,+00,+00)
-        DEFB    $04             ;;multiply
-        DEFB    $A2             ;;stk-half
-        DEFB    $03             ;;subtract
-        DEFB    $8C             ;;series-0C
-        DEFB    $11             ;;Exponent: $61, Bytes: 1
-        DEFB    $AC             ;;(+00,+00,+00)
-        DEFB    $14             ;;Exponent: $64, Bytes: 1
-        DEFB    $09             ;;(+00,+00,+00)
-        DEFB    $56             ;;Exponent: $66, Bytes: 2
-        DEFB    $DA,$A5         ;;(+00,+00)
-        DEFB    $59             ;;Exponent: $69, Bytes: 2
-        DEFB    $30,$C5         ;;(+00,+00)
-        DEFB    $5C             ;;Exponent: $6C, Bytes: 2
-        DEFB    $90,$AA         ;;(+00,+00)
-        DEFB    $9E             ;;Exponent: $6E, Bytes: 3
-        DEFB    $70,$6F,$61     ;;(+00)
-        DEFB    $A1             ;;Exponent: $71, Bytes: 3
-        DEFB    $CB,$DA,$96     ;;(+00)
-        DEFB    $A4             ;;Exponent: $74, Bytes: 3
-        DEFB    $31,$9F,$B4     ;;(+00)
-        DEFB    $E7             ;;Exponent: $77, Bytes: 4
-        DEFB    $A0,$FE,$5C,$FC ;;
-        DEFB    $EA             ;;Exponent: $7A, Bytes: 4
-        DEFB    $1B,$43,$CA,$36 ;;
-        DEFB    $ED             ;;Exponent: $7D, Bytes: 4
-        DEFB    $A7,$9C,$7E,$5E ;;
-        DEFB    $F0             ;;Exponent: $80, Bytes: 4
-        DEFB    $6E,$23,$80,$93 ;;
-        DEFB    $04             ;;multiply
-        DEFB    $0F             ;;addition
-        DEFB    $38             ;;end-calc
+;L373D:  DEFB    $01             ;;exchange
+;        DEFB    $34             ;;stk-data
+;        DEFB    $F0             ;;Exponent: $80, Bytes: 4
+;        DEFB    $31,$72,$17,$F8 ;;
+;        DEFB    $04             ;;multiply
+;        DEFB    $01             ;;exchange
+;        DEFB    $A2             ;;stk-half
+;        DEFB    $03             ;;subtract
+;        DEFB    $A2             ;;stk-half
+;        DEFB    $03             ;;subtract
+;        DEFB    $31             ;;duplicate
+;        DEFB    $34             ;;stk-data
+;        DEFB    $32             ;;Exponent: $82, Bytes: 1
+;        DEFB    $20             ;;(+00,+00,+00)
+;        DEFB    $04             ;;multiply
+;        DEFB    $A2             ;;stk-half
+;        DEFB    $03             ;;subtract
+;        DEFB    $8C             ;;series-0C
+;        DEFB    $11             ;;Exponent: $61, Bytes: 1
+;        DEFB    $AC             ;;(+00,+00,+00)
+;        DEFB    $14             ;;Exponent: $64, Bytes: 1
+;        DEFB    $09             ;;(+00,+00,+00)
+;        DEFB    $56             ;;Exponent: $66, Bytes: 2
+;        DEFB    $DA,$A5         ;;(+00,+00)
+;        DEFB    $59             ;;Exponent: $69, Bytes: 2
+;        DEFB    $30,$C5         ;;(+00,+00)
+;        DEFB    $5C             ;;Exponent: $6C, Bytes: 2
+;        DEFB    $90,$AA         ;;(+00,+00)
+;        DEFB    $9E             ;;Exponent: $6E, Bytes: 3
+;        DEFB    $70,$6F,$61     ;;(+00)
+;        DEFB    $A1             ;;Exponent: $71, Bytes: 3
+;        DEFB    $CB,$DA,$96     ;;(+00)
+;        DEFB    $A4             ;;Exponent: $74, Bytes: 3
+;        DEFB    $31,$9F,$B4     ;;(+00)
+;        DEFB    $E7             ;;Exponent: $77, Bytes: 4
+;        DEFB    $A0,$FE,$5C,$FC ;;
+;        DEFB    $EA             ;;Exponent: $7A, Bytes: 4
+;        DEFB    $1B,$43,$CA,$36 ;;
+;        DEFB    $ED             ;;Exponent: $7D, Bytes: 4
+;        DEFB    $A7,$9C,$7E,$5E ;;
+;        DEFB    $F0             ;;Exponent: $80, Bytes: 4
+;        DEFB    $6E,$23,$80,$93 ;;
+;        DEFB    $04             ;;multiply
+;        DEFB    $0F             ;;addition
+;        DEFB    $38             ;;end-calc
 
-        RET                     ; return.
+;        RET                     ; return.
 
 
 ; -----------------------------
@@ -18626,48 +18710,48 @@ L373D:  DEFB    $01             ;;exchange
 ;
 
 ;; get-argt
-L3783:  RST     28H             ;; FP-CALC      X.
-        DEFB    $3D             ;;re-stack      (not rquired done by mult)
-        DEFB    $34             ;;stk-data
-        DEFB    $EE             ;;Exponent: $7E, 
+L3783:  ;RST     28H             ;; FP-CALC      X.
+;        DEFB    $3D             ;;re-stack      (not rquired done by mult)
+;        DEFB    $34             ;;stk-data
+;        DEFB    $EE             ;;Exponent: $7E, 
                                 ;;Bytes: 4
-        DEFB    $22,$F9,$83,$6E ;;              X, 1/(2*PI)
-        DEFB    $04             ;;multiply      X/(2*PI) = fraction
-        DEFB    $31             ;;duplicate
-        DEFB    $A2             ;;stk-half
-        DEFB    $0F             ;;addition
-        DEFB    $27             ;;int
+;        DEFB    $22,$F9,$83,$6E ;;              X, 1/(2*PI)
+;        DEFB    $04             ;;multiply      X/(2*PI) = fraction
+;        DEFB    $31             ;;duplicate
+;        DEFB    $A2             ;;stk-half
+;        DEFB    $0F             ;;addition
+;        DEFB    $27             ;;int
 
-        DEFB    $03             ;;subtract      now range -.5 to .5
+;        DEFB    $03             ;;subtract      now range -.5 to .5
 
-        DEFB    $31             ;;duplicate
-        DEFB    $0F             ;;addition      now range -1 to 1.
-        DEFB    $31             ;;duplicate
-        DEFB    $0F             ;;addition      now range -2 to +2.
+;        DEFB    $31             ;;duplicate
+;        DEFB    $0F             ;;addition      now range -1 to 1.
+;        DEFB    $31             ;;duplicate
+;        DEFB    $0F             ;;addition      now range -2 to +2.
 
 ; quadrant I (0 to +1) and quadrant IV (-1 to 0) are now correct.
 ; quadrant II ranges +1 to +2.
 ; quadrant III ranges -2 to -1.
 
-        DEFB    $31             ;;duplicate     Y, Y.
-        DEFB    $2A             ;;abs           Y, abs(Y).    range 1 to 2
-        DEFB    $A1             ;;stk-one       Y, abs(Y), 1.
-        DEFB    $03             ;;subtract      Y, abs(Y)-1.  range 0 to 1
-        DEFB    $31             ;;duplicate     Y, Z, Z.
-        DEFB    $37             ;;greater-0     Y, Z, (1/0).
+;        DEFB    $31             ;;duplicate     Y, Y.
+;        DEFB    $2A             ;;abs           Y, abs(Y).    range 1 to 2
+;        DEFB    $A1             ;;stk-one       Y, abs(Y), 1.
+;        DEFB    $03             ;;subtract      Y, abs(Y)-1.  range 0 to 1
+;        DEFB    $31             ;;duplicate     Y, Z, Z.
+;        DEFB    $37             ;;greater-0     Y, Z, (1/0).
 
-        DEFB    $C0             ;;st-mem-0         store as possible sign 
+;        DEFB    $C0             ;;st-mem-0         store as possible sign 
                                 ;;                 for cosine function.
 
-        DEFB    $00             ;;jump-true
-        DEFB    $04             ;;to L37A1, ZPLUS  with quadrants II and III.
+;        DEFB    $00             ;;jump-true
+;        DEFB    $04             ;;to L37A1, ZPLUS  with quadrants II and III.
 
 ; else the angle lies in quadrant I or IV and value Y is already correct.
 
-        DEFB    $02             ;;delete        Y.   delete the test value.
-        DEFB    $38             ;;end-calc      Y.
+;        DEFB    $02             ;;delete        Y.   delete the test value.
+;        DEFB    $38             ;;end-calc      Y.
 
-        RET                     ; return.       with Q1 and Q4           >>>
+;        RET                     ; return.       with Q1 and Q4           >>>
 
 ; ---
 
@@ -18675,22 +18759,22 @@ L3783:  RST     28H             ;; FP-CALC      X.
 ; Y will hold -2 to -1 if this is quadrant III.
 
 ;; ZPLUS
-L37A1:  DEFB    $A1             ;;stk-one         Y, Z, 1.
-        DEFB    $03             ;;subtract        Y, Z-1.       Q3 = 0 to -1
-        DEFB    $01             ;;exchange        Z-1, Y.
-        DEFB    $36             ;;less-0          Z-1, (1/0).
-        DEFB    $00             ;;jump-true       Z-1.
-        DEFB    $02             ;;to L37A8, YNEG
+L37A1:;  DEFB    $A1             ;;stk-one         Y, Z, 1.
+;        DEFB    $03             ;;subtract        Y, Z-1.       Q3 = 0 to -1
+;        DEFB    $01             ;;exchange        Z-1, Y.
+;        DEFB    $36             ;;less-0          Z-1, (1/0).
+;        DEFB    $00             ;;jump-true       Z-1.
+;        DEFB    $02             ;;to L37A8, YNEG
                                 ;;if angle in quadrant III
 
 ; else angle is within quadrant II (-1 to 0)
 
-        DEFB    $1B             ;;negate          range +1 to 0.
+;        DEFB    $1B             ;;negate          range +1 to 0.
 
 ;; YNEG
-L37A8:  DEFB    $38             ;;end-calc        quadrants II and III correct.
+;L37A8:  DEFB    $38             ;;end-calc        quadrants II and III correct.
 
-        RET                     ; return.
+;        RET                     ; return.
 
 
 ; ---------------------
@@ -18721,22 +18805,22 @@ L37A8:  DEFB    $38             ;;end-calc        quadrants II and III correct.
 ;
 
 ;; cos
-L37AA:  RST     28H             ;; FP-CALC              angle in radians.
-        DEFB    $39             ;;get-argt              X     reduce -1 to +1 
+L37AA:  ;RST     28H             ;; FP-CALC              angle in radians.
+;        DEFB    $39             ;;get-argt              X     reduce -1 to +1 
 
-        DEFB    $2A             ;;abs                   ABS X.   0 to 1
-        DEFB    $A1             ;;stk-one               ABS X, 1.
-        DEFB    $03             ;;subtract              now opposite angle
+;        DEFB    $2A             ;;abs                   ABS X.   0 to 1
+;        DEFB    $A1             ;;stk-one               ABS X, 1.
+;        DEFB    $03             ;;subtract              now opposite angle
                                 ;;                      although sign is -ve.
 
-        DEFB    $E0             ;;get-mem-0             fetch the sign indicator
-        DEFB    $00             ;;jump-true
-        DEFB    $06             ;;fwd to L37B7, C-ENT
+;        DEFB    $E0             ;;get-mem-0             fetch the sign indicator
+;        DEFB    $00             ;;jump-true
+;        DEFB    $06             ;;fwd to L37B7, C-ENT
                                 ;;forward to common code if in QII or QIII.
 
-        DEFB    $1B             ;;negate                else make sign +ve.
-        DEFB    $33             ;;jump
-        DEFB    $03             ;;fwd to L37B7, C-ENT
+;        DEFB    $1B             ;;negate                else make sign +ve.
+;        DEFB    $33             ;;jump
+;        DEFB    $03             ;;fwd to L37B7, C-ENT
                                 ;; with quadrants I and IV.
 
 ; -------------------
@@ -18760,35 +18844,35 @@ L37AA:  RST     28H             ;; FP-CALC              angle in radians.
 ; into common code.
 
 ;; sin
-L37B5:  RST     28H             ;; FP-CALC      angle in radians
-        DEFB    $39             ;;get-argt      reduce - sign now correct.
+L37B5:  ;RST     28H             ;; FP-CALC      angle in radians
+;        DEFB    $39             ;;get-argt      reduce - sign now correct.
 
 ;; C-ENT
-L37B7:  DEFB    $31             ;;duplicate
-        DEFB    $31             ;;duplicate
-        DEFB    $04             ;;multiply
-        DEFB    $31             ;;duplicate
-        DEFB    $0F             ;;addition
-        DEFB    $A1             ;;stk-one
-        DEFB    $03             ;;subtract
+;L37B7:  DEFB    $31             ;;duplicate
+;        DEFB    $31             ;;duplicate
+;        DEFB    $04             ;;multiply
+;        DEFB    $31             ;;duplicate
+;        DEFB    $0F             ;;addition
+;        DEFB    $A1             ;;stk-one
+;        DEFB    $03             ;;subtract
 
-        DEFB    $86             ;;series-06
-        DEFB    $14             ;;Exponent: $64, Bytes: 1
-        DEFB    $E6             ;;(+00,+00,+00)
-        DEFB    $5C             ;;Exponent: $6C, Bytes: 2
-        DEFB    $1F,$0B         ;;(+00,+00)
-        DEFB    $A3             ;;Exponent: $73, Bytes: 3
-        DEFB    $8F,$38,$EE     ;;(+00)
-        DEFB    $E9             ;;Exponent: $79, Bytes: 4
-        DEFB    $15,$63,$BB,$23 ;;
-        DEFB    $EE             ;;Exponent: $7E, Bytes: 4
-        DEFB    $92,$0D,$CD,$ED ;;
-        DEFB    $F1             ;;Exponent: $81, Bytes: 4
-        DEFB    $23,$5D,$1B,$EA ;;
-        DEFB    $04             ;;multiply
-        DEFB    $38             ;;end-calc
+;        DEFB    $86             ;;series-06
+;        DEFB    $14             ;;Exponent: $64, Bytes: 1
+;        DEFB    $E6             ;;(+00,+00,+00)
+;        DEFB    $5C             ;;Exponent: $6C, Bytes: 2
+;        DEFB    $1F,$0B         ;;(+00,+00)
+;        DEFB    $A3             ;;Exponent: $73, Bytes: 3
+;        DEFB    $8F,$38,$EE     ;;(+00)
+;        DEFB    $E9             ;;Exponent: $79, Bytes: 4
+;        DEFB    $15,$63,$BB,$23 ;;
+;        DEFB    $EE             ;;Exponent: $7E, Bytes: 4
+;        DEFB    $92,$0D,$CD,$ED ;;
+;        DEFB    $F1             ;;Exponent: $81, Bytes: 4
+;        DEFB    $23,$5D,$1B,$EA ;;
+;        DEFB    $04             ;;multiply
+;        DEFB    $38             ;;end-calc
 
-        RET                     ; return.
+;        RET                     ; return.
 
 ; ----------------------
 ; THE 'TANGENT' FUNCTION
@@ -18815,15 +18899,15 @@ L37B7:  DEFB    $31             ;;duplicate
 ; Similarly PRINT TAN (3*PI/2), TAN (5*PI/2) etc.
 
 ;; tan
-L37DA:  RST     28H             ;; FP-CALC          x.
-        DEFB    $31             ;;duplicate         x, x.
-        DEFB    $1F             ;;sin               x, sin x.
-        DEFB    $01             ;;exchange          sin x, x.
-        DEFB    $20             ;;cos               sin x, cos x.
-        DEFB    $05             ;;division          sin x/cos x (= tan x).
-        DEFB    $38             ;;end-calc          tan x.
+L37DA:  ;RST     28H             ;; FP-CALC          x.
+;        DEFB    $31             ;;duplicate         x, x.
+;        DEFB    $1F             ;;sin               x, sin x.
+;        DEFB    $01             ;;exchange          sin x, x.
+;        DEFB    $20             ;;cos               sin x, cos x.
+;        DEFB    $05             ;;division          sin x/cos x (= tan x).
+;        DEFB    $38             ;;end-calc          tan x.
 
-        RET                     ; return.
+;        RET                     ; return.
 
 ; ---------------------
 ; THE 'ARCTAN' FUNCTION
@@ -18835,70 +18919,70 @@ L37DA:  RST     28H             ;; FP-CALC          x.
 ; It uses the series generator to produce Chebyshev polynomials.
 
 ;; atn
-L37E2:  CALL    L3297           ; routine re-stack
-        LD      A,(HL)          ; fetch exponent byte.
-        CP      $81             ; compare to that for 'one'
-        JR      C,L37F8         ; forward, if less, to SMALL
+L37E2:  ;CALL    L3297           ; routine re-stack
+;        LD      A,(HL)          ; fetch exponent byte.
+;        CP      $81             ; compare to that for 'one'
+;        JR      C,L37F8         ; forward, if less, to SMALL
 
-        RST     28H             ;; FP-CALC
-        DEFB    $A1             ;;stk-one
-        DEFB    $1B             ;;negate
-        DEFB    $01             ;;exchange
-        DEFB    $05             ;;division
-        DEFB    $31             ;;duplicate
-        DEFB    $36             ;;less-0
-        DEFB    $A3             ;;stk-pi/2
-        DEFB    $01             ;;exchange
-        DEFB    $00             ;;jump-true
-        DEFB    $06             ;;to L37FA, CASES
+;        RST     28H             ;; FP-CALC
+;        DEFB    $A1             ;;stk-one
+;        DEFB    $1B             ;;negate
+;        DEFB    $01             ;;exchange
+;        DEFB    $05             ;;division
+;        DEFB    $31             ;;duplicate
+;        DEFB    $36             ;;less-0
+;        DEFB    $A3             ;;stk-pi/2
+;        DEFB    $01             ;;exchange
+;        DEFB    $00             ;;jump-true
+;        DEFB    $06             ;;to L37FA, CASES
 
-        DEFB    $1B             ;;negate
-        DEFB    $33             ;;jump
-        DEFB    $03             ;;to L37FA, CASES
+;        DEFB    $1B             ;;negate
+;        DEFB    $33             ;;jump
+;        DEFB    $03             ;;to L37FA, CASES
 
 ;; SMALL
-L37F8:  RST     28H             ;; FP-CALC
-        DEFB    $A0             ;;stk-zero
+;L37F8:  RST     28H             ;; FP-CALC
+;        DEFB    $A0             ;;stk-zero
 
 ;; CASES
-L37FA:  DEFB    $01             ;;exchange
-        DEFB    $31             ;;duplicate
-        DEFB    $31             ;;duplicate
-        DEFB    $04             ;;multiply
-        DEFB    $31             ;;duplicate
-        DEFB    $0F             ;;addition
-        DEFB    $A1             ;;stk-one
-        DEFB    $03             ;;subtract
-        DEFB    $8C             ;;series-0C
-        DEFB    $10             ;;Exponent: $60, Bytes: 1
-        DEFB    $B2             ;;(+00,+00,+00)
-        DEFB    $13             ;;Exponent: $63, Bytes: 1
-        DEFB    $0E             ;;(+00,+00,+00)
-        DEFB    $55             ;;Exponent: $65, Bytes: 2
-        DEFB    $E4,$8D         ;;(+00,+00)
-        DEFB    $58             ;;Exponent: $68, Bytes: 2
-        DEFB    $39,$BC         ;;(+00,+00)
-        DEFB    $5B             ;;Exponent: $6B, Bytes: 2
-        DEFB    $98,$FD         ;;(+00,+00)
-        DEFB    $9E             ;;Exponent: $6E, Bytes: 3
-        DEFB    $00,$36,$75     ;;(+00)
-        DEFB    $A0             ;;Exponent: $70, Bytes: 3
-        DEFB    $DB,$E8,$B4     ;;(+00)
-        DEFB    $63             ;;Exponent: $73, Bytes: 2
-        DEFB    $42,$C4         ;;(+00,+00)
-        DEFB    $E6             ;;Exponent: $76, Bytes: 4
-        DEFB    $B5,$09,$36,$BE ;;
-        DEFB    $E9             ;;Exponent: $79, Bytes: 4
-        DEFB    $36,$73,$1B,$5D ;;
-        DEFB    $EC             ;;Exponent: $7C, Bytes: 4
-        DEFB    $D8,$DE,$63,$BE ;;
-        DEFB    $F0             ;;Exponent: $80, Bytes: 4
-        DEFB    $61,$A1,$B3,$0C ;;
-        DEFB    $04             ;;multiply
-        DEFB    $0F             ;;addition
-        DEFB    $38             ;;end-calc
+;L37FA:  DEFB    $01             ;;exchange
+;        DEFB    $31             ;;duplicate
+;        DEFB    $31             ;;duplicate
+;        DEFB    $04             ;;multiply
+;        DEFB    $31             ;;duplicate
+;        DEFB    $0F             ;;addition
+;        DEFB    $A1             ;;stk-one
+;        DEFB    $03             ;;subtract
+;        DEFB    $8C             ;;series-0C
+;        DEFB    $10             ;;Exponent: $60, Bytes: 1
+;        DEFB    $B2             ;;(+00,+00,+00)
+;        DEFB    $13             ;;Exponent: $63, Bytes: 1
+;        DEFB    $0E             ;;(+00,+00,+00)
+;        DEFB    $55             ;;Exponent: $65, Bytes: 2
+;        DEFB    $E4,$8D         ;;(+00,+00)
+;        DEFB    $58             ;;Exponent: $68, Bytes: 2
+;        DEFB    $39,$BC         ;;(+00,+00)
+;        DEFB    $5B             ;;Exponent: $6B, Bytes: 2
+;        DEFB    $98,$FD         ;;(+00,+00)
+;        DEFB    $9E             ;;Exponent: $6E, Bytes: 3
+;        DEFB    $00,$36,$75     ;;(+00)
+;        DEFB    $A0             ;;Exponent: $70, Bytes: 3
+;        DEFB    $DB,$E8,$B4     ;;(+00)
+;        DEFB    $63             ;;Exponent: $73, Bytes: 2
+;        DEFB    $42,$C4         ;;(+00,+00)
+;        DEFB    $E6             ;;Exponent: $76, Bytes: 4
+;        DEFB    $B5,$09,$36,$BE ;;
+;        DEFB    $E9             ;;Exponent: $79, Bytes: 4
+;        DEFB    $36,$73,$1B,$5D ;;
+;        DEFB    $EC             ;;Exponent: $7C, Bytes: 4
+;        DEFB    $D8,$DE,$63,$BE ;;
+;        DEFB    $F0             ;;Exponent: $80, Bytes: 4
+;        DEFB    $61,$A1,$B3,$0C ;;
+;        DEFB    $04             ;;multiply
+;        DEFB    $0F             ;;addition
+;        DEFB    $38             ;;end-calc
 
-        RET                     ; return.
+;        RET                     ; return.
 
 
 ; ---------------------
@@ -18952,23 +19036,23 @@ L37FA:  DEFB    $01             ;;exchange
 ;   square root of a negative number generates an error in Sinclair BASIC.
 
 ;; asn
-L3833:  RST     28H             ;; FP-CALC      x.
-        DEFB    $31             ;;duplicate     x, x.
-        DEFB    $31             ;;duplicate     x, x, x.
-        DEFB    $04             ;;multiply      x, x*x.
-        DEFB    $A1             ;;stk-one       x, x*x, 1.
-        DEFB    $03             ;;subtract      x, x*x-1.
-        DEFB    $1B             ;;negate        x, 1-x*x.
-        DEFB    $28             ;;sqr           x, sqr(1-x*x) = y
-        DEFB    $A1             ;;stk-one       x, y, 1.
-        DEFB    $0F             ;;addition      x, y+1.
-        DEFB    $05             ;;division      x/y+1.
-        DEFB    $24             ;;atn           a/2       (half the angle)
-        DEFB    $31             ;;duplicate     a/2, a/2.
-        DEFB    $0F             ;;addition      a.
-        DEFB    $38             ;;end-calc      a.
+L3833:  ;RST     28H             ;; FP-CALC      x.
+;        DEFB    $31             ;;duplicate     x, x.
+;        DEFB    $31             ;;duplicate     x, x, x.
+;        DEFB    $04             ;;multiply      x, x*x.
+;        DEFB    $A1             ;;stk-one       x, x*x, 1.
+;        DEFB    $03             ;;subtract      x, x*x-1.
+;        DEFB    $1B             ;;negate        x, 1-x*x.
+;        DEFB    $28             ;;sqr           x, sqr(1-x*x) = y
+;        DEFB    $A1             ;;stk-one       x, y, 1.
+;        DEFB    $0F             ;;addition      x, y+1.
+;        DEFB    $05             ;;division      x/y+1.
+;        DEFB    $24             ;;atn           a/2       (half the angle)
+;        DEFB    $31             ;;duplicate     a/2, a/2.
+;        DEFB    $0F             ;;addition      a.
+;        DEFB    $38             ;;end-calc      a.
 
-        RET                     ; return.
+;        RET                     ; return.
 
 
 ; ---------------------
@@ -19000,14 +19084,14 @@ L3833:  RST     28H             ;; FP-CALC      x.
 ;
 
 ;; acs
-L3843:  RST     28H             ;; FP-CALC      x.
-        DEFB    $22             ;;asn           asn(x).
-        DEFB    $A3             ;;stk-pi/2      asn(x), pi/2.
-        DEFB    $03             ;;subtract      asn(x) - pi/2.
-        DEFB    $1B             ;;negate        pi/2 -asn(x)  =  acs(x).
-        DEFB    $38             ;;end-calc      acs(x).
+L3843:  ;RST     28H             ;; FP-CALC      x.
+;        DEFB    $22             ;;asn           asn(x).
+;        DEFB    $A3             ;;stk-pi/2      asn(x), pi/2.
+;        DEFB    $03             ;;subtract      asn(x) - pi/2.
+;        DEFB    $1B             ;;negate        pi/2 -asn(x)  =  acs(x).
+;        DEFB    $38             ;;end-calc      acs(x).
 
-        RET                     ; return.
+;        RET                     ; return.
 
 
 ; --------------------------
@@ -19022,14 +19106,14 @@ L3843:  RST     28H             ;; FP-CALC      x.
 ; could have been used as on the Jupiter Ace.
 
 ;; sqr
-L384A:  RST     28H             ;; FP-CALC
-        DEFB    $31             ;;duplicate
-        DEFB    $30             ;;not
-        DEFB    $00             ;;jump-true
-        DEFB    $1E             ;;to L386C, LAST
+L384A:  ;RST     28H             ;; FP-CALC
+;        DEFB    $31             ;;duplicate
+;        DEFB    $30             ;;not
+;        DEFB    $00             ;;jump-true
+;        DEFB    $1E             ;;to L386C, LAST
 
-        DEFB    $A2             ;;stk-half
-        DEFB    $38             ;;end-calc
+;        DEFB    $A2             ;;stk-half
+;        DEFB    $38             ;;end-calc
 
 
 ; ------------------------------
@@ -19044,20 +19128,20 @@ L384A:  RST     28H             ;; FP-CALC
 ;
 
 ;; to-power
-L3851:  RST     28H             ;; FP-CALC              X, Y.
-        DEFB    $01             ;;exchange              Y, X.
-        DEFB    $31             ;;duplicate             Y, X, X.
-        DEFB    $30             ;;not                   Y, X, (1/0).
-        DEFB    $00             ;;jump-true
-        DEFB    $07             ;;to L385D, XIS0   if X is zero.
+L3851:  ;RST     28H             ;; FP-CALC              X, Y.
+;        DEFB    $01             ;;exchange              Y, X.
+;        DEFB    $31             ;;duplicate             Y, X, X.
+;        DEFB    $30             ;;not                   Y, X, (1/0).
+;        DEFB    $00             ;;jump-true
+;        DEFB    $07             ;;to L385D, XIS0   if X is zero.
 
 ;   else X is non-zero. Function 'ln' will catch a negative value of X.
 
-        DEFB    $25             ;;ln                    Y, LN X.
-        DEFB    $04             ;;multiply              Y * LN X.
-        DEFB    $38             ;;end-calc
+;        DEFB    $25             ;;ln                    Y, LN X.
+;        DEFB    $04             ;;multiply              Y * LN X.
+;        DEFB    $38             ;;end-calc
 
-        JP      L36C4           ; jump back to EXP routine   ->
+;        JP      L36C4           ; jump back to EXP routine   ->
 
 ; ---
 
@@ -19065,197 +19149,46 @@ L3851:  RST     28H             ;; FP-CALC              X, Y.
 ;   begin by deleting the known zero to leave Y the power factor.
 
 ;; XIS0
-L385D:  DEFB    $02             ;;delete                Y.
-        DEFB    $31             ;;duplicate             Y, Y.
-        DEFB    $30             ;;not                   Y, (1/0).
-        DEFB    $00             ;;jump-true
-        DEFB    $09             ;;to L386A, ONE         if Y is zero.
+;L385D:  DEFB    $02             ;;delete                Y.
+;        DEFB    $31             ;;duplicate             Y, Y.
+;        DEFB    $30             ;;not                   Y, (1/0).
+;        DEFB    $00             ;;jump-true
+;        DEFB    $09             ;;to L386A, ONE         if Y is zero.
 
-        DEFB    $A0             ;;stk-zero              Y, 0.
-        DEFB    $01             ;;exchange              0, Y.
-        DEFB    $37             ;;greater-0             0, (1/0).
-        DEFB    $00             ;;jump-true             0.
-        DEFB    $06             ;;to L386C, LAST        if Y was any positive 
+;        DEFB    $A0             ;;stk-zero              Y, 0.
+;        DEFB    $01             ;;exchange              0, Y.
+;        DEFB    $37             ;;greater-0             0, (1/0).
+;        DEFB    $00             ;;jump-true             0.
+;        DEFB    $06             ;;to L386C, LAST        if Y was any positive 
                                 ;;                      number.
 
 ;   else force division by zero thereby raising an Arithmetic overflow error.
 ;   There are some one and two-byte alternatives but perhaps the most formal
 ;   might have been to use end-calc; rst 08; defb 05.
 
-        DEFB    $A1             ;;stk-one               0, 1.
-        DEFB    $01             ;;exchange              1, 0.
-        DEFB    $05             ;;division              1/0        ouch!
+;        DEFB    $A1             ;;stk-one               0, 1.
+;        DEFB    $01             ;;exchange              1, 0.
+;        DEFB    $05             ;;division              1/0        ouch!
 
 ; ---
 
 ;; ONE
-L386A:  DEFB    $02             ;;delete                .
-        DEFB    $A1             ;;stk-one               1.
+;L386A:  DEFB    $02             ;;delete                .
+;        DEFB    $A1             ;;stk-one               1.
 
 ;; LAST
-L386C:  DEFB    $38             ;;end-calc              last value is 1 or 0.
+;L386C:  DEFB    $38             ;;end-calc              last value is 1 or 0.
 
-        RET                     ; return.               
+;        RET                     ; return.               
 
 ;   "Everything should be made as simple as possible, but not simpler"
 ;   - Albert Einstein, 1879-1955.
 
-; ---------------------
-; THE 'SPARE' LOCATIONS
-; ---------------------
-
-;; spare
-L386E:  DEFB    $FF, $FF        ;
-
-
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-
+      IFDEF spectrum
         PADORG  $3d00
+      ELSE
+        PADORG  $6400-15
+      ENDIF
 
 ; -------------------------------
 ; THE 'ZX SPECTRUM CHARACTER SET'
