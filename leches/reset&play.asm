@@ -5506,7 +5506,6 @@ L1201:  LD      ($5CB2),HL      ; set system variable RAMTOP to HL.
 ;   in a Warm Restart scenario, to produce a report code, leaving any program 
 ;   intact.
 
-        DEC     (IY)            ; Set ERR_NR to OK
         LD      (IY-3),$3C      ; character set, CHARS - as no printing yet.
 
         LD      HL,$5CB6        ; The address of the channels - initially
@@ -5560,8 +5559,6 @@ L1201:  LD      ($5CB2),HL      ; set system variable RAMTOP to HL.
 
         DEC     (IY-$3A)        ; set KSTATE-0 to $FF - keyboard map available.
         DEC     (IY-$36)        ; set KSTATE-4 to $FF - keyboard map available.
-        INC     (IY+$0A)        ; set NSPPC next statement to $01
-
         
         CALL    L164D           ; update FLAGS  - signal printer in use.
         CALL    L0EDF           ; call routine CLEAR-PRB to initialize system
@@ -5579,11 +5576,12 @@ L1201:  LD      ($5CB2),HL      ; set system variable RAMTOP to HL.
         CALL    L0308+3         ; update TV_FLAG  - signal lower screen will
                                 ; require clearing.
 
-        JR      L1303-3         ; jump to one instruction before MAIN-4
+        JR      L1303-11        ; jump to one instruction before MAIN-4
 
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF;
 
 L129D:  DEFB    $EF, $22, $22, $0D, $80; LOAD "" + Enter + $80
 

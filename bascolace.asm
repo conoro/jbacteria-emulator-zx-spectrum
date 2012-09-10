@@ -17,7 +17,6 @@
         DEFINE  UDGD  $9d12
       ENDIF
 
-; bug en reset & play. Muestra error la carga sin autoejecucion
 ; falta scroll en atributos
 ; ajustar freq y puertos beeper
 ; ajustar tiempos y puertos load/save
@@ -5752,13 +5751,6 @@ L1201:  LD      ($5CB2),HL      ; set system variable RAMTOP to HL.
 
         DEC     (IY-$3A)        ; set KSTATE-0 to $FF - keyboard map available.
         DEC     (IY-$36)        ; set KSTATE-4 to $FF - keyboard map available.
-        INC     (IY+$0A)        ; set NSPPC next statement to $01
-
-        
-;        CALL    L164D           ; update FLAGS  - signal printer in use.
-;        CALL    L0EDF           ; call routine CLEAR-PRB to initialize system
-                                ; variables associated with printer.
-                                ; The buffer is clear.
         LD      (IY+$01),$8C    ; update FLAGS again
 
         CALL    L0D6B           ; call routine CLS to set up system
@@ -5771,7 +5763,7 @@ L1201:  LD      ($5CB2),HL      ; set system variable RAMTOP to HL.
         CALL    L0308+3         ; update TV_FLAG  - signal lower screen will
                                 ; require clearing.
 
-        JR      L1303-3         ; jump to one instruction before MAIN-4
+        JR      L1303-11        ; jump to one instruction before MAIN-4
 
 L129D:  DEFB    $EF, $22, $22, $0D, $80; LOAD "" + Enter + $80
 
