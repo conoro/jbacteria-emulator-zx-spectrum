@@ -9,14 +9,20 @@
         ENDM
       IFDEF spectrum
         OUTPUT  48.rom
+        DEFINE  MEMD  0
+        DEFINE  UDGD  0
       ELSE
         OUTPUT  bascolace.rom
+        DEFINE  MEMD  $21ee
+        DEFINE  UDGD  $9d12
       ENDIF
 
-; apuntar UDG y CHARS al sitio adecuado
-; POKE en $4300-$46ff va también a $2c00-$2fff
+; algo falla en DRAW, arreglar
+; bug en reset & play. Muestra error la carga sin autoejecucion
+; falta scroll en atributos
 ; ajustar freq y puertos beeper
 ; ajustar tiempos y puertos load/save
+; hacer flash por software
 
 ;************************************************************************
 ;** An Assembly File Listing to generate a 16K ROM for the ZX Spectrum **
@@ -52,7 +58,11 @@
 ;; START
 L0000:  DI                      ; Disable Interrupts.
         XOR     A               ; Signal coming from START.
-        LD      HL,$FF57        ; Set pointer to top of possible physical RAM.
+      IFDEF spectrum
+        LD      HL,$FFFF        ; Set pointer to top of possible physical RAM.
+      ELSE
+        ld      hl, $ff57       ; Set pointer to top of possible physical RAM.
+      ENDIF
         JP      L11C8           ; Jump forward to common code at START-NEW.
 
 ; -------------------
@@ -5632,16 +5642,15 @@ L11D5:  INC     HL              ; increment for next iteration.
         EX      DE,HL           ; switch pointers and make the UDGs a
         LDDR                    ; copy of the standard characters A - U.
         EX      DE,HL           ; switch the pointer to HL.
-
+        LD      ($5C7B),HL      ; make UDG system variable address the first
+                                ; bitmap.
+        DEC     HL              ; point at RAMTOP again.
       ELSE
         jr      nz, L1201
         ld      l, h
         ld      ($5cb4), hl
-        ld      l, $58
+        ld      l, $57
       ENDIF
-        LD      ($5C7B),HL      ; make UDG system variable address the first
-                                ; bitmap.
-        DEC     HL              ; point at RAMTOP again.
         LD      C,$40           ; set the values of
         LD      ($5C38),BC      ; the PIP and RASP system variables.
 
@@ -5685,7 +5694,13 @@ L1201:  LD      ($5CB2),HL      ; set system variable RAMTOP to HL.
 ;   in a Warm Restart scenario, to produce a report code, leaving any program 
 ;   intact.
 
+      IFDEF spectrum
         LD      (IY-3),$3C      ; character set, CHARS - as no printing yet.
+      ELSE
+        ld      (iy-3),$43      ; character set, CHARS - as no printing yet.
+        ld      hl, $4340       ; UDG
+        ld      ($5c7b), hl
+      ENDIF
 
         LD      HL,$5CB6        ; The address of the channels - initially
                                 ; following system variables.
@@ -9465,7 +9480,17 @@ L1E7A:  CALL    L1E85           ; routine TWO-PARAM fetches values
 ;; POKE
 L1E80:  CALL    L1E85           ; routine TWO-PARAM fetches values
                                 ; to BC and A.
-        LD      (BC),A          ; load memory location with A.
+L1E83:  LD      (BC),A          ; load memory location with A.
+      IFNDEF spectrum
+        ld      e, a
+        ld      a, b
+        sub     $17
+        ld      b, a
+        sub     $2c
+        cp      $4
+        ld      a, e
+        jr      c, L1E83
+      ENDIF
         RET                     ; return to STMT-RET.
 
 ; ------------------------------------
@@ -10127,31 +10152,6 @@ L2067:  RST     20H             ; NEXT-CHAR to A.
 L206E:  CP      A               ; reset the zero flag.
         RET                     ; and return to loop or quit.
 
-; ------------
-; Alter stream
-; ------------
-; This routine is called from PRINT ITEMS above, and also LIST as in
-; LIST #15
-
-;; STR-ALTER
-L2070:  CP      $23             ; is character '#' ?
-        SCF                     ; set carry flag.
-        RET     NZ              ; return if no match.
-
-
-        RST     20H             ; NEXT-CHAR
-        CALL    L1C82           ; routine EXPT-1NUM gets stream number
-        AND     A               ; prepare to exit early with carry reset
-        CALL    L1FC3           ; routine UNSTACK-Z exits early if parsing
-        CALL    L1E94           ; routine FIND-INT1 gets number off stack
-        CP      $10             ; must be range 0 - 15 decimal.
-        JP      NC,L160E        ; jump back to REPORT-Oa if not
-                                ; 'Invalid stream'.
-
-        CALL    L1601           ; routine CHAN-OPEN
-        AND     A               ; clear carry - signal item dealt with.
-        RET                     ; return
-
 ; -------------------
 ; THE 'INPUT' COMMAND 
 ; -------------------
@@ -10749,6 +10749,34 @@ L2287:  LD      A,C             ; value to A
         JR      L226C           ; back to CO-CHANGE addressing MASK_T
                                 ; and indirect return.
 
+; ---------------------
+; Handle BORDER command
+; ---------------------
+; Command syntax example: BORDER 7
+; This command routine sets the border to one of the eight colours.
+; The colours used for the lower screen are based on this.
+
+;; BORDER
+L2294:  CALL    L1E94           ; routine FIND-INT1
+        CP      $08             ; must be in range 0 (black) to 7 (white)
+        JR      NC,L2244        ; back to REPORT-K if not
+                                ; 'Invalid colour'.
+
+;        OUT     ($FE),A         ; outputting to port effects an immediate
+;                                ; change.
+;        RLCA                    ; shift the colour to
+;        RLCA                    ; the paper bits setting the
+;        RLCA                    ; ink colour black.
+;        BIT     5,A             ; is the number light coloured ?
+;                                ; i.e. in the range green to white.
+;        JR      NZ,L22A6        ; skip to BORDER-1 if so
+
+;        XOR     $07             ; make the ink white.
+
+;; BORDER-1
+L22A6:  LD      ($5C48),A       ; update BORDCR with new paper/ink
+        RET                     ; return.
+
       IFNDEF spectrum
         PADORG  $4700-18
         ld      sp, $8000
@@ -10779,6 +10807,31 @@ again   ld      a, (bc)
         jr      nz, again
         rst     0
       ENDIF
+
+; ------------
+; Alter stream
+; ------------
+; This routine is called from PRINT ITEMS above, and also LIST as in
+; LIST #15
+
+;; STR-ALTER
+L2070:  CP      $23             ; is character '#' ?
+        SCF                     ; set carry flag.
+        RET     NZ              ; return if no match.
+
+
+        RST     20H             ; NEXT-CHAR
+        CALL    L1C82           ; routine EXPT-1NUM gets stream number
+        AND     A               ; prepare to exit early with carry reset
+        CALL    L1FC3           ; routine UNSTACK-Z exits early if parsing
+        CALL    L1E94           ; routine FIND-INT1 gets number off stack
+        CP      $10             ; must be range 0 - 15 decimal.
+        JP      NC,L160E        ; jump back to REPORT-Oa if not
+                                ; 'Invalid stream'.
+
+        CALL    L1601           ; routine CHAN-OPEN
+        AND     A               ; clear carry - signal item dealt with.
+        RET                     ; return
 
 ; ---------------------------
 ; INPUT ASSIGNMENT Subroutine
@@ -10841,34 +10894,6 @@ L21D6:  LD      HL,($5C51)      ; fetch address of current channel CURCHL
         LD      A,(HL)          ; fetch the channel identifier.
         CP      $4B             ; test for 'K'
         RET                     ; return with zero set if keyboard is use.
-
-; ---------------------
-; Handle BORDER command
-; ---------------------
-; Command syntax example: BORDER 7
-; This command routine sets the border to one of the eight colours.
-; The colours used for the lower screen are based on this.
-
-;; BORDER
-L2294:  CALL    L1E94           ; routine FIND-INT1
-        CP      $08             ; must be in range 0 (black) to 7 (white)
-        JR      NC,L2244        ; back to REPORT-K if not
-                                ; 'Invalid colour'.
-
-;        OUT     ($FE),A         ; outputting to port effects an immediate
-;                                ; change.
-;        RLCA                    ; shift the colour to
-;        RLCA                    ; the paper bits setting the
-;        RLCA                    ; ink colour black.
-;        BIT     5,A             ; is the number light coloured ?
-;                                ; i.e. in the range green to white.
-;        JR      NZ,L22A6        ; skip to BORDER-1 if so
-
-;        XOR     $07             ; make the ink white.
-
-;; BORDER-1
-L22A6:  LD      ($5C48),A       ; update BORDCR with new paper/ink
-        RET                     ; return.
 
 ; -----------------
 ; Get pixel address
@@ -16863,7 +16888,7 @@ L32D7:  DEFW    L368F           ; $00 Address: $368F - jump-true
         DEFW    L300F           ; $03 Address: $300F - subtract
         DEFW    L30CA           ; $04 Address: $30CA - multiply
         DEFW    L31AF           ; $05 Address: $31AF - division
-        DEFW    L3851-$21ee     ; $06 Address: $3851 - to-power
+        DEFW    L3851-MEMD      ; $06 Address: $3851 - to-power
         DEFW    L351B           ; $07 Address: $351B - or
 
         DEFW    L3524           ; $08 Address: $3524 - no-&-no
@@ -16894,16 +16919,16 @@ L32D7:  DEFW    L368F           ; $00 Address: $368F - jump-true
         DEFW    L3669           ; $1C Address: $3669 - code
         DEFW    L35DE           ; $1D Address: $35DE - val
         DEFW    L3674           ; $1E Address: $3674 - len
-        DEFW    L37B5-$21ee     ; $1F Address: $37B5 - sin
-        DEFW    L37AA-$21ee     ; $20 Address: $37AA - cos
-        DEFW    L37DA+$9d12     ; $21 Address: $37DA - tan
-        DEFW    L3833-$21ee     ; $22 Address: $3833 - asn
-        DEFW    L3843-$21ee     ; $23 Address: $3843 - acs
-        DEFW    L37E2+$9d12     ; $24 Address: $37E2 - atn
+        DEFW    L37B5-MEMD      ; $1F Address: $37B5 - sin
+        DEFW    L37AA-MEMD      ; $20 Address: $37AA - cos
+        DEFW    L37DA+UDGD      ; $21 Address: $37DA - tan
+        DEFW    L3833-MEMD      ; $22 Address: $3833 - asn
+        DEFW    L3843-MEMD      ; $23 Address: $3843 - acs
+        DEFW    L37E2+UDGD      ; $24 Address: $37E2 - atn
         DEFW    L3713           ; $25 Address: $3713 - ln
-        DEFW    L36C4+$9d12     ; $26 Address: $36C4 - exp
+        DEFW    L36C4+UDGD      ; $26 Address: $36C4 - exp
         DEFW    L36AF           ; $27 Address: $36AF - int
-        DEFW    L384A-$21ee     ; $28 Address: $384A - sqr
+        DEFW    L384A-MEMD      ; $28 Address: $384A - sqr
         DEFW    L3492           ; $29 Address: $3492 - sgn
         DEFW    L346A           ; $2A Address: $346A - abs
         DEFW    L34AC           ; $2B Address: $34AC - peek
@@ -18793,11 +18818,9 @@ L37A8:  DEFB    $38             ;;end-calc        quadrants II and III correct.
 
         RET                     ; return.
 
-      IFDEF spectrum
-        PADORG  $3d00
-      ELSE
+      IFNDEF spectrum
         PADORG  $5e00-18
-
+      ENDIF
 
 ; ---------------------
 ; THE 'COSINE' FUNCTION
@@ -19051,7 +19074,7 @@ L3851:  RST     28H             ;; FP-CALC              X, Y.
         DEFB    $04             ;;multiply              Y * LN X.
         DEFB    $38             ;;end-calc
 
-        JP      L36C4+$9d12     ; jump back to EXP routine   ->
+        JP      L36C4+UDGD      ; jump back to EXP routine   ->
 
 ; ---
 
@@ -19091,9 +19114,6 @@ L386C:  DEFB    $38             ;;end-calc              last value is 1 or 0.
 
         RET                     ; return.               
 
-
-        PADORG  $6300-18-$a8
-
 ; ------------------
 ; THE 'EXP' FUNCTION
 ; ------------------
@@ -19104,7 +19124,15 @@ L386C:  DEFB    $38             ;;end-calc              last value is 1 or 0.
 
 ;; EXP
 ;; exp
-L36C4:  DEFB    $F0;RST     28H             ;; FP-CALC
+L36C4:IFDEF spectrum
+        RST     28H             ;; FP-CALC
+      ELSE
+
+        PADORG  $6300-18-$a8
+
+        DEFB    $F0             ;; FP-CALC
+
+      ENDIF
         DEFB    $3D             ;;re-stack      (not required - mult will do)
         DEFB    $34             ;;stk-data
         DEFB    $F1             ;;Exponent: $81, Bytes: 4
@@ -19286,6 +19314,10 @@ L37DA:  RST     28H             ;; FP-CALC          x.
         DEFB    $38             ;;end-calc          tan x.
 
         RET                     ; return.
+
+      IFDEF spectrum
+        PADORG  $3d00
+      ELSE
 
 ; -------------------------------
 ; THE 'ZX SPECTRUM CHARACTER SET'
