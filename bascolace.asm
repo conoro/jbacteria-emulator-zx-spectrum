@@ -17,7 +17,7 @@
         DEFINE  UDGD  $9d12
       ENDIF
 
-; algo falla en DRAW, arreglar
+; arreglar L2580 S-ATTR-S con PIXEL-ADD L22AA
 ; bug en reset & play. Muestra error la carga sin autoejecucion
 ; falta scroll en atributos
 ; ajustar freq y puertos beeper
@@ -3703,7 +3703,7 @@ L0BC1:  INC     HL              ; address next character byte
 ;   form the correct colour attribute address.
 
 ;; PO-ATTR
-L0BDB:  LD       A,H            ; fetch high byte $40 - $57
+L0BDB:  LD      A,H             ; fetch high byte $40 - $57
       IFNDEF spectrum
         add     a, $1c
       ELSE
@@ -4126,7 +4126,7 @@ L0D65:  XOR     (HL)            ;
 ;; CLS
 L0D6B:  CALL    L0DAF           ; Routine CL-ALL clears the entire display and
                                 ; sets the attributes to the permanent ones
-                                ; from ATTR-P.
+                                ; from §.
 
 ;   Having cleared all 24 lines of the display area, continue into the 
 ;   subroutine that clears the lower display area.  Note that at the moment 
@@ -10914,6 +10914,7 @@ L22AA:  LD      A,$AF           ; load with 175 decimal.
 ; the byte is located. There are 24 discrete values.
 
 
+      IFDEF spectrum
         LD      B,A             ; the line number from top of screen to B.
         AND     A               ; clear carry (already clear)
         RRA                     ;                     0xxxxxxx
@@ -10944,6 +10945,18 @@ L22AA:  LD      A,$AF           ; load with 175 decimal.
 
         LD      A,C             ; x value to A
         AND     $07             ; mod 8
+      ELSE
+        and     $f8             ; keep the top 5 bits 11111000
+        ld      l, a
+        ld      h, 9
+        ld      b, 0
+        add     hl, hl
+        add     hl, hl
+        srl     c
+        srl     c
+        srl     c
+        add     hl, bc
+      ENDIF
         RET                     ; return
 
 ; ----------------
