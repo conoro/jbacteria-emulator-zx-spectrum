@@ -5506,6 +5506,7 @@ L1201:  LD      ($5CB2),HL      ; set system variable RAMTOP to HL.
 ;   in a Warm Restart scenario, to produce a report code, leaving any program 
 ;   intact.
 
+        DEC     (IY)            ; Set ERR_NR to OK
         LD      (IY-3),$3C      ; character set, CHARS - as no printing yet.
 
         LD      HL,$5CB6        ; The address of the channels - initially
@@ -5582,8 +5583,7 @@ L1201:  LD      ($5CB2),HL      ; set system variable RAMTOP to HL.
 
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF;
 
 L129D:  DEFB    $EF, $22, $22, $0D, $80; LOAD "" + Enter + $80
 
