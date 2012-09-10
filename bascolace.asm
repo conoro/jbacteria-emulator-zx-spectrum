@@ -17,7 +17,6 @@
         DEFINE  UDGD  $9d12
       ENDIF
 
-; arreglar L2580 S-ATTR-S con PIXEL-ADD L22AA
 ; bug en reset & play. Muestra error la carga sin autoejecucion
 ; falta scroll en atributos
 ; ajustar freq y puertos beeper
@@ -12258,6 +12257,7 @@ L257D:  JP      L2AB2           ; to STK-STO-$ to store the string in
 ;; S-ATTR-S
 L2580:  CALL    L2307           ; routine STK-TO-BC fetches line to C,
                                 ; and column to B.
+      IFDEF spectrum
         LD      A,C             ; line to A $00 - $17   (max 00010111)
         RRCA                    ; rotate
         RRCA                    ; bits
@@ -12273,6 +12273,13 @@ L2580:  CALL    L2307           ; routine STK-TO-BC fetches line to C,
                                 ; screen $00 - $02
         XOR     $58             ; combine with base address.
         LD      H,A             ; high byte correct.
+      ELSE
+        ld      a, c
+        ld      c, b
+        call    L0E9B+3
+        ld      b, $1c
+        add     hl, bc
+      ENDIF
         LD      A,(HL)          ; pick up the colour attribute.
         JP      L2D28           ; forward to STACK-A to store result
                                 ; and make an indirect exit.
