@@ -17,9 +17,8 @@
         DEFINE  UDGD  $9d12
       ENDIF
 
-; falta scroll en atributos
-; ajustar freq y puertos beeper
-; ajustar tiempos y puertos load/save
+; ajuste fino del beeper
+; ajustar tiempos en load y tiempos/puertos en save
 ; hacer flash por software
 
 ;************************************************************************
@@ -92,8 +91,12 @@ L0010:  JP      L15F2           ; Jump forward to continue at PRINT-A-2.
 
 ; ---
 
-        DEFB    $FF, $FF, $FF   ; Five unused locations.
-        DEFB    $FF, $FF        ;
+;; NO-RESET
+L0070:  POP     HL              ; restore the
+        POP     AF              ; registers.
+        RETN                    ; return to previous interrupt state.
+;        DEFB    $FF, $FF, $FF   ; Five unused locations.
+        DEFB    $FF;, $FF        ;
 
 ; -------------------------------
 ; THE 'COLLECT CHARACTER' RESTART
@@ -276,11 +279,6 @@ L0066:  PUSH    AF              ; save the
         JR      NZ,L0070        ; skip to NO-RESET if NOT ZERO
 
         JP      (HL)            ; jump to routine ( i.e. L0000 )
-
-;; NO-RESET
-L0070:  POP     HL              ; restore the
-        POP     AF              ; registers.
-        RETN                    ; return to previous interrupt state.
 
 ; ---------------------------
 ; THE 'CH ADD + 1' SUBROUTINE
@@ -1251,112 +1249,6 @@ L03B2:  LD      A,$40           ; substitute ASCII '@'
 ;   allocated the local currency symbol for the relevant country -
 ;    £  in most Spectrums.
 
-; ------------------------------------------------------------------------
-
-
-;**********************************
-;** Part 3. LOUDSPEAKER ROUTINES **
-;**********************************
-
-; Documented by Alvin Albrecht.
-
-; ------------------------------
-; Routine to control loudspeaker
-; ------------------------------
-; Outputs a square wave of given duration and frequency
-; to the loudspeaker.
-;   Enter with: DE = #cycles - 1
-;               HL = tone period as described next
-;
-; The tone period is measured in T states and consists of
-; three parts: a coarse part (H register), a medium part
-; (bits 7..2 of L) and a fine part (bits 1..0 of L) which
-; contribute to the waveform timing as follows:
-;
-;                          coarse    medium       fine
-; duration of low  = 118 + 1024*H + 16*(L>>2) + 4*(L&0x3)
-; duration of hi   = 118 + 1024*H + 16*(L>>2) + 4*(L&0x3)
-; Tp = tone period = 236 + 2048*H + 32*(L>>2) + 8*(L&0x3)
-;                  = 236 + 2048*H + 8*L = 236 + 8*HL
-;
-; As an example, to output five seconds of middle C (261.624 Hz):
-;   (a) Tone period = 1/261.624 = 3.822ms
-;   (b) Tone period in T-States = 3.822ms*fCPU = 13378
-;         where fCPU = clock frequency of the CPU = 3.5MHz
-;    ©  Find H and L for desired tone period:
-;         HL = (Tp - 236) / 8 = (13378 - 236) / 8 = 1643 = 0x066B
-;   (d) Tone duration in cycles = 5s/3.822ms = 1308 cycles
-;         DE = 1308 - 1 = 0x051B
-;
-; The resulting waveform has a duty ratio of exactly 50%.
-;
-;
-;; BEEPER
-L03B5:  DI                      ; Disable Interrupts so they don't disturb timing
-        LD      A,L             ;
-        SRL     L               ;
-        SRL     L               ; L = medium part of tone period
-        CPL                     ;
-        AND     $03             ; A = 3 - fine part of tone period
-        LD      C,A             ;
-        LD      B,$00           ;
-        LD      IX,L03D1        ; Address: BE-IX+3
-        ADD     IX,BC           ;   IX holds address of entry into the loop
-                                ;   the loop will contain 0-3 NOPs, implementing
-                                ;   the fine part of the tone period.
-        LD      A,($5C48)       ; BORDCR
-        AND     $38             ; bits 5..3 contain border colour
-        RRCA                    ; border colour bits moved to 2..0
-        RRCA                    ;   to match border bits on port #FE
-        RRCA                    ;
-        OR       $08            ; bit 3 set (tape output bit on port #FE)
-                                ;   for loud sound output
-;; BE-IX+3
-L03D1:  NOP              ;(4)   ; optionally executed NOPs for small
-                                ;   adjustments to tone period
-;; BE-IX+2
-L03D2:  NOP              ;(4)   ;
-
-;; BE-IX+1
-L03D3:  NOP              ;(4)   ;
-
-;; BE-IX+0
-L03D4:  INC     B        ;(4)   ;
-        INC     C        ;(4)   ;
-
-;; BE-H&L-LP
-L03D6:  DEC     C        ;(4)   ; timing loop for duration of
-        JR      NZ,L03D6 ;(12/7);   high or low pulse of waveform
-
-        LD      C,$3F    ;(7)   ;
-        DEC     B        ;(4)   ;
-        JP      NZ,L03D6 ;(10)  ; to BE-H&L-LP
-
-        XOR     $10      ;(7)   ; toggle output beep bit
-        OUT     ($FE),A  ;(11)  ; output pulse
-        LD      B,H      ;(4)   ; B = coarse part of tone period
-        LD      C,A      ;(4)   ; save port #FE output byte
-        BIT     4,A      ;(8)   ; if new output bit is high, go
-        JR      NZ,L03F2 ;(12/7);   to BE-AGAIN
-
-        LD      A,D      ;(4)   ; one cycle of waveform has completed
-        OR      E        ;(4)   ;   (low->low). if cycle countdown = 0
-        JR      Z,L03F6  ;(12/7);   go to BE-END
-
-        LD      A,C      ;(4)   ; restore output byte for port #FE
-        LD      C,L      ;(4)   ; C = medium part of tone period
-        DEC     DE       ;(6)   ; decrement cycle count
-        JP      (IX)     ;(8)   ; do another cycle
-
-;; BE-AGAIN                     ; halfway through cycle
-L03F2:  LD      C,L      ;(4)   ; C = medium part of tone period
-        INC     C        ;(4)   ; adds 16 cycles to make duration of high = duration of low
-        JP      (IX)     ;(8)   ; do high pulse of tone
-
-;; BE-END
-L03F6:  EI                      ; Enable Interrupts
-        RET                     ;
-
 
 ; ------------------
 ; THE 'BEEP' COMMAND
@@ -1821,8 +1713,10 @@ L0556:  INC     D               ; reset the zero flag without disturbing carry.
 
         DI                      ; disable interrupts
 
+      IFDEF spectrum
         LD      A,$0F           ; make the border white and mic off.
         OUT     ($FE),A         ; output to port.
+      ENDIF
 
         LD      HL,L053F        ; Address: SA/LD-RET
         PUSH    HL              ; is saved on stack as terminating routine.
@@ -1832,8 +1726,12 @@ L0556:  INC     D               ; reset the zero flag without disturbing carry.
 
         IN      A,($FE)         ; read the ear state - bit 6.
         RRA                     ; rotate to bit 5.
+      IFDEF spectrum
         AND     $20             ; isolate this bit.
         OR      $02             ; combine with red border colour.
+      ELSE
+        and     $10             ; isolate bit 4
+      ENDIF
         LD      C,A             ; and store initial state long-term in C.
         CP      A               ; set the zero flag.
 
@@ -2045,7 +1943,11 @@ L05ED:  INC     B               ; increment the time-out counter.
         RET     NC              ; return if space pressed.  >>>
 
         XOR     C               ; compare with initial long-term state.
+      IFDEF spectrum
         AND     $20             ; isolate bit 5
+      ELSE
+        and     $10             ; isolate bit 4
+      ENDIF
         JR      Z,L05ED         ; back to LD-SAMPLE if no edge.
 
 ;   but an edge, a transition of the EAR bit, has been found so switch the
@@ -2054,10 +1956,11 @@ L05ED:  INC     B               ; increment the time-out counter.
         LD      A,C             ; fetch comparison value.
         CPL                     ; switch the bits
         LD      C,A             ; and put back in C for long-term.
-
+      IFDEF spectrum
         AND     $07             ; isolate new colour bits.
         OR      $08             ; set bit 3 - MIC off.
-        OUT     ($FE),A         ; send to port to effect the change of colour. 
+        OUT     ($FE),A         ; send to port to effect the change of colour.
+      ENDIF
 
         SCF                     ; set carry flag signaling edge found within
                                 ; time allowed.
@@ -4362,6 +4265,10 @@ L0E19:  EX      DE,HL           ; save source in DE.
         JR      NZ,L0E05        ; back to CL-SCR-1 if all eight not done.
         CALL    L0E88           ; routine CL-ATTR gets address in attributes
                                 ; from current 'ninth line', count in BC.
+        LD      HL,$FFE0        ; set HL to the 16-bit value -32.
+        ADD     HL,DE           ; and add to form destination address.
+        EX      DE,HL           ; swap source and destination addresses.
+        LDIR                    ; copy bytes scrolling the linear attributes.
       ELSE
         ex      de, hl
         ld      h, 0            ; set h to zero
@@ -4373,14 +4280,23 @@ L0E19:  EX      DE,HL           ; save source in DE.
         add     hl, hl          ; cells to the end of display.
         ld      b, h            ; transfer the result
         ld      c, l            ; to register bc.
+        push    bc
+        ld      hl, $ffe0       ; set HL to the 16-bit value -32.
+        add     hl, de          ; and add to form destination address.
+        push    hl
+        ex      de, hl          ; swap source and destination addresses.
+        push    hl
+        ldir                    ; copy bytes scrolling the linear attributes.
+        pop     hl
+        ld      b, $1c
+        add     hl, bc
+        ex      de, hl
+        pop     hl
+        add     hl, bc
+        pop     bc
+        ex      de, hl
+        ldir
       ENDIF
-
-;abcd falta scroll en atributos
-
-        LD      HL,$FFE0        ; set HL to the 16-bit value -32.
-        ADD     HL,DE           ; and add to form destination address.
-        EX      DE,HL           ; swap source and destination addresses.
-        LDIR                    ; copy bytes scrolling the linear attributes.
         LD      B,$01           ; continue to clear the bottom line.
 
 ; ------------------------------
@@ -10143,6 +10059,31 @@ L2067:  RST     20H             ; NEXT-CHAR to A.
 L206E:  CP      A               ; reset the zero flag.
         RET                     ; and return to loop or quit.
 
+; ------------
+; Alter stream
+; ------------
+; This routine is called from PRINT ITEMS above, and also LIST as in
+; LIST #15
+
+;; STR-ALTER
+L2070:  CP      $23             ; is character '#' ?
+        SCF                     ; set carry flag.
+        RET     NZ              ; return if no match.
+
+
+        RST     20H             ; NEXT-CHAR
+        CALL    L1C82           ; routine EXPT-1NUM gets stream number
+        AND     A               ; prepare to exit early with carry reset
+        CALL    L1FC3           ; routine UNSTACK-Z exits early if parsing
+        CALL    L1E94           ; routine FIND-INT1 gets number off stack
+        CP      $10             ; must be range 0 - 15 decimal.
+        JP      NC,L160E        ; jump back to REPORT-Oa if not
+                                ; 'Invalid stream'.
+
+        CALL    L1601           ; routine CHAN-OPEN
+        AND     A               ; clear carry - signal item dealt with.
+        RET                     ; return
+
 ; -------------------
 ; THE 'INPUT' COMMAND 
 ; -------------------
@@ -10456,6 +10397,52 @@ L21B2:  CALL    L204E           ; routine PR-POSN-1 handles a position item.
 
         RET                     ; return.
 
+; ---------------------------
+; INPUT ASSIGNMENT Subroutine
+; ---------------------------
+; This subroutine is called twice from the INPUT command when normal
+; keyboard input is assigned. On the first occasion syntax is checked
+; using SCANNING. The final call with the syntax flag reset is to make
+; the assignment.
+
+;; IN-ASSIGN
+L21B9:  LD      HL,($5C61)      ; fetch WORKSP start of input
+        LD      ($5C5D),HL      ; set CH_ADD to first character
+
+        RST     18H             ; GET-CHAR ignoring leading white-space.
+        CP      $E2             ; is it 'STOP'
+        JR      Z,L21D0         ; forward to IN-STOP if so.
+
+        LD      A,($5C71)       ; load accumulator from FLAGX
+        CALL    L1C59           ; routine VAL-FET-2 makes assignment
+                                ; or goes through the motions if checking
+                                ; syntax. SCANNING is used.
+
+        RST     18H             ; GET-CHAR
+        CP      $0D             ; is it carriage return ?
+        RET     Z               ; return if so
+                                ; either syntax is OK
+                                ; or assignment has been made.
+
+; if another character was found then raise an error.
+; User doesn't see report but the flashing error marker
+; appears in the lower screen.
+
+;; REPORT-Cb
+L21CE:  RST     08H             ; ERROR-1
+        DEFB    $0B             ; Error Report: Nonsense in BASIC
+
+;; IN-STOP
+L21D0:  CALL    L2530           ; routine SYNTAX-Z (UNSTACK-Z?)
+        RET     Z               ; return if checking syntax
+                                ; as user wouldn't see error report.
+                                ; but generate visible error report
+                                ; on second invocation.
+
+;; REPORT-H
+L21D4:  RST     08H             ; ERROR-1
+        DEFB    $10             ; Error Report: STOP in INPUT
+
 ; --------------------
 ; Colour Item Routines
 ; --------------------
@@ -10755,14 +10742,14 @@ L2294:  CALL    L1E94           ; routine FIND-INT1
 
 ;        OUT     ($FE),A         ; outputting to port effects an immediate
 ;                                ; change.
-;        RLCA                    ; shift the colour to
-;        RLCA                    ; the paper bits setting the
-;        RLCA                    ; ink colour black.
-;        BIT     5,A             ; is the number light coloured ?
-;                                ; i.e. in the range green to white.
-;        JR      NZ,L22A6        ; skip to BORDER-1 if so
+        RLCA                    ; shift the colour to
+        RLCA                    ; the paper bits setting the
+        RLCA                    ; ink colour black.
+        BIT     5,A             ; is the number light coloured ?
+                                ; i.e. in the range green to white.
+        JR      NZ,L22A6        ; skip to BORDER-1 if so
 
-;        XOR     $07             ; make the ink white.
+        XOR     $07             ; make the ink white.
 
 ;; BORDER-1
 L22A6:  LD      ($5C48),A       ; update BORDCR with new paper/ink
@@ -10799,76 +10786,120 @@ again   ld      a, (bc)
         rst     0
       ENDIF
 
-; ------------
-; Alter stream
-; ------------
-; This routine is called from PRINT ITEMS above, and also LIST as in
-; LIST #15
+;**********************************
+;** Part 3. LOUDSPEAKER ROUTINES **
+;**********************************
 
-;; STR-ALTER
-L2070:  CP      $23             ; is character '#' ?
-        SCF                     ; set carry flag.
-        RET     NZ              ; return if no match.
+; Documented by Alvin Albrecht.
 
+; ------------------------------
+; Routine to control loudspeaker
+; ------------------------------
+; Outputs a square wave of given duration and frequency
+; to the loudspeaker.
+;   Enter with: DE = #cycles - 1
+;               HL = tone period as described next
+;
+; The tone period is measured in T states and consists of
+; three parts: a coarse part (H register), a medium part
+; (bits 7..2 of L) and a fine part (bits 1..0 of L) which
+; contribute to the waveform timing as follows:
+;
+;                          coarse    medium       fine
+; duration of low  = 118 + 1024*H + 16*(L>>2) + 4*(L&0x3)
+; duration of hi   = 118 + 1024*H + 16*(L>>2) + 4*(L&0x3)
+; Tp = tone period = 236 + 2048*H + 32*(L>>2) + 8*(L&0x3)
+;                  = 236 + 2048*H + 8*L = 236 + 8*HL
+;
+; As an example, to output five seconds of middle C (261.624 Hz):
+;   (a) Tone period = 1/261.624 = 3.822ms
+;   (b) Tone period in T-States = 3.822ms*fCPU = 13378
+;         where fCPU = clock frequency of the CPU = 3.5MHz
+;    ©  Find H and L for desired tone period:
+;         HL = (Tp - 236) / 8 = (13378 - 236) / 8 = 1643 = 0x066B
+;   (d) Tone duration in cycles = 5s/3.822ms = 1308 cycles
+;         DE = 1308 - 1 = 0x051B
+;
+; The resulting waveform has a duty ratio of exactly 50%.
+;
+;
+;; BEEPER
+L03B5:  DI                      ; Disable Interrupts so they don't disturb timing
+        LD      A,L             ;
+        SRL     L               ;
+        SRL     L               ; L = medium part of tone period
+        CPL                     ;
+        AND     $03             ; A = 3 - fine part of tone period
+        LD      C,A             ;
+        LD      B,$00           ;
+        LD      IX,L03D1        ; Address: BE-IX+3
+        ADD     IX,BC           ;   IX holds address of entry into the loop
+                                ;   the loop will contain 0-3 NOPs, implementing
+                                ;   the fine part of the tone period.
+      IFNDEF spectrum
+        LD      A,($5C48)       ; BORDCR
+        AND     $38             ; bits 5..3 contain border colour
+        RRCA                    ; border colour bits moved to 2..0
+        RRCA                    ;   to match border bits on port #FE
+        RRCA                    ;
+        OR       $08            ; bit 3 set (tape output bit on port #FE)
+                                ;   for loud sound output
+      ENDIF
 
-        RST     20H             ; NEXT-CHAR
-        CALL    L1C82           ; routine EXPT-1NUM gets stream number
-        AND     A               ; prepare to exit early with carry reset
-        CALL    L1FC3           ; routine UNSTACK-Z exits early if parsing
-        CALL    L1E94           ; routine FIND-INT1 gets number off stack
-        CP      $10             ; must be range 0 - 15 decimal.
-        JP      NC,L160E        ; jump back to REPORT-Oa if not
-                                ; 'Invalid stream'.
+;; BE-IX+3
+L03D1:  NOP              ;(4)   ; optionally executed NOPs for small
+                                ;   adjustments to tone period
+;; BE-IX+2
+L03D2:  NOP              ;(4)   ;
 
-        CALL    L1601           ; routine CHAN-OPEN
-        AND     A               ; clear carry - signal item dealt with.
-        RET                     ; return
+;; BE-IX+1
+L03D3:  NOP              ;(4)   ;
 
-; ---------------------------
-; INPUT ASSIGNMENT Subroutine
-; ---------------------------
-; This subroutine is called twice from the INPUT command when normal
-; keyboard input is assigned. On the first occasion syntax is checked
-; using SCANNING. The final call with the syntax flag reset is to make
-; the assignment.
+;; BE-IX+0
+L03D4:  INC     B        ;(4)   ;
+        INC     C        ;(4)   ;
 
-;; IN-ASSIGN
-L21B9:  LD      HL,($5C61)      ; fetch WORKSP start of input
-        LD      ($5C5D),HL      ; set CH_ADD to first character
+;; BE-H&L-LP
+L03D6:  DEC     C        ;(4)   ; timing loop for duration of
+        JR      NZ,L03D6 ;(12/7);   high or low pulse of waveform
 
-        RST     18H             ; GET-CHAR ignoring leading white-space.
-        CP      $E2             ; is it 'STOP'
-        JR      Z,L21D0         ; forward to IN-STOP if so.
+        LD      C,$3F    ;(7)   ;
+        DEC     B        ;(4)   ;
+        JP      NZ,L03D6 ;(10)  ; to BE-H&L-LP
 
-        LD      A,($5C71)       ; load accumulator from FLAGX
-        CALL    L1C59           ; routine VAL-FET-2 makes assignment
-                                ; or goes through the motions if checking
-                                ; syntax. SCANNING is used.
+      IFDEF spectrum
+        XOR     $10      ;(7)   ; toggle output beep bit
+        OUT     ($FE),A  ;(11)  ; output pulse
+        LD      B,H      ;(4)   ; B = coarse part of tone period
+        LD      C,A      ;(4)   ; save port #FE output byte
+        BIT     4,A      ;(8)   ; if new output bit is high, go
+        JR      NZ,L03F2 ;(12/7);   to BE-AGAIN
+      ELSE
+L03DA:  out     ($fe), a ;(11)  ; output pulse
+        ld      a, (L03DA)
+        xor     $08
+        ld      (L03DA), a
+        ld      b, h     ;(4)   ; b = coarse part of tone period
+        jp      po, L03F2;(12/7);   to BE-AGAIN
+      ENDIF
 
-        RST     18H             ; GET-CHAR
-        CP      $0D             ; is it carriage return ?
-        RET     Z               ; return if so
-                                ; either syntax is OK
-                                ; or assignment has been made.
+        LD      A,D      ;(4)   ; one cycle of waveform has completed
+        OR      E        ;(4)   ;   (low->low). if cycle countdown = 0
+        JR      Z,L03F6  ;(12/7);   go to BE-END
 
-; if another character was found then raise an error.
-; User doesn't see report but the flashing error marker
-; appears in the lower screen.
+        LD      A,C      ;(4)   ; restore output byte for port #FE
+        LD      C,L      ;(4)   ; C = medium part of tone period
+        DEC     DE       ;(6)   ; decrement cycle count
+        JP      (IX)     ;(8)   ; do another cycle
 
-;; REPORT-Cb
-L21CE:  RST     08H             ; ERROR-1
-        DEFB    $0B             ; Error Report: Nonsense in BASIC
+;; BE-AGAIN                     ; halfway through cycle
+L03F2:  LD      C,L      ;(4)   ; C = medium part of tone period
+        INC     C        ;(4)   ; adds 16 cycles to make duration of high = duration of low
+        JP      (IX)     ;(8)   ; do high pulse of tone
 
-;; IN-STOP
-L21D0:  CALL    L2530           ; routine SYNTAX-Z (UNSTACK-Z?)
-        RET     Z               ; return if checking syntax
-                                ; as user wouldn't see error report.
-                                ; but generate visible error report
-                                ; on second invocation.
-
-;; REPORT-H
-L21D4:  RST     08H             ; ERROR-1
-        DEFB    $10             ; Error Report: STOP in INPUT
+;; BE-END
+L03F6:  EI                      ; Enable Interrupts
+        RET                     ;
 
 ; -----------------------------------
 ; THE 'TEST FOR CHANNEL K' SUBROUTINE
