@@ -19,7 +19,7 @@
 
 ; ajuste fino del beeper
 ; ajustar tiempos en load y tiempos/puertos en save
-; hacer flash por software
+; compilacion separada para spectrum 16k
 
 ;************************************************************************
 ;** An Assembly File Listing to generate a 16K ROM for the ZX Spectrum **
@@ -177,6 +177,12 @@ L0030:  PUSH    BC              ; Save number of spaces.
 L0038:  PUSH    AF              ; Save the registers that will be used but not
         PUSH    HL              ; the IY register unfortunately.
         LD      HL,($5C78)      ; Fetch the first two bytes at FRAMES1.
+      IFNDEF spectrum
+        ld      a, l
+        and     $0f
+        cp      3
+        call    c, flash-MEMD
+      ENDIF
         INC     HL              ; Increment lowest two bytes of counter.
         LD      ($5C78),HL      ; Place back in FRAMES1.
         LD      A,H             ; Test if the result was zero.
@@ -230,16 +236,17 @@ L0055:  LD      (IY+$00),L      ; Store it in the system variable ERR_NR.
                                 ; or   ED-FULL during ed-enter.
                                 ; or  IN-VAR-1 during runtime input etc.
 
-        JP      L16C5           ; Jump to SET-STK to clear the calculator stack 
+        jr      L16C5           ; Jump to SET-STK to clear the calculator stack 
                                 ; and reset MEM to usual place in the systems 
                                 ; variables area and then indirectly to MAIN-4, 
                                 ; etc.
 
 ; ---
-
+      IFDEF spectrum
         DEFB    $FF, $FF, $FF   ; Unused locations
         DEFB    $FF, $FF, $FF   ; before the fixed-position
-        DEFB    $FF             ; NMI routine.
+        DEFB    $FF, $ff        ; NMI routine.
+      ENDIF
 
 ; ------------------------------------
 ; THE 'NON-MASKABLE INTERRUPT' ROUTINE
@@ -279,6 +286,48 @@ L0066:  PUSH    AF              ; save the
         JR      NZ,L0070        ; skip to NO-RESET if NOT ZERO
 
         JP      (HL)            ; jump to routine ( i.e. L0000 )
+
+; ---------------------------
+; Clear various editing areas
+; ---------------------------
+; This routine sets the editing area, workspace and calculator stack
+; to their minimum configurations as at initialization and indeed this
+; routine could have been relied on to perform that task.
+; This routine uses HL only and returns with that register holding
+; WORKSP/STKBOT/STKEND though no use is made of this. The routines also
+; reset MEM to its usual place in the systems variable area should it
+; have been relocated to a FOR-NEXT variable. The main entry point
+; SET-MIN is called at the start of the MAIN-EXEC loop and prior to
+; displaying an error.
+
+;; SET-MIN
+L16B0:  LD      HL,($5C59)      ; fetch E_LINE
+        LD      (HL),$0D        ; insert carriage return
+        LD      ($5C5B),HL      ; make K_CUR keyboard cursor point there.
+        INC     HL              ; next location
+        LD      (HL),$80        ; holds end-marker $80
+        INC     HL              ; next location becomes
+        LD      ($5C61),HL      ; start of WORKSP
+
+; This entry point is used prior to input and prior to the execution,
+; or parsing, of each statement.
+
+;; SET-WORK
+L16BF:  LD      HL,($5C61)      ; fetch WORKSP value
+        LD      ($5C63),HL      ; and place in STKBOT
+
+; This entry point is used to move the stack back to its normal place
+; after temporary relocation during line entry and also from ERROR-3
+
+;; SET-STK
+L16C5:  LD      HL,($5C63)      ; fetch STKBOT value 
+        LD      ($5C65),HL      ; and place in STKEND.
+
+        PUSH    HL              ; perhaps an obsolete entry point.
+        LD      HL,$5C92        ; normal location of MEM-0
+        LD      ($5C68),HL      ; is restored to system variable MEM.
+        POP     HL              ; saved value not required.
+        RET                     ; return.
 
 ; ---------------------------
 ; THE 'CH ADD + 1' SUBROUTINE
@@ -6461,48 +6510,6 @@ L169E:  LD      HL,($5C63)      ; STKBOT first location of calculator stack
         INC     HL              ; HL now location after new space
         RET                     ; return.
 
-; ---------------------------
-; Clear various editing areas
-; ---------------------------
-; This routine sets the editing area, workspace and calculator stack
-; to their minimum configurations as at initialization and indeed this
-; routine could have been relied on to perform that task.
-; This routine uses HL only and returns with that register holding
-; WORKSP/STKBOT/STKEND though no use is made of this. The routines also
-; reset MEM to its usual place in the systems variable area should it
-; have been relocated to a FOR-NEXT variable. The main entry point
-; SET-MIN is called at the start of the MAIN-EXEC loop and prior to
-; displaying an error.
-
-;; SET-MIN
-L16B0:  LD      HL,($5C59)      ; fetch E_LINE
-        LD      (HL),$0D        ; insert carriage return
-        LD      ($5C5B),HL      ; make K_CUR keyboard cursor point there.
-        INC     HL              ; next location
-        LD      (HL),$80        ; holds end-marker $80
-        INC     HL              ; next location becomes
-        LD      ($5C61),HL      ; start of WORKSP
-
-; This entry point is used prior to input and prior to the execution,
-; or parsing, of each statement.
-
-;; SET-WORK
-L16BF:  LD      HL,($5C61)      ; fetch WORKSP value
-        LD      ($5C63),HL      ; and place in STKBOT
-
-; This entry point is used to move the stack back to its normal place
-; after temporary relocation during line entry and also from ERROR-3
-
-;; SET-STK
-L16C5:  LD      HL,($5C63)      ; fetch STKBOT value 
-        LD      ($5C65),HL      ; and place in STKEND.
-
-        PUSH    HL              ; perhaps an obsolete entry point.
-        LD      HL,$5C92        ; normal location of MEM-0
-        LD      ($5C68),HL      ; is restored to system variable MEM.
-        POP     HL              ; saved value not required.
-        RET                     ; return.
-
 ; ------------------
 ; Reclaim edit-line?
 ; ------------------
@@ -10756,7 +10763,7 @@ L22A6:  LD      ($5C48),A       ; update BORDCR with new paper/ink
         RET                     ; return.
 
       IFNDEF spectrum
-        PADORG  $4700-18
+        PADORG  $4700-18        ;$4700 in Jupiter Ace
         ld      sp, $8000
         di
         ld      hl, $0012
@@ -18862,7 +18869,7 @@ L37A8:  DEFB    $38             ;;end-calc        quadrants II and III correct.
         RET                     ; return.
 
       IFNDEF spectrum
-        PADORG  $5e00-18
+        PADORG  $5e00-18        ; $3c00 in Jupiter Ace
       ENDIF
 
 ; ---------------------
@@ -19157,6 +19164,34 @@ L386C:  DEFB    $38             ;;end-calc              last value is 1 or 0.
 
         RET                     ; return.               
 
+flash:  push    bc
+        push    de
+        push    hl
+        ld      b, 0
+        add     a, $24
+        ld      l, b
+        ld      e, b
+        ld      h, a
+        add     a, $1c
+        ld      d, a
+flas1:  ld      a, (de)
+        and     $80
+        jr      nz, putfl
+flas2:  inc     l
+        inc     e
+        djnz    flas1
+        bit     1, h
+        ld      hl, putfl+1-MEMD
+        ld      a, $40
+        call    nz, L0D65+3     ; xor (hl) / ld (hl), a
+        pop     hl
+        pop     de
+        pop     bc
+        ret
+putfl:  set     7, (hl)
+        jr      flas2
+
+
 ; ------------------
 ; THE 'EXP' FUNCTION
 ; ------------------
@@ -19171,7 +19206,7 @@ L36C4:IFDEF spectrum
         RST     28H             ;; FP-CALC
       ELSE
 
-        PADORG  $6300-18-$a8
+        PADORG  $6300-18-$a8    ;$ff58 in Jupiter Ace
 
         DEFB    $F0             ;; FP-CALC
 
@@ -19359,7 +19394,7 @@ L37DA:  RST     28H             ;; FP-CALC          x.
         RET                     ; return.
 
       IFDEF spectrum
-        PADORG  $3d00
+        PADORG  $3d00           ;$2c00 in Jupiter Ace
       ELSE
 
 ; -------------------------------
