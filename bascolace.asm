@@ -18,7 +18,7 @@
       ENDIF
 
 ; ajuste fino del beeper
-; ajustar tiempos en load y tiempos/puertos en save
+; ajustar tiempos en load y tiempos en save
 ; compilacion separada para spectrum 16k
 
 ;************************************************************************
@@ -1533,19 +1533,26 @@ L04C2:  LD      HL,L053F        ; address: SA/LD-RET
                                 ; however there is only one non-terminal exit 
                                 ; point.
 
+      IFDEF spectrum
         LD      HL,$1F80        ; a timing constant H=$1F, L=$80
                                 ; inner and outer loop counters
                                 ; a five second lead-in is used for a header.
 
+      ELSE
+        ld      hl, $0f40       ; 2080/2 - 0100
+      ENDIF
         BIT     7,A             ; test one bit of accumulator.
                                 ; (AND A ?)
         JR      Z,L04D0         ; skip to SA-FLAG if a header is being saved.
 
 ;   else is data bytes and a shorter lead-in is used.
 
+      IFDEF spectrum
         LD      HL,$0C98        ; another timing value H=$0C, L=$98.
                                 ; a two second lead-in is used for the data.
-
+      ELSE
+        ld      hl, $05cc       ; 0d98/2 - 0100
+      ENDIF
 
 ;; SA-FLAG
 L04D0:  EX      AF,AF'          ; save flag
@@ -1561,6 +1568,7 @@ L04D0:  EX      AF,AF'          ; save flag
 L04D8:  DJNZ    L04D8           ; self loop to SA-LEADER for delay.
                                 ; after initial loop, count is $A4 (or $A3)
 
+      IFDEF spectrum
         OUT     ($FE),A         ; output byte $02/$0D to tape port.
 
         XOR     $0F             ; switch from RED (mic on) to CYAN (mic off).
@@ -1595,13 +1603,31 @@ L04F2:  DJNZ    L04F2           ; self loop to SA-SYNC-2
 
         OUT     ($FE),A         ; output mic off, cyan border.
         LD      BC,$3B0E        ; B=$3B time(*), C=$0E, YELLOW, MIC OFF.
+      ELSE
+        call    porin
+        ld      b, $a4
+L04F9:  djnz    L04F9
+        out     ($fe), a
+        ld      b, $a4
+        dec     l
+        jr      nz, L04D8       ; back to SA-LEADER until L is zero.
+;        dec     b               ; decrement count
+        dec     h               ; originally  twelve or thirty-one.
+        jp      p, L04D8        ; back to SA-LEADER until H becomes $FF
+        ld      b, $2b
+L0500:  djnz    L0500
+        call    porin
+        ld      b, $37
+L0508:  djnz    L0508
+        out     ($fe), a
+      ENDIF
 
         EX      AF,AF'          ; restore saved flag
                                 ; which is 1st byte to be saved.
 
         LD      L,A             ; and transfer to L.
                                 ; the initial parity is A, $FF or $00.
-        JP      L0507           ; JUMP forward to SA-START     ->
+        jr      L0507           ; JUMP forward to SA-START     ->
                                 ; the mid entry point of loop.
 
 ; -------------------------
@@ -1610,9 +1636,12 @@ L04F2:  DJNZ    L04F2           ; self loop to SA-SYNC-2
 ;   the final parity byte is saved reducing count to $FFFF.
 
 ;; SA-LOOP
-L04FE:  LD      A,D             ; fetch high byte
+L04FE:IFDEF spectrum
+        LD      A,D             ; fetch high byte
+      ENDIF
         OR      E               ; test against low byte.
-        JR      Z,L050E         ; forward to SA-PARITY if zero.
+        ld      l, h
+        JR      Z,L0505         ; forward to SA-PARITY if zero.
 
         LD      L,(IX+$00)      ; load currently addressed byte to L.
 
@@ -1626,17 +1655,16 @@ L0505:  LD      A,H             ; fetch parity byte.
 L0507:  LD      H,A             ; put parity byte in H.
         LD      A,$01           ; prepare blue, mic=on.
         SCF                     ; set carry flag ready to rotate in.
-        JP      L0525           ; JUMP forward to SA-8-BITS            -8->
+        jr      L0525           ; JUMP forward to SA-8-BITS            -8->
 
 ; ---
 
 ;; SA-PARITY
-L050E:  LD      L,H             ; transfer the running parity byte to L and
-        JR      L0505           ; back to SA-LOOP-P 
+;L050E:  LD      L,H             ; transfer the running parity byte to L and
+;        JR      L0505           ; back to SA-LOOP-P 
                                 ; to output that byte before quitting normally.
 
-; ---
-
+      IFDEF spectrum
 ;   The entry point to save yellow part of bit.
 ;   A bit consists of a period with mic on and blue border followed by 
 ;   a period of mic off with yellow border. 
@@ -1681,12 +1709,9 @@ L051C:  OUT     ($FE),A         ; blue and mic on OR  yellow and mic off.
 
 ;; SA-8-BITS
 L0525:  RL      L               ; rotate left through carry
-                                ; C<76543210<C  
+                                ; C<76543210<C
         JP      NZ,L0514        ; JUMP back to SA-BIT-1 
                                 ; until all 8 bits done.
-
-;   when the initial set carry is passed out again then a byte is complete.
-
         DEC     DE              ; decrease length
         INC     IX              ; increase byte pointer
         LD      B,$31           ; set up timing.
@@ -1701,6 +1726,32 @@ L0525:  RL      L               ; rotate left through carry
         LD      A,D             ; fetch high byte
         INC     A               ; increment.
         JP      NZ,L04FE        ; JUMP to SA-LOOP if more bytes.
+      ELSE
+L0511:  jr      nc, L0514
+        ld      c, $76
+L0514:  ld      b, c
+L0515:  djnz    L0515
+        call    porin
+        ld      b, c
+L051B:  djnz    L051B
+        out     ($fe), a
+        xor     a
+L0525:  rl      l
+        ld      c, $3B
+        jr      nz, L0511
+        dec     de              ; decrease length
+        inc     ix              ; increase byte pointer
+        ld      a, d
+        cp      $ff
+        jr      nc, safin
+        jr      L04FE
+porin:  ld      a, $7f
+        in      a, ($fe)
+        rra
+        ret     c
+        pop     hl
+safin:
+      ENDIF
 
         LD      B,$3B           ; a final delay. 
 
@@ -2385,8 +2436,8 @@ L073A:  LD      (IX+$00),$00    ; place type zero - program in descriptor.
 
 ;; SA-ALL
 L075A:  LD      A,($5C74)       ; fetch command from T_ADDR
-;        AND     A               ; test for zero - SAVE.
-;        JP      Z,L0970         ; jump forward to SA-CONTRL with SAVE  ->
+        AND     A               ; test for zero - SAVE.
+        JP      Z,L0970-MEMD    ; jump forward to SA-CONTRL with SAVE  ->
 
 ; ---
 ;   continue with LOAD, MERGE and VERIFY.
@@ -2934,78 +2985,6 @@ L0958:  INC     HL              ; address next?
                                 ; useful for adding more lines.
         POP     DE              ; restore the prog/vars pointer
         RET                     ; return.
-
-; --------------------------
-; THE 'SAVE CONTROL' ROUTINE
-; --------------------------
-;   A branch from the main SAVE-ETC routine at SAVE-ALL.
-;   First the header data is saved. Then after a wait of 1 second
-;   the data itself is saved.
-;   HL points to start of data.
-;   IX points to start of descriptor.
-
-;; SA-CONTRL
-;L0970:  PUSH    HL              ; save start of data
-
-;        LD      A,$FD           ; select system channel 'S'
-;        CALL    L1601           ; routine CHAN-OPEN
-
-;        XOR     A               ; clear to address table directly
-;        LD      DE,L09A1        ; address: tape-msgs
-;        CALL    L0C0A           ; routine PO-MSG -
-;                                ; 'Start tape then press any key.'
-
-;        SET     5,(IY+$02)      ; TV_FLAG  - Signal lower screen requires
-;                                ; clearing
-;        CALL    L15D4           ; routine WAIT-KEY
-
-;        PUSH    IX              ; save pointer to descriptor.
-;        LD      DE,$0011        ; there are seventeen bytes.
-;        XOR     A               ; signal a header.
-;        CALL    L04C2           ; routine SA-BYTES
-
-;        POP     IX              ; restore descriptor pointer.
-
-;        LD      B,$32           ; wait for a second - 50 interrupts.
-
-;; SA-1-SEC
-;L0991:  HALT                    ; wait for interrupt
-;        DJNZ    L0991           ; back to SA-1-SEC until pause complete.
-
-;        LD      E,(IX+$0B)      ; fetch length of bytes from the
-;        LD      D,(IX+$0C)      ; descriptor.
-
-;        LD      A,$FF           ; signal data bytes.
-
-;        POP     IX              ; retrieve pointer to start
-;        JP      L04C2           ; jump back to SA-BYTES
-
-
-;   Arrangement of two headers in workspace.
-;   Originally IX addresses first location and only one header is required
-;   when saving.
-;
-;   OLD     NEW         PROG   DATA  DATA  CODE 
-;   HEADER  HEADER             num   chr          NOTES.
-;   ------  ------      ----   ----  ----  ----   -----------------------------
-;   IX-$11  IX+$00      0      1     2     3      Type.
-;   IX-$10  IX+$01      x      x     x     x      F  ($FF if filename is null).
-;   IX-$0F  IX+$02      x      x     x     x      i
-;   IX-$0E  IX+$03      x      x     x     x      l
-;   IX-$0D  IX+$04      x      x     x     x      e
-;   IX-$0C  IX+$05      x      x     x     x      n
-;   IX-$0B  IX+$06      x      x     x     x      a
-;   IX-$0A  IX+$07      x      x     x     x      m
-;   IX-$09  IX+$08      x      x     x     x      e
-;   IX-$08  IX+$09      x      x     x     x      .
-;   IX-$07  IX+$0A      x      x     x     x      (terminal spaces).
-;   IX-$06  IX+$0B      lo     lo    lo    lo     Total  
-;   IX-$05  IX+$0C      hi     hi    hi    hi     Length of datablock.
-;   IX-$04  IX+$0D      Auto   -     -     Start  Various
-;   IX-$03  IX+$0E      Start  a-z   a-z   addr   ($80 if no autostart).
-;   IX-$02  IX+$0F      lo     -     -     -      Length of Program 
-;   IX-$01  IX+$10      hi     -     -     -      only i.e. without variables.
-;
 
 
 ; ------------------------
@@ -19191,6 +19170,77 @@ flas2:  inc     l
 putfl:  set     7, (hl)
         jr      flas2
 
+; --------------------------
+; THE 'SAVE CONTROL' ROUTINE
+; --------------------------
+;   A branch from the main SAVE-ETC routine at SAVE-ALL.
+;   First the header data is saved. Then after a wait of 1 second
+;   the data itself is saved.
+;   HL points to start of data.
+;   IX points to start of descriptor.
+
+;; SA-CONTRL
+L0970:  PUSH    HL              ; save start of data
+
+        LD      A,$FD           ; select system channel 'S'
+        CALL    L1601           ; routine CHAN-OPEN
+
+        XOR     A               ; clear to address table directly
+        LD      DE,L09A1        ; address: tape-msgs
+        CALL    L0C0A           ; routine PO-MSG -
+                                ; 'Start tape then press any key.'
+
+        SET     5,(IY+$02)      ; TV_FLAG  - Signal lower screen requires
+                                ; clearing
+        CALL    L15D4           ; routine WAIT-KEY
+
+        PUSH    IX              ; save pointer to descriptor.
+        LD      DE,$0011        ; there are seventeen bytes.
+        XOR     A               ; signal a header.
+        CALL    L04C2           ; routine SA-BYTES
+
+        POP     IX              ; restore descriptor pointer.
+
+        LD      B,$32           ; wait for a second - 50 interrupts.
+
+;; SA-1-SEC
+L0991:  HALT                    ; wait for interrupt
+        DJNZ    L0991           ; back to SA-1-SEC until pause complete.
+
+        LD      E,(IX+$0B)      ; fetch length of bytes from the
+        LD      D,(IX+$0C)      ; descriptor.
+
+        LD      A,$FF           ; signal data bytes.
+
+        POP     IX              ; retrieve pointer to start
+        JP      L04C2           ; jump back to SA-BYTES
+
+
+;   Arrangement of two headers in workspace.
+;   Originally IX addresses first location and only one header is required
+;   when saving.
+;
+;   OLD     NEW         PROG   DATA  DATA  CODE 
+;   HEADER  HEADER             num   chr          NOTES.
+;   ------  ------      ----   ----  ----  ----   -----------------------------
+;   IX-$11  IX+$00      0      1     2     3      Type.
+;   IX-$10  IX+$01      x      x     x     x      F  ($FF if filename is null).
+;   IX-$0F  IX+$02      x      x     x     x      i
+;   IX-$0E  IX+$03      x      x     x     x      l
+;   IX-$0D  IX+$04      x      x     x     x      e
+;   IX-$0C  IX+$05      x      x     x     x      n
+;   IX-$0B  IX+$06      x      x     x     x      a
+;   IX-$0A  IX+$07      x      x     x     x      m
+;   IX-$09  IX+$08      x      x     x     x      e
+;   IX-$08  IX+$09      x      x     x     x      .
+;   IX-$07  IX+$0A      x      x     x     x      (terminal spaces).
+;   IX-$06  IX+$0B      lo     lo    lo    lo     Total  
+;   IX-$05  IX+$0C      hi     hi    hi    hi     Length of datablock.
+;   IX-$04  IX+$0D      Auto   -     -     Start  Various
+;   IX-$03  IX+$0E      Start  a-z   a-z   addr   ($80 if no autostart).
+;   IX-$02  IX+$0F      lo     -     -     -      Length of Program 
+;   IX-$01  IX+$10      hi     -     -     -      only i.e. without variables.
+;
 
 ; ------------------
 ; THE 'EXP' FUNCTION
