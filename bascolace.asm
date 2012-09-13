@@ -17,6 +17,11 @@
         DEFINE  UDGD  $9d12
       ENDIF
 
+; NEWED
+; L12CF: LD      (IY+$07),0
+; L1708: NEW_CSLU 
+; L1881: call impose
+; L1937: call impose
 ; ajuste fino del beeper
 ; ajustar tiempos en load y tiempos en save
 ; compilacion separada para spectrum 16k
@@ -5689,7 +5694,7 @@ L1201:  LD      ($5CB2),HL      ; set system variable RAMTOP to HL.
         LD      A,$38           ; the colour system is set to white paper,
                                 ; black ink, no flash or bright.
         LD      ($5C8D),A       ; set ATTR_P permanent colour attributes.
-        LD      ($5C8F),A       ; set ATTR_T temporary colour attributes.
+;        LD      ($5C8F),A       ; set ATTR_T temporary colour attributes.
         LD      ($5C48),A       ; set BORDCR the border colour/lower screen
                                 ; attributes.
 
@@ -5759,15 +5764,15 @@ L12AC:  LD      A,$00           ; select channel 'K' the keyboard
 ; the branch was here if syntax has passed test.
 
 ;; MAIN-3
-L12CF:  LD      HL,($5C59)      ; fetch the edit line address from E_LINE.
+L12CF:;  LD      HL,($5C59)      ; fetch the edit line address from E_LINE.
 
-        LD      ($5C5D),HL      ; system variable CH_ADD is set to first
-                                ; character of edit line.
-                                ; Note. the above two instructions are a little
-                                ; inadequate. 
-                                ; They are repeated with a subtle difference 
-                                ; at the start of the next subroutine and are 
-                                ; therefore not required above.
+;        LD      ($5C5D),HL      ; system variable CH_ADD is set to first
+;                                ; character of edit line.
+;                                ; Note. the above two instructions are a little
+;                                ; inadequate. 
+;                                ; They are repeated with a subtle difference 
+;                                ; at the start of the next subroutine and are 
+;                                ; therefore not required above.
 
         CALL    L19FB           ; routine E-LINE-NO will fetch any line
                                 ; number to BC if this is a program line.
@@ -8715,8 +8720,11 @@ L1C8C:  CALL    L24FB           ; routine SCANNING
 ;; CLASS-07
 L1C96:  BIT     7,(IY+$01)      ; test FLAGS - checking syntax only ?
                                 ; Note. there is a subroutine to do this.
-        RES     0,(IY+$02)      ; update TV_FLAG - signal main screen in use
-        CALL    NZ,L0D4D        ; routine TEMPS is called in runtime.
+;        RES     0,(IY+$02)      ; update TV_FLAG - signal main screen in use
+;        CALL    NZ,L0D4D        ; routine TEMPS is called in runtime.
+        ld      a, $fe          ;+ system screen
+        call    nz, L1601       ;+ also does above instructions
+
         POP     AF              ; drop return address SCAN-LOOP
         LD      A,($5C74)       ; T_ADDR_lo to accumulator.
                                 ; points to '$07' entry + 1
@@ -8758,8 +8766,10 @@ L1CA5:  SUB     (L1AEB-$D8)%256 ; convert $EB to $D8 ('INK') etc.
 L1CBE:  CALL    L2530           ; routine SYNTAX-Z
         JR      Z,L1CD6         ; forward to CL-09-1 if checking syntax.
 
-        RES     0,(IY+$02)      ; update TV_FLAG - signal main screen in use
-        CALL    L0D4D           ; routine TEMPS is called.
+;        RES     0,(IY+$02)      ; update TV_FLAG - signal main screen in use
+;        CALL    L0D4D           ; routine TEMPS is called.
+        ld      a, $fe          ;+ system screen
+        call    L1601           ;+ also does above instructions
         LD      HL,$5C90        ; point to MASK_T
         LD      A,(HL)          ; fetch mask to accumulator.
         OR      $F8             ; or with 11111000 paper/bright/flash 8
@@ -10081,15 +10091,16 @@ L2089:  CALL    L2530           ; routine SYNTAX-Z to check if in runtime.
 
         JR      Z,L2096         ; forward to INPUT-1 if checking syntax.
 
-        LD      A,$01           ; select channel 'K' the keyboard for input.
-        CALL    L1601           ; routine CHAN-OPEN opens the channel and sets
-                                ; bit 0 of TV_FLAG.
-
-;   Note. As a consequence of clearing the lower screen channel 0 is made 
-;   the current channel so the above two instructions are superfluous.
+;        LD      A,$01           ; select channel 'K' the keyboard for input.
+;        CALL    L1601           ; routine CHAN-OPEN opens the channel and sets
+;                                ; bit 0 of TV_FLAG.
 
         CALL    L0D6E           ; routine CLS-LOWER clears the lower screen
                                 ; and sets DF_SZ to two and TV_FLAG to $01.
+
+        ld      a, $01          ; select channel 'K' the keyboard for input.
+        call    L1601           ; routine CHAN-OPEN opens the channel and sets
+                                ; bit 0 of TV_FLAG.
 
 ;; INPUT-1
 L2096:  LD      (IY+$02),$01    ; update TV_FLAG - signal lower screen in use
@@ -12246,9 +12257,10 @@ L2573:  POP     HL              ; restore the last bitmap start
         LD      C,B             ; B is now zero, so BC now zero.
 
 ;; S-SCR-STO
-L257D:  JP      L2AB2           ; to STK-STO-$ to store the string in
-                                ; workspace or a string with zero length.
-                                ; (value of DE doesn't matter in last case)
+L257D:  ret
+;        JP      L2AB2           ; to STK-STO-$ to store the string in
+;                                ; workspace or a string with zero length.
+;                                ; (value of DE doesn't matter in last case)
 
 ; Note. this exit seems correct but the general-purpose routine S-STRING
 ; that calls this one will also stack any of its string results so this
@@ -14829,9 +14841,11 @@ L2CDA:  RST     18H             ; GET-CHAR
         RST     28H             ;; FP-CALC   ;x or 0,d.           first pass.
         DEFB    $E0             ;;get-mem-0  ;x or 0,d,1.
         DEFB    $A4             ;;stk-ten    ;x or 0,d,1,10.
-        DEFB    $05             ;;division   ;x or 0,d,1/10.
-        DEFB    $C0             ;;st-mem-0   ;x or 0,d,1/10.
-        DEFB    $04             ;;multiply   ;x or 0,d/10.
+;        DEFB    $05             ;;division   ;
+        defb    $04             ;;+ multiply ;x or 0,d,1*10.
+        DEFB    $C0             ;;st-mem-0   ;x or 0,d,1*10.
+;        DEFB    $04             ;;multiply   ;x or 0,d/10.
+        defb    $05             ;;+ division ;x or 0,d/10.
         DEFB    $0F             ;;addition   ;x or 0 + d/10.
         DEFB    $38             ;;end-calc   last value.
 
@@ -14900,7 +14914,8 @@ L2CFF:  CALL    L2D1B           ; routine NUMERIC
         NEG                     ; Negate the exponent.
 
 ;; E-FP-JUMP
-L2D18:  JP      L2D4F           ; JUMP forward to E-TO-FP to assign to
+L2D18:  ;JP      L2D4F           ; JUMP forward to E-TO-FP to assign to
+        jr      L2D4F           ; JUMP forward to E-TO-FP to assign to
                                 ; last value x on stack x * 10 to power A
                                 ; a relative jump would have done.
 
@@ -15404,7 +15419,8 @@ L2E1E:  PUSH    DE              ; save the part before decimal point.
 
 ;; PF-SMALL
 L2E24:  RST     28H             ;; FP-CALC       int x = 0.
-L2E25:  DEFB    $E2             ;;get-mem-2      int x = 0, x-int x.
+L2E25:  defb    $02             ;;+ delete       (see above)
+        DEFB    $E2             ;;get-mem-2      int x = 0, x-int x.
         DEFB    $38             ;;end-calc
 
         LD      A,(HL)          ; fetch exponent of positive fractional number
@@ -15443,7 +15459,8 @@ L2E25:  DEFB    $E2             ;;get-mem-2      int x = 0, x-int x.
         LD      (HL),A          ; and store updated value
         POP     HL              ; restore HL
 
-        JP      L2ECF           ; JUMP forward to PF-FRACTN
+        jr      L2ECF           ; JUMP forward to PF-FRACTN
+;        JP      L2ECF           ; JUMP forward to PF-FRACTN
 
 ; ---
 
@@ -16044,12 +16061,14 @@ L3014:  LD      A,(DE)          ; fetch first byte of second
 
         RRCA                    ; bit 0 to (C)
 
-        ADC     A,$00           ; both acceptable signs now zero
+        adc     a, $00          ; both acceptable signs now zero
+        jp      ADDFIX          ;+ jump forward to addition correction routine
+                                ;+ then continue below at existing ADDSTOR
 
-        JR      NZ,L303C        ; forward to ADDN-OFLW if not
+;        JR      NZ,L303C        ; forward to ADDN-OFLW if not
+;        SBC     A,A             ; restore a negative result sign
 
-        SBC     A,A             ; restore a negative result sign
-
+ADDSTOR:
         LD      (HL),A          ;
         INC     HL              ;
         LD      (HL),E          ;
@@ -16589,35 +16608,53 @@ L3214:  LD      A,(HL)          ;
         LD      A,$20           ;
         JR      L3272           ; to NIL-BYTES
 
+ADDFIX: jp      nz,L303C        ;+ to ADDN_OFLW
+        sbc     a,a             ;+
+
+        ld      c,a             ;+
+        inc     a               ;+
+        or      e               ;+
+        or      d               ;+
+
+        ld      a,c             ;+
+        jr      nz,REL_AS       ;+ back (indirect) if not -65536
+        dec     hl              ;+ point to first byte (exponent)
+        ld      (hl),$91        ;+
+        inc     hl              ;+
+        and     $80             ;+ set A to $80
+REL_AS: jp      ADDSTOR         ;+ back to store all 4 mantissa bytes
+
 ; ---
 
 ;; T-GR-ZERO
 L3221:  CP      $91             ;
-        JR      NZ,L323F        ; to T-SMALL
+;        jr      L323F
 
-        INC     HL              ;
-        INC     HL              ;
-        INC     HL              ;
-        LD      A,$80           ;
-        AND     (HL)            ;
-        DEC     HL              ;
-        OR      (HL)            ;
-        DEC     HL              ;
-        JR      NZ,L3233        ; to T-FIRST
+;        JR      NZ,L323F        ; to T-SMALL
 
-        LD      A,$80           ;
-        XOR     (HL)            ;
+;        INC     HL              ;
+;        INC     HL              ;
+;        INC     HL              ;
+;        LD      A,$80           ;
+;        AND     (HL)            ;
+;        DEC     HL              ;
+;        OR      (HL)            ;
+;        DEC     HL              ;
+;        JR      NZ,L3233        ; to T-FIRST
+
+;        LD      A,$80           ;
+;        XOR     (HL)            ;
 
 ;; T-FIRST
-L3233:  DEC     HL              ;
-        JR      NZ,L326C        ; to T-EXPNENT
+;L3233:  DEC     HL              ;
+;        JR      NZ,L326C        ; to T-EXPNENT
 
-        LD      (HL),A          ;
-        INC     HL              ;
-        LD      (HL),$FF        ;
-        DEC     HL              ;
-        LD      A,$18           ;
-        JR      L3272           ; to NIL-BYTES
+;        LD      (HL),A          ;
+;        INC     HL              ;
+;        LD      (HL),$FF        ;
+;        DEC     HL              ;
+;        LD      A,$18           ;
+;        JR      L3272           ; to NIL-BYTES
 
 ; ---
 
@@ -17282,11 +17319,11 @@ L33F8:  RET     Z               ; return if zero.          >>
         PUSH    AF              ; save count.
         PUSH    DE              ; and normal STKEND
 
-        LD      DE,$0000        ; dummy value for STKEND at start of ROM
-                                ; Note. not a fault but this has to be
-                                ; moved elsewhere when running in RAM.
-                                ; e.g. with Expandor Systems 'Soft ROM'.
-                                ; Better still, write to the normal place.
+;        LD      DE,$0000        ; dummy value for STKEND at start of ROM
+;                                ; Note. not a fault but this has to be
+;                                ; moved elsewhere when running in RAM.
+;                                ; e.g. with Expandor Systems 'Soft ROM'.
+;                                ; Better still, write to the normal place.
         CALL    L33C8           ; routine STK-CONST works through variable
                                 ; length records.
 
