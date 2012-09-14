@@ -340,7 +340,7 @@ L0077:  INC     HL              ; increase the character address by one.
 ;; TEMP-PTR2
 L0078:  LD      ($5C5D),HL      ; update CH_ADD with character address.
 
-X007B:  LD      A,(HL)          ; load character to A from HL.
+        LD      A,(HL)          ; load character to A from HL.
         RET                     ; and return.
 
 ; --------------------------
@@ -2780,7 +2780,7 @@ L08B6:  LD      C,(IX+$0B)      ; fetch length
         LD      A,$FF           ; signal data not a header.
         CALL    L0802           ; routine LD-BLOCK loads to workspace.
         POP     HL              ; restore first location in workspace to HL.
-X08CE   LD      DE,($5C53)      ; set DE from system variable PROG.
+        LD      DE,($5C53)      ; set DE from system variable PROG.
 
 ;   now enter a loop to merge the data block in workspace with the program and 
 ;   variables. 
@@ -4766,7 +4766,7 @@ L0F6C:  CALL    L15D4           ; routine WAIT-KEY for control.
 ;; ADD-CHAR
 L0F81:  RES     0,(IY+$07)      ; set MODE to 'L'
 
-X0F85:  LD      HL,($5C5B)      ; fetch address of keyboard cursor from K_CUR
+        LD      HL,($5C5B)      ; fetch address of keyboard cursor from K_CUR
 
         CALL    L1652           ; routine ONE-SPACE creates one space.
 
@@ -5863,7 +5863,7 @@ L133C:  CALL    L15EF           ; call routine OUT-CODE to print the code.
 
         CALL    L0C0A           ; call routine PO-MSG to print the message.
 
-X1349:  XOR     A               ; clear accumulator to directly
+        XOR     A               ; clear accumulator to directly
         LD      DE,L1537 - 1    ; address the comma and space message.  
 
         CALL    L0C0A           ; routine PO-MSG prints ', ' although it would
@@ -21048,21 +21048,10 @@ L37DA:  RST     28H             ;; FP-CALC          x.
 ;
 ; Credits
 ; -------
+; Geoff Wearmouth           for the Tokenizer and create the original file.
 ; Alex Pallero Gonzales     for corrections.
 ; Mike Dailly               for comments.
 ; Alvin Albrecht            for comments.
 ; Andy Styles               for full relocatability implementation and testing.                    testing.
 ; Andrew Owen               for ZASM compatibility and format improvements.
-; Antonio Villena           for Reset & Play feature.
-
-;   For other assemblers you may have to add directives like these near the 
-;   beginning - see accompanying documentation.
-;   ZASM (MacOs) cross-assembler directives. (uncomment by removing ';' )
-;   #target rom           ; declare target file format as binary.
-;   #code   0,$4000       ; declare code segment.
-;   Also see notes at Address Labels 0609 and 1CA5 if your assembler has 
-;   trouble with expressions.
-;
-;   Note. The Sinclair Interface 1 ROM written by Dr. Ian Logan and Martin 
-;   Brennan calls numerous routines in this ROM.  
-;   Non-standard entry points have a label beginning with X. 
+; Antonio Villena           for Reset & Play feature and adaptation to Jupiter Ace.
