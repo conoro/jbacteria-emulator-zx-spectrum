@@ -1,3 +1,12 @@
+;
+; This file is a modification of the ZX Spectrum ROM, so has the same Amstrad
+; license of original one. The original file is obtained from here:
+;
+; http://www.wearmouth.demon.co.uk/zx82.htm
+;
+; Special thanks to Geoff Wearmouth for create and distribute this important
+; document to the speccy community.
+;
 
 ;        DEFINE  spectrum
 
@@ -26,22 +35,6 @@
 ; ajustar tiempos en load y tiempos en save
 ; compilacion separada para spectrum 16k
 
-;************************************************************************
-;** An Assembly File Listing to generate a 16K ROM for the ZX Spectrum **
-;************************************************************************
-
-; -------------------------
-; Last updated: 13-DEC-2004
-; -------------------------
-
-; TASM cross-assembler directives. 
-; ( comment out, perhaps, for other assemblers - see Notes at end.)
-
-;   It is always a good idea to anchor, using ORGs, important sections such as 
-;   the character bitmaps so that they don't move as code is added and removed.
-
-;   Generally most approaches try to maintain main entry points as they are
-;   often used by third-party software. 
 
         ORG     $0000
 
