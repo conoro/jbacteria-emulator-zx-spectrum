@@ -5499,8 +5499,12 @@ L11B7:  DI                      ; Disable Interrupts - machine stack will be
         LD      HL,($5CB2)      ; Fetch RAMTOP as top value.
         EXX                     ; Switch in alternate set.
         LD      BC,($5CB4)      ; Fetch P-RAMT differs on 16K/48K machines.
+      IFDEF spectrum
         LD      DE,($5C38)      ; Fetch RASP/PIP.
         LD      HL,($5C7B)      ; Fetch UDG    differs on 16K/48K machines.
+      ELSE
+        ld      hl, ($5c38)     ; Fetch RASP/PIP.
+      ENDIF
         EXX                     ; Switch back to main set and continue into...
 
 ; ----------------------
@@ -5555,8 +5559,12 @@ L11D5:  INC     HL              ; increment for next iteration.
         EXX                     ; regardless of state, set up possibly
                                 ; stored system variables in case from NEW.
         LD      ($5CB4),BC      ; insert P-RAMT.
+      IFDEF spectrum
         LD      ($5C38),DE      ; insert RASP/PIP.
         LD      ($5C7B),HL      ; insert UDG.
+      ELSE
+        ld      ($5c38), hl     ; insert RASP/PIP.
+      ENDIF
         EXX                     ; switch in main set.
         EX      AF,AF'          ; now test if we arrived here from NEW.
       IFDEF spectrum
@@ -5574,8 +5582,10 @@ L11D5:  INC     HL              ; increment for next iteration.
         EX      DE,HL           ; switch pointers and make the UDGs a
         LDDR                    ; copy of the standard characters A - U.
         EX      DE,HL           ; switch the pointer to HL.
+      IFDEF spectrum
         LD      ($5C7B),HL      ; make UDG system variable address the first
                                 ; bitmap.
+      ENDIF
         DEC     HL              ; point at RAMTOP again.
         LD      C,$40           ; set the values of
         LD      ($5C38),BC      ; the PIP and RASP system variables.
@@ -10749,6 +10759,41 @@ L2294:  CALL    L1E94           ; routine FIND-INT1
 
 ;; BORDER-1
 L22A6:  LD      ($5C48),A       ; update BORDCR with new paper/ink
+        RET                     ; return.
+
+; ----------------------
+; THE 'TANGENT' FUNCTION
+; ----------------------
+; (offset $21: 'tan')
+;
+; Evaluates tangent x as    sin(x) / cos(x).
+;
+;
+;           /|
+;        h / |
+;         /  |o
+;        /x  |
+;       /----|    
+;         a
+;
+; the tangent of angle x is the ratio of the length of the opposite side 
+; divided by the length of the adjacent side. As the opposite length can 
+; be calculates using sin(x) and the adjacent length using cos(x) then 
+; the tangent can be defined in terms of the previous two functions.
+
+; Error 6 if the argument, in radians, is too close to one like pi/2
+; which has an infinite tangent. e.g. PRINT TAN (PI/2)  evaluates as 1/0.
+; Similarly PRINT TAN (3*PI/2), TAN (5*PI/2) etc.
+
+;; tan
+L37DA:  RST     28H             ;; FP-CALC          x.
+        DEFB    $31             ;;duplicate         x, x.
+        DEFB    $1F             ;;sin               x, sin x.
+        DEFB    $01             ;;exchange          sin x, x.
+        DEFB    $20             ;;cos               sin x, cos x.
+        DEFB    $05             ;;division          sin x/cos x (= tan x).
+        DEFB    $38             ;;end-calc          tan x.
+
         RET                     ; return.
 
       IFNDEF spectrum
@@ -16983,7 +17028,7 @@ L32D7:  DEFW    L368F           ; $00 Address: $368F - jump-true
         DEFW    L3674           ; $1E Address: $3674 - len
         DEFW    L37B5-MEMD      ; $1F Address: $37B5 - sin
         DEFW    L37AA-MEMD      ; $20 Address: $37AA - cos
-        DEFW    L37DA-MEMD      ; $21 Address: $37DA - tan
+        DEFW    L37DA           ; $21 Address: $37DA - tan
         DEFW    L3833-MEMD      ; $22 Address: $3833 - asn
         DEFW    L3843-MEMD      ; $23 Address: $3843 - acs
         DEFW    L37E2-MEMD      ; $24 Address: $37E2 - atn
@@ -19217,41 +19262,6 @@ L37B7:  DEFB    $31             ;;duplicate
         DEFB    $23,$5D,$1B,$EA ;;
         DEFB    $04             ;;multiply
         DEFB    $38             ;;end-calc
-
-        RET                     ; return.
-
-; ----------------------
-; THE 'TANGENT' FUNCTION
-; ----------------------
-; (offset $21: 'tan')
-;
-; Evaluates tangent x as    sin(x) / cos(x).
-;
-;
-;           /|
-;        h / |
-;         /  |o
-;        /x  |
-;       /----|    
-;         a
-;
-; the tangent of angle x is the ratio of the length of the opposite side 
-; divided by the length of the adjacent side. As the opposite length can 
-; be calculates using sin(x) and the adjacent length using cos(x) then 
-; the tangent can be defined in terms of the previous two functions.
-
-; Error 6 if the argument, in radians, is too close to one like pi/2
-; which has an infinite tangent. e.g. PRINT TAN (PI/2)  evaluates as 1/0.
-; Similarly PRINT TAN (3*PI/2), TAN (5*PI/2) etc.
-
-;; tan
-L37DA:  RST     28H             ;; FP-CALC          x.
-        DEFB    $31             ;;duplicate         x, x.
-        DEFB    $1F             ;;sin               x, sin x.
-        DEFB    $01             ;;exchange          sin x, x.
-        DEFB    $20             ;;cos               sin x, cos x.
-        DEFB    $05             ;;division          sin x/cos x (= tan x).
-        DEFB    $38             ;;end-calc          tan x.
 
         RET                     ; return.
 
