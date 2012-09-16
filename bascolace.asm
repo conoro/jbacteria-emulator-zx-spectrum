@@ -10727,8 +10727,10 @@ L2294:  CALL    L1E94           ; routine FIND-INT1
         JR      NC,L2244        ; back to REPORT-K if not
                                 ; 'Invalid colour'.
 
-;        OUT     ($FE),A         ; outputting to port effects an immediate
-;                                ; change.
+      IFDEF spectrum
+        OUT     ($FE),A         ; outputting to port effects an immediate
+                                ; change.
+      ENDIF
         RLCA                    ; shift the colour to
         RLCA                    ; the paper bits setting the
         RLCA                    ; ink colour black.
@@ -10742,6 +10744,7 @@ L2294:  CALL    L1E94           ; routine FIND-INT1
 L22A6:  LD      ($5C48),A       ; update BORDCR with new paper/ink
         RET                     ; return.
 
+; 9 bytes to $2000
 
       IFNDEF spectrum
         PADORG  $4300-18        ;$4300 in Jupiter Ace
@@ -19360,7 +19363,7 @@ L03B5:  DI                      ; Disable Interrupts so they don't disturb timin
         ADD     IX,BC           ;   IX holds address of entry into the loop
                                 ;   the loop will contain 0-3 NOPs, implementing
                                 ;   the fine part of the tone period.
-      IFNDEF spectrum
+      IFDEF spectrum
         LD      A,($5C48)       ; BORDCR
         AND     $38             ; bits 5..3 contain border colour
         RRCA                    ; border colour bits moved to 2..0
@@ -19531,9 +19534,7 @@ ULTR8:  IN      F,(C)
         CALL    L5B04           ; salto a Raudo
 ULTR9:  EXX                     ; ya se ha acabado la ultracarga (Raudo)
         JP      ULT10
-        defb    $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff; 13 bytes
-        defb    $ff, $ff, $ff, $ff, $ff
-;        PADORG  $59ce
+        PADORG  $59ce           ; 23 bytes
 L59CE:  INC     H               ;4
         JR      NC,L59ED        ;7/12  39/37  51/49
         XOR     B               ;4
@@ -19543,8 +19544,7 @@ L59CE:  INC     H               ;4
         EX      AF,AF'          ;4
         IN      L,(C)           ;12
         JP      (HL)            ;4
-        defb    $ff, $ff, $ff, $ff, $ff; 5 bytes
-;        PADORG  $59df
+        PADORG  $59df           ; 5 bytes
 L59DF:  nop
         LD      A,R             ;9  45
         LD      L,A             ;4
@@ -19563,14 +19563,10 @@ L59ED:  XOR     B               ;4
         EX      AF,AF'          ;4
         IN      L,(C)           ;12
         JP      (HL)            ;4
-        defb    $ff, $ff, $ff, $ff, $ff; 10 bytes
-        defb    $ff, $ff, $ff, $ff, $ff;
-;        PADORG  $59ff
+        PADORG  $59ff           ; 10 bytes
 L59FF:  IN      L,(C)
         JP      (HL)
-        defb    $ff, $ff, $ff, $ff, $ff; 10 bytes
-        defb    $ff, $ff, $ff, $ff, $ff, $ff;
-;        PADORG  $5a0d
+        PADORG  $5a0d           ; 11 bytes
 L5A0D:  DEFB    $00, $00, $FF   ; 0D
         DEFB    $00, $00, $FF   ; 10
         DEFB    $00, $00, $FF   ; 13
@@ -19632,22 +19628,13 @@ ULT11:  XOR     (HL)
         RET     NZ              ; si no coincide el checksum salgo con Carry desactivado
         SCF
         RET
-        defb    $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff; 21 bytes
-        defb    $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff
-        defb    $ff, $ff, $ff, $ff, $ff
-;        PADORG  $5ab0
+        PADORG  $5ab0           ; 21 bytes
 L5AB0:  DEFB    $7E, $72, $63, $54, $03, $74, $65, $56; 44khz
         DEFB    $3D, $2E, $22, $13, $09, $7A, $6E, $62; 48khz
-        defb    $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff; 31 bytes
-        defb    $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff
-        defb    $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff
-        defb    $ff, $ff, $ff, $ff, $ff, $ff, $ff
-;        PADORG  $5adf
+        PADORG  $5adf           ; 31 bytes
 L5ADF:  IN      L,(C)
         JP      (HL)
-        defb    $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff; 12 bytes
-        defb    $ff, $ff, $ff, $ff
-;        PADORG  $5aee
+        PADORG  $5aee           ; 12 bytes
 L5AEE:  DEC     H               ;4
         JR      NC,L5B0D        ;7/12  39/37  51/49
         XOR     B               ;4
@@ -19657,8 +19644,7 @@ L5AEE:  DEC     H               ;4
         EX      AF,AF'          ;4
         IN      L,(C)           ;12
         JP      (HL)            ;4
-        defb    $ff, $ff, $ff, $ff, $ff; 5 bytes
-;        PADORG  $5aff
+        PADORG  $5aff           ; 5 bytes
 L5AFF:  nop
         LD      A,R             ;9  45
         LD      L,A             ;4
@@ -19874,6 +19860,8 @@ IMPOSE: ld      hl, $5c3b       ; point to FLAGS. (IY+$01)
         res     2,(hl)          ; set transient flag to 'K'
         ret                     ; Return
       ENDIF
+
+; 24 bytes to $5c00
 
       IFDEF spectrum
         PADORG  $3d00           ;$2c00 in Jupiter Ace
