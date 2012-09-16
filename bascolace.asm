@@ -19,10 +19,8 @@
         ENDM
       IFDEF spectrum
         OUTPUT  48.rom
-        DEFINE  MEMD  0
       ELSE
         OUTPUT  bascolace.rom
-        DEFINE  MEMD  $21ee
       ENDIF
 
         ORG     $0000
@@ -174,7 +172,7 @@ L0038:  PUSH    AF              ; Save the registers that will be used but not
         ld      a, l
         and     $0f
         cp      3
-        call    c, flash-MEMD
+        call    c, flash
       ENDIF
         INC     HL              ; Increment lowest two bytes of counter.
         LD      ($5C78),HL      ; Place back in FRAMES1.
@@ -2424,7 +2422,7 @@ L073A:  LD      (IX+$00),$00    ; place type zero - program in descriptor.
 L075A:  LD      A,($5C74)       ; fetch command from T_ADDR
         AND     A               ; test for zero - SAVE.
         push    hl              ; save start.
-        JP      Z,L0970-MEMD    ; jump forward to SA-CONTRL with SAVE  ->
+        JP      Z,L0970         ; jump forward to SA-CONTRL with SAVE  ->
 
 ; ---
 ;   continue with LOAD, MERGE and VERIFY.
@@ -2973,6 +2971,77 @@ L0958:  INC     HL              ; address next?
         POP     DE              ; restore the prog/vars pointer
         RET                     ; return.
 
+; --------------------------
+; THE 'SAVE CONTROL' ROUTINE
+; --------------------------
+;   A branch from the main SAVE-ETC routine at SAVE-ALL.
+;   First the header data is saved. Then after a wait of 1 second
+;   the data itself is saved.
+;   HL points to start of data.
+;   IX points to start of descriptor.
+
+;; SA-CONTRL
+L0970:;  PUSH    HL              ; save start of data
+
+        LD      A,$FD           ; select system channel 'S'
+        CALL    L1601           ; routine CHAN-OPEN
+
+        XOR     A               ; clear to address table directly
+        LD      DE,L09A1        ; address: tape-msgs
+        CALL    L0C0A           ; routine PO-MSG -
+                                ; 'Start tape then press any key.'
+
+        SET     5,(IY+$02)      ; TV_FLAG  - Signal lower screen requires
+                                ; clearing
+        CALL    L15D4           ; routine WAIT-KEY
+
+        PUSH    IX              ; save pointer to descriptor.
+        LD      DE,$0011        ; there are seventeen bytes.
+        XOR     A               ; signal a header.
+        CALL    L04C2           ; routine SA-BYTES
+
+        POP     IX              ; restore descriptor pointer.
+
+        LD      B,$32           ; wait for a second - 50 interrupts.
+
+;; SA-1-SEC
+L0991:  HALT                    ; wait for interrupt
+        DJNZ    L0991           ; back to SA-1-SEC until pause complete.
+
+        LD      E,(IX+$0B)      ; fetch length of bytes from the
+        LD      D,(IX+$0C)      ; descriptor.
+
+        LD      A,$FF           ; signal data bytes.
+
+        POP     IX              ; retrieve pointer to start
+        JP      L04C2           ; jump back to SA-BYTES
+
+
+;   Arrangement of two headers in workspace.
+;   Originally IX addresses first location and only one header is required
+;   when saving.
+;
+;   OLD     NEW         PROG   DATA  DATA  CODE 
+;   HEADER  HEADER             num   chr          NOTES.
+;   ------  ------      ----   ----  ----  ----   -----------------------------
+;   IX-$11  IX+$00      0      1     2     3      Type.
+;   IX-$10  IX+$01      x      x     x     x      F  ($FF if filename is null).
+;   IX-$0F  IX+$02      x      x     x     x      i
+;   IX-$0E  IX+$03      x      x     x     x      l
+;   IX-$0D  IX+$04      x      x     x     x      e
+;   IX-$0C  IX+$05      x      x     x     x      n
+;   IX-$0B  IX+$06      x      x     x     x      a
+;   IX-$0A  IX+$07      x      x     x     x      m
+;   IX-$09  IX+$08      x      x     x     x      e
+;   IX-$08  IX+$09      x      x     x     x      .
+;   IX-$07  IX+$0A      x      x     x     x      (terminal spaces).
+;   IX-$06  IX+$0B      lo     lo    lo    lo     Total  
+;   IX-$05  IX+$0C      hi     hi    hi    hi     Length of datablock.
+;   IX-$04  IX+$0D      Auto   -     -     Start  Various
+;   IX-$03  IX+$0E      Start  a-z   a-z   addr   ($80 if no autostart).
+;   IX-$02  IX+$0F      lo     -     -     -      Length of Program 
+;   IX-$01  IX+$10      hi     -     -     -      only i.e. without variables.
+;
 
 ; ------------------------
 ; Canned cassette messages
@@ -3454,7 +3523,7 @@ L0B52:  SUB     $A5             ; the 'RND' character
         JR      L0B6A           ; to PO-CHAR-2 - common code to lay down
                                 ; a bit patterned character
       ELSE
-        add     a,$1d
+        add     a, $1d
         jr      L0B6A
       ENDIF
 
@@ -5567,11 +5636,7 @@ L11D5:  INC     HL              ; increment for next iteration.
       ENDIF
         EXX                     ; switch in main set.
         EX      AF,AF'          ; now test if we arrived here from NEW.
-      IFDEF spectrum
         LD      DE,$3EAF        ; address of last byte of 'U' bitmap in ROM.
-      ELSE
-        ld      de, $45af       ; address of last byte of 'U' bitmap in ROM.
-      ENDIF
         JR      NZ,L1201        ; forward to RAM-SET if we did.
 
 ;   This section applies to START only.
@@ -5602,16 +5667,10 @@ L1201:  LD      ($5CB2),HL      ; set system variable RAMTOP to HL.
 ;   below.
 
 ;; NMI_VECT
-      IFDEF spectrum
         LD      (HL),D          ; top of user ram holds GOSUB end marker
                                 ; an impossible line number - see RETURN.
                                 ; no significance in the number $3E. It has
                                 ; been traditional since the ZX80.
-      ELSE
-        ld      (hl), $3e
-      ENDIF
-
-
         DEC     HL              ; followed by empty byte (not important).
         LD      SP,HL           ; set up the machine stack pointer.
         DEC     HL              ;
@@ -5638,9 +5697,9 @@ L1201:  LD      ($5CB2),HL      ; set system variable RAMTOP to HL.
       IFDEF spectrum
         LD      (IY-3),$3C      ; character set, CHARS - as no printing yet.
       ELSE
-        ld      (iy-3),$43      ; character set, CHARS - as no printing yet.
-        ld      hl, $4340       ; UDG
+        ld      hl, $3c40       ; UDG
         ld      ($5c7b), hl
+        ld      (iy-3), h       ; character set, CHARS - as no printing yet.
       ENDIF
 
         LD      HL,$5CB6        ; The address of the channels - initially
@@ -5730,7 +5789,7 @@ L12AC:  LD      A,$00           ; select channel 'K' the keyboard
         CALL    L1601           ; routine CHAN-OPEN opens it
 
       IFDEF easy
-        call    NEWED-MEMD      ;+ Call the New Editor.
+        call    NEWED           ;+ Call the New Editor.
       ELSE
         CALL    L0F2C           ; routine EDITOR is called.
                                 ; Note the above routine is where the Spectrum
@@ -7166,7 +7225,7 @@ L1881:  PUSH    DE              ; save flag E for a return value.
         RES     2,(IY+$30)      ; update FLAGS2 - signal NOT in QUOTES.
 
       IFDEF easy
-        call    IMPOSE-MEMD
+        call    IMPOSE
       ELSE
         LD      HL,$5C3B        ; point to FLAGS.
         RES     2,(HL)          ; signal 'K' mode. (starts before keyword)
@@ -7422,7 +7481,7 @@ L1937:  CALL    L2D1B           ; routine NUMERIC tests if it is a digit ?
         JR      C,L196C         ; to OUT-CH-3 to output controls and space.
 
       IFDEF easy
-        call    IMPOSE-MEMD
+        call    IMPOSE
       ELSE
         RES     2,(IY+$01)      ; initialize FLAGS to 'K' mode and leave
                                 ; unchanged if this character would precede
@@ -9396,7 +9455,7 @@ L1E83:  LD      (BC),A          ; load memory location with A.
       IFNDEF spectrum
         ld      e, a
         ld      a, b
-        sub     $17
+        sub     $10
         ld      b, a
         sub     $2c
         cp      $4
@@ -10403,98 +10462,21 @@ L21B2:  CALL    L204E           ; routine PR-POSN-1 handles a position item.
 
         RET                     ; return.
 
-; ---------------------------
-; INPUT ASSIGNMENT Subroutine
-; ---------------------------
-; This subroutine is called twice from the INPUT command when normal
-; keyboard input is assigned. On the first occasion syntax is checked
-; using SCANNING. The final call with the syntax flag reset is to make
-; the assignment.
+; -----------------------------------
+; THE 'TEST FOR CHANNEL K' SUBROUTINE
+; -----------------------------------
+;   This subroutine is called once from the keyboard INPUT command to check if 
+;   the input routine in use is the one for the keyboard.
 
-;; IN-ASSIGN
-L21B9:  LD      HL,($5C61)      ; fetch WORKSP start of input
-        LD      ($5C5D),HL      ; set CH_ADD to first character
-
-        RST     18H             ; GET-CHAR ignoring leading white-space.
-        CP      $E2             ; is it 'STOP'
-        JR      Z,L21D0         ; forward to IN-STOP if so.
-
-        LD      A,($5C71)       ; load accumulator from FLAGX
-        CALL    L1C59           ; routine VAL-FET-2 makes assignment
-                                ; or goes through the motions if checking
-                                ; syntax. SCANNING is used.
-
-        RST     18H             ; GET-CHAR
-        CP      $0D             ; is it carriage return ?
-        RET     Z               ; return if so
-                                ; either syntax is OK
-                                ; or assignment has been made.
-
-; if another character was found then raise an error.
-; User doesn't see report but the flashing error marker
-; appears in the lower screen.
-
-;; REPORT-Cb
-L21CE:  RST     08H             ; ERROR-1
-        DEFB    $0B             ; Error Report: Nonsense in BASIC
-
-;; IN-STOP
-L21D0:  CALL    L2530           ; routine SYNTAX-Z (UNSTACK-Z?)
-        RET     Z               ; return if checking syntax
-                                ; as user wouldn't see error report.
-                                ; but generate visible error report
-                                ; on second invocation.
-
-;; REPORT-H
-L21D4:  RST     08H             ; ERROR-1
-        DEFB    $10             ; Error Report: STOP in INPUT
-
-; --------------------
-; Colour Item Routines
-; --------------------
-;
-; These routines have 3 entry points -
-; 1) CO-TEMP-2 to handle a series of embedded Graphic colour items.
-; 2) CO-TEMP-3 to handle a single embedded print colour item.
-; 3) CO TEMP-4 to handle a colour command such as FLASH 1
-;
-; "Due to a bug, if you bring in a peripheral channel and later use a colour
-;  statement, colour controls will be sent to it by mistake." - Steven Vickers
-;  Pitman Pocket Guide, 1984.
-;
-; To be fair, this only applies if the last channel was other than 'K', 'S'
-; or 'P', which are all that are supported by this ROM, but if that last
-; channel was a microdrive file, network channel etc. then
-; PAPER 6; CLS will not turn the screen yellow and
-; CIRCLE INK 2; 128,88,50 will not draw a red circle.
-;
-; This bug does not apply to embedded PRINT items as it is quite permissible
-; to mix stream altering commands and colour items.
-; The fix therefore would be to ensure that CLASS-07 and CLASS-09 make
-; channel 'S' the current channel when not checking syntax.
-; -----------------------------------------------------------------
-
-;; CO-TEMP-1
-L21E1:  RST     20H             ; NEXT-CHAR
-
-; -> Entry point from CLASS-09. Embedded Graphic colour items.
-; e.g. PLOT INK 2; PAPER 8; 128,88
-; Loops till all colour items output, finally addressing the coordinates.
-
-;; CO-TEMP-2
-L21E2:  CALL    L21F2           ; routine CO-TEMP-3 to output colour control.
-        RET     C               ; return if nothing more to output. ->
-
-
-        RST     18H             ; GET-CHAR
-        CP      $2C             ; is it ',' separator ?
-        JR      Z,L21E1         ; back if so to CO-TEMP-1
-
-        CP      $3B             ; is it ';' separator ?
-        JR      Z,L21E1         ; back to CO-TEMP-1 for more.
-
-        JP      L1C8A           ; to REPORT-C (REPORT-Cb is within range)
-                                ; 'Nonsense in BASIC'
+;; IN-CHAN-K
+L21D6:  LD      HL,($5C51)      ; fetch address of current channel CURCHL
+        INC     HL              ;
+        INC     HL              ; advance past
+        INC     HL              ; input and
+        INC     HL              ; output streams
+        LD      A,(HL)          ; fetch the channel identifier.
+        CP      $4B             ; test for 'K'
+        RET                     ; return with zero set if keyboard is use.
 
 ; -------------------
 ; CO-TEMP-3
@@ -10635,10 +10617,6 @@ L223E:  LD      C,A             ; value to C
 L2244:  RST     08H             ; ERROR-1
         DEFB    $13             ; Error Report: Invalid colour
 
-
-
-
-
 ;; CO-TEMP-9
 L2246:  LD      HL,$5C8F        ; address system variable ATTR_T initially.
         CP      $08             ; compare with 8
@@ -10761,50 +10739,16 @@ L2294:  CALL    L1E94           ; routine FIND-INT1
 L22A6:  LD      ($5C48),A       ; update BORDCR with new paper/ink
         RET                     ; return.
 
-; ----------------------
-; THE 'TANGENT' FUNCTION
-; ----------------------
-; (offset $21: 'tan')
-;
-; Evaluates tangent x as    sin(x) / cos(x).
-;
-;
-;           /|
-;        h / |
-;         /  |o
-;        /x  |
-;       /----|    
-;         a
-;
-; the tangent of angle x is the ratio of the length of the opposite side 
-; divided by the length of the adjacent side. As the opposite length can 
-; be calculates using sin(x) and the adjacent length using cos(x) then 
-; the tangent can be defined in terms of the previous two functions.
-
-; Error 6 if the argument, in radians, is too close to one like pi/2
-; which has an infinite tangent. e.g. PRINT TAN (PI/2)  evaluates as 1/0.
-; Similarly PRINT TAN (3*PI/2), TAN (5*PI/2) etc.
-
-;; tan
-L37DA:  RST     28H             ;; FP-CALC          x.
-        DEFB    $31             ;;duplicate         x, x.
-        DEFB    $1F             ;;sin               x, sin x.
-        DEFB    $01             ;;exchange          sin x, x.
-        DEFB    $20             ;;cos               sin x, cos x.
-        DEFB    $05             ;;division          sin x/cos x (= tan x).
-        DEFB    $38             ;;end-calc          tan x.
-
-        RET                     ; return.
 
       IFNDEF spectrum
-        PADORG  $4700-18        ;$4700 in Jupiter Ace
+        PADORG  $4300-18        ;$4300 in Jupiter Ace
         ld      sp, $8000
         di
         ld      hl, $0012
-        ld      de, $4700
-        ld      bc, $1500
+        ld      de, $4300
+        ld      bc, $1900
         ldir
-        jp      $4700
+        jp      $4300
         ld      hl, $1c00
         ld      d, $28
 twti    ld      b, 4
@@ -10812,34 +10756,110 @@ twti    ld      b, 4
         ldir
         pop     hl
         bit     5, d
-        ld      d, $43
-        jr      nz, twti
-        ld      h, $17
         ld      d, $3c
-        ld      b, 4
-        ldir
+        jr      nz, twti
+;        ld      h, $17
+;        ld      d, $3c
+;        ld      b, 4
+;        ldir
 again   ld      a, (bc)
         cp      $f3
         jr      nz, again
         rst     0
       ENDIF
 
-; -----------------------------------
-; THE 'TEST FOR CHANNEL K' SUBROUTINE
-; -----------------------------------
-;   This subroutine is called once from the keyboard INPUT command to check if 
-;   the input routine in use is the one for the keyboard.
+; ---------------------------
+; INPUT ASSIGNMENT Subroutine
+; ---------------------------
+; This subroutine is called twice from the INPUT command when normal
+; keyboard input is assigned. On the first occasion syntax is checked
+; using SCANNING. The final call with the syntax flag reset is to make
+; the assignment.
 
-;; IN-CHAN-K
-L21D6:  LD      HL,($5C51)      ; fetch address of current channel CURCHL
-        INC     HL              ;
-        INC     HL              ; advance past
-        INC     HL              ; input and
-        INC     HL              ; output streams
-        LD      A,(HL)          ; fetch the channel identifier.
-        CP      $4B             ; test for 'K'
-        RET                     ; return with zero set if keyboard is use.
+;; IN-ASSIGN
+L21B9:  LD      HL,($5C61)      ; fetch WORKSP start of input
+        LD      ($5C5D),HL      ; set CH_ADD to first character
 
+        RST     18H             ; GET-CHAR ignoring leading white-space.
+        CP      $E2             ; is it 'STOP'
+        JR      Z,L21D0         ; forward to IN-STOP if so.
+
+        LD      A,($5C71)       ; load accumulator from FLAGX
+        CALL    L1C59           ; routine VAL-FET-2 makes assignment
+                                ; or goes through the motions if checking
+                                ; syntax. SCANNING is used.
+
+        RST     18H             ; GET-CHAR
+        CP      $0D             ; is it carriage return ?
+        RET     Z               ; return if so
+                                ; either syntax is OK
+                                ; or assignment has been made.
+
+; if another character was found then raise an error.
+; User doesn't see report but the flashing error marker
+; appears in the lower screen.
+
+;; REPORT-Cb
+L21CE:  RST     08H             ; ERROR-1
+        DEFB    $0B             ; Error Report: Nonsense in BASIC
+
+;; IN-STOP
+L21D0:  CALL    L2530           ; routine SYNTAX-Z (UNSTACK-Z?)
+        RET     Z               ; return if checking syntax
+                                ; as user wouldn't see error report.
+                                ; but generate visible error report
+                                ; on second invocation.
+
+;; REPORT-H
+L21D4:  RST     08H             ; ERROR-1
+        DEFB    $10             ; Error Report: STOP in INPUT
+
+; --------------------
+; Colour Item Routines
+; --------------------
+;
+; These routines have 3 entry points -
+; 1) CO-TEMP-2 to handle a series of embedded Graphic colour items.
+; 2) CO-TEMP-3 to handle a single embedded print colour item.
+; 3) CO TEMP-4 to handle a colour command such as FLASH 1
+;
+; "Due to a bug, if you bring in a peripheral channel and later use a colour
+;  statement, colour controls will be sent to it by mistake." - Steven Vickers
+;  Pitman Pocket Guide, 1984.
+;
+; To be fair, this only applies if the last channel was other than 'K', 'S'
+; or 'P', which are all that are supported by this ROM, but if that last
+; channel was a microdrive file, network channel etc. then
+; PAPER 6; CLS will not turn the screen yellow and
+; CIRCLE INK 2; 128,88,50 will not draw a red circle.
+;
+; This bug does not apply to embedded PRINT items as it is quite permissible
+; to mix stream altering commands and colour items.
+; The fix therefore would be to ensure that CLASS-07 and CLASS-09 make
+; channel 'S' the current channel when not checking syntax.
+; -----------------------------------------------------------------
+
+;; CO-TEMP-1
+L21E1:  RST     20H             ; NEXT-CHAR
+
+; -> Entry point from CLASS-09. Embedded Graphic colour items.
+; e.g. PLOT INK 2; PAPER 8; 128,88
+; Loops till all colour items output, finally addressing the coordinates.
+
+;; CO-TEMP-2
+L21E2:  CALL    L21F2           ; routine CO-TEMP-3 to output colour control.
+        RET     C               ; return if nothing more to output. ->
+
+
+        RST     18H             ; GET-CHAR
+        CP      $2C             ; is it ',' separator ?
+        JR      Z,L21E1         ; back if so to CO-TEMP-1
+
+        CP      $3B             ; is it ';' separator ?
+        JR      Z,L21E1         ; back to CO-TEMP-1 for more.
+
+        JP      L1C8A           ; to REPORT-C (REPORT-Cb is within range)
+                                ; 'Nonsense in BASIC'
 ; -----------------
 ; Get pixel address
 ; -----------------
@@ -10903,121 +10923,6 @@ L22AA:  LD      A,$AF           ; load with 175 decimal.
         add     hl, bc
       ENDIF
         RET                     ; return
-
-;**********************************
-;** Part 3. LOUDSPEAKER ROUTINES **
-;**********************************
-
-; Documented by Alvin Albrecht.
-
-; ------------------------------
-; Routine to control loudspeaker
-; ------------------------------
-; Outputs a square wave of given duration and frequency
-; to the loudspeaker.
-;   Enter with: DE = #cycles - 1
-;               HL = tone period as described next
-;
-; The tone period is measured in T states and consists of
-; three parts: a coarse part (H register), a medium part
-; (bits 7..2 of L) and a fine part (bits 1..0 of L) which
-; contribute to the waveform timing as follows:
-;
-;                          coarse    medium       fine
-; duration of low  = 118 + 1024*H + 16*(L>>2) + 4*(L&0x3)
-; duration of hi   = 118 + 1024*H + 16*(L>>2) + 4*(L&0x3)
-; Tp = tone period = 236 + 2048*H + 32*(L>>2) + 8*(L&0x3)
-;                  = 236 + 2048*H + 8*L = 236 + 8*HL
-;
-; As an example, to output five seconds of middle C (261.624 Hz):
-;   (a) Tone period = 1/261.624 = 3.822ms
-;   (b) Tone period in T-States = 3.822ms*fCPU = 13378
-;         where fCPU = clock frequency of the CPU = 3.5MHz
-;    ©  Find H and L for desired tone period:
-;         HL = (Tp - 236) / 8 = (13378 - 236) / 8 = 1643 = 0x066B
-;   (d) Tone duration in cycles = 5s/3.822ms = 1308 cycles
-;         DE = 1308 - 1 = 0x051B
-;
-; The resulting waveform has a duty ratio of exactly 50%.
-;
-;
-;; BEEPER
-L03B5:  DI                      ; Disable Interrupts so they don't disturb timing
-        LD      A,L             ;
-        SRL     L               ;
-        SRL     L               ; L = medium part of tone period
-        CPL                     ;
-        AND     $03             ; A = 3 - fine part of tone period
-        LD      C,A             ;
-        LD      B,$00           ;
-        LD      IX,L03D1        ; Address: BE-IX+3
-        ADD     IX,BC           ;   IX holds address of entry into the loop
-                                ;   the loop will contain 0-3 NOPs, implementing
-                                ;   the fine part of the tone period.
-      IFNDEF spectrum
-        LD      A,($5C48)       ; BORDCR
-        AND     $38             ; bits 5..3 contain border colour
-        RRCA                    ; border colour bits moved to 2..0
-        RRCA                    ;   to match border bits on port #FE
-        RRCA                    ;
-        OR       $08            ; bit 3 set (tape output bit on port #FE)
-                                ;   for loud sound output
-      ENDIF
-
-;; BE-IX+3
-L03D1:  NOP              ;(4)   ; optionally executed NOPs for small
-                                ;   adjustments to tone period
-;; BE-IX+2
-L03D2:  NOP              ;(4)   ;
-
-;; BE-IX+1
-L03D3:  NOP              ;(4)   ;
-
-;; BE-IX+0
-L03D4:  INC     B        ;(4)   ;
-        INC     C        ;(4)   ;
-
-;; BE-H&L-LP
-L03D6:  DEC     C        ;(4)   ; timing loop for duration of
-        JR      NZ,L03D6 ;(12/7);   high or low pulse of waveform
-
-        LD      C,$3F    ;(7)   ;
-        DEC     B        ;(4)   ;
-        JP      NZ,L03D6 ;(10)  ; to BE-H&L-LP
-
-      IFDEF spectrum
-        XOR     $10      ;(7)   ; toggle output beep bit
-        OUT     ($FE),A  ;(11)  ; output pulse
-        LD      B,H      ;(4)   ; B = coarse part of tone period
-        LD      C,A      ;(4)   ; save port #FE output byte
-        BIT     4,A      ;(8)   ; if new output bit is high, go
-        JR      NZ,L03F2 ;(12/7);   to BE-AGAIN
-      ELSE
-L03DA:  out     ($fe), a ;(11)  ; output pulse
-        ld      a, (L03DA)
-        xor     $08
-        ld      (L03DA), a
-        ld      b, h     ;(4)   ; b = coarse part of tone period
-        jp      po, L03F2;(12/7);   to BE-AGAIN
-      ENDIF
-
-        LD      A,D      ;(4)   ; one cycle of waveform has completed
-        OR      E        ;(4)   ;   (low->low). if cycle countdown = 0
-        JR      Z,L03F6  ;(12/7);   go to BE-END
-
-        LD      A,C      ;(4)   ; restore output byte for port #FE
-        LD      C,L      ;(4)   ; C = medium part of tone period
-        DEC     DE       ;(6)   ; decrement cycle count
-        JP      (IX)     ;(8)   ; do another cycle
-
-;; BE-AGAIN                     ; halfway through cycle
-L03F2:  LD      C,L      ;(4)   ; C = medium part of tone period
-        INC     C        ;(4)   ; adds 16 cycles to make duration of high = duration of low
-        JP      (IX)     ;(8)   ; do high pulse of tone
-
-;; BE-END
-L03F6:  EI                      ; Enable Interrupts
-        RET                     ;
 
 ; ----------------
 ; Point Subroutine
@@ -17026,14 +16931,14 @@ L32D7:  DEFW    L368F           ; $00 Address: $368F - jump-true
         DEFW    L3669           ; $1C Address: $3669 - code
         DEFW    L35DE           ; $1D Address: $35DE - val
         DEFW    L3674           ; $1E Address: $3674 - len
-        DEFW    L37B5-MEMD      ; $1F Address: $37B5 - sin
-        DEFW    L37AA-MEMD      ; $20 Address: $37AA - cos
+        DEFW    L37B5           ; $1F Address: $37B5 - sin
+        DEFW    L37AA           ; $20 Address: $37AA - cos
         DEFW    L37DA           ; $21 Address: $37DA - tan
-        DEFW    L3833-MEMD      ; $22 Address: $3833 - asn
-        DEFW    L3843-MEMD      ; $23 Address: $3843 - acs
-        DEFW    L37E2-MEMD      ; $24 Address: $37E2 - atn
+        DEFW    L3833           ; $22 Address: $3833 - asn
+        DEFW    L3843           ; $23 Address: $3843 - acs
+        DEFW    L37E2           ; $24 Address: $37E2 - atn
         DEFW    L3713           ; $25 Address: $3713 - ln
-        DEFW    L36C4-MEMD      ; $26 Address: $36C4 - exp
+        DEFW    L36C4           ; $26 Address: $36C4 - exp
         DEFW    L36AF           ; $27 Address: $36AF - int
         DEFW    L384A           ; $28 Address: $384A - sqr
         DEFW    L3492           ; $29 Address: $3492 - sgn
@@ -18651,6 +18556,89 @@ L36C2:  DEFB    $38             ;;end-calc              -4.
 
         RET                     ; return.
 
+; ------------------
+; THE 'EXP' FUNCTION
+; ------------------
+; (offset $26: 'exp')
+;   The exponential function EXP x is equal to e^x, where e is the mathematical
+;   name for a number approximated to 2.718281828.
+;   ERROR 6 if argument is more than about 88.
+
+;; EXP
+;; exp
+L36C4:  RST     28H             ;; FP-CALC
+        DEFB    $3D             ;;re-stack      (not required - mult will do)
+        DEFB    $34             ;;stk-data
+        DEFB    $F1             ;;Exponent: $81, Bytes: 4
+        DEFB    $38,$AA,$3B,$29 ;;
+        DEFB    $04             ;;multiply
+        DEFB    $31             ;;duplicate
+        DEFB    $27             ;;int
+        DEFB    $C3             ;;st-mem-3
+        DEFB    $03             ;;subtract
+        DEFB    $31             ;;duplicate
+        DEFB    $0F             ;;addition
+        DEFB    $A1             ;;stk-one
+        DEFB    $03             ;;subtract
+        DEFB    $88             ;;series-08
+        DEFB    $13             ;;Exponent: $63, Bytes: 1
+        DEFB    $36             ;;(+00,+00,+00)
+        DEFB    $58             ;;Exponent: $68, Bytes: 2
+        DEFB    $65,$66         ;;(+00,+00)
+        DEFB    $9D             ;;Exponent: $6D, Bytes: 3
+        DEFB    $78,$65,$40     ;;(+00)
+        DEFB    $A2             ;;Exponent: $72, Bytes: 3
+        DEFB    $60,$32,$C9     ;;(+00)
+        DEFB    $E7             ;;Exponent: $77, Bytes: 4
+        DEFB    $21,$F7,$AF,$24 ;;
+        DEFB    $EB             ;;Exponent: $7B, Bytes: 4
+        DEFB    $2F,$B0,$B0,$14 ;;
+        DEFB    $EE             ;;Exponent: $7E, Bytes: 4
+        DEFB    $7E,$BB,$94,$58 ;;
+        DEFB    $F1             ;;Exponent: $81, Bytes: 4
+        DEFB    $3A,$7E,$F8,$CF ;;
+        DEFB    $E3             ;;get-mem-3
+        DEFB    $38             ;;end-calc
+
+        CALL    L2DD5           ; routine FP-TO-A
+        JR      NZ,L3705        ; to N-NEGTV
+
+        JR      C,L3703         ; to REPORT-6b
+                                ; 'Number too big'
+
+        ADD     A,(HL)          ;
+        JR      NC,L370C        ; to RESULT-OK
+
+
+;; REPORT-6b
+L3703:  RST     08H             ; ERROR-1
+        DEFB    $05             ; Error Report: Number too big
+
+; ---
+
+;; N-NEGTV
+L3705:  JR      C,L370E         ; to RSLT-ZERO
+
+        SUB     (HL)            ;
+        JR      NC,L370E        ; to RSLT-ZERO
+
+        NEG                     ; Negate
+
+;; RESULT-OK
+L370C:  LD      (HL),A          ;
+        RET                     ; return.
+
+; ---
+
+
+;; RSLT-ZERO
+L370E:  RST     28H             ;; FP-CALC
+        DEFB    $02             ;;delete
+        DEFB    $A0             ;;stk-zero
+        DEFB    $38             ;;end-calc
+
+        RET                     ; return.
+
 ; --------------------------------
 ; THE 'NATURAL LOGARITHM' FUNCTION 
 ; --------------------------------
@@ -18922,252 +18910,6 @@ L37A8:  DEFB    $38             ;;end-calc        quadrants II and III correct.
 
         RET                     ; return.
 
-; --------------------------
-; THE 'SQUARE ROOT' FUNCTION
-; --------------------------
-; (Offset $28: 'sqr')
-; This routine is remarkable for its brevity - 7 bytes.
-; It wasn't written here but in the ZX81 where the programmers had to squeeze
-; a bulky operating system into an 8K ROM. It simply calculates 
-; the square root by stacking the value .5 and continuing into the 'to-power'
-; routine. With more space available the much faster Newton-Raphson method
-; could have been used as on the Jupiter Ace.
-
-;; sqr
-L384A:  RST     28H             ;; FP-CALC
-        DEFB    $31             ;;duplicate
-        DEFB    $30             ;;not
-        DEFB    $00             ;;jump-true
-        DEFB    $1E             ;;to L386C, LAST
-
-        DEFB    $A2             ;;stk-half
-        DEFB    $38             ;;end-calc
-
-
-; ------------------------------
-; THE 'EXPONENTIATION' OPERATION
-; ------------------------------
-; (Offset $06: 'to-power')
-; This raises the first number X to the power of the second number Y.
-; As with the ZX80,
-; 0 ^ 0 = 1.
-; 0 ^ +n = 0.
-; 0 ^ -n = arithmetic overflow.
-;
-
-;; to-power
-L3851:  RST     28H             ;; FP-CALC              X, Y.
-        DEFB    $01             ;;exchange              Y, X.
-        DEFB    $31             ;;duplicate             Y, X, X.
-        DEFB    $30             ;;not                   Y, X, (1/0).
-        DEFB    $00             ;;jump-true
-        DEFB    $07             ;;to L385D, XIS0   if X is zero.
-
-;   else X is non-zero. Function 'ln' will catch a negative value of X.
-
-        DEFB    $25             ;;ln                    Y, LN X.
-        DEFB    $04             ;;multiply              Y * LN X.
-        DEFB    $38             ;;end-calc
-
-        JP      L36C4-MEMD      ; jump back to EXP routine   ->
-
-; ---
-
-;   these routines form the three simple results when the number is zero.
-;   begin by deleting the known zero to leave Y the power factor.
-
-;; XIS0
-L385D:  DEFB    $02             ;;delete                Y.
-        DEFB    $31             ;;duplicate             Y, Y.
-        DEFB    $30             ;;not                   Y, (1/0).
-        DEFB    $00             ;;jump-true
-        DEFB    $09             ;;to L386A, ONE         if Y is zero.
-
-        DEFB    $A0             ;;stk-zero              Y, 0.
-        DEFB    $01             ;;exchange              0, Y.
-        DEFB    $37             ;;greater-0             0, (1/0).
-        DEFB    $00             ;;jump-true             0.
-        DEFB    $06             ;;to L386C, LAST        if Y was any positive 
-                                ;;                      number.
-
-;   else force division by zero thereby raising an Arithmetic overflow error.
-;   There are some one and two-byte alternatives but perhaps the most formal
-;   might have been to use end-calc; rst 08; defb 05.
-
-        DEFB    $A1             ;;stk-one               0, 1.
-        DEFB    $01             ;;exchange              1, 0.
-        DEFB    $05             ;;division              1/0        ouch!
-
-; ---
-
-;; ONE
-L386A:  DEFB    $02             ;;delete                .
-        DEFB    $A1             ;;stk-one               1.
-
-;; LAST
-L386C:  DEFB    $38             ;;end-calc              last value is 1 or 0.
-
-        RET                     ; return.               
-
-      IFNDEF spectrum
-        PADORG  $5e00-18        ; $3c00 in Jupiter Ace
-      ENDIF
-
-; --------------------------
-; THE 'SAVE CONTROL' ROUTINE
-; --------------------------
-;   A branch from the main SAVE-ETC routine at SAVE-ALL.
-;   First the header data is saved. Then after a wait of 1 second
-;   the data itself is saved.
-;   HL points to start of data.
-;   IX points to start of descriptor.
-
-;; SA-CONTRL
-L0970:;  PUSH    HL              ; save start of data
-
-        LD      A,$FD           ; select system channel 'S'
-        CALL    L1601           ; routine CHAN-OPEN
-
-        XOR     A               ; clear to address table directly
-        LD      DE,L09A1        ; address: tape-msgs
-        CALL    L0C0A           ; routine PO-MSG -
-                                ; 'Start tape then press any key.'
-
-        SET     5,(IY+$02)      ; TV_FLAG  - Signal lower screen requires
-                                ; clearing
-        CALL    L15D4           ; routine WAIT-KEY
-
-        PUSH    IX              ; save pointer to descriptor.
-        LD      DE,$0011        ; there are seventeen bytes.
-        XOR     A               ; signal a header.
-        CALL    L04C2           ; routine SA-BYTES
-
-        POP     IX              ; restore descriptor pointer.
-
-        LD      B,$32           ; wait for a second - 50 interrupts.
-
-;; SA-1-SEC
-L0991:  HALT                    ; wait for interrupt
-        DJNZ    L0991           ; back to SA-1-SEC until pause complete.
-
-        LD      E,(IX+$0B)      ; fetch length of bytes from the
-        LD      D,(IX+$0C)      ; descriptor.
-
-        LD      A,$FF           ; signal data bytes.
-
-        POP     IX              ; retrieve pointer to start
-        JP      L04C2           ; jump back to SA-BYTES
-
-
-;   Arrangement of two headers in workspace.
-;   Originally IX addresses first location and only one header is required
-;   when saving.
-;
-;   OLD     NEW         PROG   DATA  DATA  CODE 
-;   HEADER  HEADER             num   chr          NOTES.
-;   ------  ------      ----   ----  ----  ----   -----------------------------
-;   IX-$11  IX+$00      0      1     2     3      Type.
-;   IX-$10  IX+$01      x      x     x     x      F  ($FF if filename is null).
-;   IX-$0F  IX+$02      x      x     x     x      i
-;   IX-$0E  IX+$03      x      x     x     x      l
-;   IX-$0D  IX+$04      x      x     x     x      e
-;   IX-$0C  IX+$05      x      x     x     x      n
-;   IX-$0B  IX+$06      x      x     x     x      a
-;   IX-$0A  IX+$07      x      x     x     x      m
-;   IX-$09  IX+$08      x      x     x     x      e
-;   IX-$08  IX+$09      x      x     x     x      .
-;   IX-$07  IX+$0A      x      x     x     x      (terminal spaces).
-;   IX-$06  IX+$0B      lo     lo    lo    lo     Total  
-;   IX-$05  IX+$0C      hi     hi    hi    hi     Length of datablock.
-;   IX-$04  IX+$0D      Auto   -     -     Start  Various
-;   IX-$03  IX+$0E      Start  a-z   a-z   addr   ($80 if no autostart).
-;   IX-$02  IX+$0F      lo     -     -     -      Length of Program 
-;   IX-$01  IX+$10      hi     -     -     -      only i.e. without variables.
-;
-
-; ------------------
-; THE 'EXP' FUNCTION
-; ------------------
-; (offset $26: 'exp')
-;   The exponential function EXP x is equal to e^x, where e is the mathematical
-;   name for a number approximated to 2.718281828.
-;   ERROR 6 if argument is more than about 88.
-
-;; EXP
-;; exp
-L36C4:  RST     28H             ;; FP-CALC
-        DEFB    $3D             ;;re-stack      (not required - mult will do)
-        DEFB    $34             ;;stk-data
-        DEFB    $F1             ;;Exponent: $81, Bytes: 4
-        DEFB    $38,$AA,$3B,$29 ;;
-        DEFB    $04             ;;multiply
-        DEFB    $31             ;;duplicate
-        DEFB    $27             ;;int
-        DEFB    $C3             ;;st-mem-3
-        DEFB    $03             ;;subtract
-        DEFB    $31             ;;duplicate
-        DEFB    $0F             ;;addition
-        DEFB    $A1             ;;stk-one
-        DEFB    $03             ;;subtract
-        DEFB    $88             ;;series-08
-        DEFB    $13             ;;Exponent: $63, Bytes: 1
-        DEFB    $36             ;;(+00,+00,+00)
-        DEFB    $58             ;;Exponent: $68, Bytes: 2
-        DEFB    $65,$66         ;;(+00,+00)
-        DEFB    $9D             ;;Exponent: $6D, Bytes: 3
-        DEFB    $78,$65,$40     ;;(+00)
-        DEFB    $A2             ;;Exponent: $72, Bytes: 3
-        DEFB    $60,$32,$C9     ;;(+00)
-        DEFB    $E7             ;;Exponent: $77, Bytes: 4
-        DEFB    $21,$F7,$AF,$24 ;;
-        DEFB    $EB             ;;Exponent: $7B, Bytes: 4
-        DEFB    $2F,$B0,$B0,$14 ;;
-        DEFB    $EE             ;;Exponent: $7E, Bytes: 4
-        DEFB    $7E,$BB,$94,$58 ;;
-        DEFB    $F1             ;;Exponent: $81, Bytes: 4
-        DEFB    $3A,$7E,$F8,$CF ;;
-        DEFB    $E3             ;;get-mem-3
-        DEFB    $38             ;;end-calc
-
-        CALL    L2DD5           ; routine FP-TO-A
-        JR      NZ,L3705        ; to N-NEGTV
-
-        JR      C,L3703         ; to REPORT-6b
-                                ; 'Number too big'
-
-        ADD     A,(HL)          ;
-        JR      NC,L370C        ; to RESULT-OK
-
-
-;; REPORT-6b
-L3703:  RST     08H             ; ERROR-1
-        DEFB    $05             ; Error Report: Number too big
-
-; ---
-
-;; N-NEGTV
-L3705:  JR      C,L370E         ; to RSLT-ZERO
-
-        SUB     (HL)            ;
-        JR      NC,L370E        ; to RSLT-ZERO
-
-        NEG                     ; Negate
-
-;; RESULT-OK
-L370C:  LD      (HL),A          ;
-        RET                     ; return.
-
-; ---
-
-
-;; RSLT-ZERO
-L370E:  RST     28H             ;; FP-CALC
-        DEFB    $02             ;;delete
-        DEFB    $A0             ;;stk-zero
-        DEFB    $38             ;;end-calc
-
-        RET                     ; return.
-
 ; ---------------------
 ; THE 'COSINE' FUNCTION
 ; ---------------------
@@ -19262,6 +19004,41 @@ L37B7:  DEFB    $31             ;;duplicate
         DEFB    $23,$5D,$1B,$EA ;;
         DEFB    $04             ;;multiply
         DEFB    $38             ;;end-calc
+
+        RET                     ; return.
+
+; ----------------------
+; THE 'TANGENT' FUNCTION
+; ----------------------
+; (offset $21: 'tan')
+;
+; Evaluates tangent x as    sin(x) / cos(x).
+;
+;
+;           /|
+;        h / |
+;         /  |o
+;        /x  |
+;       /----|    
+;         a
+;
+; the tangent of angle x is the ratio of the length of the opposite side 
+; divided by the length of the adjacent side. As the opposite length can 
+; be calculates using sin(x) and the adjacent length using cos(x) then 
+; the tangent can be defined in terms of the previous two functions.
+
+; Error 6 if the argument, in radians, is too close to one like pi/2
+; which has an infinite tangent. e.g. PRINT TAN (PI/2)  evaluates as 1/0.
+; Similarly PRINT TAN (3*PI/2), TAN (5*PI/2) etc.
+
+;; tan
+L37DA:  RST     28H             ;; FP-CALC          x.
+        DEFB    $31             ;;duplicate         x, x.
+        DEFB    $1F             ;;sin               x, sin x.
+        DEFB    $01             ;;exchange          sin x, x.
+        DEFB    $20             ;;cos               sin x, cos x.
+        DEFB    $05             ;;division          sin x/cos x (= tan x).
+        DEFB    $38             ;;end-calc          tan x.
 
         RET                     ; return.
 
@@ -19409,7 +19186,6 @@ L3833:  RST     28H             ;; FP-CALC      x.
 
         RET                     ; return.
 
-
 ; ---------------------
 ; THE 'ARCCOS' FUNCTION
 ; ---------------------
@@ -19448,6 +19224,208 @@ L3843:  RST     28H             ;; FP-CALC      x.
 
         RET                     ; return.
 
+; --------------------------
+; THE 'SQUARE ROOT' FUNCTION
+; --------------------------
+; (Offset $28: 'sqr')
+; This routine is remarkable for its brevity - 7 bytes.
+; It wasn't written here but in the ZX81 where the programmers had to squeeze
+; a bulky operating system into an 8K ROM. It simply calculates 
+; the square root by stacking the value .5 and continuing into the 'to-power'
+; routine. With more space available the much faster Newton-Raphson method
+; could have been used as on the Jupiter Ace.
+
+;; sqr
+L384A:  RST     28H             ;; FP-CALC
+        DEFB    $31             ;;duplicate
+        DEFB    $30             ;;not
+        DEFB    $00             ;;jump-true
+        DEFB    $1E             ;;to L386C, LAST
+
+        DEFB    $A2             ;;stk-half
+        DEFB    $38             ;;end-calc
+
+
+; ------------------------------
+; THE 'EXPONENTIATION' OPERATION
+; ------------------------------
+; (Offset $06: 'to-power')
+; This raises the first number X to the power of the second number Y.
+; As with the ZX80,
+; 0 ^ 0 = 1.
+; 0 ^ +n = 0.
+; 0 ^ -n = arithmetic overflow.
+;
+
+;; to-power
+L3851:  RST     28H             ;; FP-CALC              X, Y.
+        DEFB    $01             ;;exchange              Y, X.
+        DEFB    $31             ;;duplicate             Y, X, X.
+        DEFB    $30             ;;not                   Y, X, (1/0).
+        DEFB    $00             ;;jump-true
+        DEFB    $07             ;;to L385D, XIS0   if X is zero.
+
+;   else X is non-zero. Function 'ln' will catch a negative value of X.
+
+        DEFB    $25             ;;ln                    Y, LN X.
+        DEFB    $04             ;;multiply              Y * LN X.
+        DEFB    $38             ;;end-calc
+
+        JP      L36C4           ; jump back to EXP routine   ->
+
+; ---
+
+;   these routines form the three simple results when the number is zero.
+;   begin by deleting the known zero to leave Y the power factor.
+
+;; XIS0
+L385D:  DEFB    $02             ;;delete                Y.
+        DEFB    $31             ;;duplicate             Y, Y.
+        DEFB    $30             ;;not                   Y, (1/0).
+        DEFB    $00             ;;jump-true
+        DEFB    $09             ;;to L386A, ONE         if Y is zero.
+
+        DEFB    $A0             ;;stk-zero              Y, 0.
+        DEFB    $01             ;;exchange              0, Y.
+        DEFB    $37             ;;greater-0             0, (1/0).
+        DEFB    $00             ;;jump-true             0.
+        DEFB    $06             ;;to L386C, LAST        if Y was any positive 
+                                ;;                      number.
+
+;   else force division by zero thereby raising an Arithmetic overflow error.
+;   There are some one and two-byte alternatives but perhaps the most formal
+;   might have been to use end-calc; rst 08; defb 05.
+
+        DEFB    $A1             ;;stk-one               0, 1.
+        DEFB    $01             ;;exchange              1, 0.
+        DEFB    $05             ;;division              1/0        ouch!
+
+; ---
+
+;; ONE
+L386A:  DEFB    $02             ;;delete                .
+        DEFB    $A1             ;;stk-one               1.
+
+;; LAST
+L386C:  DEFB    $38             ;;end-calc              last value is 1 or 0.
+
+        RET                     ; return.               
+
+;**********************************
+;** Part 3. LOUDSPEAKER ROUTINES **
+;**********************************
+
+; Documented by Alvin Albrecht.
+
+; ------------------------------
+; Routine to control loudspeaker
+; ------------------------------
+; Outputs a square wave of given duration and frequency
+; to the loudspeaker.
+;   Enter with: DE = #cycles - 1
+;               HL = tone period as described next
+;
+; The tone period is measured in T states and consists of
+; three parts: a coarse part (H register), a medium part
+; (bits 7..2 of L) and a fine part (bits 1..0 of L) which
+; contribute to the waveform timing as follows:
+;
+;                          coarse    medium       fine
+; duration of low  = 118 + 1024*H + 16*(L>>2) + 4*(L&0x3)
+; duration of hi   = 118 + 1024*H + 16*(L>>2) + 4*(L&0x3)
+; Tp = tone period = 236 + 2048*H + 32*(L>>2) + 8*(L&0x3)
+;                  = 236 + 2048*H + 8*L = 236 + 8*HL
+;
+; As an example, to output five seconds of middle C (261.624 Hz):
+;   (a) Tone period = 1/261.624 = 3.822ms
+;   (b) Tone period in T-States = 3.822ms*fCPU = 13378
+;         where fCPU = clock frequency of the CPU = 3.5MHz
+;    ©  Find H and L for desired tone period:
+;         HL = (Tp - 236) / 8 = (13378 - 236) / 8 = 1643 = 0x066B
+;   (d) Tone duration in cycles = 5s/3.822ms = 1308 cycles
+;         DE = 1308 - 1 = 0x051B
+;
+; The resulting waveform has a duty ratio of exactly 50%.
+;
+;
+;; BEEPER
+L03B5:  DI                      ; Disable Interrupts so they don't disturb timing
+        LD      A,L             ;
+        SRL     L               ;
+        SRL     L               ; L = medium part of tone period
+        CPL                     ;
+        AND     $03             ; A = 3 - fine part of tone period
+        LD      C,A             ;
+        LD      B,$00           ;
+        LD      IX,L03D1        ; Address: BE-IX+3
+        ADD     IX,BC           ;   IX holds address of entry into the loop
+                                ;   the loop will contain 0-3 NOPs, implementing
+                                ;   the fine part of the tone period.
+      IFNDEF spectrum
+        LD      A,($5C48)       ; BORDCR
+        AND     $38             ; bits 5..3 contain border colour
+        RRCA                    ; border colour bits moved to 2..0
+        RRCA                    ;   to match border bits on port #FE
+        RRCA                    ;
+        OR       $08            ; bit 3 set (tape output bit on port #FE)
+                                ;   for loud sound output
+      ENDIF
+
+;; BE-IX+3
+L03D1:  NOP              ;(4)   ; optionally executed NOPs for small
+                                ;   adjustments to tone period
+;; BE-IX+2
+L03D2:  NOP              ;(4)   ;
+
+;; BE-IX+1
+L03D3:  NOP              ;(4)   ;
+
+;; BE-IX+0
+L03D4:  INC     B        ;(4)   ;
+        INC     C        ;(4)   ;
+
+;; BE-H&L-LP
+L03D6:  DEC     C        ;(4)   ; timing loop for duration of
+        JR      NZ,L03D6 ;(12/7);   high or low pulse of waveform
+
+        LD      C,$3F    ;(7)   ;
+        DEC     B        ;(4)   ;
+        JP      NZ,L03D6 ;(10)  ; to BE-H&L-LP
+
+      IFDEF spectrum
+        XOR     $10      ;(7)   ; toggle output beep bit
+        OUT     ($FE),A  ;(11)  ; output pulse
+        LD      B,H      ;(4)   ; B = coarse part of tone period
+        LD      C,A      ;(4)   ; save port #FE output byte
+        BIT     4,A      ;(8)   ; if new output bit is high, go
+        JR      NZ,L03F2 ;(12/7);   to BE-AGAIN
+      ELSE
+L03DA:  out     ($fe), a ;(11)  ; output pulse
+        ld      a, (L03DA)
+        xor     $08
+        ld      (L03DA), a
+        ld      b, h     ;(4)   ; b = coarse part of tone period
+        jp      po, L03F2;(12/7);   to BE-AGAIN
+      ENDIF
+
+        LD      A,D      ;(4)   ; one cycle of waveform has completed
+        OR      E        ;(4)   ;   (low->low). if cycle countdown = 0
+        JR      Z,L03F6  ;(12/7);   go to BE-END
+
+        LD      A,C      ;(4)   ; restore output byte for port #FE
+        LD      C,L      ;(4)   ; C = medium part of tone period
+        DEC     DE       ;(6)   ; decrement cycle count
+        JP      (IX)     ;(8)   ; do another cycle
+
+;; BE-AGAIN                     ; halfway through cycle
+L03F2:  LD      C,L      ;(4)   ; C = medium part of tone period
+        INC     C        ;(4)   ; adds 16 cycles to make duration of high = duration of low
+        JP      (IX)     ;(8)   ; do high pulse of tone
+
+;; BE-END
+L03F6:  EI                      ; Enable Interrupts
+        RET                     ;
+
 flash:  push    bc
         push    de
         push    hl
@@ -19465,7 +19443,7 @@ flas2:  inc     l
         inc     e
         djnz    flas1
         bit     1, h
-        ld      hl, putfl+1-MEMD
+        ld      hl, putfl+1
         ld      a, $40
         call    nz, L0D65+3     ; xor (hl) / ld (hl), a
         pop     hl
@@ -19483,7 +19461,7 @@ putfl:  set     7, (hl)
 ;   lower-case text.
 
 NEWED:  res     3, (iy+$02)     ;
-        call    IMPOSE-MEMD     ; Set flags. HL addresses System Variable FLAGS
+        call    IMPOSE          ; Set flags. HL addresses System Variable FLAGS
         dec     l               ; Points to ERR_NR
         ld      (hl), $ff       ; Set to 'OK'
         call    L0F2C           ; Original EDITOR prepares line
@@ -19523,7 +19501,7 @@ L3:     ld      a, (hl)         ; Get edit line character.
         inc     c               ; Increment quotes flag toggling bit 0.
 NOQ:    bit     0, c            ; Within quotes?
         jr      nz, SKIP        ; Forward if so to repeat loop
-        call    UCASE-MEMD      ; Make uppercase sets carry if alpha
+        call    UCASE           ; Make uppercase sets carry if alpha
         jr      nc, NOT_AZ      ; Forward if not A-Z
 
 ;   If this is alpha then previous must not be to avoid 'INT' in 'PRINT' etc.
@@ -19542,7 +19520,7 @@ SKIP:   inc     hl              ; Address next character in edit line
 MATCH1: ld      ($5cac), hl     ; Store position within 
 INTRA:  inc     hl              ; Increment edit line pointer.
         ld      a, (hl)         ; Next BASIC character.
-        call    UCASE-MEMD      ; Make uppercase.
+        call    UCASE           ; Make uppercase.
         ex      af, af'         ; Create an entry point.
 INTRA2: ex      af, af'         ; Start of loop for internal characters
         inc     de              ; Point to next character in token
@@ -19621,7 +19599,7 @@ BAKT:   dec     de              ; Harvest any leading spaces
 ;   The next two lines apply only when parsing the special REM table.
 ;   The normal table is at the start of ROM, the secondary table is at the end.
 
-L3901:  bit     5, d            ; Test high byte of table address.
+        bit     5, d            ; Test high byte of table address.
         ret     nz              ; Return if not standard keywords to NEWREM
         ld      (hl), a         ; Insert the token and test it.
         and     a               ; Will be zero if on first pass for REM
@@ -19648,7 +19626,7 @@ LLOOP:  dec     hl              ;
         jr      z, LLOOP        ;
         inc     hl              ; point to first char.
         ex      de, hl          ; token position to DE
-NXTTOK: jp      NEWTOK-MEMD     ; back to process next token
+NXTTOK: jp      NEWTOK          ; back to process next token
 UCASE:  call    L2C8D           ;+ ROM routine ALPHA.
         ld      b, c            ;+ prev to B
         ld      c, 0            ;+ set flag to non-alpha initially
@@ -19676,7 +19654,7 @@ IMPOSE: ld      hl, $5c3b       ; point to FLAGS. (IY+$01)
       IFDEF spectrum
         PADORG  $3d00           ;$2c00 in Jupiter Ace
       ELSE
-        PADORG  $6300-18
+        PADORG  $5f00-18
 
 ; -------------------------------
 ; THE 'ZX SPECTRUM CHARACTER SET'
