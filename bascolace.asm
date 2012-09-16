@@ -1756,6 +1756,7 @@ L053C:  DJNZ    L053C           ; self loop to SA-DELAY
 
 ;; SA/LD-RET
 L053F:  PUSH    AF              ; preserve accumulator throughout.
+      IFDEF spectrum
         LD      A,($5C48)       ; fetch border colour from BORDCR.
         AND     $38             ; mask off paper bits.
         RRCA                    ; rotate
@@ -1763,6 +1764,7 @@ L053F:  PUSH    AF              ; preserve accumulator throughout.
         RRCA                    ; range 0-7.
 
         OUT     ($FE),A         ; change the border colour.
+      ENDIF
 
         LD      A,$7F           ; read from port address $7FFE the
         IN      A,($FE)         ; row with the space key at outside.
@@ -1812,11 +1814,12 @@ L0556:  INC     D               ; reset the zero flag without disturbing carry.
         RRA                     ; rotate to bit 5.
       IFDEF spectrum
         AND     $20             ; isolate this bit.
-        OR      $02             ; combine with red border colour.
+;        OR      $02             ; combine with red border colour.
       ELSE
         and     $10             ; isolate bit 4
       ENDIF
-        LD      C,A             ; and store initial state long-term in C.
+        call    ULTRA
+;        LD      C,A             ; and store initial state long-term in C.
         CP      A               ; set the zero flag.
 
 ; 
@@ -10758,10 +10761,6 @@ twti    ld      b, 4
         bit     5, d
         ld      d, $3c
         jr      nz, twti
-;        ld      h, $17
-;        ld      d, $3c
-;        ld      b, 4
-;        ldir
 again   ld      a, (bc)
         cp      $f3
         jr      nz, again
@@ -19426,7 +19425,8 @@ L03F2:  LD      C,L      ;(4)   ; C = medium part of tone period
 L03F6:  EI                      ; Enable Interrupts
         RET                     ;
 
-flash:  push    bc
+flash:  ;ret ;abcd
+        push    bc
         push    de
         push    hl
         ld      b, 0
@@ -19436,13 +19436,13 @@ flash:  push    bc
         ld      h, a
         add     a, $1c
         ld      d, a
-flas1:  ld      a, (de)
-        and     $80
-        jr      nz, putfl
-flas2:  inc     l
-        inc     e
-        djnz    flas1
-        bit     1, h
+flas1:  ld      a, (de)         ;7
+        and     $80             ;7
+        jr      nz, putfl       ;7 / 32
+flas2:  inc     l               ;4
+        inc     e               ;4
+        djnz    flas1           ;13
+        bit     1, h            ;42 / 67  total: 10752 / 17152
         ld      hl, putfl+1
         ld      a, $40
         call    nz, L0D65+3     ; xor (hl) / ld (hl), a
@@ -19450,8 +19450,232 @@ flas2:  inc     l
         pop     de
         pop     bc
         ret
-putfl:  set     7, (hl)
-        jr      flas2
+putfl:  set     7, (hl)         ;8
+        jr      flas2           ;12
+
+;GET16
+L39E9:  LD      B,0             ; 16 bytes
+        CALL    L05ED           ; esta rutina lee 2 pulsos e inicializa el contador de pulsos
+        CALL    L05ED
+        LD      A,B
+        CP      12
+        ADC     HL,HL
+        JR      NC,L39E9
+        RET
+
+ULTRA:  PUSH    IX              ; 133 bytes
+        POP     HL              ; pongo la direccion de comienzo en HL
+        ld      a, $24
+        ld      (L59DF), a
+        xor     a
+        ld      (L5AFF), a
+        EXX                     ; salvo DE, en caso de volver al cargador estandar y para hacer luego el checksum
+        LD      C,$00
+ULTR0:  DEFB    $2A
+ULTR1:  JR      NZ,ULTR3        ; return if at any time space is pressed.
+ULTR2:  LD      B,0
+        CALL    L05ED           ; leo la duracion de un pulso (positivo o negativo)
+        JR      NC,ULTR1        ; si el pulso es muy largo retorno a bucle
+        LD      A, B
+        CP      40              ; si el contador esta entre 24 y 40
+        JR      NC,ULTR4        ; y se reciben 8 pulsos (me falta inicializar HL a 00FF)
+        CP      24
+        RL      L
+        JR      NZ,ULTR4
+ULTR3:  EXX
+        LD      C,2
+        RET
+ULTR4:  CP      16              ; si el contador esta entre 10 y 16 es el tono guia
+        RR      H               ; de las ultracargas, si los ultimos 8 pulsos
+        CP      10              ; son de tono guia H debe valer FF
+        JR      NC,ULTR2
+        INC     H
+        INC     H
+        JR      NZ,ULTR0        ; si detecto sincronismo sin 8 pulsos de tono guia retorno a bucle
+        CALL    L05ED           ; leo pulso negativo de sincronismo
+        LD      L,$01           ; HL vale 0001, marker para leer 16 bits en HL (checksum y byte flag)
+        CALL    L39E9           ; leo 16 bits, ahora temporizo cada 2 pulsos
+        POP     AF              ; machaco la direccion de retorno de la carga estandar
+        EX      AF,AF'          ; A es el byte flag que espero
+        CP      L               ; lo comparo con el que me encuentro en la ultracarga
+        RET     NZ              ; salgo si no coinciden
+        XOR     H               ; xoreo el checksum con en byte flag, resultado en A
+        EXX                     ; guardo checksum por duplicado en H' y L'
+        PUSH    HL              ; pongo direccion de comienzo en pila
+        LD      C,A
+        EXX
+        LD      HL,$0020        ; leo 11 bits en HL
+        CALL    L39E9
+        SRL     H
+        LD      H,$5A
+        JR      NC,ULTR5
+        RES     6,L
+        XOR     A
+        LD      A,(HL)
+        LD      IXL,A
+ULTR5:  LD      A,$01           ; A' tiene que valer esto para entrar en Raudo
+        EX      AF,AF'
+ULTR6:  POP     DE              ; recupero en DE la direccion de comienzo del bloque
+        INC     C               ; pongo en flag Z el signo del pulso
+        LD      BC,$00FE        ; este valor es el que necesita B para entrar en Raudo
+        ld      a, $18
+        JR      Z,ULT75
+        ld      (L5AFF), a
+ULTR7:  IN      F,(C)
+        JP      PE,ULTR7
+        CALL    L59E4           ; salto a Raudo segun el signo del pulso en flag Z
+        JR      ULTR9
+ULT75:  ld      (L59DF), a
+ULTR8:  IN      F,(C)
+        JP      PO,ULTR8
+        CALL    L5B04           ; salto a Raudo
+ULTR9:  EXX                     ; ya se ha acabado la ultracarga (Raudo)
+        JP      ULT10
+        defb    $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff; 13 bytes
+        defb    $ff, $ff, $ff, $ff, $ff
+;        PADORG  $59ce
+L59CE:  INC     H               ;4
+        JR      NC,L59ED        ;7/12  39/37  51/49
+        XOR     B               ;4
+        LD      (DE),A          ;7
+        INC     DE              ;6
+        LD      A,$04           ;7
+        EX      AF,AF'          ;4
+        IN      L,(C)           ;12
+        JP      (HL)            ;4
+        defb    $ff, $ff, $ff, $ff, $ff; 5 bytes
+;        PADORG  $59df
+L59DF:  nop
+        LD      A,R             ;9  45
+        LD      L,A             ;4
+        LD      B,(HL)          ;7
+L59E4:  LD      A,IXL           ;8
+        LD      R,A             ;9
+        EX      AF,AF'          ;4
+        ;INC     H               ;4
+        nop
+        IN      L,(C)           ;12
+        JP      (HL)            ;4
+L59ED:  XOR     B               ;4
+        ADD     A,A             ;4
+        RET     C               ;5
+        ADD     A,A             ;4
+        EX      AF,AF'          ;4
+        IN      L,(C)           ;12
+        JP      (HL)            ;4
+        defb    $ff, $ff, $ff, $ff, $ff; 10 bytes
+        defb    $ff, $ff, $ff, $ff, $ff;
+;        PADORG  $59ff
+L59FF:  IN      L,(C)
+        JP      (HL)
+        defb    $ff, $ff, $ff, $ff, $ff; 10 bytes
+        defb    $ff, $ff, $ff, $ff, $ff, $ff;
+;        PADORG  $5a0d
+L5A0D:  DEFB    $00, $00, $FF   ; 0D
+        DEFB    $00, $00, $FF   ; 10
+        DEFB    $00, $00, $FF   ; 13
+        DEFB    $00, $00, $FF   ; 16
+        DEFB    $00, $00, $FF   ; 19
+        DEFB    $00, $01, $FF   ; 1C
+        DEFB    $00, $01, $FF   ; 1F
+        DEFB    $00, $01, $FF   ; 22
+        DEFB    $00, $01, $FF   ; 25
+        DEFB    $01, $01, $FF   ; 28
+        DEFB    $01, $02, $FF   ; 2B
+        DEFB    $01, $02, $FF   ; 2E
+        DEFB    $01, $02, $FF   ; 31
+        DEFB    $01, $02, $FF   ; 34
+        DEFB    $01, $02, $FF   ; 37
+        DEFB    $01, $03, $FF   ; 3A
+        DEFB    $01, $03, $FF   ; 3D
+        DEFB    $01, $03, $FF   ; 40
+        DEFB    $01, $03, $FF   ; 43 --
+        DEFB    $02, $03, $FF   ; 46 --
+        DEFB    $02, $00, $FF   ; 49
+        DEFB    $02, $00, $FF   ; 4C
+        DEFB    $02, $00, $FF   ; 4F
+        DEFB    $02, $00, $FF   ; 52
+        DEFB    $02, $01, $FF   ; 55
+        DEFB    $02, $01, $FF   ; 58
+        DEFB    $02, $01, $FF   ; 5B
+        DEFB    $02, $01, $FF   ; 5E
+        DEFB    $02, $02, $FF   ; 61
+        DEFB    $03, $02, $FF   ; 64
+        DEFB    $03, $02, $FF   ; 67
+        DEFB    $03, $02, $FF   ; 6A
+        DEFB    $03, $02, $FF   ; 6D
+        DEFB    $03, $03, $FF   ; 70
+        DEFB    $03, $03, $FF   ; 73
+        DEFB    $03, $03, $FF   ; 76
+        DEFB    $03, $03, $FF   ; 79
+        DEFB    $03, $03, $FF   ; 7C
+        DEFB    $03             ; 7F
+ULT10:  LD      B,E
+        LD      E,C
+        LD      C,D
+        XOR     A
+        CP      B
+        JR      Z,ULT11
+        INC     C
+ULT11:  XOR     (HL)
+        INC     HL
+        DJNZ    ULT11
+        DEC     C
+        JP      NZ,ULT11
+        PUSH    HL              ; ha ido bien
+        XOR     E
+        LD      H,B
+        LD      L,E
+        LD      D,B
+        LD      E,B
+        POP     IX              ; IX debe apuntar al siguiente byte despues del bloque
+        RET     NZ              ; si no coincide el checksum salgo con Carry desactivado
+        SCF
+        RET
+        defb    $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff; 21 bytes
+        defb    $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff
+        defb    $ff, $ff, $ff, $ff, $ff
+;        PADORG  $5ab0
+L5AB0:  DEFB    $7E, $72, $63, $54, $03, $74, $65, $56; 44khz
+        DEFB    $3D, $2E, $22, $13, $09, $7A, $6E, $62; 48khz
+        defb    $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff; 31 bytes
+        defb    $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff
+        defb    $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff
+        defb    $ff, $ff, $ff, $ff, $ff, $ff, $ff
+;        PADORG  $5adf
+L5ADF:  IN      L,(C)
+        JP      (HL)
+        defb    $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff; 12 bytes
+        defb    $ff, $ff, $ff, $ff
+;        PADORG  $5aee
+L5AEE:  DEC     H               ;4
+        JR      NC,L5B0D        ;7/12  39/37  51/49
+        XOR     B               ;4
+        LD      (DE),A          ;7
+        INC     DE              ;6
+        LD      A,$04           ;7
+        EX      AF,AF'          ;4
+        IN      L,(C)           ;12
+        JP      (HL)            ;4
+        defb    $ff, $ff, $ff, $ff, $ff; 5 bytes
+;        PADORG  $5aff
+L5AFF:  nop
+        LD      A,R             ;9  45
+        LD      L,A             ;4
+        LD      B,(HL)          ;7
+L5B04:  LD      A,IXL           ;8
+        LD      R,A             ;9
+        EX      AF,AF'          ;4
+        DEC     H               ;4
+        IN      L,(C)           ;12
+        JP      (HL)            ;4
+L5B0D:  XOR     B               ;4
+        ADD     A,A             ;4
+        RET     C               ;5
+        ADD     A,A             ;4
+        EX      AF,AF'          ;4
+        IN      L,(C)           ;12
+        JP      (HL)            ;4
 
       IFDEF easy
 ; -----
