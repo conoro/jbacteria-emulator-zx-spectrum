@@ -1,15 +1,13 @@
 na= 'jupiler ';
-m= bytes(65536);
-//vm= words(6144);
+m= bytes(0x10000);
+vm= bytes(0x380);
 vb= [];
 data= [];
 kb= [0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff]; // keyboard state
 ks= [0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff]; // keyboard state
 kc= [0,0,0,0,0,0,0,0,      // keyboard codes
     0x05<<7|0x25, // 8 backspace
-    localStorage.ft & 2
-    ? 0x05<<7|0x3c
-    : 0x41,       // 9 tab (extend)
+    0,            // 9 tab (graph)
     0,0,0,
     0x35,         // 13 enter 
     0,0,
@@ -20,18 +18,10 @@ kc= [0,0,0,0,0,0,0,0,      // keyboard codes
     0,0,0,0,
     0x3d,         // 32 space
     0,0,0,0,
-    localStorage.ft & 2
-    ? 0x05<<7|0x19
-    : 0x44,       // cursor left
-    localStorage.ft & 2
-    ? 0x05<<7|0x22 
-    : 0x42,       // cursor up
-    localStorage.ft & 2
-    ? 0x05<<7|0x23
-    : 0x45,       // cursor right
-    localStorage.ft & 2
-    ? 0x05<<7|0x21
-    : 0x43,       // cursor down
+    0,            // cursor left
+    0,            // cursor up
+    0,            // cursor right
+    0,            // cursor down
     0,0,0,0,0,0,0,
     0x25,         // 0 (48)
     0x1d,         // 1
@@ -110,11 +100,13 @@ function words(a) {
     return c;
   }
 }
-
+/*function cond(){
+ if (pc==0x1aa7) console.log(m[l|h<<8],m[e|d<<8]);
+}*/
 function run() {
   while( st < 64896 )                       // execute z80 instructions during a frame
-//cond(),
     r++,
+//cond(),
     g[m[pc++&0xffff]]();
   if( pbt ){
     if( !frc-- ){
@@ -149,98 +141,6 @@ function run() {
   z80interrupt();
 }
 
-function init() {
-document.body.style.backgroundColor= '#111';
-  cv.setAttribute('style', 'image-rendering:'+( localStorage.ft & 1
-                                                ? 'optimizeSpeed'
-                                                : '' ));
-  onresize();
-  scrl= ula= sample= pbcs= pbc= cts= playp= vbp= bor= f1= f3= f4= st= time= flash= 0;
-  if( localStorage.ft==undefined )
-    localStorage.ft= 4;
-  paintScreen= localStorage.ft&8 ? paintBascolace : paintNormal;
-  a= b= c= d= e= h= l= fa= fb= fr= ff= xl= xh= r7= i= sp= 
-  a_=b_=c_=d_=e_=h_=l_=fa_=fb_=fr_=ff_=yl= yh= r= pc= iff= im= halted= t= u= 0;
-  pbf= ' / '+('0'+parseInt(pbf/3000)).slice(-2)+':'+('0'+parseInt(pbf/50)%60).slice(-2);
-  if( ifra ){
-    put= document.createElement('div');
-    put.style.width= '40px';
-    put.style.textAlign= 'right';
-    document.body.appendChild(put);
-    titul= function(){
-      put.innerHTML= parseInt(trein/((nt= new Date().getTime())-time))+'%';
-      if( pbt )
-        tim.innerHTML= ('0'+parseInt(flash/3000)).slice(-2)+':'+('0'+parseInt(flash/50)%60).slice(-2)+pbf;
-    }
-  }
-  else{
-    put= top==self ? document : parent.document;
-    titul= function(){
-      put.title= na+parseInt(trein/((nt= new Date().getTime())-time))+'%';
-      if( pbt )
-        tim.innerHTML= ('0'+parseInt(flash/3000)).slice(-2)+':'+('0'+parseInt(flash/50)%60).slice(-2)+pbf;
-    }
-  }
-  if( pbt )
-    tim= document.createElement('div'),
-    tim.style.position= 'absolute',
-    tim.style.top= '0',
-    tim.style.width= '100px',
-    tim.style.textAlign= 'right',
-    document.body.appendChild(tim);
-  while( t < 0x30000 )
-    eld[t++]= 0xff;
-  for ( j= 0
-      ; j < 0x2000
-      ; j++ )        // fill memory
-    m[j]= emul.charCodeAt(j+0xc00c);
-  run();
-  run();
-  run();
-  run();
-  run();
-  for ( j= 0
-      ; j < 0x2000
-      ; j++ )        // fill memory
-    m[j]= emul.charCodeAt(j+0xe00c);
-  game && tp();
-  document.ondragover= handleDragOver;
-  document.ondrop= handleFileSelect;
-  document.onkeydown= kdown;          // key event handling
-  document.onkeyup= kup;
-  document.onkeypress= kpress;
-  document.onresize= document.body.onresize= onresize;
-  trein= 32000;
-  myrun= run;
-  if(typeof webkitAudioContext == 'function'){
-    cts= new webkitAudioContext();
-    if( cts.sampleRate>44000 && cts.sampleRate<50000 )
-      trein*= 50*1024/cts.sampleRate,
-      paso= 64896/1024,
-      node= cts.createJavaScriptNode(1024, 1, 1),
-      node.onaudioprocess= audioprocess,
-      node.connect(cts.destination);
-    else
-      interval= setInterval(myrun, 20);
-  }
-  else{
-    if( typeof Audio == 'function'
-     && (audioOutput= new Audio())
-     && typeof audioOutput.mozSetup == 'function' ){
-      try{
-        audioOutput.mozSetup(1, 51200);
-        myrun= mozrun;
-      }
-      catch (er){}
-      paso= 64896/2048;
-      interval= setInterval(myrun, 20);
-    }
-    else
-      interval= setInterval(myrun, 20);
-  }
-  self.focus();
-}
-
 function audioprocess0(e){
   data= e.outputBuffer.getChannelData(0);
   j= 0;
@@ -253,7 +153,7 @@ function audioprocess(e){
   run();
   data= e.outputBuffer.getChannelData(0);
   j= 0;
-  if( localStorage.ft & 4 )
+  if( localStorage.ft & 16 )
     while( j < 1024 ){
       data[j++]= sample;
       play+= paso;
@@ -269,7 +169,7 @@ function audioprocess(e){
 function mozrun(){
   vbp= play= playp= 0;
   run();
-  if( localStorage.ft & 4 ){
+  if( localStorage.ft & 16 ){
     j= 0;
     while( j < 2048 ){
       data[j++]= sample;
@@ -286,51 +186,12 @@ function handleFileSelect(ev) {
   ev.stopPropagation();
   ev.preventDefault();
   switch(ev.dataTransfer.files[0].name.slice(-3).toLowerCase()){
-    case 'sna':
-      if( ev.dataTransfer.files[0].size != 0xc01b )
-        return alert('Invalid SNA file');
-      var reader= new FileReader();
-      reader.onloadend = function(ev) {
-        o= ev.target.result;
-        j= 0;
-        i= o.charCodeAt(j++);
-        l_= o.charCodeAt(j++);
-        h_= o.charCodeAt(j++);
-        e_= o.charCodeAt(j++);
-        d_= o.charCodeAt(j++);
-        c_= o.charCodeAt(j++);
-        b_= o.charCodeAt(j++);
-        setf_(o.charCodeAt(j++));
-        a_= o.charCodeAt(j++);
-        l= o.charCodeAt(j++);
-        h= o.charCodeAt(j++);
-        e= o.charCodeAt(j++);
-        d= o.charCodeAt(j++);
-        c= o.charCodeAt(j++);
-        b= o.charCodeAt(j++);
-        yl= o.charCodeAt(j++);
-        yh= o.charCodeAt(j++);
-        xl= o.charCodeAt(j++);
-        xh= o.charCodeAt(j++);
-        iff= o.charCodeAt(j++)>>2 & 1;
-        r= r7= o.charCodeAt(j++);
-        setf(o.charCodeAt(j++));
-        a= o.charCodeAt(j++);
-        sp= o.charCodeAt(j++) | o.charCodeAt(j++)<<8;
-        im= o.charCodeAt(j++);
-        wp(0,o.charCodeAt(j++));
-        while( j < 0xc01b )
-          m[j+0x3fe5]= o.charCodeAt(j++);
-        g[0xc9]();
-      }
-      reader.readAsBinaryString(ev.dataTransfer.files[0]);
-      break;
-    case 'z80':
+    case 'ace':
       var reader= new FileReader();
       reader.onloadend = function(ev) {
         o= ev.target.result;
         if(rm(o))
-          return alert('Invalid Z80 file');
+          return alert('Invalid ACE file');
       }
       reader.readAsBinaryString(ev.dataTransfer.files[0]);
       break;
@@ -377,14 +238,8 @@ function kdown(ev) {
       }
       break;
     case 113: // F2
-      kc[9]^=  0x41^(0x05<<7 | 0x3c);
-      kc[37]^= 0x44^(0x05<<7 | 0x19);
-      kc[38]^= 0x42^(0x05<<7 | 0x22);
-      kc[39]^= 0x45^(0x05<<7 | 0x23);
-      kc[40]^= 0x43^(0x05<<7 | 0x21);
-      alert((localStorage.ft^= 2) & 2
-            ? 'Cursors enabled'
-            : 'Joystick enabled on Cursors + Tab');
+      localStorage.ft= +localStorage.ft+2&6 | +localStorage.ft&25;
+      pressF2();
       self.focus();
       break;
     case 114: // F3
@@ -403,7 +258,7 @@ function kdown(ev) {
           clearInterval(interval);
         else
           node.onaudioprocess= audioprocess0;
-        ajax('snaps/'+params.slice(0,-3)+'sna', -1);
+        ajax('snaps/'+params.slice(0,-3)+'ace', -1);
       }
       else
 //        frc= frcs,
@@ -447,20 +302,18 @@ function kdown(ev) {
       break;
     case 121: // F10
       o= wm();
-      t= new ArrayBuffer(o.length);
-      u= new Uint8Array(t, 0);
+      u= new Uint8Array(o.length);
       for ( j=0; j<o.length; j++ )
         u[j]= o.charCodeAt(j);
-      j= new WebKitBlobBuilder(); 
-      j.append(t);
-      ir.src= webkitURL.createObjectURL(j.getBlob());
-      alert('Snapshot saved.\nRename the file (without extension) to .Z80.');
+      URL= window.URL || window.webkitURL;
+      ir.src= URL.createObjectURL(new Blob([u], {type: 'application/x.cantab.ace'}));
+      alert('Snapshot saved.\nRename the file (without extension) to .ACE.');
       self.focus();
       break;
     case 122: // F11
       return 1;
     case 123: // F12
-      alert('Sound '+ ( (localStorage.ft^= 4) & 4
+      alert('Sound '+ ( (localStorage.ft^= 16) & 16
                         ? 'en'
                         : 'dis' ) +'abled');
       self.focus();
@@ -512,9 +365,8 @@ function onresize(ev) {
 
 function rp(addr) {
   j= 0xff;
-/*if( !(addr & 0xe0) )                    // read kempston
+  if( ~addr & 2 )                    // read Boldfield Joystick
     j^= ks[8];
-  else*/
   if( ~addr & 1 ){                   // read keyboard
     if ( !bor )
       bor= 1,
@@ -529,141 +381,134 @@ function rp(addr) {
   return j;
 }
 
-function wb(addr, val) {
-  if( addr < 0x2000 )
-    return;
-  else if ( addr < 0x3000 )
-    m[addr]= m[addr^0x400]= val;
-  else if ( addr < 0x4000 )
-    m[addr]= m[addr^0x400]= m[addr^0x800]= m[addr^0xc00]= val;
-  else
-    m[addr]= val;
-}
-
 function rm(o) {
-  if(o.charCodeAt(6)|o.charCodeAt(7) ||
-     o.charCodeAt(12)==255 ||
-     o.charCodeAt(30)!=55 ||
-     o.charCodeAt(34))
+  if( o.charCodeAt(0)!=1 &&
+      o.charCodeAt(0)!=0x80 )
     return 1;
   j= 0;
-  a= o.charCodeAt(j++);
-  setf(o.charCodeAt(j++));
-  c= o.charCodeAt(j++);
-  b= o.charCodeAt(j++);
-  l= o.charCodeAt(j++);
-  h= o.charCodeAt(j++);
-  j+= 2;
-  sp= o.charCodeAt(j++) | o.charCodeAt(j++)<<8;
-  i= o.charCodeAt(j++);
-  r= o.charCodeAt(j++);
-  r7= o.charCodeAt(j++);
-  bor= r7>>1 & 7;
-  wp(0, bor);
-  e= o.charCodeAt(j++);
-  d= o.charCodeAt(j++);
-  c_= o.charCodeAt(j++);
-  b_= o.charCodeAt(j++);
-  e_= o.charCodeAt(j++);
-  d_= o.charCodeAt(j++);
-  l_= o.charCodeAt(j++);
-  h_= o.charCodeAt(j++);
-  a_= o.charCodeAt(j++);
-  setf_(o.charCodeAt(j++));
-  yl= o.charCodeAt(j++);
-  yh= o.charCodeAt(j++);
-  xl= o.charCodeAt(j++);
-  xh= o.charCodeAt(j++);
-  iff= o.charCodeAt(j++);
-  im= o.charCodeAt(j+1)&3;
-  u= o.charCodeAt(30);
-  if( u>23 ){
-    pc= o.charCodeAt(j+4) | o.charCodeAt(j+5)<<8;
-    for (v= 0; v < 10; v++ )
-      ks[v]= o.charCodeAt(v+75);
-  }
-  else
-    pc= o.charCodeAt(6) | o.charCodeAt(7)<<8;
-  j+= u+4;
+  t= 0x2000;
   while( j<o.length ){
-    t= o.charCodeAt(j++)|o.charCodeAt(j++)<<8;
-    u= o.charCodeAt(j++);
-    u=  ( u==8
-          ? 1
-          : u-2
-        )
-        <<
-        14;
-    if( t<0xffff )
-      while( t-- )
-        if( o.charCodeAt(j)==0xed && o.charCodeAt(j+1)==0xed ){
-          t-= 3;
-          w= o.charCodeAt(j+2);
-          j+= 4;
-          while( w-- )
-            m[u++]= o.charCodeAt(j-1);
-        }
-        else
-          m[u++]= o.charCodeAt(j++);
+    if( o.charCodeAt(j)==0xed ){
+      w= o.charCodeAt(j+1);
+      j+= 3;
+      while( w-- )
+        m[t++]= o.charCodeAt(j-1);
+    }
     else
-      do m[u++]= o.charCodeAt(j++)
-      while( u & 0x3fff );
+      m[t++]= o.charCodeAt(j++);
   }
-  r7<<= 7;
+  j= 0x2100;
+  setf(m[j++]);
+  a= m[j++];
+  j+= 2;
+  c= m[j++];
+  b= m[j++];
+  j+= 2;
+  e= m[j++];
+  d= m[j++];
+  j+= 2;
+  l= m[j++];
+  h= m[j++];
+  j+= 2;
+  xl= m[j++];
+  xh= m[j++];
+  j+= 2;
+  yl= m[j++];
+  yh= m[j++];
+  j+= 2;
+  sp= m[j++] | m[j++]<<8;
+  j+= 2;
+  pc= m[j++] | m[j++]<<8;
+  j+= 2;
+  setf_(m[j++]);
+  a_= m[j++];
+  j+= 2;
+  c_= m[j++];
+  b_= m[j++];
+  j+= 2;
+  e_= m[j++];
+  d_= m[j++];
+  j+= 2;
+  l_= m[j++];
+  h_= m[j++];
+  j+= 2;
+  im= m[j];
+  iff= m[j+4];
+  i= m[j+12];
+  r7= r= m[j+16];
+  for ( j= 0x2400; j<0x2800; j++ )
+    wb( j, m[j] );
+  for ( j= 0x2c00; j<0x3000; j++ )
+    wb( j, m[j] );
+  for ( j= 0x3c00; j<0x4000; j++ )
+    wb( j, m[j] );
+  for ( t= 0x300; t < 0x380; t++ )
+    vm[t]= 1;
 }
 
 function wm() {
-  t= String.fromCharCode(a,f(),c,b,l,h,0,0,sp&255,sp>>8,i,r,r7>>7|bor<<1,e,d,
-                         c_,b_,e_,d_,l_,h_,a_,f_(),yl,yh,xl,xh,iff,iff,im,55,0,
-                         pc&255,pc>>8);
-  for (j= 0; j < 41; j++)
+  t= String.fromCharCode( 1, 128 );
+  for ( j= 0; j < 127; j++ )
     t+= String.fromCharCode(0);
-  for (j= 0; j < 10; j++ )
-    t+= String.fromCharCode(ks[j]);
-  t+= String.fromCharCode(frc, 0);
-  for (u= 1; u< 4; u++)
-    for (j= 0, t+= String.fromCharCode(255,255,'845'[u-1]); j < 0x4000; j++)
-      t+= String.fromCharCode(m[j|u<<14]);
-  return t;
+  t+= String.fromCharCode(128,0,0,0,0,0,0,0,0,0,0,3,0,0,0,3,0,0,0,0xf7,0xfd);
+  for ( j= 0; j < 106; j++ )
+    t+= String.fromCharCode(0);
+  t+= String.fromCharCode(f(),a,0,0,c,b,0,0,e,d,0,0,l,h,0,0,xl,xh,0,0,yl,yh,0,0,sp&255,sp>>8,
+                          0,0,pc&255,pc>>8,0,0,f_(),a_,0,0,c_,b_,0,0,e_,d_,0,0,l_,h_,0,0,im,
+                          0,0,0,iff,0,0,0,0,0,0,0,i,0,0,0,r&128|r7&127,0,0,0,128);
+  for ( j= 0; j < 699; j++ )
+    t+= String.fromCharCode(0);
+  for ( j= 0x2400; j < 0x2800; j++ )
+    t+= String.fromCharCode(m[j]);
+  for ( j= 0; j < 0x400; j++)
+    t+= String.fromCharCode(0);
+  for ( j= 0x2c00; j < 0x3000; j++ )
+    t+= String.fromCharCode(m[j]);
+  for ( j= 0; j < 0xc00; j++)
+    t+= String.fromCharCode(0);
+  for ( j= 0x3c00; j < 0x10000; j++ )
+    t+= String.fromCharCode(m[j]);
+  u= v= '';
+  w= -1;
+  for ( j= 0; j<=t.length; j++ ){
+    if( j<t.length && v==t[j] ){
+      if( ++w==240 )
+        u+= String.fromCharCode(0xed, 240)+v,
+        w= 0;
+    }
+    else{
+      if( w>3 )
+        u+= String.fromCharCode(0xed, w+1)+v;
+      else if( v.charCodeAt(0)==0xed )
+        u+= String.fromCharCode(0xed, w+1, 0xed);
+      else
+        while ( w-- > -1 )
+          u+= v;
+      w= 0;
+    }
+    v= t[j];
+  }
+  return u;
 }
 
 function tp(){
   tapei= tapep= t= j= 0;
-  if( game.charCodeAt(0)!=19 ){
+  if( game.charCodeAt(0)!=26 ){
     rm(game);
     return;
   }
   v= '';
   while( u= game.charCodeAt(t) | game.charCodeAt(t+1)<<8 )
     v+= '<option value="'+t+'">#'+ ++j+
-        ( game.charCodeAt(t+2)
-          ? ' Data: '+(u-2)+' bytes'
-          : ' Prog: '+game.substr(t+4,10).replace(/\0/g, '')
+        ( u!=26
+          ? ' Data: '+(u-1)+' bytes'
+          : ' Prog: '+game.substr(t+3,10).replace(/\0/g, '')
         )+'</option>',
     t+= 2+u;
   if( ie )
     pt.outerHTML= '<select onchange="tapep=this.value;tapei=this.selectedIndex">'+v+'</select>';
   else
     pt.innerHTML= v;
-}
-
-function loadblock() {
-  o=  game.charCodeAt(tapep++) | game.charCodeAt(tapep++)<<8;
-  tapei++;
-  tapep++;
-  for ( j= 0
-      ; j < o-2
-      ; j++ )
-    wb(xl | xh << 8, game.charCodeAt(tapep++)),
-    g[0x123]();
-  setf_(0x6d);
-  a= d= e= 0;
-  pc= 0x5e0;                           // exit address
-  tapep++;
-  o=  game.charCodeAt(tapep) | game.charCodeAt(tapep+1)<<8;
-  if( !o )
-    tapei= tapep= 0;
-  pt.selectedIndex= tapei;
 }
 
 function rt(f){
@@ -680,129 +525,37 @@ function rt(f){
     node.onaudioprocess= audioprocess;
 }
 
-function paintNormal(){
-  t= -1;
-  while( t++ < 0x2ff )
-    if( (u=m[t+0x2000]) & 0x80 )
-      for ( u= u<<3 | 0x2800
-          , o= t>>5 << 13
-             | t<<5 & 0x3ff
-          , n= 8
-          ; n--
-          ; o+= 0x400 )
-        k= m[u++],
-        eld[o   ]= eld[o+1 ]= eld[o+2 ]= k&0x80 ? 0 : 0xff,
-        eld[o+4 ]= eld[o+5 ]= eld[o+6 ]= k&0x40 ? 0 : 0xff,
-        eld[o+8 ]= eld[o+9 ]= eld[o+10]= k&0x20 ? 0 : 0xff,
-        eld[o+12]= eld[o+13]= eld[o+14]= k&0x10 ? 0 : 0xff,
-        eld[o+16]= eld[o+17]= eld[o+18]= k&0x08 ? 0 : 0xff,
-        eld[o+20]= eld[o+21]= eld[o+22]= k&0x04 ? 0 : 0xff,
-        eld[o+24]= eld[o+25]= eld[o+26]= k&0x02 ? 0 : 0xff,
-        eld[o+28]= eld[o+29]= eld[o+30]= k&0x01 ? 0 : 0xff;
-    else
-      for ( u= u<<3 | 0x2800
-          , o= t>>5 << 13
-             | t<<5 & 0x3ff
-          , n= 8
-          ; n--
-          ; o+= 0x400 )
-        k= m[u++],
-        eld[o   ]= eld[o+1 ]= eld[o+2 ]= k&0x80 ? 0xff : 0,
-        eld[o+4 ]= eld[o+5 ]= eld[o+6 ]= k&0x40 ? 0xff : 0,
-        eld[o+8 ]= eld[o+9 ]= eld[o+10]= k&0x20 ? 0xff : 0,
-        eld[o+12]= eld[o+13]= eld[o+14]= k&0x10 ? 0xff : 0,
-        eld[o+16]= eld[o+17]= eld[o+18]= k&0x08 ? 0xff : 0,
-        eld[o+20]= eld[o+21]= eld[o+22]= k&0x04 ? 0xff : 0,
-        eld[o+24]= eld[o+25]= eld[o+26]= k&0x02 ? 0xff : 0,
-        eld[o+28]= eld[o+29]= eld[o+30]= k&0x01 ? 0xff : 0;
-  ct.putImageData(elm, 0, 0);
-}
-
-function paintBascolace(){
-  t= -1;
-  while( t++ < 0x2ff )
-    for ( u= m[t+0x2000]
-        , v= u & 0x80 ? 255 : 0
-        , fo= pal[ m[t+0x4000]>>3 & 15 ]
-        , ti= pal[ m[t+0x4000]>>3 & 8 
-                 | m[t+0x4000]    & 7 ]
-        , u= u<<3 | 0x2800
-        , o= t>>5 << 13
-           | t<<5 & 0x3ff
-        , n= 8
-        ; n--
-        ; o+= 0x400 ){
-      k= m[u++]^v;
-      if( k&128 )
-        eld[o  ]= ti[0],
-        eld[o+1]= ti[1],
-        eld[o+2]= ti[2];
-      else
-        eld[o  ]= fo[0],
-        eld[o+1]= fo[1],
-        eld[o+2]= fo[2];
-      if( k&64 )
-        eld[o+4]= ti[0],
-        eld[o+5]= ti[1],
-        eld[o+6]= ti[2];
-      else
-        eld[o+4]= fo[0],
-        eld[o+5]= fo[1],
-        eld[o+6]= fo[2];
-      if( k&32 )
-        eld[o+8 ]= ti[0],
-        eld[o+9 ]= ti[1],
-        eld[o+10]= ti[2];
-      else
-        eld[o+8 ]= fo[0],
-        eld[o+9 ]= fo[1],
-        eld[o+10]= fo[2];
-      if( k&16 )
-        eld[o+12]= ti[0],
-        eld[o+13]= ti[1],
-        eld[o+14]= ti[2];
-      else
-        eld[o+12]= fo[0],
-        eld[o+13]= fo[1],
-        eld[o+14]= fo[2];
-      if( k&8 )
-        eld[o+16]= ti[0],
-        eld[o+17]= ti[1],
-        eld[o+18]= ti[2];
-      else
-        eld[o+16]= fo[0],
-        eld[o+17]= fo[1],
-        eld[o+18]= fo[2];
-      if( k&4 )
-        eld[o+20]= ti[0],
-        eld[o+21]= ti[1],
-        eld[o+22]= ti[2];
-      else
-        eld[o+20]= fo[0],
-        eld[o+21]= fo[1],
-        eld[o+22]= fo[2];
-      if( k&2 )
-        eld[o+24]= ti[0],
-        eld[o+25]= ti[1],
-        eld[o+26]= ti[2];
-      else
-        eld[o+24]= fo[0],
-        eld[o+25]= fo[1],
-        eld[o+26]= fo[2];
-      if( k&1 )
-        eld[o+28]= ti[0],
-        eld[o+29]= ti[1],
-        eld[o+30]= ti[2];
-      else
-        eld[o+28]= fo[0],
-        eld[o+29]= fo[1],
-        eld[o+30]= fo[2];
-    }
-  ct.putImageData(elm, 0, 0);
-}
-
 function wp(addr, val){
   if( ~addr & 1 && bor )
     bor= 0,
     vb[vbp++]= st;
+}
+
+function pressF2(al){
+  switch( localStorage.ft & 6 ){
+    case 0: kc[9]=  0x05<<7 | 0x24;
+            kc[37]= 0x05<<7 | 0x19;
+            kc[38]= 0x05<<7 | 0x21;
+            kc[39]= 0x05<<7 | 0x23;
+            kc[40]= 0x05<<7 | 0x22;
+            al || alert('Cursors enabled (Tab=Graph)'); break;
+    case 2: kc[9]=  0x40;
+            kc[37]= 0x42;
+            kc[38]= 0x45;
+            kc[39]= 0x43;
+            kc[40]= 0x44;
+            al || alert('Boldfield Joystick enabled on Cursors + Tab'); break;
+    case 4: kc[9]=  0x24;
+            kc[37]= 0x19;
+            kc[38]= 0x21;
+            kc[39]= 0x23;
+            kc[40]= 0x22;
+            al || alert('5 6 7 8 9 on Cursors + Tab'); break;
+    case 6: kc[9]=  0x3c;
+            kc[37]= 0x2c;
+            kc[38]= 0x15;
+            kc[39]= 0x2d;
+            kc[40]= 0x0d;
+            al || alert('O P Q A M on Cursors + Tab');
+  }
 }

@@ -373,17 +373,46 @@
   unlink('3.js');
   exec('kzip -y temp.zip aa.rom');
   file_put_contents('_3.rom.deflate', substr(file_get_contents('temp.zip'), 36, -75));
-///*
+///*/
   error_log("ace");
   exec("java yui ace");
+  exec("sjasmplus bascolace.asm");
+  $rom= substr(file_get_contents('bascolace.rom'), 0x4300-18, 0x2000).
+        substr(file_get_contents('bascolace.rom'), 0, 0x2000);
+  $rom[0x250a]= chr(0xed);
+  $rom[0x250b]= chr(0xfc);
   file_put_contents('aa.rom', file_get_contents('rom/k-ace.pal').
                               file_get_contents('rom/k-ace.bin').
-                              file_get_contents('rom/ace.rom').
+                              $rom.
                               file_get_contents('ace.js'));
+  file_put_contents('bascol1.rom', substr(file_get_contents('bascolace.rom'), 0x4300-18, 0x2000));
+  file_put_contents('bascol2.rom', substr(file_get_contents('bascolace.rom'), 0, 0x2000));
+  file_put_contents('bascol.raw.ace', file_get_contents('bascol.bin').
+                                  str_pad('', 0x400, "\0").
+                                  substr(file_get_contents('bascolace.rom'), 0x5f00-18, 0x400).
+                                  substr(file_get_contents('bascolace.rom'), 0x5f00-18, 0x400).
+                                  str_pad('', 0x1300, "\0").
+                                  substr(file_get_contents('bascolace.rom'), 0x4300, 0x1900).
+                                  str_pad('', 0xa358, "\0").
+                                  substr(file_get_contents('bascolace.rom'), 0x6108-18, 0xa8));
   unlink('ace.js');
   exec('kzip -y temp.zip aa.rom');
   file_put_contents('_ace.rom.deflate', substr(file_get_contents('temp.zip'), 36, -75));
 ///*
+  error_log("jupace");
+  exec("java yui jupace");
+  $rom= file_get_contents('rom/ace.rom');
+  $rom[0x18b6]= chr(0xed);
+  $rom[0x18b7]= chr(0xfc);
+  file_put_contents('aa.rom', file_get_contents('rom/k-ace.pal').
+                              file_get_contents('rom/k-ace.bin').
+                              $rom.
+                              file_get_contents('jupace.js'));
+  unlink('jupace.js');
+  exec('kzip -y temp.zip aa.rom');
+  file_put_contents('_ja.rom.deflate', substr(file_get_contents('temp.zip'), 36, -75));
+//
+/*
   error_log("48.html");
   ob_start();$x=48;$y=0x10000;
   require'emu.php';
@@ -560,11 +589,18 @@
   file_put_contents('3.html.deflate', substr(file_get_contents('temp.zip'), 36, -75));
 ///*
   error_log("ace.html");
-  ob_start();$x='ace';$y=0x2000;$title='jupiler';
+  ob_start();$x='ace';$y=0x4000;$title='jupiler';
   require'emu_ace.php';
   file_put_contents('aa.rom', ob_get_contents());
   exec('kzip -y temp.zip aa.rom');
   file_put_contents('ace.html.deflate', substr(file_get_contents('temp.zip'), 36, -75));
+///*
+  error_log("ja.html");
+  ob_start();$x='ja';$y=0x2000;$title='jupiler';
+  require'emu_ace.php';
+  file_put_contents('aa.rom', ob_get_contents());
+  exec('kzip -y temp.zip aa.rom');
+  file_put_contents('ja.html.deflate', substr(file_get_contents('temp.zip'), 36, -75));
 ///*
   unlink('z80.js');
   unlink('z80m.js');

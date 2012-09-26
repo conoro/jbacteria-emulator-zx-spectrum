@@ -138,14 +138,10 @@ function init() {
               by= ram[ma>>12][v=ma<<1&0x7ff|z<<11];
               if(vb[++u]!=by){
                 vb[u]= by;
-                if(x<mix)
-                  mix= x;
-                else if(x>max)
-                  max= x;
-                if(t < miy)
-                  miy= t;
-                else if(t > may)
-                  may= t;
+                x<mix && (mix= x);
+                x>max && (max= x);
+                t<miy && (miy= t);
+                t>may && (may= t);
                 eld3[pos++]= pl[lut0[by]]
                 eld3[pos++]= pl[lut1[by]];
               }
@@ -154,14 +150,10 @@ function init() {
               by= ram[ma++>>12][v+1];
               if(vb[++u]!=by){
                 vb[u]= by;
-                if(x<mix)
-                  mix= x;
-                else if(x>max)
-                  max= x;
-                if(t < miy)
-                  miy= t;
-                else if(t > may)
-                  may= t;
+                x<mix && (mix= x);
+                x>max && (max= x);
+                t<miy && (miy= t);
+                t>may && (may= t);
                 eld3[pos++]= pl[lut0[by]],
                 eld3[pos++]= pl[lut1[by]];
               }
@@ -179,14 +171,10 @@ function init() {
               by= ram[ma>>12][v= ma<<1&0x7ff|z<<11];
               if(vb[++u]!=by){
                 vb[u]= by;
-                if(x<mix)
-                  mix= x;
-                else if(x>max)
-                  max= x;
-                if(t < miy)
-                  miy= t;
-                else if(t > may)
-                  may= t;
+                x<mix && (mix= x);
+                x>max && (max= x);
+                t<miy && (miy= t);
+                t>may && (may= t);
                 eld3[pos++]= pl[by>>7&1 | by>>2&2];
                 eld3[pos++]= pl[by>>6&1 | by>>1&2];
                 eld3[pos++]= pl[by>>5&1 | by   &2];
@@ -197,14 +185,10 @@ function init() {
               by= ram[ma++>>12][v+1];
               if(vb[++u]!=by){
                 vb[u]= by;
-                if(x<mix)
-                  mix= x;
-                else if(x>max)
-                  max= x;
-                if(t < miy)
-                  miy= t;
-                else if(t > may)
-                  may= t;
+                x<mix && (mix= x);
+                x>max && (max= x);
+                t<miy && (miy= t);
+                t>may && (may= t);
                 eld3[pos++]= pl[by>>7&1 | by>>2&2];
                 eld3[pos++]= pl[by>>6&1 | by>>1&2];
                 eld3[pos++]= pl[by>>5&1 | by   &2];
@@ -226,14 +210,10 @@ function init() {
                 ++ma;
               if(vb[++u]!=by){
                 vb[u]= by;
-                if(x<mix)
-                  mix= x;
-                else if(x>max)
-                  max= x;
-                if(t < miy)
-                  miy= t;
-                else if(t > may)
-                  may= t;
+                x<mix && (mix= x);
+                x>max && (max= x);
+                t<miy && (miy= t);
+                t>may && (may= t);
                 eld3[pos++]= pl[by>>7&1];
                 eld3[pos++]= pl[by>>6&1];
                 eld3[pos++]= pl[by>>5&1];
@@ -410,14 +390,10 @@ function init() {
               by= ram[ma>>12][v=ma<<1&0x7ff|z<<11];
               if(vb[++u]!=by){
                 vb[u]= by;
-                if(x<mix)
-                  mix= x;
-                else if(x>max)
-                  max= x;
-                if(t < miy)
-                  miy= t;
-                else if(t > may)
-                  may= t;
+                x<mix && (mix= x);
+                x>max && (max= x);
+                t<miy && (miy= t);
+                t>may && (may= t);
                 b0= pl[lut0[by]];
                 eld[pos++]= b0[0];
                 eld[pos++]= b0[1];
@@ -434,14 +410,10 @@ function init() {
               by= ram[ma++>>12][v+1];
               if(vb[++u]!=by){
                 vb[u]= by;
-                if(x<mix)
-                  mix= x;
-                else if(x>max)
-                  max= x;
-                if(t < miy)
-                  miy= t;
-                else if(t > may)
-                  may= t;
+                x<mix && (mix= x);
+                x>max && (max= x);
+                t<miy && (miy= t);
+                t>may && (may= t);
                 b0= pl[lut0[by]],
                 eld[pos++]= b0[0],
                 eld[pos++]= b0[1],
@@ -466,14 +438,10 @@ function init() {
               by= ram[ma>>12][v= ma<<1&0x7ff|z<<11];
               if(vb[++u]!=by){
                 vb[u]= by;
-                if(x<mix)
-                  mix= x;
-                else if(x>max)
-                  max= x;
-                if(t < miy)
-                  miy= t;
-                else if(t > may)
-                  may= t;
+                x<mix && (mix= x);
+                x>max && (max= x);
+                t<miy && (miy= t);
+                t>may && (may= t);
                 b0= pl[by>>7&1 | by>>2&2];
                 eld[pos++]= b0[0];
                 eld[pos++]= b0[1];
@@ -500,14 +468,10 @@ function init() {
               by= ram[ma++>>12][v+1];
               if(vb[++u]!=by){
                 vb[u]= by;
-                if(x<mix)
-                  mix= x;
-                else if(x>max)
-                  max= x;
-                if(t < miy)
-                  miy= t;
-                else if(t > may)
-                  may= t;
+                x<mix && (mix= x);
+                x>max && (max= x);
+                t<miy && (miy= t);
+                t>may && (may= t);
                 b0= pl[by>>7&1 | by>>2&2];
                 eld[pos++]= b0[0];
                 eld[pos++]= b0[1];
@@ -544,14 +508,10 @@ function init() {
                 ++ma;
               if(vb[++u]!=by){
                 vb[u]= by;
-                if(x<mix)
-                  mix= x;
-                else if(x>max)
-                  max= x;
-                if(t < miy)
-                  miy= t;
-                else if(t > may)
-                  may= t;
+                x<mix && (mix= x);
+                x>max && (max= x);
+                t<miy && (miy= t);
+                t>may && (may= t);
                 b0= pl[by>>7&1];
                 eld[pos++]= b0[0];
                 eld[pos++]= b0[1];

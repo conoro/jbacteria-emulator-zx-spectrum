@@ -26,14 +26,10 @@ function paintNormal(){
                 : m[u]
           , vm[u-0x4000] != (col | k<<8) ){
           vm[u-0x4000]= col | k<<8;
-          if(dx-scrl<mix)
-            mix= dx-scrl;
-          else
-            dx>max && (max= dx);
-          if(dy < miy)
-            miy= dy;
-          else
-            dy>may && (may= dy);
+          dx-scrl<mix && (mix= dx-scrl);
+          dx-scrl>max && (max= dx-scrl);
+          dy<miy && (miy= dy);
+          dy>may && (may= dy);
           if( k&128 )
             eld[o  ]= bk[0],
             eld[o+1]= bk[1],
@@ -142,14 +138,10 @@ function paintNormal(){
                 : m[u]
           , vm[u-0x4000] != (col | k<<8) ){
           vm[u-0x4000]= col | k<<8;
-          if(dx<mix)
-            mix= dx;
-          else
-            dx>max && (max= dx);
-          if(dy < miy)
-            miy= dy;
-          else
-            dy>may && (may= dy);
+          dx<mix && (mix= dx);
+          dx>max && (max= dx);
+          dy<miy && (miy= dy);
+          dy>may && (may= dy);
           if( k&128 )
             eld[o  ]= bk[0],
             eld[o+1]= bk[1],
@@ -241,14 +233,10 @@ function paintUlap(){
       if( k= m[u]
         , vm[u-0x4000] != (col | k<<8) ){
         vm[u-0x4000]= col | k<<8;
-        if(dx<mix)
-          mix= dx;
-        else
-          dx>max && (max= dx);
-        if(dy < miy)
-          miy= dy;
-        else
-          dy>may && (may= dy);
+        dx<mix && (mix= dx);
+        dx>max && (max= dx);
+        dy<miy && (miy= dy);
+        dy>may && (may= dy);
         if( k&128 )
           eld[o  ]= bk[0],
           eld[o+1]= bk[1],

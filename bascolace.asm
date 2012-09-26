@@ -10767,6 +10767,9 @@ twti    ld      b, 4
 again   ld      a, (bc)
         cp      $f3
         jr      nz, again
+delay   djnz    delay           ;13*255+8= 3323
+        dec     d               ;4
+        jr      nz, delay       ;12.  (3323+4+12)*60-5= 200335/3250= 61.64ms
         rst     0
       ENDIF
 
@@ -19534,7 +19537,7 @@ ULTR8:  IN      F,(C)
         CALL    L5B04           ; salto a Raudo
 ULTR9:  EXX                     ; ya se ha acabado la ultracarga (Raudo)
         JP      ULT10
-        PADORG  $59ce           ; 23 bytes
+        PADORG  $59ce           ; 18 bytes
 L59CE:  INC     H               ;4
         JR      NC,L59ED        ;7/12  39/37  51/49
         XOR     B               ;4
