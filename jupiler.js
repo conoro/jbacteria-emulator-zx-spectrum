@@ -238,7 +238,6 @@ function kdown(ev) {
       }
       break;
     case 113: // F2
-      localStorage.ft= +localStorage.ft+2&6 | +localStorage.ft&25;
       pressF2();
       self.focus();
       break;
@@ -278,7 +277,7 @@ function kdown(ev) {
         t= wm()+String.fromCharCode(f3)+String.fromCharCode(f4)+param+String.fromCharCode(255);
         while( pbc )
           t+= String.fromCharCode(pb[--pbc]);
-        ajax('rec.php', t);
+        ajax('rec_ace.php', t);
         document.documentElement.innerHTML= 'Please wait...';
       }
       break;
@@ -529,33 +528,4 @@ function wp(addr, val){
   if( ~addr & 1 && bor )
     bor= 0,
     vb[vbp++]= st;
-}
-
-function pressF2(al){
-  switch( localStorage.ft & 6 ){
-    case 0: kc[9]=  0x05<<7 | 0x24;
-            kc[37]= 0x05<<7 | 0x19;
-            kc[38]= 0x05<<7 | 0x21;
-            kc[39]= 0x05<<7 | 0x23;
-            kc[40]= 0x05<<7 | 0x22;
-            al || alert('Cursors enabled (Tab=Graph)'); break;
-    case 2: kc[9]=  0x40;
-            kc[37]= 0x42;
-            kc[38]= 0x45;
-            kc[39]= 0x43;
-            kc[40]= 0x44;
-            al || alert('Boldfield Joystick enabled on Cursors + Tab'); break;
-    case 4: kc[9]=  0x24;
-            kc[37]= 0x19;
-            kc[38]= 0x21;
-            kc[39]= 0x23;
-            kc[40]= 0x22;
-            al || alert('5 6 7 8 9 on Cursors + Tab'); break;
-    case 6: kc[9]=  0x3c;
-            kc[37]= 0x2c;
-            kc[38]= 0x15;
-            kc[39]= 0x2d;
-            kc[40]= 0x0d;
-            al || alert('O P Q A M on Cursors + Tab');
-  }
 }

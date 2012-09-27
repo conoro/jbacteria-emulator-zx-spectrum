@@ -34,7 +34,6 @@ while ( strlen($snap)<256 )
 $len= ord($snap[0x6b])*1024+256;
 while ( strlen($snap)<$len )
   $snap.= chr(getval($index, $str));
-//$index= 0;
 $f3= (getval($index, $str));
 $f4= (getval($index, $str));
 while( $str[$index]!=chr(0xc3) )
@@ -42,8 +41,7 @@ while( $str[$index]!=chr(0xc3) )
 list($url,)= explode('?', $_SERVER['HTTP_REFERER']);
 $urls= substr(strstr($url, 'ndia.net/'), 9);
 list($sname,)= explode('.', $param);
-//while( $str[$index]==chr(0xc3) && $str[$index+1]==chr(0xbf) )
-  $index+= 2;
+$index+= 2;
 $num_frames= 0;
 while ( $index<strlen($str) )
   if( ~ord($str[$index]) & 0x80 ){

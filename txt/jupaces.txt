@@ -1,4 +1,4 @@
 jupiler.js
-ja.js
-z80m.js
+jas.js
+z80.js
 dom_ace.js

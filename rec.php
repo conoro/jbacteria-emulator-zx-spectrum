@@ -31,7 +31,6 @@ $index= 0;
 $snap= $keys= $frames= $param= '';
 while ( strlen($snap)<87 )
   $snap.= chr(getval($index, $str));
-//file_put_contents('caca.txt', $snap);
 $len= 87+16387*(ord($snap[34]) ? 8 : 3);
 while ( strlen($snap)<$len )
   $snap.= chr(getval($index, $str));

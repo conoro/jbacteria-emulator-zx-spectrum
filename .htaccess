@@ -11,6 +11,7 @@ AddType application/x.zx.z80 z80
 AddType application/x.cpc.sna sna
 #AddType application/x.zx.rom rom
 AddType application/x.cpc.rom rom
+AddType application/x.cantab.ace ace
 AddEncoding deflate deflate
 Options SymLinksIfOwnerMatch MultiViews
 ExpiresActive On

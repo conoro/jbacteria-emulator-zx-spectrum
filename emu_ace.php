@@ -30,7 +30,7 @@
       ?>ap=b.charCodeAt(ci++),<?
       ?>pb[pbt++]=ap==255?ap:ap|b.charCodeAt(frc++)<<8;<?
     ?>frc=pb[0]&255;<?
-    ?>ajax((b[k-1]==0?'snaps/':'games/')+(param=b.substr(0,k)));<?
+    ?>ajax((b[k-1]=='e'?'snaps/':'games/')+(param=b.substr(0,k)));<?
   ?>}<?
 ?>}<?
 ?>function ajax(f,g){<?
@@ -68,7 +68,7 @@
   ?>t++,<?
   ?>ajax((param.slice(-1)=='c'<?
     ?>?(t++,'recorded/')<?
-    ?>:(param.slice(-1)==0?'snaps/':'games/'))+param);<?
+    ?>:(param.slice(-1)=='e'?'snaps/':'games/'))+param);<?
 ?>ajax('_<?=$x?>.rom');<?
 ?></script><?
 ?></html>

@@ -244,3 +244,21 @@ function paintNormal(){
         eld[o+28]= eld[o+29]= eld[o+30]= k&0x01 ? 0xff : 0;
   ct.putImageData(elm, 0, 0);
 }
+
+function pressF2(al){
+  al || (localStorage.ft^= 2);
+  switch( localStorage.ft & 2 ){
+    case 0: kc[9]=  0x05<<7 | 0x24;
+            kc[37]= 0x05<<7 | 0x19;
+            kc[38]= 0x05<<7 | 0x21;
+            kc[39]= 0x05<<7 | 0x23;
+            kc[40]= 0x05<<7 | 0x22;
+            al || alert('Cursors enabled (Tab=Graph)'); break;
+    case 2: kc[9]=  0x3c;
+            kc[37]= 0x2c;
+            kc[38]= 0x15;
+            kc[39]= 0x2d;
+            kc[40]= 0x0d;
+            al || alert('O P Q A M on Cursors + Tab');
+  }
+}

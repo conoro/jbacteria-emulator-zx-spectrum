@@ -373,7 +373,7 @@
   unlink('3.js');
   exec('kzip -y temp.zip aa.rom');
   file_put_contents('_3.rom.deflate', substr(file_get_contents('temp.zip'), 36, -75));
-///*/
+///*
   error_log("ace");
   exec("java yui ace");
   exec("sjasmplus bascolace.asm");
@@ -410,9 +410,21 @@
                               file_get_contents('jupace.js'));
   unlink('jupace.js');
   exec('kzip -y temp.zip aa.rom');
-  file_put_contents('_ja.rom.deflate', substr(file_get_contents('temp.zip'), 36, -75));
-//
-/*
+  file_put_contents('_JA.rom.deflate', substr(file_get_contents('temp.zip'), 36, -75));
+///*
+  error_log("jupaces");
+  exec("java yui jupaces");
+  $rom= file_get_contents('rom/ace.rom');
+  $rom[0x18b6]= chr(0xed);
+  $rom[0x18b7]= chr(0xfc);
+  file_put_contents('aa.rom', file_get_contents('rom/k-ace.pal').
+                              file_get_contents('rom/k-ace.bin').
+                              $rom.
+                              file_get_contents('jupaces.js'));
+  unlink('jupaces.js');
+  exec('kzip -y temp.zip aa.rom');
+  file_put_contents('_JAs.rom.deflate', substr(file_get_contents('temp.zip'), 36, -75));
+///*
   error_log("48.html");
   ob_start();$x=48;$y=0x10000;
   require'emu.php';
@@ -594,14 +606,22 @@
   file_put_contents('aa.rom', ob_get_contents());
   exec('kzip -y temp.zip aa.rom');
   file_put_contents('ace.html.deflate', substr(file_get_contents('temp.zip'), 36, -75));
-///*
-  error_log("ja.html");
-  ob_start();$x='ja';$y=0x2000;$title='jupiler';
+///*/
+  error_log("JA.html");
+  ob_start();$x='JA';$y=0x2000;$title='jupiler';
   require'emu_ace.php';
   file_put_contents('aa.rom', ob_get_contents());
   exec('kzip -y temp.zip aa.rom');
-  file_put_contents('ja.html.deflate', substr(file_get_contents('temp.zip'), 36, -75));
+  file_put_contents('JA.html.deflate', substr(file_get_contents('temp.zip'), 36, -75));
 ///*
+  error_log("JAs.html");
+  ob_start();$x='JAs';$y=0x2000;$title='jupiler';
+  require'emu_ace.php';
+  file_put_contents('aa.rom', ob_get_contents());
+  exec('kzip -y temp.zip aa.rom');
+  file_put_contents('JAs.html.deflate', substr(file_get_contents('temp.zip'), 36, -75));
+//
+/*
   unlink('z80.js');
   unlink('z80m.js');
   unlink('z80p.js');
