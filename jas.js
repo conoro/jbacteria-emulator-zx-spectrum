@@ -49,6 +49,7 @@ function init() {
   if( ifra ){
     put= document.createElement('div');
     put.style.width= '40px';
+    put.style.color= '#fff';
     put.style.textAlign= 'right';
     document.body.appendChild(put);
     titul= function(){
@@ -68,6 +69,7 @@ function init() {
   if( pbt )
     tim= document.createElement('div'),
     tim.style.position= 'absolute',
+    tim.style.color= '#fff',
     tim.style.top= '0',
     tim.style.width= '100px',
     tim.style.textAlign= 'right',

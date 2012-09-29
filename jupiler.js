@@ -438,7 +438,7 @@ function rm(o) {
   for ( j= 0x2400; j<0x2800; j++ )
     wb( j, m[j] );
   for ( j= 0x2c00; j<0x3000; j++ )
-    wb( j, m[j] );
+    m[j-0x400]= m[j];
   for ( j= 0x3c00; j<0x4000; j++ )
     wb( j, m[j] );
   for ( t= 0x300; t < 0x380; t++ )
