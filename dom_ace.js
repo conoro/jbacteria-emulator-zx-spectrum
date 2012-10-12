@@ -10,8 +10,8 @@ cu.innerHTML='F1: pause/help<br/>'+
     'F5: reload (browser refresh)<br/>'+
     'F6: save gameplay<br/>'+
     'F8: reset machine<br/>'+
-    'F9: toggle bilinear/nearest neighbor scaling (Firefox only)<br/>'+
-    'F10: save snapshot to local file (Chrome only)<br/>'+
+    'F9: toggle bilinear/nearest neighbor scaling (Firefox and Opera)<br/>'+
+    'F10: save snapshot to local file (Firefox and Chrome)<br/>'+
     'F11: toggle fullscreen<br/>'+
     'F12: toggle sound (Firefox and Chrome)<br/><br/>'+
     '<a href="//jupiler.retrolandia.net" target="_blank">jupiler</a> version 20120912 by <a href="//antoniovillena.es" target="_blank">Antonio Villena</a><br/>'+

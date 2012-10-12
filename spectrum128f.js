@@ -189,11 +189,11 @@ function wp(addr, val) {                // write port, only border color emulati
   if( ~addr & 1 ){
     if( (bor^val) & 0x10 )
       vb[vbp++]= st;
-    document.body.style.backgroundColor=  'rgb('
-                                        + ( paintScreen==paintNormal
-                                              ? pal[(bor= val)&7]
-                                              : ulap[8|(bor= val)&7] )
-                                        + ')';
+    bor-val && (document.body.style.backgroundColor=  'rgb('
+                                                    + ( paintScreen==paintNormal
+                                                          ? pal[(bor= val)&7]
+                                                          : ulap[8|(bor= val)&7] )
+                                                    + ')');
     if( ifra )
       put.style.color= pal[bor&7][0]+pal[bor&7][1]+pal[bor&7][2]<300 ? '#fff' : '#000';
     if( pbt )
