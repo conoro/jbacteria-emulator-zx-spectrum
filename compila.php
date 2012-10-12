@@ -2,6 +2,9 @@
 //
 /*
   ob_start();
+  $m=0;$p=2;$c=0;require 'z80.php';
+  file_put_contents('z80elite.js', ob_get_contents());
+  ob_start();
   $m=0;$p=0;$c=0;require 'z80.php';
   file_put_contents('z80.js', ob_get_contents());
   ob_start();
@@ -637,6 +640,7 @@
   file_put_contents('JAs.html.deflate', substr(file_get_contents('temp.zip'), 36, -75));
 //
 /*
+  unlink('z80elite.js');
   unlink('z80.js');
   unlink('z80m.js');
   unlink('z80p.js');
