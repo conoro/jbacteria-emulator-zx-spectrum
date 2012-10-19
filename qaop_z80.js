@@ -437,18 +437,17 @@ function Z80(t) {
         Fa = 255 & (Fb = a & -129 | (a & 4) << 5)
     }
     function F() {
-        var a = Ff & 168 | Ff >> 8 & 1,
+        var a = Ff & 168 | Ff >> 8 & 1 | !Fr << 6,
             b = Fa,
             d = Fb,
-            h = d >> 8;
-        Fr || (a |= 64);
-        var c = Fr ^ b;
-        a |= h & 2,
-        a |= (c ^ d ^ h) & 16,
-        Fa & 256
-            ? b = 154020 >> ((Fr ^ Fr >> 4) & 15)
-            : b = (c & (d ^ Fr)) >> 5;
-        return a | b & 4
+            h = d >> 8,
+            c = Fr ^ b;
+        return  a |= h & 2,
+                a |= (c ^ d ^ h) & 16,
+                Fa & -256
+                  ? b = 154020 >> ((Fr ^ Fr >> 4) & 15)
+                  : b = (c & (d ^ Fr)) >> 5;
+                a | b & 4;
     }
     var a, b, c, d, e, hl, Ff, Fr, Fa, Fb, ix, sp, ir, im, mp, 
         a_,b_,c_,d_,e_,hl_,Ff_,Fr_,Fa_,Fb_,iy, pc, r, iff, halted;

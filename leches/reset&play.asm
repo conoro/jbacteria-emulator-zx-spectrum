@@ -5553,7 +5553,7 @@ L1201:  LD      ($5CB2),HL      ; set system variable RAMTOP to HL.
         LD      A,$38           ; the colour system is set to white paper,
                                 ; black ink, no flash or bright.
         LD      ($5C8D),A       ; set ATTR_P permanent colour attributes.
-        LD      ($5C8F),A       ; set ATTR_T temporary colour attributes.
+;        LD      ($5C8F),A       ; set ATTR_T temporary colour attributes.
         LD      ($5C48),A       ; set BORDCR the border colour/lower screen
                                 ; attributes.
 
@@ -5581,7 +5581,7 @@ L1201:  LD      ($5CB2),HL      ; set system variable RAMTOP to HL.
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
 
 L129D:  DEFB    $EF, $22, $22, $0D, $80; LOAD "" + Enter + $80
 

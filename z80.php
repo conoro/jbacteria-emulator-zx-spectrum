@@ -3,77 +3,13 @@ $mp= isset($m)?$m:$_GET['m'];
 $pag= isset($p)?$p:$_GET['p'];
 $cpc= isset($c)?$c:$_GET['c'];
 
+if(!function_exists('a')){
 function wb($a, $b){
   global $pag;
   return  $pag  ? 'm['.$a.']='.$b
                 : 'wb('.$a.','.$b.')';
 }
-?>
 
-function z80interrupt() {
-  if(iff){
-    if(halted)
-      pc++,
-      halted= 0;
-    iff= 0;
-<?if($pag==1){?>
-    mw[sp-1>>14&3][sp-1&16383]= pc >> 8 & 255;
-    mw[(sp=sp-2&65535)>>14][sp&16383]= pc & 255;
-<?}else{
-    echo wb('sp-1&65535', 'pc>>8&255').';';
-    echo wb('sp=sp-2&65535', 'pc&255').';';
-  }?>
-    r++;
-    switch(im) {
-      case 1:
-        st++;
-      case 0: 
-        pc= 56;
-        st+= <?=$cpc?3:12?>;
-        break;
-      default:
-<?if($pag==1){?>
-        t= 255 | i << 8;
-        pc= m[t>>14][t&16383] | m[++t>>14][t&16383] << 8;
-<?}else{?>
-        pc= m[t= 255 | i << 8] | m[++t&65535] << 8;
-<?}?>
-        st+= <?=$cpc?5:19?>;
-    }
-  }
-}
-
-function f() {
-  return fa & 256
-      ? ff & 168 | ff >> 8 & 1 | !fr << 6 | fb >> 8 & 2 | (fr ^ fa ^ fb ^ fb >> 8) & 16
-        | 154020 >> ((fr ^ fr >> 4) & 15) & 4
-      : ff & 168 | ff >> 8 & 1 | !fr << 6 | fb >> 8 & 2 | (fr ^ fa ^ fb ^ fb >> 8) & 16
-        | ((fr ^ fa) & (fr ^ fb)) >> 5 & 4;
-}
-
-function f_() {
-  return fa_ & 256
-      ? ff_ & 168 | ff_ >> 8 & 1 | !fr_ << 6 | fb_ >> 8 & 2 | (fr_ ^ fa_ ^ fb_ ^ fb_ >> 8) & 16
-        | 154020 >> ((fr_ ^ fr_ >> 4) & 15) & 4
-      : ff_ & 168 | ff_ >> 8 & 1 | !fr_ << 6 | fb_ >> 8 & 2 | (fr_ ^ fa_ ^ fb_ ^ fb_ >> 8) & 16
-        | ((fr_ ^ fa_) & (fr_ ^ fb_)) >> 5 & 4;
-}
-
-function setf(a) {
-  fr= ~a & 64;
-  ff= a|= a<<8;
-  fa= 255 & (fb= a & -129 | (a&4)<<5);
-}
-
-function setf_(a) {
-  fr_= ~a & 64;
-  ff_= a|= a<<8;
-  fa_= 255 & (fb_= a & -129 | (a&4)<<5);
-}
-
-<?
-
-if(!function_exists('a')){
 function a($a){
   echo 'function(){'.$a."},\n";
 }
@@ -720,8 +656,55 @@ function ldsppci($a, $b){
             ? ($a=='sp'?'st+=2;':'++st;')
             : ($a=='sp'?'st+=6;':'st+=4;')).
   $a.'='.$b.'l|'.$b.'h<<8';
-}}
+}}?>
 
+function z80interrupt() {
+  if(iff){
+    if(halted)
+      pc++,
+      halted= 0;
+    iff= 0;
+<?if($pag==1){?>
+    mw[sp-1>>14&3][sp-1&16383]= pc >> 8 & 255;
+    mw[(sp=sp-2&65535)>>14][sp&16383]= pc & 255;
+<?}else{
+    echo wb('sp-1&65535', 'pc>>8&255').';';
+    echo wb('sp=sp-2&65535', 'pc&255').';';
+  }?>
+    r++;
+    switch(im) {
+      case 1:
+        st++;
+      case 0: 
+        pc= 56;
+        st+= <?=$cpc?3:12?>;
+        break;
+      default:
+<?if($pag==1){?>
+        t= 255 | i << 8;
+        pc= m[t>>14][t&16383] | m[++t>>14][t&16383] << 8;
+<?}else{?>
+        pc= m[t= 255 | i << 8] | m[++t&65535] << 8;
+<?}?>
+        st+= <?=$cpc?5:19?>;
+    }
+  }
+}
+
+function f() {
+  return  ff & 168 | ff >> 8 & 1 | !fr << 6 | fb >> 8 & 2 | (fr ^ fa ^ fb ^ fb >> 8) & 16
+      | (fa & -256 
+          ? 154020 >> ((fr ^ fr >> 4) & 15)
+          : ((fr ^ fa) & (fr ^ fb)) >> 5) & 4;
+}
+
+function setf(a) {
+  fr= ~a & 64;
+  ff= a|= a<<8;
+  fa= 255 & (fb= a & -129 | (a&4)<<5);
+}
+
+<?
 echo 'g=[';
 b('o00', nop($cpc?1:4));                                    // 00 // NOP
 b('o01', ldrrim('b', 'c'));                                 // 01 // LD BC,nn

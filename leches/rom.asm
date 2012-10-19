@@ -5643,7 +5643,7 @@ L1201:  LD      ($5CB2),HL      ; set system variable RAMTOP to HL.
         LD      A,$38           ; the colour system is set to white paper,
                                 ; black ink, no flash or bright.
         LD      ($5C8D),A       ; set ATTR_P permanent colour attributes.
-        LD      ($5C8F),A       ; set ATTR_T temporary colour attributes.
+;        LD      ($5C8F),A       ; set ATTR_T temporary colour attributes.
         LD      ($5C48),A       ; set BORDCR the border colour/lower screen
                                 ; attributes.
 
@@ -5671,7 +5671,7 @@ L1201:  LD      ($5CB2),HL      ; set system variable RAMTOP to HL.
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
 
 L129D:  DEFB    $EF, $22, $22, $0D, $80; LOAD "" + Enter + $80
       ELSE
@@ -18889,7 +18889,7 @@ ULTR8:  IN      F,(C)
         CALL    L3403           ; salto a Raudo
 ULTR9:  AND     IXH             ; en caso de no verificar checksum me salto la rutina
         EXX                     ; ya se ha acabado la ultracarga (Raudo)
-        JR      Z,ULT11
+        JR      Z,ULT12
 ULT10:  LD      B,E
         LD      E,C
         LD      C,D
@@ -18902,8 +18902,8 @@ ULT11:  XOR     (HL)
         DJNZ    ULT11
         DEC     C
         JP      NZ,ULT11
-        PUSH    HL              ; ha ido bien
         XOR     E
+ULT12:  PUSH    HL              ; ha ido bien
         LD      H,B
         LD      L,E
         LD      D,B

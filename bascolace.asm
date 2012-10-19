@@ -5674,6 +5674,7 @@ L1201:  LD      ($5CB2),HL      ; set system variable RAMTOP to HL.
                                 ; an impossible line number - see RETURN.
                                 ; no significance in the number $3E. It has
                                 ; been traditional since the ZX80.
+
         DEC     HL              ; followed by empty byte (not important).
         LD      SP,HL           ; set up the machine stack pointer.
         DEC     HL              ;
