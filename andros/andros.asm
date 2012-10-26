@@ -39,9 +39,9 @@
         DEFINE  ELEM1   (IY-$1D)
 
       IF modo=0
-        DEFINE  START   $EB48+18+$D79
+        DEFINE  START   $EB48+18+$D6C
       ELSE
-        DEFINE  START   $EB48+18
+        DEFINE  START   $EB48+19;+3
       ENDIF
 
         ORG     $5B00           ; Lo de arriba no lo comento pq da problemas el ensamblador
@@ -169,8 +169,10 @@ LO02    ld      hl, ELEM        ; HL = ELEM
         jr      nc, LA02        ; Si no hay carry (ELEM<24) POSY=0 y salgo
         ld      ELEM, hl        ; Si lo hay actualizo ELEM=ELEM-24 y salgo
         ret
-LHAC    jp      PCHAR-93-8      ; Función CS+H (Ayuda), salta a un punto en función de PCHAR
-LGRA    jp      PCHAR-8         ; Función CS+9 o GRAPH (varias funciones)
+LHAC  IF modo != 0
+        jp      TLHA            ; Función CS+H (Ayuda)
+      ENDIF
+LGRA    jp      TLGR            ; Función CS+9 o GRAPH (varias funciones)
 LPN8    ld      a, POSXX        ; Una columna después (Como esta rutina es más larga la dejo para el final y la intercalo entre la zona de variables
         add     a, $0b          ; Voy a la columna que tenga a mi derecha
         cp      $21             ; Veo si partía de la columna más a la derecha
@@ -259,44 +261,52 @@ TABDE   defb    07H, 23H, 49H, 89H, 54H,0C2H, 85H, 61H  ; Estos bytes sirven par
         defb    0BH, 43H, 49H, 43H, 61H, 83H, 0BH, 0BH
         defb    0BH, 19H, 43H, 0BH, 43H, 0BH, 83H, 83H
         defb    83H, 0BH, 43H, 52H, 31H, 46H
-ROTLE   dec     a               ;  Esta rutina rota el caracter de la pantalla
-        ret     m               ; hacia la izquierda tantas veces como indique
-        ld      b, 7            ; el registro A, pudiendo ser 0 veces
+ROTLE   add     a, a
+        ret     z
+        add     2
+        cpl
+        ld      (ROTL2-1), a
+        ld      b, 8            ; el registro A, pudiendo ser 0 veces
         push    hl
-ROTL1   inc     h
+        jr      ROTL1
         rlc     (hl)
-        djnz    ROTL1
-        pop     hl
-        jr      ROTLE
+        rlc     (hl)
+        rlc     (hl)
+        rlc     (hl)
+        rlc     (hl)
+        rlc     (hl)
+        rlc     (hl)
+ROTL1   inc     h
+        djnz    ROTL2
+ROTL2   pop     hl
+        ret
 CHAR    defb    0,0,0,0,0,0,0   ; Aquí se guarda el carácter temporalmente (extraído de ROM) y operamos con él
-TRANS   push    af              ; Rutina un poco compleja, se trata de traspasar
-TRAN1   ld      de, CHAR        ; el contenido de CHAR hacia la pantalla por medio
-        rlc     c               ; de rotaciones, el número de rotaciones viene
-        push    af              ; indicado por el registro A, pero no transfiero
-        push    hl              ; todos los 8 bits del carácter, solo 5 de ellos
-        jr      c, TRAN3        ; y ésto vendrá indicado por el registro C
-        ld      b, 7
-TRAN2   inc     h              
-        ld      a, (de)  
-        inc     de        
-        rlca        
-        rl      (hl)        
-        djnz    TRAN2     
-TRAN3   ld      b, 7
-        ld      hl, CHAR
-TRAN4   rlc     (hl)
+TRANS   ld      de, CHAR        ; Rutina un poco compleja, se trata de traspasar
+        bit     7, c            ; el contenido de CHAR hacia la pantalla por medio
+        push    hl              ; de rotaciones, el número de rotaciones viene
+        ld      b, 7            ; indicado por el registro A, pero no transfiero
+        jr      nz, TRAN2       ; todos los 8 bits del carácter, solo 5 de ellos
+TRAN1   inc     h               ; y ésto vendrá indicado por el registro C
+        ex      de, hl
+        rlc     (hl)
         inc     l
-        djnz    TRAN4
-        pop     hl
-        pop     af
-        jr      c, TRAN1
-        pop     af
+        ex      de, hl
+        rl      (hl)
+        djnz    TRAN1
+        jr      TRAN4
+TRAN2   ex      de, hl
+TRAN3   rlc     (hl)
+        inc     l
+        djnz    TRAN3
+TRAN4   pop     hl
+        rlc     c
+        jr      c, TRANS
         dec     a
         jr      nz, TRANS
         ret
-TCHAR   push    hl              ; Rutina LENTA que escribe un carácter en pantalla
+PCHAR   push    hl              ; Rutina LENTA que escribe un carácter en pantalla
         sub     $20             ; Los caracteres < 32 no se usan
-        jp      z, PCHA6        ; Y con el 32 no hacemos nada (los espacios no se imprimen)
+        jr      z, PCHA7        ; Y con el 32 no hacemos nada (los espacios no se imprimen)
         ld      de, $3D01       ; Apunto al mapa de caracteres de ROM+1 (la primera línea del carácter es 0, no se imprime)
         ld      l, a            ; L = Código ASCII - 32
         ld      c, a            ; C = L
@@ -321,24 +331,24 @@ PCHA2   pop     hl              ; Recupero el HL antes guardado, que vale CA-32
         ld      c, $d0          ; Por defecto C vale 11010000 para los iconos (antes era 7 pero necesitaba un ret en el 2 byte)
         cp      $5e             ; Veo de nuevo si es letra o icono
         ld      a, TEMPP        ; En A obtengo el desplazamiento dentro del byte de pantalla por el que voy
-        jr      nc, PCH25       ; Si es icono salto directamente a PCH25
+        jr      nc, PCHA3       ; Si es icono salto directamente a PCHA3
         ld      de, TABDE       ; Si es carácter debo obtener la máscara para ver qué 3
         add     hl, de          ; columnas del carácter 8x7 descartaré para quedarme
         ld      c, (hl)         ; con un carácter 5x7
-        defb    $11             ; Forma optimizada (1 byte) para saltar a PCH27
-PCH25   cp      1               ; Parche para partir de un desplazamiento dentro del byte bueno
-        jr      nz, PCH27       ; La rutina rápida se basa en la secuencia 01234567 y ésta (lenta) en 05274163
+        defb    $11             ; Forma optimizada (1 byte) para saltar a PCHA4
+PCHA3   cp      1               ; Parche para partir de un desplazamiento dentro del byte bueno
+        jr      nz, PCHA4       ; La rutina rápida se basa en la secuencia 01234567 y ésta (lenta) en 05274163
         ld      a, 5            ; Como los iconos corresponden a las 3 primeras posiciones 012 debe transformarse en 052
         ld      TEMPP, a        ; Tan sencillo como cambiar un 1 por un 5
-PCH27   ld      hl, CORXX       ; HL apunta a pantalla (donde me toca escribir el carácter)
+PCHA4   ld      hl, CORXX       ; HL apunta a pantalla (donde me toca escribir el carácter)
         call    ROTLE           ; Primero roto el carácter de pantalla (circularmente)
         bit     2, TEMP         ; Veo si A vale más de 4 (caracter repartido en 2 bytes)
-        jr      nz, PCHA3       ; Si es mayor PCHA3 (para hacer 2 transferencias)
+        jr      nz, PCHA5       ; Si es mayor PCHA5 (para hacer 2 transferencias)
         ld      a, 5            ; Si es menor hago una sola transferencia de 5 bits por fila
         call    TRANS           ; y pongo A a 3 para rotar luego 3-TEMP veces el caracter en pantalla
         ld      a, 3
-        jr      PCHA4
-PCHA3   ld      a, 8            ; La primera transferencia es de 8-TEMP
+        jr      PCHA6
+PCHA5   ld      a, 8            ; La primera transferencia es de 8-TEMP
         sub     TEMP
         call    TRANS
         inc     l               ; Avanzo al siguiente carácter
@@ -346,15 +356,15 @@ PCHA3   ld      a, 8            ; La primera transferencia es de 8-TEMP
         sub     3
         call    TRANS
         ld      a, 11           ; Roto el carácter de pantalla 8-TEMP
-PCHA4   sub     TEMP            ; Lo último es una rotación (común para los dos casos)
+PCHA6   sub     TEMP            ; Lo último es una rotación (común para los dos casos)
         call    ROTLE
-PCHA6   ld      a, TEMPP        ; Solo me queda por actualizar TEMP sumándole 5 en módulo 8
+PCHA7   ld      a, TEMPP        ; Solo me queda por actualizar TEMP sumándole 5 en módulo 8
         add     a, 5
         cp      8
-        jr      c, PCHA7
+        jr      c, PCHA8
         sub     8
         inc     CORX            ; Si detecto un overflow (ej 5+5=10 mod 8=2) ir a la siguiente
-PCHA7   ld      TEMPP, a        ; celda de la pantalla (8x8)
+PCHA8   ld      TEMPP, a        ; celda de la pantalla (8x8)
         pop     hl
         ret
       ELSE
@@ -362,9 +372,9 @@ CHAR    INCLUDE charset.asm     ; Estos bytes codifican el mapa de caracteres 5x
 
 DOBLE   DEFW $F83F,$FE0F,$F07F,$FC1F    ; DOBLE es por si el caracter esta entre 2 celdas ;  el tercer byte de SIMPLE no se usa
 
-TCHAR   push    hl              ; Al igual que antes queremos conservar HL al acabar la rutina
+PCHAR   push    hl              ; Al igual que antes queremos conservar HL al acabar la rutina
         sub     $20             ; No necesitamos imprimir los primeros 32 caracteres ASCII
-        jp      z, PCHA6
+        jr      z, PCHA4
         ld      l, a            ; HL=CA-32
         ld      h, 0
         ld      d, h            ; DE=CA-32
@@ -386,7 +396,7 @@ TCHAR   push    hl              ; Al igual que antes queremos conservar HL al ac
         and     a               ; Reseteo carry
         rra                     ; Paso a carry el bit de menor peso
         ld      e, a            ; En E tendrá 00112344
-        jr      c, PCHA3        ; Los impares me indican el caso doble en PCHA3 (carácter entre 2 celdas)
+        jr      c, PCHA2        ; Los impares me indican el caso doble en PCHA2 (carácter entre 2 celdas)
         add     hl, de          ; Ahora hago HL = HL + E
         ld      d, SIMPL>>8     ; DE apunta a la máscara simple
         ld      a, (de)         ; Leemos máscara simple
@@ -395,7 +405,7 @@ TCHAR   push    hl              ; Al igual que antes queremos conservar HL al ac
         ld      d, a            ; En D la ponemos sin invertir
         ld      ix, CORXX       ; Leo puntero a memoria de video en IX
         ld      b, 7            ; En B pongo número de repeticiones del bucle
-PCHA2   inc     ixh             ; Incremento línea (me salto la primera línea)
+PCHA1   inc     ixh             ; Incremento línea (me salto la primera línea)
         ld      a, (hl)         ; Leo byte del carácter a escribir
         and     e               ; Aplico AND con la máscara invertida
         ld      c, a            ; Guardo en C el byte filtrado (con la máscara aplicada)
@@ -408,9 +418,9 @@ PCHA2   inc     ixh             ; Incremento línea (me salto la primera línea)
         inc     hl
         inc     hl
         inc     hl
-        djnz    PCHA2           ; Repito bucle 7 veces
-        jr      PCHA6           ; Salto a PCHA6, ya que lo siguiente es para caso doble
-PCHA3   add     hl, de          ; HL = HL + E
+        djnz    PCHA1           ; Repito bucle 7 veces
+        jr      PCHA4           ; Salto a PCHA4, ya que lo siguiente es para caso doble
+PCHA2   add     hl, de          ; HL = HL + E
         ld      a, DOBLE&255    ; Quiero que DE apunte a la máscara doble
         add     a, e            ; Pero en este caso hay offset y E debe multiplicarse por 2
         add     a, e            ; En total, estas 5 líneas
@@ -423,7 +433,7 @@ PCHA3   add     hl, de          ; HL = HL + E
         ex      de, hl          ; Me interesa que lo que apunte al carácter sea HL
         ld      ix, CORXX       ; IX apunta al puntero de la pantalla en memoria de vídeo
         ld      b, 7            ; Debo escribir 7 líneas (de 2 bytes cada una)
-PCHA5   inc     ixh             ; La primera línea me la salto, además debo incrementar una línea en cada paso del bucle
+PCHA3   inc     ixh             ; La primera línea me la salto, además debo incrementar una línea en cada paso del bucle
         ld      a, e            ; Leo máscara del primer byte sin invertir
         cpl                     ; Invierto mascara
         and     (hl)            ; En A tengo el byte del carácter ya enmascarado
@@ -445,8 +455,8 @@ PCHA5   inc     ixh             ; La primera línea me la salto, además debo in
         inc     hl
         inc     hl
         inc     hl
-        djnz    PCHA5           ; Repito bucle 7 veces
-PCHA6   ld      a, TEMPP        ; Incremento TEMP para contemplar el siguiente caso en el siguiente carácter a imprimir
+        djnz    PCHA3           ; Repito bucle 7 veces
+PCHA4   ld      a, TEMPP        ; Incremento TEMP para contemplar el siguiente caso en el siguiente carácter a imprimir
         inc     a
         and     7
         ld      TEMPP, a
@@ -524,8 +534,6 @@ TLGR    call    LE01            ; Función GRAPH para ejecutar en modo SNAPSHOT 
         set     7, d            ; Pongo el bit más significativo a 1, que indicará dicho modo al PIC
         jp      LE04            ; Salgo por LE04, enviando DE al PIC
       ENDIF
-
-PCHAR   jp      TCHAR           ; Salta a TCHAR (ya que la dirección es distinta según el caso)
 
 AINIC 
  ;         ORG     START+AINIC-PRINC
