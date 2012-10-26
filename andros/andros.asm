@@ -41,7 +41,7 @@
       IF modo=0
         DEFINE  START   $EB48+18+$D6C
       ELSE
-        DEFINE  START   $EB48+19;+3
+        DEFINE  START   $EB48+18 -20
       ENDIF
 
         ORG     $5B00           ; Lo de arriba no lo comento pq da problemas el ensamblador
@@ -374,7 +374,7 @@ DOBLE   DEFW $F83F,$FE0F,$F07F,$FC1F    ; DOBLE es por si el caracter esta entre
 
 PCHAR   push    hl              ; Al igual que antes queremos conservar HL al acabar la rutina
         sub     $20             ; No necesitamos imprimir los primeros 32 caracteres ASCII
-        jr      z, PCHA4
+        jr      z, TPCH4
         ld      l, a            ; HL=CA-32
         ld      h, 0
         ld      d, h            ; DE=CA-32
@@ -400,25 +400,30 @@ PCHAR   push    hl              ; Al igual que antes queremos conservar HL al ac
         add     hl, de          ; Ahora hago HL = HL + E
         ld      d, SIMPL>>8     ; DE apunta a la máscara simple
         ld      a, (de)         ; Leemos máscara simple
-        ld      e, a            ; En E la ponemos invertida
+        ld      (PCH12+1), a
         cpl                     ; Invertimos A
-        ld      d, a            ; En D la ponemos sin invertir
-        ld      ix, CORXX       ; Leo puntero a memoria de video en IX
+        ld      (PCH14+1), a
+        ld      de, CORXX       ; Leo puntero a memoria de video en IX
         ld      b, 7            ; En B pongo número de repeticiones del bucle
-PCHA1   inc     ixh             ; Incremento línea (me salto la primera línea)
+PCHA1   inc     d               ; Incremento línea (me salto la primera línea)
         ld      a, (hl)         ; Leo byte del carácter a escribir
-        and     e               ; Aplico AND con la máscara invertida
+PCH12   and     0               ; Aplico AND con la máscara invertida
         ld      c, a            ; Guardo en C el byte filtrado (con la máscara aplicada)
-        ld      a, (ix)         ; Leo byte de memoria de vídeo
-        and     d               ; Le aplico la máscara sin invertir
+        ld      a, (de)         ; Leo byte de memoria de vídeo
+PCH14   and     0               ; Le aplico la máscara sin invertir
         xor     c               ; Escribo el byte filtrado proveniente del carácter
-        ld      (ix), a         ; Actualizo el byte de la memoria de vídeo
-        inc     hl              ; HL = HL + 5
-        inc     hl
-        inc     hl
-        inc     hl
-        inc     hl
+        ld      (de), a         ; Actualizo el byte de la memoria de vídeo
+        ld      a, l            ; HL = HL + 5
+        add     a, 5
+        ld      l, a
+        jr      c, PCH18
         djnz    PCHA1           ; Repito bucle 7 veces
+TPCH4   jr      PCHA4           ; Salto a PCHA4, ya que lo siguiente es para caso doble
+PCH18   inc     h
+        djnz    PCHA1
+        jr      PCHA4
+PCH19   inc     h
+        djnz    PCHA3           ; Repito bucle 7 veces
         jr      PCHA4           ; Salto a PCHA4, ya que lo siguiente es para caso doble
 PCHA2   add     hl, de          ; HL = HL + E
         ld      a, DOBLE&255    ; Quiero que DE apunte a la máscara doble
@@ -426,35 +431,39 @@ PCHA2   add     hl, de          ; HL = HL + E
         add     a, e            ; En total, estas 5 líneas
         ld      e, a            ; realizan la siguiente funcion 
         ld      d, DOBLE>>8     ; DE = OFFSET DOBLE + 2*E
-        ex      de, hl          ; Como LD C,(DE) y LD E,(DE) no existen, hago este intercambio
-        ld      c, (hl)         ; Leo máscara del 2º byte sin invertir en C
-        inc     l               ; Me voy al segundo byte de la máscara
-        ld      l, (hl)         ; Leo máscara del 1º byte sin invertir en L, que luego será E
-        ex      de, hl          ; Me interesa que lo que apunte al carácter sea HL
-        ld      ix, CORXX       ; IX apunta al puntero de la pantalla en memoria de vídeo
+        ld      a, (de)         ; Leo máscara del 2º byte sin invertir en C
+        ld      (PCH34+1), a
+        cpl
+        ld      (PCH33+1), a
+        inc     e               ; Me voy al segundo byte de la máscara
+        ld      a, (de)         ; Leo máscara del 2º byte sin invertir en C
+        ld      (PCH32+1), a
+        cpl
+        ld      (PCH31+1), a
+        ld      de, CORXX       ; IX apunta al puntero de la pantalla en memoria de vídeo
         ld      b, 7            ; Debo escribir 7 líneas (de 2 bytes cada una)
-PCHA3   inc     ixh             ; La primera línea me la salto, además debo incrementar una línea en cada paso del bucle
-        ld      a, e            ; Leo máscara del primer byte sin invertir
-        cpl                     ; Invierto mascara
-        and     (hl)            ; En A tengo el byte del carácter ya enmascarado
+PCHA3   inc     d               ; La primera línea me la salto, además debo incrementar una línea en cada paso del bucle
+        ld      a, (hl)
+PCH31   and     0
         inc     hl              ; Apunto al 2º byte
-        ld      d, a            ; Guardo el byte enmascarado del carácter en el registro D
-        ld      a, (ix)         ; Leo el primer byte de la pantalla
-        and     e               ; Enmasacaro el byte de la pantalla con la máscara sin invertir
-        xor     d               ; Escribo encima el byte enmascarado proveniente del carácter
-        ld      (ix), a         ; Escribo en memoria el byte ya manipulado (primer byte)
-        ld      a, c            ; Hago lo mismo para el segundo byte, leo máscara sin invertir
-        cpl                     ; La invierto
-        and     (hl)            ; Y obtengo el byte proveniente del caracter enmascarado
-        ld      d, a            ; Guardo este resultado en D (es el unico registro que me queda libre en todo el bucle)
-        ld      a, (ix+1)       ; Leo el segundo byte de la pantalla
-        and     c               ; Enmascaro el byte con máscara sin invertir
-        xor     d               ; Escribo encima (también se puede hacer con OR o con ADD)
-        ld      (ix+1), a       ; Actualizo byte en pantalla
-        inc     hl              ; HL = HL + 4 (ya le he sumado uno antes)
-        inc     hl
-        inc     hl
-        inc     hl
+        ld      c, a            ; Guardo el byte enmascarado del carácter en el registro D
+        ld      a, (de)         ; Leo el primer byte de la pantalla
+PCH32   and     0               ; Enmasacaro el byte de la pantalla con la máscara sin invertir
+        xor     c               ; Escribo encima el byte enmascarado proveniente del carácter
+        ld      (de), a         ; Escribo en memoria el byte ya manipulado (primer byte)
+        ld      a, (hl)         ; Y obtengo el byte proveniente del caracter enmascarado
+PCH33   and     0
+        ld      c, a            ; Guardo este resultado en D (es el unico registro que me queda libre en todo el bucle)
+        inc     e
+        ld      a, (de)         ; Leo el segundo byte de la pantalla
+PCH34   and     0               ; Enmascaro el byte con máscara sin invertir
+        xor     c               ; Escribo encima (también se puede hacer con OR o con ADD)
+        ld      (de), a         ; Actualizo byte en pantalla
+        dec     e
+        ld      a, l            ; HL = HL + 4
+        add     a, 4
+        ld      l, a
+        jr      c, PCH19
         djnz    PCHA3           ; Repito bucle 7 veces
 PCHA4   ld      a, TEMPP        ; Incremento TEMP para contemplar el siguiente caso en el siguiente carácter a imprimir
         inc     a
