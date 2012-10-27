@@ -1,6 +1,6 @@
 ;        DEFINE  enram
         DEFINE  copymsg
-;        DEFINE  resetplay
+        DEFINE  resetplay
 
 ;        DEFINE  plus
 ;        DEFINE  spanish
@@ -17082,50 +17082,62 @@ L3302:  PUSH    DE              ; save
         DEFB    $EC, $EC, $7F   ; 13
         DEFB    $EC, $EC, $7F   ; 16
         DEFB    $EC, $EC, $7F   ; 19
-        DEFB    $EC, $ED, $7F   ; 1C
-        DEFB    $EC, $ED, $7F   ; 1F
-        DEFB    $EC, $ED, $7F   ; 22
-        DEFB    $EC, $ED, $7F   ; 25
+        DEFB    $EC, $EC, $7F   ; 1C
+        DEFB    $EC, $EC, $7F   ; 1F
+        DEFB    $EC, $EC, $7F   ; 22
+        DEFB    $EC, $EC, $7F   ; 25
         DEFB    $ED, $ED, $7F   ; 28
-        DEFB    $ED, $EE, $7F   ; 2B
-        DEFB    $ED, $EE, $7F   ; 2E
-        DEFB    $ED, $EE, $7F   ; 31
-        DEFB    $ED, $EE, $7F   ; 34
-        DEFB    $ED, $EE, $7F   ; 37
-        DEFB    $ED, $EF, $7F   ; 3A
-        DEFB    $ED, $EF, $7F   ; 3D
-        DEFB    $ED, $EF, $7F   ; 40
-        DEFB    $ED, $EF, $7F   ; 43 --
-        DEFB    $EE, $EF, $7F   ; 46 --
-        DEFB    $EE, $EC, $7F   ; 49
-        DEFB    $EE, $EC, $7F   ; 4C
-        DEFB    $EE, $EC, $7F   ; 4F
-        DEFB    $EE, $EC, $7F   ; 52
-        DEFB    $EE, $ED, $7F   ; 55
-        DEFB    $EE, $ED, $7F   ; 58
-        DEFB    $EE, $ED, $7F   ; 5B
-        DEFB    $EE, $ED, $7F   ; 5E
-        DEFB    $EE, $EE, $7F   ; 61
-        DEFB    $EF, $EE, $7F   ; 64
-        DEFB    $EF, $EE, $7F   ; 67
-        DEFB    $EF, $EE, $7F   ; 6A
-        DEFB    $EF, $EE, $7F   ; 6D
+        DEFB    $ED, $ED, $7F   ; 2B
+        DEFB    $ED, $ED, $7F   ; 2E
+        DEFB    $ED, $ED, $7F   ; 31
+        DEFB    $ED, $ED, $7F   ; 34
+        DEFB    $ED, $ED, $7F   ; 37
+        DEFB    $ED, $ED, $7F   ; 3A
+        DEFB    $ED, $ED, $7F   ; 3D
+        DEFB    $ED, $ED, $7F   ; 40
+        DEFB    $ED, $EE, $7F   ; 43 --
+        DEFB    $EE, $EE, $7F   ; 46 --
+        DEFB    $EE, $EE, $7F   ; 49
+        DEFB    $EE, $EE, $7F   ; 4C
+        DEFB    $EE, $EE, $7F   ; 4F
+        DEFB    $EE, $EE, $7F   ; 52
+        DEFB    $EE, $EE, $7F   ; 55
+        DEFB    $EE, $EE, $7F   ; 58
+        DEFB    $EE, $EE, $7F   ; 5B
+        DEFB    $EE, $EF, $7F   ; 5E
+        DEFB    $EE, $EF, $7F   ; 61
+        DEFB    $EF, $EF, $7F   ; 64
+        DEFB    $EF, $EF, $7F   ; 67
+        DEFB    $EF, $EF, $7F   ; 6A
+        DEFB    $EF, $EF, $7F   ; 6D
         DEFB    $EF, $EF, $7F   ; 70
         DEFB    $EF, $EF, $7F   ; 73
         DEFB    $EF, $EF, $7F   ; 76
-        DEFB    $EF, $EF, $7F   ; 79
-        DEFB    $EF, $EF, $7F   ; 7C
+        DEFB    $EF, $7F, $7F   ; 79
+        DEFB    $EF, $7F, $7F   ; 7C
         DEFB    $EF             ; 7F
+        DEFB    $EC, $EC, $7F   ; 80
+        DEFB    $EC, $EC, $7F   ; 83
+        DEFB    $EC, $EC, $7F   ; 86
+        DEFB    $EC, $EC, $7F   ; 89
+        DEFB    $EC, $EC, $7F   ; 8C
+        DEFB    $ED, $ED, $7F   ; 8F
+        DEFB    $ED, $ED, $7F   ; 92
+        DEFB    $ED, $ED, $7F   ; 95
+        DEFB    $ED, $ED, $7F   ; 98
+        DEFB    $ED, $EE, $7F   ; 9B --
+        DEFB    $EE, $EE, $7F   ; 9E
+        DEFB    $EE, $EE, $7F   ; A1
+        DEFB    $EE, $EE, $7F   ; A4
+        DEFB    $EE, $EE, $7F   ; A7
+        DEFB    $EE, $EF, $7F   ; AA
+        DEFB    $EF, $EF, $7F   ; AD
+        DEFB    $EF, $EF, $7F   ; B0
+        DEFB    $EF, $EF, $7F   ; B3
+        DEFB    $EF, $EF, $7F   ; B6
+        DEFB    $EF, $7F, $7F   ; B9
+        DEFB    $7F, $7F, $7F   ; BC
 
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF; 63 bytes
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        
 L33BF:  IN      L,(C)
         JP      (HL)
 
@@ -17139,8 +17151,8 @@ L33C5:  DEC     D
         JR      L33C5
 
 ; Tabla
-L33D0:  DEFB    $7B, $6F, $60, $51, $00, $71, $62, $53; 44khz
-        DEFB    $3A, $2B, $1F, $10, $06, $77, $6B, $5C; 48khz
+L33D0:  DEFB    $ED, $DE, $D2, $C3, $00, $71, $62, $53;
+        DEFB    $F1, $E5, $D6, $C7, $04, $78, $69, $5D;
 
 ; ------------------------
 ; THE 'TABLE OF CONSTANTS'
@@ -18610,49 +18622,61 @@ L36FF:  INC     H
         DEFB    $EC, $EC, $7F   ; 13
         DEFB    $EC, $EC, $7F   ; 16
         DEFB    $EC, $EC, $7F   ; 19
-        DEFB    $EC, $ED, $7F   ; 1C
-        DEFB    $EC, $ED, $7F   ; 1F
-        DEFB    $EC, $ED, $7F   ; 22
-        DEFB    $EC, $ED, $7F   ; 25
+        DEFB    $EC, $EC, $7F   ; 1C
+        DEFB    $EC, $EC, $7F   ; 1F
+        DEFB    $EC, $EC, $7F   ; 22
+        DEFB    $EC, $EC, $7F   ; 25
         DEFB    $ED, $ED, $7F   ; 28
-        DEFB    $ED, $EE, $7F   ; 2B
-        DEFB    $ED, $EE, $7F   ; 2E
-        DEFB    $ED, $EE, $7F   ; 31
-        DEFB    $ED, $EE, $7F   ; 34
-        DEFB    $ED, $EE, $7F   ; 37
-        DEFB    $ED, $EF, $7F   ; 3A
-        DEFB    $ED, $EF, $7F   ; 3D
-        DEFB    $ED, $EF, $7F   ; 40
-        DEFB    $ED, $EF, $7F   ; 43 --
-        DEFB    $EE, $EF, $7F   ; 46 --
-        DEFB    $EE, $EC, $7F   ; 49
-        DEFB    $EE, $EC, $7F   ; 4C
-        DEFB    $EE, $EC, $7F   ; 4F
-        DEFB    $EE, $EC, $7F   ; 52
-        DEFB    $EE, $ED, $7F   ; 55
-        DEFB    $EE, $ED, $7F   ; 58
-        DEFB    $EE, $ED, $7F   ; 5B
-        DEFB    $EE, $ED, $7F   ; 5E
-        DEFB    $EE, $EE, $7F   ; 61
-        DEFB    $EF, $EE, $7F   ; 64
-        DEFB    $EF, $EE, $7F   ; 67
-        DEFB    $EF, $EE, $7F   ; 6A
-        DEFB    $EF, $EE, $7F   ; 6D
+        DEFB    $ED, $ED, $7F   ; 2B
+        DEFB    $ED, $ED, $7F   ; 2E
+        DEFB    $ED, $ED, $7F   ; 31
+        DEFB    $ED, $ED, $7F   ; 34
+        DEFB    $ED, $ED, $7F   ; 37
+        DEFB    $ED, $ED, $7F   ; 3A
+        DEFB    $ED, $ED, $7F   ; 3D
+        DEFB    $ED, $ED, $7F   ; 40
+        DEFB    $ED, $EE, $7F   ; 43 --
+        DEFB    $EE, $EE, $7F   ; 46 --
+        DEFB    $EE, $EE, $7F   ; 49
+        DEFB    $EE, $EE, $7F   ; 4C
+        DEFB    $EE, $EE, $7F   ; 4F
+        DEFB    $EE, $EE, $7F   ; 52
+        DEFB    $EE, $EE, $7F   ; 55
+        DEFB    $EE, $EE, $7F   ; 58
+        DEFB    $EE, $EE, $7F   ; 5B
+        DEFB    $EE, $EF, $7F   ; 5E
+        DEFB    $EE, $EF, $7F   ; 61
+        DEFB    $EF, $EF, $7F   ; 64
+        DEFB    $EF, $EF, $7F   ; 67
+        DEFB    $EF, $EF, $7F   ; 6A
+        DEFB    $EF, $EF, $7F   ; 6D
         DEFB    $EF, $EF, $7F   ; 70
         DEFB    $EF, $EF, $7F   ; 73
         DEFB    $EF, $EF, $7F   ; 76
-        DEFB    $EF, $EF, $7F   ; 79
-        DEFB    $EF, $EF, $7F   ; 7C
+        DEFB    $EF, $7F, $7F   ; 79
+        DEFB    $EF, $7F, $7F   ; 7C
         DEFB    $EF             ; 7F
-
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF; 63 bytes
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $EC, $EC, $7F   ; 80
+        DEFB    $EC, $EC, $7F   ; 83
+        DEFB    $EC, $EC, $7F   ; 86
+        DEFB    $EC, $EC, $7F   ; 89
+        DEFB    $EC, $EC, $7F   ; 8C
+        DEFB    $ED, $ED, $7F   ; 8F
+        DEFB    $ED, $ED, $7F   ; 92
+        DEFB    $ED, $ED, $7F   ; 95
+        DEFB    $ED, $ED, $7F   ; 98
+        DEFB    $ED, $EE, $7F   ; 9B --
+        DEFB    $EE, $EE, $7F   ; 9E
+        DEFB    $EE, $EE, $7F   ; A1
+        DEFB    $EE, $EE, $7F   ; A4
+        DEFB    $EE, $EE, $7F   ; A7
+        DEFB    $EE, $EF, $7F   ; AA
+        DEFB    $EF, $EF, $7F   ; AD
+        DEFB    $EF, $EF, $7F   ; B0
+        DEFB    $EF, $EF, $7F   ; B3
+        DEFB    $EF, $EF, $7F   ; B6
+        DEFB    $EF, $7F, $7F   ; B9
+        DEFB    $7F, $7F, $7F   ; BC
 
 L37BF:  LD      A,R
         LD      L,A
