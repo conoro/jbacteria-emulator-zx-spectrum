@@ -382,8 +382,9 @@ function handleFileSelect(ev) {
         d_= o.charCodeAt(j++);
         c_= o.charCodeAt(j++);
         b_= o.charCodeAt(j++);
-        setf_(o.charCodeAt(j++));
-        a_= o.charCodeAt(j++);
+        setf(o.charCodeAt(j++));
+        a= o.charCodeAt(j++);
+        o08();
         l= o.charCodeAt(j++);
         h= o.charCodeAt(j++);
         e= o.charCodeAt(j++);
@@ -744,7 +745,8 @@ function loadblock() {
       ; j++ )
     wb(xl | xh << 8, game.charCodeAt(tapep++)),
     g[0x123]();
-  setf_(0x6d);
+  setf(0x6d);
+  o08();
   a= d= e= 0;
   pc= 0x5e0;                           // exit address
   tapep++;

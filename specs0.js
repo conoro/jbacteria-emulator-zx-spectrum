@@ -337,4 +337,8 @@ function wp(addr, val) {                // write port, only border color emulati
         vm[t]= -1;
     }
   }
+  else if( (addr&0xff) == 0x3f )
+    console.log( '3f', val );
+  else if( (addr&0xff) == 0x1f )
+    console.log( '1f', val );
 }
