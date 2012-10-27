@@ -1,11 +1,18 @@
+;        DEFINE  enram
+        DEFINE  copymsg
+        DEFINE  resetplay
+
+;        DEFINE  plus
+;        DEFINE  spanish
+
         OUTPUT  48.rom
- 
+
 ;************************************************************************
 ;** An Assembly File Listing to generate a 16K ROM for the ZX Spectrum **
 ;************************************************************************
 
 ; -------------------------
-; Last updated: 29-FEB-2012
+; Last updated: 05-FEB-2012
 ; -------------------------
 
 
@@ -32,8 +39,13 @@
 ;; START
 L0000:  DI                      ; Disable Interrupts.
         XOR     A               ; Signal coming from START.
+      IFDEF resetplay
+        LD      HL,$FFFF        ; Set pointer to top of possible physical RAM.
+        JP      L11C8           ; Jump forward to common code at START-NEW.
+      ELSE
         LD      DE,$FFFF        ; Set pointer to top of possible physical RAM.
         JP      L11CB           ; Jump forward to common code at START-NEW.
+      ENDIF
 
 ; -------------------
 ; THE 'ERROR' RESTART
@@ -64,7 +76,15 @@ L0010:  JP      L15F2           ; Jump forward to continue at PRINT-A-2.
 
 ; ---
 
+    IFDEF plus
+      IFDEF spanish
+        DEFB    $FF, $FC, $FF   ; Five unused locations.
+      ELSE
+        DEFB    $A7, $FF, $FF   ; Five unused locations.
+      ENDIF
+    ELSE
         DEFB    $FF, $FF, $FF   ; Five unused locations.
+    ENDIF
         DEFB    $FF, $FF        ;
 
 ; -------------------------------
@@ -113,7 +133,7 @@ L0020:  CALL    L0074           ; routine CH-ADD+1 fetches the next immediate
 ;   It is used on 77 occasions.
 
 ;; FP-CALC
-L0028:  JP      L335B           ; jump forward to the CALCULATE routine.
+L0028:  JP      L340D           ; jump forward to the CALCULATE routine.
 
 ; ---
 
@@ -204,12 +224,6 @@ L0055:  LD      (IY+$00),L      ; Store it in the system variable ERR_NR.
                                 ; variables area and then indirectly to MAIN-4, 
                                 ; etc.
 
-; ---
-
-        DEFB    $FF, $FF, $FF   ; Unused locations
-        DEFB    $FF, $FF, $FF   ; before the fixed-position
-        DEFB    $FF             ; NMI routine.
-
 ; ------------------------------------
 ; THE 'NON-MASKABLE INTERRUPT' ROUTINE
 ; ------------------------------------
@@ -239,6 +253,20 @@ L0055:  LD      (IY+$00),L      ; Store it in the system variable ERR_NR.
 ;   placing two zeros in the NMIADD system variable.
 
 ;; RESET
+      IFDEF enram
+L005F:  LDDR
+L0061:  LD      SP,$FF56
+        LD      A,$03
+L0066:  DJNZ    L0061
+        NOP
+        LD      BC,$1FFD
+        OUT     (C),A
+        LD      DE,$4000
+        JP      L04AA
+      ELSE
+L005F:  DEFB    $FF, $FF, $FF   ; Unused locations
+        DEFB    $FF, $FF, $FF   ; before the fixed-position
+        DEFB    $FF             ; NMI routine.
 L0066:  PUSH    AF              ; save the
         PUSH    HL              ; registers.
         LD      HL,($5CB0)      ; fetch the system variable NMIADD.
@@ -253,6 +281,7 @@ L0066:  PUSH    AF              ; save the
 L0070:  POP     HL              ; restore the
         POP     AF              ; registers.
         RETN                    ; return to previous interrupt state.
+      ENDIF
 
 ; ---------------------------
 ; THE 'CH ADD + 1' SUBROUTINE
@@ -271,8 +300,7 @@ L0077:  INC     HL              ; increase the character address by one.
 
 ;; TEMP-PTR2
 L0078:  LD      ($5C5D),HL      ; update CH_ADD with character address.
-
-X007B:  LD      A,(HL)          ; load character to A from HL.
+        LD      A,(HL)          ; load character to A from HL.
         RET                     ; and return.
 
 ; --------------------------
@@ -1343,9 +1371,9 @@ L0427:  INC     B               ; increment octave
         ADD     A,$0C           ; A = # semitones above C (0-11)
         PUSH    BC              ; B = octave displacement from middle C, 2's complement: -5<=B<=10
         LD      HL,L046E        ; Address: semi-tone
-        CALL    L3406           ; routine LOC-MEM
+        CALL    L36A7           ; routine LOC-MEM
                                 ;   HL = 5*A + $046E
-        CALL    L33B4           ; routine STACK-NUM
+        CALL    L36B3           ; routine STACK-NUM
                                 ;   read FP value (freq) from semitone table (HL) and push onto calc stack
 
         RST     28H             ;; FP-CALC
@@ -1458,6 +1486,21 @@ L046E:  DEFB    $89, $02, $D0, $12, $86;  261.625565290         C
 ;   cassette handling routines in this ROM.
 
 ;; zx81-name
+
+      IFDEF enram
+L04AA:  LD      IY,$5C3A
+        IM      1
+        LD      HL,$C000
+        LD      B,D
+        LD      C,E
+        LDIR
+        LD      BC,$1FFD
+        INC     A
+        INC     A
+        OUT     (C),A
+        EI
+        JP      L1300
+      ELSE
 L04AA:  CALL    L24FB           ; routine SCANNING to evaluate expression.
         LD      A,($5C3B)       ; fetch system variable FLAGS.
         ADD     A,A             ; test bit 7 - syntax, bit 6 - result type.
@@ -1479,6 +1522,7 @@ L04AA:  CALL    L24FB           ; routine SCANNING to evaluate expression.
                                 ; and also clear carry.
         SET     7,(HL)          ; invert it.
         RET                     ; return.
+      ENDIF
 
 ; =========================================
 ;
@@ -1752,7 +1796,11 @@ L0556:  INC     D               ; reset the zero flag without disturbing carry.
         IN      A,($FE)         ; read the ear state - bit 6.
         RRA                     ; rotate to bit 5.
         AND     $20             ; isolate this bit.
+      IFDEF enram
+        CALL    L3C07
+      ELSE
         CALL    ULTRA
+      ENDIF
         CP      A               ; set the zero flag.
 
 ; 
@@ -1786,7 +1834,11 @@ L0574:  DJNZ    L0574           ; self loop to LD-WAIT (for 256 times)
                                 ; if no edges at all.
 
 ;; LD-LEADER
-L0580:  LD      B,$9C           ; set timing value.
+L0580:IFDEF enram
+        LD      B,$A4           ; two edges must be spaced apart.
+      ELSE
+        LD      B,$9C           ; two edges must be spaced apart.
+      ENDIF
         CALL    L05E3           ; routine LD-EDGE-2
         JR      NC,L056B        ; back to LD-BREAK if time-out
 
@@ -1802,7 +1854,11 @@ L0580:  LD      B,$9C           ; set timing value.
 ;   Now test every edge looking for the terminal sync signal.
 
 ;; LD-SYNC
-L058F:  LD      B,$C9           ; initial timing value in B.
+L058F:IFDEF enram
+        LD      B,$CD           ; two edges must be spaced apart.
+      ELSE
+        LD      B,$C9           ; two edges must be spaced apart.
+      ENDIF
         CALL    L05E7           ; routine LD-EDGE-1
         JR      NC,L056B        ; back to LD-BREAK with time-out.
 
@@ -1826,7 +1882,11 @@ L058F:  LD      B,$C9           ; initial timing value in B.
         LD      C,A             ; store the new long-term byte.
 
         LD      H,$00           ; set up parity byte as zero.
-        LD      B,$B0           ; timing.
+      IFDEF enram
+        LD      B,$B8           ; two edges must be spaced apart.
+      ELSE
+        LD      B,$B0           ; two edges must be spaced apart.
+      ENDIF
         JR      L05C8           ; forward to LD-MARKER 
                                 ; the loop mid entry point with the alternate 
                                 ; zero flag reset to indicate first byte 
@@ -1878,7 +1938,11 @@ L05C2:  INC     IX              ; increment byte pointer.
 ;; LD-DEC
 L05C4:  DEC     DE              ; decrement length.
         EX      AF,AF'          ; store the flags.
+      IFDEF enram
+        LD      B,$BA           ; timing.
+      ELSE
         LD      B,$B2           ; timing.
+      ENDIF
 
 ;   when starting to read 8 bits the receiving byte is marked with bit at right.
 ;   when this is rotated out again then 8 bits have been read.
@@ -1898,7 +1962,11 @@ L05CA:  CALL    L05E3           ; routine LD-EDGE-2 increments B relative to
 
         RL      L               ; rotate the carry bit into L.
 
+      IFDEF enram
+        LD      B,$B8           ; reset the B timer byte.
+      ELSE
         LD      B,$B0           ; reset the B timer byte.
+      ENDIF
         JP      NC,L05CA        ; JUMP back to LD-8-BITS
 
 ;   when carry set then marker bit has been passed out and byte is complete.
@@ -2698,7 +2766,7 @@ L08B6:  LD      C,(IX+$0B)      ; fetch length
         LD      A,$FF           ; signal data not a header.
         CALL    L0802           ; routine LD-BLOCK loads to workspace.
         POP     HL              ; restore first location in workspace to HL.
-X08CE   LD      DE,($5C53)      ; set DE from system variable PROG.
+        LD      DE,($5C53)      ; set DE from system variable PROG.
 
 ;   now enter a loop to merge the data block in workspace with the program and 
 ;   variables. 
@@ -2977,8 +3045,29 @@ L0991:  HALT                    ; wait for interrupt
 ;   Starts with normal initial step-over byte.
 
 ;; tape-msgs
+    IFDEF spanish
 L09A1:  DEFB    $80
+        DEFM    "PREPARE LA CINTA Y PULSE ENTER"
+L09C0:  DEFB    '.'+$80
+        DEFB    $0D
+        DEFM    "PROGRAMA:"
+        DEFB    ' '+$80
+        DEFB    $0D
+        DEFM    "MATRIZ NUM.:"
+        DEFB    ' '+$80
+        DEFB    $0D
+        DEFM    "MATRIZ LITERAL:"
+        DEFB    ' '+$80
+        DEFB    $0D
+        DEFM    "BYTES: "
+        DEFB    ' '+$80
+    ELSE
+L09A1:  DEFB    $80
+      IFDEF plus
+        DEFM    "Press REC & PLAY, then any key"
+      ELSE
         DEFM    "Start tape, then press any key"
+      ENDIF
 L09C0:  DEFB    '.'+$80
         DEFB    $0D
         DEFM    "Program:"
@@ -2992,7 +3081,7 @@ L09C0:  DEFB    '.'+$80
         DEFB    $0D
         DEFM    "Bytes:"
         DEFB    ' '+$80
-
+    ENDIF
 
 ;**************************************************
 ;** Part 5. SCREEN AND PRINTER HANDLING ROUTINES **
@@ -3888,8 +3977,13 @@ L0CF0:  LD      (DE),A          ; transfer
 
 ;; scrl-mssg
 L0CF8:  DEFB    $80             ; initial step-over byte.
+      IFDEF spanish
+        DEFM    "]MAS? "
+        DEFB    ' '+$80
+      ELSE
         DEFM    "scroll"
         DEFB    '?'+$80
+      ENDIF
 
 ;; REPORT-D
 L0D00:  RST     08H             ; ERROR-1
@@ -4650,9 +4744,7 @@ L0F6C:  CALL    L15D4           ; routine WAIT-KEY for control.
 
 ;; ADD-CHAR
 L0F81:  RES     0,(IY+$07)      ; set MODE to 'L'
-
-X0F85:  LD      HL,($5C5B)      ; fetch address of keyboard cursor from K_CUR
-
+        LD      HL,($5C5B)      ; fetch address of keyboard cursor from K_CUR
         CALL    L1652           ; routine ONE-SPACE creates one space.
 
 ; either a continuation of above or from ED-CONTR with ED-LOOP on stack.
@@ -5385,6 +5477,204 @@ L11A7:  LD      A,(HL)          ; fetch character
 ;   available to store 3 persistent 16-bit system variables.
 
 ;; NEW
+      IFDEF resetplay
+L11B7:  DI                      ; Disable Interrupts - machine stack will be
+                                ; cleared.
+        LD      HL,($5CB2)      ; Fetch RAMTOP as top value.
+        EXX                     ; Switch in alternate set.
+        LD      BC,($5CB4)      ; Fetch P-RAMT differs on 16K/48K machines.
+        LD      DE,($5C38)      ; Fetch RASP/PIP.
+        LD      HL,($5C7B)      ; Fetch UDG    differs on 16K/48K machines.
+        EXX                     ; Switch back to main set and continue into...
+
+; ----------------------
+; THE 'START-NEW' BRANCH     
+; ----------------------
+;   This branch is taken from above and from RST 00h.
+;   The common code tests RAM and sets it to zero re-initializing all the 
+;   non-zero system variables and channel information.  The A register flags 
+;   if coming from START or NEW.
+
+;; START-NEW
+L11C8:  EX      AF,AF'          ; Save the flag to control later branching.
+
+        LD      A,$3F           ; Select a white border
+        OUT     ($FE),A         ; and set it now by writing to a port.
+
+        LD      I,A             ; Set the I register - this remains constant
+                                ; and can't be in the range $40 - $7F as 'snow'
+                                ; appears on the screen.
+
+; -----------------------
+; THE 'RAM CHECK' SECTION
+; -----------------------
+;   Typically, a Spectrum will have 16K or 48K of RAM and this code will test
+;   it all till it finds an unpopulated location or, less likely, a faulty 
+;   location.  Usually it stops when it reaches the top $FFFF, or in the case 
+;   of NEW the supplied top value.  The entire screen turns black with 
+;   sometimes red stripes on black paper just visible.
+
+;; ram-check
+;; RAM-FILL
+L11CF:  LD      (HL),$01        ; Load memory with $01 - blue ink on black paper.
+        DEC     HL              ; Decrement memory address.
+        CP      H               ; Have we reached ROM - $3F ?
+        JR      NZ,L11CF        ; Back to RAM-FILL if not.
+
+;; RAM-READ
+L11D5:  INC     HL              ; increment for next iteration.
+
+        DEC     (HL)            ; decrement to zero.
+        JR      Z,L11D5         ; back to RAM-READ if zero flag was set.
+
+;; RAM-DONE
+        DEC     HL              ; step back to last valid location.
+        LD      B,(HL)          ; B=0
+        EXX                     ; regardless of state, set up possibly
+                                ; stored system variables in case from NEW.
+        LD      ($5CB4),BC      ; insert P-RAMT.
+        LD      ($5C38),DE      ; insert RASP/PIP.
+        LD      ($5C7B),HL      ; insert UDG.
+        EXX                     ; switch in main set.
+        EX      AF,AF'          ; now test if we arrived here from NEW.
+        LD      DE,$3EAF        ; address of last byte of 'U' bitmap in ROM.
+        JR      NZ,L1201        ; forward to RAM-SET if we did.
+
+;   This section applies to START only.
+
+        LD      ($5CB4),HL      ; set P-RAMT to the highest working RAM
+                                ; address.
+        LD      C,$A7           ; there are 21 user defined graphics.
+        EX      DE,HL           ; switch pointers and make the UDGs a
+        LDDR                    ; copy of the standard characters A - U.
+        EX      DE,HL           ; switch the pointer to HL.
+
+        LD      ($5C7B),HL      ; make UDG system variable address the first
+                                ; bitmap.
+        DEC     HL              ; point at RAMTOP again.
+
+        LD      C,$40           ; set the values of
+        LD      ($5C38),BC      ; the PIP and RASP system variables.
+
+;   The NEW command path rejoins here.
+
+;; RAM-SET
+L1201:  LD      ($5CB2),HL      ; set system variable RAMTOP to HL.
+
+;   
+;   Note. this entry point is a disabled Warm Restart that was almost certainly
+;   once pointed to by the System Variable NMIADD.  It would be essential that
+;   any NMI Handler would perform the tasks from here to the EI instruction 
+;   below.
+
+;; NMI_VECT
+        LD      (HL),D          ; top of user ram holds GOSUB end marker
+                                ; an impossible line number - see RETURN.
+                                ; no significance in the number $3E. It has
+                                ; been traditional since the ZX80.
+
+        DEC     HL              ; followed by empty byte (not important).
+        LD      SP,HL           ; set up the machine stack pointer.
+        DEC     HL              ;
+        DEC     HL              ;
+        LD      ($5C3D),HL      ; ERR_SP is where the error pointer is
+                                ; at moment empty - will take address MAIN-4
+                                ; at the call preceding that address,
+                                ; although interrupts and calls will make use
+                                ; of this location in meantime.
+
+        IM      1               ; select interrupt mode 1.
+
+        LD      IY,$5C3A        ; set IY to ERR_NR. IY can reach all standard
+                                ; system variables but shadow ROM system
+                                ; variables will be mostly out of range.
+
+        EI                      ; enable interrupts now that we have a stack.
+
+;   If, as suggested above, the NMI service routine pointed to this section of
+;   code then a decision would have to be made at this point to jump forward, 
+;   in a Warm Restart scenario, to produce a report code, leaving any program 
+;   intact.
+
+        LD      (IY-3),$3C      ; character set, CHARS - as no printing yet.
+
+        LD      HL,$5CB6        ; The address of the channels - initially
+                                ; following system variables.
+        LD      ($5C4F),HL      ; Set the CHANS system variable.
+
+        LD      DE,L15AF        ; Address: init-chan in ROM.
+        LD      C,D             ; There are 21 bytes of initial data in ROM.
+        EX      DE,HL           ; swap the pointers.
+        LDIR                    ; Copy the bytes to RAM.
+
+        LD      E,$0E           ; set destination to system variable STRMS-FD
+        LD      C,$10           ; copy the 14 bytes of initial 7 streams data
+        LDIR                    ; from ROM to RAM.
+
+        LD      HL,$0523        ; The keyboard repeat and delay values are 
+        LD      C,H
+        LD      (IY+$31),C      ; set DF_SZ the lower screen display size to
+                                ; five lines
+        LD      ($5C09),HL      ; loaded to REPDEL and REPPER.
+
+        LD      HL,$5CCA
+        LD      ($5C57),HL      ; Set DATADD to location before program area.
+        INC     L               ; Increment again.
+        LD      ($5C53),HL      ; Set PROG the location where BASIC starts.
+        LD      ($5C4B),HL      ; Set VARS to same location with a
+        LD      (HL),$80        ; put $80 marker at (HL)
+        INC     L               ; Increment again.
+        LD      ($5C59),HL      ; Set E_LINE, where the edit line
+                                ; will be created.
+                                ; Note. it is not strictly necessary to
+                                ; execute the next fifteen bytes of code
+                                ; as this will be done by the call to SET-MIN.
+                                ; --
+
+        LD      DE,L129D
+        EX      DE,HL
+        LDIR
+        EX      DE,HL
+
+        LD      ($5C61),HL      ; set WORKSP - empty workspace.
+        LD      ($5C63),HL      ; set STKBOT - bottom of the empty stack.
+        LD      ($5C65),HL      ; set STKEND to the end of the empty stack.
+                                ; --
+        LD      A,$38           ; the colour system is set to white paper,
+                                ; black ink, no flash or bright.
+        LD      ($5C8D),A       ; set ATTR_P permanent colour attributes.
+;        LD      ($5C8F),A       ; set ATTR_T temporary colour attributes.
+        LD      ($5C48),A       ; set BORDCR the border colour/lower screen
+                                ; attributes.
+
+        DEC     (IY-$3A)        ; set KSTATE-0 to $FF - keyboard map available.
+        DEC     (IY-$36)        ; set KSTATE-4 to $FF - keyboard map available.
+        
+        CALL    L164D           ; update FLAGS  - signal printer in use.
+        CALL    L0EDF           ; call routine CLEAR-PRB to initialize system
+                                ; variables associated with printer.
+                                ; The buffer is clear.
+        LD      (IY+$01),$8C    ; update FLAGS again
+
+        CALL    L0D6B           ; call routine CLS to set up system
+                                ; variables associated with screen and clear
+                                ; the screen and set attributes.
+        LD      DE,L1539 - 1    ; the message table directly.
+        CALL    L0C0A           ; routine PO-MSG puts
+                                ; 'Press PLAY or SPACE to break'
+                                ; at bottom of display.
+        CALL    L0308+3         ; update TV_FLAG  - signal lower screen will
+                                ; require clearing.
+
+        JR      L1303-11        ; jump to one instruction before MAIN-4
+
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+
+L129D:  DEFB    $EF, $22, $22, $0D, $80; LOAD "" + Enter + $80
+      ELSE
 L11B7:  DI                      ; Disable Interrupts - machine stack will be
                                 ; cleared.
         LD      A,$FF           ; Flag coming from NEW.
@@ -5589,7 +5879,7 @@ L121C:
                                 ; variables associated with screen and clear
                                 ; the screen and set attributes.
         XOR     A               ; clear accumulator so that we can address
-        LD      DE,L1539 - 1    ; the message table directly.
+        LD      DE,L1539-1      ; the message table directly.
         CALL    L0C0A           ; routine PO-MSG puts
                                 ; ' ©  1982 Sinclair Research Ltd'
                                 ; at bottom of display.
@@ -5597,7 +5887,7 @@ L121C:
                                 ; require clearing.
 
         JR      L12A9           ; forward to MAIN-1
-
+      ENDIF
 ; -------------------------
 ; THE 'MAIN EXECUTION LOOP'
 ; -------------------------
@@ -5685,7 +5975,7 @@ L12CF:  LD      HL,($5C59)      ; fetch the edit line address from E_LINE.
         SET     7,(IY+$01)      ; update FLAGS - signal running program.
         LD      (IY+$00),$FF    ; set ERR_NR to 'OK'.
         LD      (IY+$0A),$01    ; set NSPPC to one for first statement.
-        CALL    L1B8A           ; call routine LINE-RUN to run the line.
+L1300:  CALL    L1B8A           ; call routine LINE-RUN to run the line.
                                 ; sysvar ERR_SP therefore addresses MAIN-4
 
 ; Examples of direct commands are RUN, CLS, LOAD "", PRINT USR 40000,
@@ -5749,8 +6039,7 @@ L133C:  CALL    L15EF           ; call routine OUT-CODE to print the code.
         LD      DE,L1391        ; address: rpt-mesgs.
 
         CALL    L0C0A           ; call routine PO-MSG to print the message.
-
-X1349:  XOR     A               ; clear accumulator to directly
+        XOR     A               ; clear accumulator to directly
         LD      DE,L1537 - 1    ; address the comma and space message.  
 
         CALL    L0C0A           ; routine PO-MSG prints ', ' although it would
@@ -5825,6 +6114,75 @@ L1386:  LD      (IY+$0A),$FF    ; update NSPPC - signal 'no jump'.
 ;; rpt-mesgs
 L1391:  DEFB    $80
         DEFB    'O','K'+$80                             ; 0
+  IFDEF spanish
+        DEFM    "NEXT SIN FO"
+        DEFB    'R'+$80                                 ; 1
+        DEFM    "VARIABLE NO DEFINID"
+        DEFB    'A'+$80                                 ; 2
+        DEFM    "SUBINDICE INCORRECT"
+        DEFB    'O'+$80                                 ; 3
+        DEFM    "MEMORIA AGOTAD"
+        DEFB    'A'+$80                                 ; 4
+        DEFM    "FUERA DE PANTALL"
+        DEFB    'A'+$80                                 ; 5
+        DEFM    "NUMERO MUY GRAND"
+        DEFB    'E'+$80                                 ; 6
+        DEFM    "RETURN SIN GOSU"
+        DEFB    'B'+$80                                 ; 7
+        DEFM    "FIN DE FICHER"
+        DEFB    'O'+$80                                 ; 8
+        DEFM    "SENTENCIA STO"
+        DEFB    'P'+$80                                 ; 9
+        DEFM    "ARG. INVALID"
+        DEFB    'O'+$80                                 ; A
+        DEFM    "ENTERO EXCEDE MARGE"
+        DEFB    'N'+$80                                 ; B
+        DEFM    "SIN SENTIDO EN BASI"
+        DEFB    'C'+$80                                 ; C
+        DEFM    "BREAK/CONT REPIT"
+        DEFB    'E'+$80                                 ; D
+        DEFM    "DATOS AGOTADO"
+        DEFB    'S'+$80                                 ; E
+        DEFM    "NOMBRE INCORRECT"
+        DEFB    'O'+$80                                 ; F
+        DEFM    "NO CABE LA LINE"
+        DEFB    'A'+$80                                 ; G
+        DEFM    "STOP EN INPU"
+        DEFB    'T'+$80                                 ; H
+        DEFM    "FOR SIN NEX"
+        DEFB    'T'+$80                                 ; I
+        DEFM    "DISP. E/S INCORRECT"
+        DEFB    'O'+$80                                 ; J
+        DEFM    "COLOR NO VALID"
+        DEFB    'O'+$80                                 ; K
+        DEFM    "PROGR. INTERRUMPID"
+        DEFB    'O'+$80                                 ; L
+        DEFM    "RAMTOP INCORRECT"
+        DEFB    'A'+$80                                 ; M
+        DEFM    "SENT. PERDID"
+        DEFB    'A'+$80                                 ; N
+        DEFM    "CANAL NO VALID"
+        DEFB    'O'+$80                                 ; O
+        DEFM    "FN SIN DE"
+        DEFB    'F'+$80                                 ; P
+        DEFM    "PARAMETRO ERRONE"
+        DEFB    'O'+$80                                 ; Q
+        DEFM    "ERROR CARGANDO CINT"
+L1536:  DEFB    'A'+$80                                 ; R
+;; comma-sp   
+L1537:  DEFB    ',',' '+$80                             ; used in report line.
+;; copyright
+L1539:
+
+    IFDEF resetplay
+        DEFM    "Play o Espaci"
+L1547:  DEFB    'o'+$80
+    ELSE
+        DEFB    $7F                                     ; copyright
+        DEFM    " 1982 Amstra"
+L1547:  DEFB    'd'+$80
+    ENDIF
+  ELSE
         DEFM    "NEXT without FO"
         DEFB    'R'+$80                                 ; 1
         DEFM    "Variable not foun"
@@ -5878,14 +6236,30 @@ L1391:  DEFB    $80
         DEFM    "Parameter erro"
         DEFB    'r'+$80                                 ; Q
         DEFM    "Tape loading erro"
-        DEFB    'r'+$80                                 ; R
+L1536:  DEFB    'r'+$80                                 ; R
 ;; comma-sp   
 L1537:  DEFB    ',',' '+$80                             ; used in report line.
 ;; copyright
-L1539:  DEFB    $7F                                     ; copyright
-        DEFM    " 2012 ROM FirePlay 27429bp"
-        DEFB    's'+$80
-
+L1539:
+   IFDEF resetplay
+        DEFM    "Press PLAY or SPACE to brea"
+        DEFB    'k'+$80
+   ELSE
+        DEFB    $7F                                     ; copyright
+    IFDEF plus
+        DEFM    " 1982 Amstrad             "
+L1547:  DEFB    ' '+$80
+    ELSE
+      IFDEF copymsg
+        DEFM    " 2012 ROM CargandoLeches  "
+        DEFB    ' '+$80
+      ELSE
+        DEFM    " 1982 Sinclair Research Lt"
+        DEFB    'd'+$80
+      ENDIF
+    ENDIF
+   ENDIF
+  ENDIF
 
 ; -------------
 ; REPORT-G
@@ -7016,7 +7390,7 @@ L1835:  CALL    L1855           ; routine OUT-LINE outputs a BASIC line
 ; continue here if an automatic listing required.
 
         LD      A,($5C6B)       ; fetch DF_SZ lower display file size.
-        SUB     (IY+$4F)        ; subtract S_POSN_hi ithe current line number.
+        SUB     (IY+$4F)        ; subtract S_POSN_hi the current line number.
         JR      NZ,L1835        ; back to LIST-ALL-2 if upper screen not full.
 
         XOR     E               ; A contains zero, E contains one if the
@@ -8075,7 +8449,7 @@ L1B02:  DEFB    $06             ; Class-06 - A numeric expression must follow.
 L1B06:  DEFB    $0A             ; Class-0A - A string expression must follow.
         DEFB    $00             ; Class-00 - No further operands.
         DEFW    L1793           ; Address: $1793; Address: CAT-ETC
-
+        
 ;; P-MOVE
 L1B0A:  DEFB    $0A             ; Class-0A - A string expression must follow.
         DEFB    $2C             ; Separator:  ','
@@ -8090,7 +8464,11 @@ L1B10:  DEFB    $0A             ; Class-0A - A string expression must follow.
 
 ;; P-CAT
 L1B14:  DEFB    $00             ; Class-00 - No further operands.
-        DEFW    L3A01           ; Address: $3A01
+      IFDEF enram
+        DEFW    L1793           ; Address: $1793; Address: CAT-ETC
+      ELSE
+        DEFW    L3C09           ; Address: $3c09;
+      ENDIF
 
 ; * Note that a comma is required as a separator with the OPEN command
 ; but the Interface 1 programmers relaxed this allowing ';' as an
@@ -12431,7 +12809,7 @@ L26B6:  INC     HL              ; advance pointer
                                 ; it has to be here.
 
         INC     HL              ; point to first byte of number
-        CALL    L33B4           ; routine STACK-NUM stacks it
+        CALL    L36B3           ; routine STACK-NUM stacks it
         LD      ($5C5D),HL      ; update system variable CH_ADD
 
 ;; S-NUMERIC
@@ -12463,7 +12841,7 @@ L26C9:  CALL    L28B2           ; routine LOOK-VARS
         JR      C,L26DD         ; step forward to S-CONT-1 if string  ===>
 
         INC     HL              ; advance pointer
-        CALL    L33B4           ; routine STACK-NUM
+        CALL    L36B3           ; routine STACK-NUM
 
 ;; S-CONT-1
 L26DD:  JR      L2712           ; forward to S-CONT-2                 ===>
@@ -13371,7 +13749,7 @@ L2981:  BIT     5,C             ; test if numeric
 
         INC     HL              ; point to start of string descriptor
         LD      DE,($5C65)      ; set DE to STKEND
-        CALL    L33C0           ; routine MOVE-FP puts parameters on stack.
+        CALL    L32D7           ; routine MOVE-FP puts parameters on stack.
         EX      DE,HL           ; new free location to HL.
         LD      ($5C65),HL      ; use it to set STKEND system variable.
 
@@ -13848,7 +14226,7 @@ L2AB2:  RES     6,(IY+$01)      ; update FLAGS - signal string result.
 
 ;; STK-STORE
 L2AB6:  PUSH    BC              ; save two registers
-        CALL    L33A9           ; routine TEST-5-SP checks room and puts 5 
+        CALL    L3302           ; routine TEST-5-SP checks room and puts 5 
                                 ; in BC.
         POP     BC              ; fetch the saved registers.
         LD      HL,($5C65)      ; make HL point to first empty location STKEND
@@ -15811,7 +16189,7 @@ L303C:  DEC     HL              ;
         POP     DE              ;
 
 ;; FULL-ADDN
-L303E:  CALL    L3293           ; routine RE-ST-TWO
+L303E:  CALL    L37CD           ; routine RE-ST-TWO
         EXX                     ;
         PUSH    HL              ;
         EXX                     ;
@@ -16013,7 +16391,7 @@ L30EA:  CALL    L2D8E           ; routine INT-STORE
 L30EF:  POP     DE              ;
 
 ;; MULT-LONG
-L30F0:  CALL    L3293           ; routine RE-ST-TWO
+L30F0:  CALL    L37CD           ; routine RE-ST-TWO
         XOR     A               ;
         CALL    L30C0           ; routine PREP-M/D
         RET     C               ;
@@ -16215,7 +16593,7 @@ L31AD:  RST     08H             ; ERROR-1
 ;   - Plato,  429 - 347 B.C.
 
 ;; division
-L31AF:  CALL    L3293           ; routine RE-ST-TWO
+L31AF:  CALL    L37CD           ; routine RE-ST-TWO
         EX      DE,HL           ;
         XOR     A               ;
         CALL    L30C0           ; routine PREP-M/D
@@ -16452,158 +16830,329 @@ L3290:  EX      DE,HL           ;
         POP     DE              ;
         RET                     ;
 
-; ----------------------------------
-; Storage of numbers in 5 byte form.
-; ==================================
-; Both integers and floating-point numbers can be stored in five bytes.
-; Zero is a special case stored as 5 zeros.
-; For integers the form is
-; Byte 1 - zero,
-; Byte 2 - sign byte, $00 +ve, $FF -ve.
-; Byte 3 - Low byte of integer.
-; Byte 4 - High byte
-; Byte 5 - unused but always zero.
-;
-; it seems unusual to store the low byte first but it is just as easy either
-; way. Statistically it just increases the chances of trailing zeros which
-; is an advantage elsewhere in saving ROM code.
-;
-;             zero     sign     low      high    unused
-; So +1 is  00000000 00000000 00000001 00000000 00000000
-;
-; and -1 is 00000000 11111111 11111111 11111111 00000000
-;
-; much of the arithmetic found in BASIC lines can be done using numbers
-; in this form using the Z80's 16 bit register operation ADD.
-; (multiplication is done by a sequence of additions).
-;
-; Storing -ve integers in two's complement form, means that they are ready for
-; addition and you might like to add the numbers above to prove that the
-; answer is zero. If, as in this case, the carry is set then that denotes that
-; the result is positive. This only applies when the signs don't match.
-; With positive numbers a carry denotes the result is out of integer range.
-; With negative numbers a carry denotes the result is within range.
-; The exception to the last rule is when the result is -65536
-;
-; Floating point form is an alternative method of storing numbers which can
-; be used for integers and larger (or fractional) numbers.
-;
-; In this form 1 is stored as
-;           10000001 00000000 00000000 00000000 00000000
-;
-; When a small integer is converted to a floating point number the last two
-; bytes are always blank so they are omitted in the following steps
-;
-; first make exponent +1 +16d  (bit 7 of the exponent is set if positive)
 
-; 10010001 00000000 00000001
-; 10010000 00000000 00000010 <-  now shift left and decrement exponent
-; ...
-; 10000010 01000000 00000000 <-  until a 1 abuts the imaginary point
-; 10000001 10000000 00000000     to the left of the mantissa.
-;
-; however since the leftmost bit of the mantissa is always set then it can
-; be used to denote the sign of the mantissa and put back when needed by the
-; PREP routines which gives
-;
-; 10000001 00000000 00000000
+L3293:  JP  L37CD
 
-; ----------------------------------------------
-; THE 'RE-STACK TWO "SMALL" INTEGERS' SUBROUTINE
-; ----------------------------------------------
-;   This routine is called to re-stack two numbers in full floating point form
-;   e.g. from mult when integer multiplication has overflowed.
+; ------------------
+; THE 'INT' FUNCTION
+; ------------------
+; (offset $27: 'int' )
+; This function returns the integer of x, which is just the same as truncate
+; for positive numbers. The truncate literal truncates negative numbers
+; upwards so that -3.4 gives -3 whereas the BASIC INT function has to
+; truncate negative numbers down so that INT -3.4 is -4.
+; It is best to work through using, say, +-3.4 as examples.
 
-;; RE-ST-TWO
-L3293:  CALL    L3296           ; routine RESTK-SUB  below and continue
-                                ; into the routine to do the other one.
+;; int
+L3296:  RST     28H             ;; FP-CALC              x.    (= 3.4 or -3.4).
+        DEFB    $31             ;;duplicate             x, x.
+        DEFB    $36             ;;less-0                x, (1/0)
+        DEFB    $00             ;;jump-true             x, (1/0)
+        DEFB    $04             ;;to L329E, X-NEG
 
-;; RESTK-SUB
-L3296:  EX      DE,HL           ; swap pointers
+        DEFB    $3A             ;;truncate              trunc 3.4 = 3.
+        DEFB    $38             ;;end-calc              3.
 
-; ---------------------------------------------
-; THE 'RE-STACK ONE "SMALL" INTEGER' SUBROUTINE
-; ---------------------------------------------
-; (offset: $3D 're-stack')
-;   This routine re-stacks an integer, usually on the calculator stack, in full 
-;   floating point form.  HL points to first byte.
+        RET                     ; return with + int x on stack.
 
-;; re-stack
-L3297:  LD      A,(HL)          ; Fetch Exponent byte to A
-        AND     A               ; test it
-        RET     NZ              ; return if not zero as already in full
-                                ; floating-point form.
-
-        PUSH    DE              ; preserve DE.
-        CALL    L2D7F           ; routine INT-FETCH
-                                ; integer to DE, sign to C.
-
-; HL points to 4th byte.
-
-        XOR     A               ; clear accumulator.
-        INC     HL              ; point to 5th.
-        LD      (HL),A          ; and blank.
-        DEC     HL              ; point to 4th.
-        LD      (HL),A          ; and blank.
-
-        LD      B,$91           ; set exponent byte +ve $81
-                                ; and imaginary dec point 16 bits to right
-                                ; of first bit.
-
-;   we could skip to normalize now but it's quicker to avoid normalizing 
-;   through an empty D.
-
-        LD      A,D             ; fetch the high byte D
-        AND     A               ; is it zero ?
-        JR      NZ,L32B1        ; skip to RS-NRMLSE if not.
-
-        OR      E               ; low byte E to A and test for zero
-        LD      B,D             ; set B exponent to 0
-        JR      Z,L32BD         ; forward to RS-STORE if value is zero.
-
-        LD      D,E             ; transfer E to D
-        LD      E,B             ; set E to 0
-        LD      B,$89           ; reduce the initial exponent by eight.
+; ---
 
 
-;; RS-NRMLSE
-L32B1:  EX      DE,HL           ; integer to HL, addr of 4th byte to DE.
+;; X-NEG
+L329E:  DEFB    $31             ;;duplicate             -3.4, -3.4.
+        DEFB    $3A             ;;truncate              -3.4, -3.
+        DEFB    $C0             ;;st-mem-0              -3.4, -3.
+        DEFB    $03             ;;subtract              -.4
+        DEFB    $E0             ;;get-mem-0             -.4, -3.
+        DEFB    $01             ;;exchange              -3, -.4.
+        DEFB    $30             ;;not                   -3, (0).
+        DEFB    $00             ;;jump-true             -3.
+        DEFB    $03             ;;to L32A9, EXIT        -3.
 
-;; RSTK-LOOP
-L32B2:  DEC     B               ; decrease exponent
-        ADD     HL,HL           ; shift DE left
-        JR      NC,L32B2        ; loop back to RSTK-LOOP
-                                ; until a set bit pops into carry
+        DEFB    $A1             ;;stk-one               -3, 1.
+        DEFB    $03             ;;subtract              -4.
 
-        RRC     C               ; now rotate the sign byte $00 or $FF
-                                ; into carry to give a sign bit
+;; EXIT
+L32A9:  DEFB    $38             ;;end-calc              -4.
 
-        RR      H               ; rotate the sign bit to left of H
-        RR      L               ; rotate any carry into L
-
-        EX      DE,HL           ; address 4th byte, normalized int to DE
-
-;; RS-STORE
-L32BD:  DEC     HL              ; address 3rd byte
-        LD      (HL),E          ; place E
-        DEC     HL              ; address 2nd byte
-        LD      (HL),D          ; place D
-        DEC     HL              ; address 1st byte
-        LD      (HL),B          ; store the exponent
-
-        POP     DE              ; restore initial DE.
         RET                     ; return.
 
-;****************************************
-;** Part 10. FLOATING-POINT CALCULATOR **
-;****************************************
+      IFDEF enram
+L32AB:  DEFB    $C9, $C9, $C9, $C9, $C9, $C9, $C9, $C9; 12 bytes
+        DEFB    $C9, $C9, $C9, $C9;
+      ELSE
+L32AB:  INC     C
+        LD      A,$D8           ; A' tiene que valer esto para entrar en Raudo
+        EX      AF,AF'
+        BIT     1,H
+        JP      Z,L3B8C         ; salto a Raudo segun el signo del pulso en flag Z
+        JP      L37C3           ; salto a Raudo
+      ENDIF
 
-; As a general rule the calculator avoids using the IY register.
-; exceptions are val, val$ and str$.
-; So an assembly language programmer who has disabled interrupts to use
-; IY for other purposes can still use the calculator for mathematical
-; purposes.
+; ----------------------
+; THE 'TANGENT' FUNCTION
+; ----------------------
+; (offset $21: 'tan')
+;
+; Evaluates tangent x as    sin(x) / cos(x).
+;
+;
+;           /|
+;        h / |
+;         /  |o
+;        /x  |
+;       /----|    
+;         a
+;
+; the tangent of angle x is the ratio of the length of the opposite side 
+; divided by the length of the adjacent side. As the opposite length can 
+; be calculates using sin(x) and the adjacent length using cos(x) then 
+; the tangent can be defined in terms of the previous two functions.
 
+; Error 6 if the argument, in radians, is too close to one like pi/2
+; which has an infinite tangent. e.g. PRINT TAN (PI/2)  evaluates as 1/0.
+; Similarly PRINT TAN (3*PI/2), TAN (5*PI/2) etc.
+
+;; tan
+L32B7:  RST     28H             ;; FP-CALC          x.
+        DEFB    $31             ;;duplicate         x, x.
+        DEFB    $1F             ;;sin               x, sin x.
+        DEFB    $01             ;;exchange          sin x, x.
+        DEFB    $20             ;;cos               sin x, cos x.
+        DEFB    $05             ;;division          sin x/cos x (= tan x).
+        DEFB    $38             ;;end-calc          tan x.
+
+        RET                     ; return.
+
+L32BF:  INC     H               ;4
+        JR      NC,L32CD        ;7/12     46/48
+        XOR     B               ;4
+        XOR     $9C             ;7
+        LD      (DE),A          ;7
+        INC     DE              ;6
+        LD      A,$DC           ;7
+        EX      AF,AF'          ;4
+        IN      L,(C)           ;12
+        JP      (HL)            ;4
+L32CD:  XOR     B               ;4
+        ADD     A,A             ;4
+        RET     C               ;5
+        ADD     A,A             ;4
+        EX      AF,AF'          ;4
+        OUT     ($FE),A         ;11
+        IN      L,(C)           ;12
+        JP      (HL)            ;4
+
+; ---------------------------------
+; Move a floating point number (31)
+; ---------------------------------
+
+; This simple routine is a 5-byte LDIR instruction
+; that incorporates a memory check.
+; When used as a calculator literal it duplicates the last value on the
+; calculator stack.
+; Unary so on entry HL points to last value, DE to stkend
+
+;; duplicate
+;; MOVE-FP
+L32D7:  CALL    L3302           ; routine TEST-5-SP test free memory
+                                ; and sets BC to 5.
+        LDIR                    ; copy the five bytes.
+        RET                     ; return with DE addressing new STKEND
+                                ; and HL addressing new last value.
+
+; --------------------------
+; Stack a constant (A0 etc.)
+; --------------------------
+; This routine allows a one-byte instruction to stack up to 32 constants
+; held in short form in a table of constants. In fact only 5 constants are
+; required. On entry the A register holds the literal ANDed with 1F.
+; It isn't very efficient and it would have been better to hold the
+; numbers in full, five byte form and stack them in a similar manner
+; to that used for semi-tone table values.
+
+;; stk-const-xx
+L32DD:  LD      H,D             ; save STKEND - required for result
+        LD      L,E             ;
+        EXX                     ; swap
+        PUSH    HL              ; save pointer to next literal
+        LD      HL,L33E0        ; Address: stk-zero - start of table of
+                                ; constants
+        EXX                     ;
+        CALL    L345B           ; routine SKIP-CONS
+        CALL    L3A87           ; routine STK-CONST
+        EXX                     ;
+        POP     HL              ; restore pointer to next literal.
+        EXX                     ;
+        RET                     ; return.
+
+; ---------------------
+; THE 'ARCSIN' FUNCTION
+; ---------------------
+; (Offset $22: 'asn')
+;   The inverse sine function with result in radians.
+;   Derived from arctan function above.
+;   Error A unless the argument is between -1 and +1 inclusive.
+;   Uses an adaptation of the formula asn(x) = atn(x/sqr(1-x*x))
+;
+;
+;                 /|
+;                / |
+;              1/  |x
+;              /a  |
+;             /----|    
+;               y
+;
+;   e.g. We know the opposite side (x) and hypotenuse (1) 
+;   and we wish to find angle a in radians.
+;   We can derive length y by Pythagoras and then use ATN instead. 
+;   Since y*y + x*x = 1*1 (Pythagoras Theorem) then
+;   y=sqr(1-x*x)                         - no need to multiply 1 by itself.
+;   So, asn(a) = atn(x/y)
+;   or more fully,
+;   asn(a) = atn(x/sqr(1-x*x))
+
+;   Close but no cigar.
+
+;   While PRINT ATN (x/SQR (1-x*x)) gives the same results as PRINT ASN x,
+;   it leads to division by zero when x is 1 or -1.
+;   To overcome this, 1 is added to y giving half the required angle and the 
+;   result is then doubled. 
+;   That is, PRINT ATN (x/(SQR (1-x*x) +1)) *2
+;
+;   GEOMETRIC PROOF.
+;
+;
+;               . /|
+;            .  c/ |
+;         .     /1 |x
+;      . c   b /a  |
+;    ---------/----|    
+;      1      y
+;
+;   By creating an isosceles triangle with two equal sides of 1, angles c and 
+;   c are also equal. If b+c+c = 180 degrees and b+a = 180 degrees then c=a/2.
+;
+;   A value higher than 1 gives the required error as attempting to find  the
+;   square root of a negative number generates an error in Sinclair BASIC.
+
+;; asn
+L32EF:  RST     28H             ;; FP-CALC      x.
+        DEFB    $31             ;;duplicate     x, x.
+        DEFB    $31             ;;duplicate     x, x, x.
+        DEFB    $04             ;;multiply      x, x*x.
+        DEFB    $A1             ;;stk-one       x, x*x, 1.
+        DEFB    $03             ;;subtract      x, x*x-1.
+        DEFB    $1B             ;;negate        x, 1-x*x.
+        DEFB    $28             ;;sqr           x, sqr(1-x*x) = y
+        DEFB    $A1             ;;stk-one       x, y, 1.
+        DEFB    $0F             ;;addition      x, y+1.
+        DEFB    $05             ;;division      x/y+1.
+        DEFB    $24             ;;atn           a/2       (half the angle)
+        DEFB    $31             ;;duplicate     a/2, a/2.
+        DEFB    $0F             ;;addition      a.
+        DEFB    $38             ;;end-calc      a.
+
+        RET                     ; return.
+
+
+L32FF:  IN      L,(C)
+        JP      (HL)
+
+; ---------------------------------
+; THE 'TEST FIVE SPACES' SUBROUTINE
+; ---------------------------------
+;   This routine is called from MOVE-FP, STK-CONST and STK-STORE to test that 
+;   there is enough space between the calculator stack and the machine stack 
+;   for another five-byte value.  It returns with BC holding the value 5 ready 
+;   for any subsequent LDIR.
+
+;; TEST-5-SP
+L3302:  PUSH    DE              ; save
+        PUSH    HL              ; registers
+        LD      BC,$0005        ; an overhead of five bytes
+        CALL    L1F05           ; routine TEST-ROOM tests free RAM raising
+                                ; an error if not.
+        POP     HL              ; else restore
+        POP     DE              ; registers.
+        RET                     ; return with BC set at 5.
+
+        DEFB    $EC, $EC, $7F   ; 0D
+        DEFB    $EC, $EC, $7F   ; 10
+        DEFB    $EC, $EC, $7F   ; 13
+        DEFB    $EC, $EC, $7F   ; 16
+        DEFB    $EC, $EC, $7F   ; 19
+        DEFB    $EC, $EC, $7F   ; 1C
+        DEFB    $EC, $EC, $7F   ; 1F
+        DEFB    $EC, $EC, $7F   ; 22
+        DEFB    $EC, $EC, $7F   ; 25
+        DEFB    $ED, $ED, $7F   ; 28
+        DEFB    $ED, $ED, $7F   ; 2B
+        DEFB    $ED, $ED, $7F   ; 2E
+        DEFB    $ED, $ED, $7F   ; 31
+        DEFB    $ED, $ED, $7F   ; 34
+        DEFB    $ED, $ED, $7F   ; 37
+        DEFB    $ED, $ED, $7F   ; 3A
+        DEFB    $ED, $ED, $7F   ; 3D
+        DEFB    $ED, $ED, $7F   ; 40
+        DEFB    $ED, $EE, $7F   ; 43 --
+        DEFB    $EE, $EE, $7F   ; 46 --
+        DEFB    $EE, $EE, $7F   ; 49
+        DEFB    $EE, $EE, $7F   ; 4C
+        DEFB    $EE, $EE, $7F   ; 4F
+        DEFB    $EE, $EE, $7F   ; 52
+        DEFB    $EE, $EE, $7F   ; 55
+        DEFB    $EE, $EE, $7F   ; 58
+        DEFB    $EE, $EE, $7F   ; 5B
+        DEFB    $EE, $EF, $7F   ; 5E
+        DEFB    $EE, $EF, $7F   ; 61
+        DEFB    $EF, $EF, $7F   ; 64
+        DEFB    $EF, $EF, $7F   ; 67
+        DEFB    $EF, $EF, $7F   ; 6A
+        DEFB    $EF, $EF, $7F   ; 6D
+        DEFB    $EF, $EF, $7F   ; 70
+        DEFB    $EF, $EF, $7F   ; 73
+        DEFB    $EF, $EF, $7F   ; 76
+        DEFB    $EF, $7F, $7F   ; 79
+        DEFB    $EF, $7F, $7F   ; 7C
+        DEFB    $EF             ; 7F
+        DEFB    $EC, $EC, $7F   ; 80
+        DEFB    $EC, $EC, $7F   ; 83
+        DEFB    $EC, $EC, $7F   ; 86
+        DEFB    $EC, $EC, $7F   ; 89
+        DEFB    $EC, $EC, $7F   ; 8C
+        DEFB    $ED, $ED, $7F   ; 8F
+        DEFB    $ED, $ED, $7F   ; 92
+        DEFB    $ED, $ED, $7F   ; 95
+        DEFB    $ED, $ED, $7F   ; 98
+        DEFB    $ED, $EE, $7F   ; 9B --
+        DEFB    $EE, $EE, $7F   ; 9E
+        DEFB    $EE, $EE, $7F   ; A1
+        DEFB    $EE, $EE, $7F   ; A4
+        DEFB    $EE, $EE, $7F   ; A7
+        DEFB    $EE, $EF, $7F   ; AA
+        DEFB    $EF, $EF, $7F   ; AD
+        DEFB    $EF, $EF, $7F   ; B0
+        DEFB    $EF, $EF, $7F   ; B3
+        DEFB    $EF, $EF, $7F   ; B6
+        DEFB    $EF, $7F, $7F   ; B9
+        DEFB    $7F, $7F, $7F   ; BC
+
+L33BF:  IN      L,(C)
+        JP      (HL)
+
+;; EXO_GETBITS
+L33C2:  LD      BC,0            ; get D bits in BC
+L33C5:  DEC     D
+        RET     M
+        CALL    L39F9           ; EXO_GETBIT
+        RL      C
+        RL      B
+        JR      L33C5
+
+; Tabla
+L33D0:  DEFB    $ED, $DE, $D2, $C3, $00, $71, $62, $53;
+        DEFB    $F1, $E5, $D6, $C7, $04, $78, $69, $5D;
 
 ; ------------------------
 ; THE 'TABLE OF CONSTANTS'
@@ -16613,129 +17162,71 @@ L32BD:  DEC     HL              ; address 3rd byte
 
 ; used 11 times
 ;; stk-zero                                                 00 00 00 00 00
-L32C5:  DEFB    $00             ;;Bytes: 1
+L33E0:  DEFB    $00             ;;Bytes: 1
         DEFB    $B0             ;;Exponent $00
         DEFB    $00             ;;(+00,+00,+00)
 
 ; used 19 times
 ;; stk-one                                                  00 00 01 00 00
-L32C8:  DEFB    $40             ;;Bytes: 2
+        DEFB    $40             ;;Bytes: 2
         DEFB    $B0             ;;Exponent $00
         DEFB    $00,$01         ;;(+00,+00)
 
 ; used 9 times
 ;; stk-half                                                 80 00 00 00 00
-L32CC:  DEFB    $30             ;;Exponent: $80, Bytes: 1
+        DEFB    $30             ;;Exponent: $80, Bytes: 1
         DEFB    $00             ;;(+00,+00,+00)
 
 ; used 4 times.
 ;; stk-pi/2                                                 81 49 0F DA A2
-L32CE:  DEFB    $F1             ;;Exponent: $81, Bytes: 4
+        DEFB    $F1             ;;Exponent: $81, Bytes: 4
         DEFB    $49,$0F,$DA,$A2 ;;
 
 ; used 3 times.
 ;; stk-ten                                                  00 00 0A 00 00
-L32D3:  DEFB    $40             ;;Bytes: 2
+        DEFB    $40             ;;Bytes: 2
         DEFB    $B0             ;;Exponent $00
         DEFB    $00,$0A         ;;(+00,+00)
 
+; -------------------------
+; THE 'EXCHANGE' SUBROUTINE
+; -------------------------
+; (offset: $01 'exchange')
+;   This routine swaps the last two values on the calculator stack.
+;   On entry, as always with binary operations,
+;   HL=first number, DE=second number
+;   On exit, HL=result, DE=stkend.
 
-; ------------------------
-; THE 'TABLE OF ADDRESSES'
-; ------------------------
-;  "Each problem that I solved became a rule which served afterwards to solve 
-;   other problems" - Rene Descartes 1596 - 1650.
-;
-;   Starts with binary operations which have two operands and one result.
-;   Three pseudo binary operations first.
+;; exchange
+L33F2:  LD      B,$05           ; there are five bytes to be swapped
 
-;; tbl-addrs
-L32D7:  DEFW    L368F           ; $00 Address: $368F - jump-true
-        DEFW    L343C           ; $01 Address: $343C - exchange
-        DEFW    L33A1           ; $02 Address: $33A1 - delete
+; start of loop.
 
-;   True binary operations.
+;; SWAP-BYTE
+L33F4:  LD      A,(DE)          ; each byte of second
+        LD      C,(HL)          ; each byte of first
+        EX      DE,HL           ; swap pointers
+        LD      (DE),A          ; store each byte of first
+        LD      (HL),C          ; store each byte of second
+        INC     HL              ; advance both
+        INC     DE              ; pointers.
+        DJNZ    L33F4           ; loop back to SWAP-BYTE until all 5 done.
 
-        DEFW    L300F           ; $03 Address: $300F - subtract
-        DEFW    L30CA           ; $04 Address: $30CA - multiply
-        DEFW    L31AF           ; $05 Address: $31AF - division
-        DEFW    L3851           ; $06 Address: $3851 - to-power
-        DEFW    L351B           ; $07 Address: $351B - or
+        EX      DE,HL           ; even up the exchanges so that DE addresses 
+                                ; STKEND.
 
-        DEFW    L3524           ; $08 Address: $3524 - no-&-no
-        DEFW    L353B           ; $09 Address: $353B - no-l-eql
-        DEFW    L353B           ; $0A Address: $353B - no-gr-eql
-        DEFW    L353B           ; $0B Address: $353B - nos-neql
-        DEFW    L353B           ; $0C Address: $353B - no-grtr
-        DEFW    L353B           ; $0D Address: $353B - no-less
-        DEFW    L353B           ; $0E Address: $353B - nos-eql
-        DEFW    L3014           ; $0F Address: $3014 - addition
+        RET                     ; return.
 
-        DEFW    L352D           ; $10 Address: $352D - str-&-no
-        DEFW    L353B           ; $11 Address: $353B - str-l-eql
-        DEFW    L353B           ; $12 Address: $353B - str-gr-eql
-        DEFW    L353B           ; $13 Address: $353B - strs-neql
-        DEFW    L353B           ; $14 Address: $353B - str-grtr
-        DEFW    L353B           ; $15 Address: $353B - str-less
-        DEFW    L353B           ; $16 Address: $353B - strs-eql
-        DEFW    L359C           ; $17 Address: $359C - strs-add
-
-;   Unary follow.
-
-        DEFW    L35DE           ; $18 Address: $35DE - val$
-        DEFW    L34BC           ; $19 Address: $34BC - usr-$
-        DEFW    L3645           ; $1A Address: $3645 - read-in
-        DEFW    L346E           ; $1B Address: $346E - negate
-
-        DEFW    L3669           ; $1C Address: $3669 - code
-        DEFW    L35DE           ; $1D Address: $35DE - val
-        DEFW    L3674           ; $1E Address: $3674 - len
-        DEFW    L37B5           ; $1F Address: $37B5 - sin
-        DEFW    L37AA           ; $20 Address: $37AA - cos
-        DEFW    L37DA           ; $21 Address: $37DA - tan
-        DEFW    L3833           ; $22 Address: $3833 - asn
-        DEFW    L3843           ; $23 Address: $3843 - acs
-        DEFW    L37E2           ; $24 Address: $37E2 - atn
-        DEFW    L3713           ; $25 Address: $3713 - ln
-        DEFW    L36C4           ; $26 Address: $36C4 - exp
-        DEFW    L36AF           ; $27 Address: $36AF - int
-        DEFW    L384A           ; $28 Address: $384A - sqr
-        DEFW    L3492           ; $29 Address: $3492 - sgn
-        DEFW    L346A           ; $2A Address: $346A - abs
-        DEFW    L34AC           ; $2B Address: $34AC - peek
-        DEFW    L34A5           ; $2C Address: $34A5 - in
-        DEFW    L34B3           ; $2D Address: $34B3 - usr-no
-        DEFW    L361F           ; $2E Address: $361F - str$
-        DEFW    L35C9           ; $2F Address: $35C9 - chrs
-        DEFW    L3501           ; $30 Address: $3501 - not
-
-;   End of true unary.
-
-        DEFW    L33C0           ; $31 Address: $33C0 - duplicate
-        DEFW    L36A0           ; $32 Address: $36A0 - n-mod-m
-        DEFW    L3686           ; $33 Address: $3686 - jump
-        DEFW    L33C6           ; $34 Address: $33C6 - stk-data
-        DEFW    L367A           ; $35 Address: $367A - dec-jr-nz
-        DEFW    L3506           ; $36 Address: $3506 - less-0
-        DEFW    L34F9           ; $37 Address: $34F9 - greater-0
-        DEFW    L369B           ; $38 Address: $369B - end-calc
-        DEFW    L3783           ; $39 Address: $3783 - get-argt
-        DEFW    L3214           ; $3A Address: $3214 - truncate
-        DEFW    L33A2           ; $3B Address: $33A2 - fp-calc-2
-        DEFW    L2D4F           ; $3C Address: $2D4F - e-to-fp
-        DEFW    L3297           ; $3D Address: $3297 - re-stack
-
-;   The following are just the next available slots for the 128 compound 
-;   literals which are in range $80 - $FF.
-
-        DEFW    L3449           ;     Address: $3449 - series-xx    $80 - $9F.
-        DEFW    L341B           ;     Address: $341B - stk-const-xx $A0 - $BF.
-        DEFW    L342D           ;     Address: $342D - st-mem-xx    $C0 - $DF.
-        DEFW    L340F           ;     Address: $340F - get-mem-xx   $E0 - $FF.
-
-;   Aside: 3E - 3F are therefore unused calculator literals.
-;   If the literal has to be also usable as a function then bits 6 and 7 are 
-;   used to show type of arguments and result.
+L33FF:  LD      A,R             ;9        49 (41 sin borde)
+        LD      L,A             ;4
+        LD      B,(HL)          ;7
+L3403:  LD      A,IXL           ;8
+        LD      R,A             ;9
+        LD      A,B             ;4
+        EX      AF,AF'          ;4
+        DEC     H               ;4
+        IN      L,(C)           ;12
+        JP      (HL)            ;4
 
 ; --------------
 ; The Calculator
@@ -16744,7 +17235,7 @@ L32D7:  DEFW    L368F           ; $00 Address: $368F - jump-true
 ;  Lao Tze 604 - 531 B.C.
 
 ;; CALCULATE
-L335B:  CALL    L35BF           ; routine STK-PNTRS is called to set up the
+L340D:  CALL    L35BF           ; routine STK-PNTRS is called to set up the
                                 ; calculator stack pointers for a default
                                 ; unary operation. HL = last value on stack.
                                 ; DE = STKEND first location after stack.
@@ -16752,7 +17243,7 @@ L335B:  CALL    L35BF           ; routine STK-PNTRS is called to set up the
 ; the calculate routine is called at this point by the series generator...
 
 ;; GEN-ENT-1
-L335E:  LD      A,B             ; fetch the Z80 B register to A
+L3410:  LD      A,B             ; fetch the Z80 B register to A
         LD      ($5C67),A       ; and store value in system variable BREG.
                                 ; this will be the counter for dec-jr-nz
                                 ; or if used from fp-calc2 the calculator
@@ -16761,7 +17252,7 @@ L335E:  LD      A,B             ; fetch the Z80 B register to A
 ; ... and again later at this point
 
 ;; GEN-ENT-2
-L3362:  EXX                     ; switch sets
+L3414:  EXX                     ; switch sets
         EX      (SP),HL         ; and store the address of next instruction,
                                 ; the return address, in H'L'.
                                 ; If this is a recursive call the H'L'
@@ -16772,7 +17263,7 @@ L3362:  EXX                     ; switch sets
 ; this is the re-entry looping point when handling a string of literals.
 
 ;; RE-ENTRY
-L3365:  LD      ($5C65),DE      ; save end of stack in system variable STKEND
+L3417:  LD      ($5C65),DE      ; save end of stack in system variable STKEND
         EXX                     ; switch to alt
         LD      A,(HL)          ; get next literal
         INC     HL              ; increase pointer'
@@ -16780,9 +17271,9 @@ L3365:  LD      ($5C65),DE      ; save end of stack in system variable STKEND
 ; single operation jumps back to here
 
 ;; SCAN-ENT
-L336C:  PUSH    HL              ; save pointer on stack
+L341E:  PUSH    HL              ; save pointer on stack
         AND     A               ; now test the literal
-        JP      P,L3380         ; forward to FIRST-3D if in range $00 - $3D
+        JP      P,L3432         ; forward to FIRST-3D if in range $00 - $3D
                                 ; anything with bit 7 set will be one of
                                 ; 128 compound literals.
 
@@ -16804,15 +17295,15 @@ L336C:  PUSH    HL              ; save pointer on stack
         LD      L,A             ; store in L for later indexing.
         LD      A,D             ; bring back compound literal
         AND     $1F             ; use mask to isolate parameter bits
-        JR      L338E           ; forward to ENT-TABLE
+        JR      L3440           ; forward to ENT-TABLE
 
 ; ---
 
 ; the branch was here with simple literals.
 
 ;; FIRST-3D
-L3380:  CP      $18             ; compare with first unary operations.
-        JR      NC,L338C        ; to DOUBLE-A with unary operations
+L3432:  CP      $18             ; compare with first unary operations.
+        JR      NC,L343E        ; to DOUBLE-A with unary operations
 
 ; it is binary so adjust pointers.
 
@@ -16825,17 +17316,17 @@ L3380:  CP      $18             ; compare with first unary operations.
         EXX                     ;
 
 ;; DOUBLE-A
-L338C:  RLCA                    ; double the literal
+L343E:  RLCA                    ; double the literal
         LD      L,A             ; and store in L for indexing
 
 ;; ENT-TABLE
-L338E:  LD      DE,L32D7        ; Address: tbl-addrs
+L3440:  LD      DE,L3A01        ; Address: tbl-addrs
         LD      H,$00           ; prepare to index
         ADD     HL,DE           ; add to get address of routine
         LD      E,(HL)          ; low byte to E
         INC     HL              ;
         LD      D,(HL)          ; high byte to D
-        LD      HL,L3365        ; Address: RE-ENTRY
+        LD      HL,L3417        ; Address: RE-ENTRY
         EX      (SP),HL         ; goes to stack
         PUSH    DE              ; now address of routine
         EXX                     ; main set
@@ -16857,7 +17348,7 @@ L338E:  LD      DE,L32D7        ; Address: tbl-addrs
 ; So nothing to do
 
 ;; delete
-L33A1:  RET                     ; return - indirect jump if from above.
+L3453:  RET                     ; return - indirect jump if from above.
 
 ; ---------------------
 ; Single operation (3B)
@@ -16866,142 +17357,12 @@ L33A1:  RET                     ; return - indirect jump if from above.
 ;   of the mathematical and string functions found in BASIC expressions.
 
 ;; fp-calc-2
-L33A2:  POP     AF              ; drop return address.
+L3454:  POP     AF              ; drop return address.
         LD      A,($5C67)       ; load accumulator from system variable BREG
                                 ; value will be literal e.g. 'tan'
         EXX                     ; switch to alt
-        JR      L336C           ; back to SCAN-ENT
+        JR      L341E           ; back to SCAN-ENT
                                 ; next literal will be end-calc at L2758
-
-; ---------------------------------
-; THE 'TEST FIVE SPACES' SUBROUTINE
-; ---------------------------------
-;   This routine is called from MOVE-FP, STK-CONST and STK-STORE to test that 
-;   there is enough space between the calculator stack and the machine stack 
-;   for another five-byte value.  It returns with BC holding the value 5 ready 
-;   for any subsequent LDIR.
-
-;; TEST-5-SP
-L33A9:  PUSH    DE              ; save
-        PUSH    HL              ; registers
-        LD      BC,$0005        ; an overhead of five bytes
-        CALL    L1F05           ; routine TEST-ROOM tests free RAM raising
-                                ; an error if not.
-        POP     HL              ; else restore
-        POP     DE              ; registers.
-        RET                     ; return with BC set at 5.
-
-; -----------------------------
-; THE 'STACK NUMBER' SUBROUTINE
-; -----------------------------
-;   This routine is called to stack a hidden floating point number found in
-;   a BASIC line.  It is also called to stack a numeric variable value, and
-;   from BEEP, to stack an entry in the semi-tone table.  It is not part of the
-;   calculator suite of routines.  On entry, HL points to the number to be 
-;   stacked.
-
-;; STACK-NUM
-L33B4:  LD      DE,($5C65)      ; Load destination from STKEND system variable.
-
-        CALL    L33C0           ; Routine MOVE-FP puts on calculator stack 
-                                ; with a memory check.
-        LD      ($5C65),DE      ; Set STKEND to next free location.
-
-        RET                     ; Return.
-
-; ---------------------------------
-; Move a floating point number (31)
-; ---------------------------------
-
-; This simple routine is a 5-byte LDIR instruction
-; that incorporates a memory check.
-; When used as a calculator literal it duplicates the last value on the
-; calculator stack.
-; Unary so on entry HL points to last value, DE to stkend
-
-;; duplicate
-;; MOVE-FP
-L33C0:  CALL    L33A9           ; routine TEST-5-SP test free memory
-                                ; and sets BC to 5.
-        LDIR                    ; copy the five bytes.
-        RET                     ; return with DE addressing new STKEND
-                                ; and HL addressing new last value.
-
-; -------------------
-; Stack literals ($34)
-; -------------------
-; When a calculator subroutine needs to put a value on the calculator
-; stack that is not a regular constant this routine is called with a
-; variable number of following data bytes that convey to the routine
-; the integer or floating point form as succinctly as is possible.
-
-;; stk-data
-L33C6:  LD      H,D             ; transfer STKEND
-        LD      L,E             ; to HL for result.
-
-;; STK-CONST
-L33C8:  CALL    L33A9           ; routine TEST-5-SP tests that room exists
-                                ; and sets BC to $05.
-
-        EXX                     ; switch to alternate set
-        PUSH    HL              ; save the pointer to next literal on stack
-        EXX                     ; switch back to main set
-
-        EX      (SP),HL         ; pointer to HL, destination to stack.
-
-        PUSH    BC              ; save BC - value 5 from test room ??.
-
-        LD      A,(HL)          ; fetch the byte following 'stk-data'
-        AND     $C0             ; isolate bits 7 and 6
-        RLCA                    ; rotate
-        RLCA                    ; to bits 1 and 0  range $00 - $03.
-        LD      C,A             ; transfer to C
-        INC     C               ; and increment to give number of bytes
-                                ; to read. $01 - $04
-        LD      A,(HL)          ; reload the first byte
-        AND     $3F             ; mask off to give possible exponent.
-        JR      NZ,L33DE        ; forward to FORM-EXP if it was possible to
-                                ; include the exponent.
-
-; else byte is just a byte count and exponent comes next.
-
-        INC     HL              ; address next byte and
-        LD      A,(HL)          ; pick up the exponent ( - $50).
-
-;; FORM-EXP
-L33DE:  ADD     A,$50           ; now add $50 to form actual exponent
-        LD      (DE),A          ; and load into first destination byte.
-        LD      A,$05           ; load accumulator with $05 and
-        SUB     C               ; subtract C to give count of trailing
-                                ; zeros plus one.
-        INC     HL              ; increment source
-        INC     DE              ; increment destination
-        LD      B,$00           ; prepare to copy
-        LDIR                    ; copy C bytes
-
-        POP     BC              ; restore 5 counter to BC ??.
-
-        EX      (SP),HL         ; put HL on stack as next literal pointer
-                                ; and the stack value - result pointer -
-                                ; to HL.
-
-        EXX                     ; switch to alternate set.
-        POP     HL              ; restore next literal pointer from stack
-                                ; to H'L'.
-        EXX                     ; switch back to main set.
-
-        LD      B,A             ; zero count to B
-        XOR     A               ; clear accumulator
-
-;; STK-ZEROS
-L33F1:  DEC     B               ; decrement B counter
-        RET     Z               ; return if zero.          >>
-                                ; DE points to new STKEND
-                                ; HL to new number.
-
-        LD      (DE),A          ; else load zero to destination
-        INC     DE              ; increase destination
-        JR      L33F1           ; loop back to STK-ZEROS until done.
 
 ; -------------------------------
 ; THE 'SKIP CONSTANTS' SUBROUTINE
@@ -17016,10 +17377,10 @@ L33F1:  DEC     B               ; decrement B counter
 ;   can be removed.
 
 ;; SKIP-CONS
-L33F7:  AND     A               ; test if initially zero.
+L345B:  AND     A               ; test if initially zero.
 
 ;; SKIP-NEXT
-L33F8:  RET     Z               ; return if zero.          >>
+L345C:  RET     Z               ; return if zero.          >>
 
         PUSH    AF              ; save count.
         PUSH    DE              ; and normal STKEND
@@ -17029,213 +17390,13 @@ L33F8:  RET     Z               ; return if zero.          >>
                                 ; moved elsewhere when running in RAM.
                                 ; e.g. with Expandor Systems 'Soft ROM'.
                                 ; Better still, write to the normal place.
-        CALL    L33C8           ; routine STK-CONST works through variable
+        CALL    L3A87           ; routine STK-CONST works through variable
                                 ; length records.
 
         POP     DE              ; restore real STKEND
         POP     AF              ; restore count
         DEC     A               ; decrease
-        JR      L33F8           ; loop back to SKIP-NEXT
-
-; ------------------------------
-; THE 'LOCATE MEMORY' SUBROUTINE
-; ------------------------------
-;   This routine, when supplied with a base address in HL and an index in A,
-;   will calculate the address of the A'th entry, where each entry occupies
-;   five bytes.  It is used for reading the semi-tone table and addressing
-;   floating-point numbers in the calculator's memory area.
-;   It is not possible to use this routine for the table of constants as these
-;   six values are held in compressed format.
-
-;; LOC-MEM
-L3406:  LD      C,A             ; store the original number $00-$1F.
-        RLCA                    ; X2 - double.
-        RLCA                    ; X4 - quadruple.
-        ADD     A,C             ; X5 - now add original to multiply by five.
-
-        LD      C,A             ; place the result in the low byte.
-        LD      B,$00           ; set high byte to zero.
-        ADD     HL,BC           ; add to form address of start of number in HL.
-
-        RET                     ; return.
-
-; ------------------------------
-; Get from memory area ($E0 etc.)
-; ------------------------------
-; Literals $E0 to $FF
-; A holds $00-$1F offset.
-; The calculator stack increases by 5 bytes.
-
-;; get-mem-xx
-L340F:  PUSH    DE              ; save STKEND
-        LD      HL,($5C68)      ; MEM is base address of the memory cells.
-        CALL    L3406           ; routine LOC-MEM so that HL = first byte
-        CALL    L33C0           ; routine MOVE-FP moves 5 bytes with memory
-                                ; check.
-                                ; DE now points to new STKEND.
-        POP     HL              ; original STKEND is now RESULT pointer.
-        RET                     ; return.
-
-; --------------------------
-; Stack a constant (A0 etc.)
-; --------------------------
-; This routine allows a one-byte instruction to stack up to 32 constants
-; held in short form in a table of constants. In fact only 5 constants are
-; required. On entry the A register holds the literal ANDed with 1F.
-; It isn't very efficient and it would have been better to hold the
-; numbers in full, five byte form and stack them in a similar manner
-; to that used for semi-tone table values.
-
-;; stk-const-xx
-L341B:  LD      H,D             ; save STKEND - required for result
-        LD      L,E             ;
-        EXX                     ; swap
-        PUSH    HL              ; save pointer to next literal
-        LD      HL,L32C5        ; Address: stk-zero - start of table of
-                                ; constants
-        EXX                     ;
-        CALL    L33F7           ; routine SKIP-CONS
-        CALL    L33C8           ; routine STK-CONST
-        EXX                     ;
-        POP     HL              ; restore pointer to next literal.
-        EXX                     ;
-        RET                     ; return.
-
-; --------------------------------
-; Store in a memory area ($C0 etc.)
-; --------------------------------
-; Offsets $C0 to $DF
-; Although 32 memory storage locations can be addressed, only six
-; $C0 to $C5 are required by the ROM and only the thirty bytes (6*5)
-; required for these are allocated. Spectrum programmers who wish to
-; use the floating point routines from assembly language may wish to
-; alter the system variable MEM to point to 160 bytes of RAM to have 
-; use the full range available.
-; A holds the derived offset $00-$1F.
-; This is a unary operation, so on entry HL points to the last value and DE 
-; points to STKEND.
-
-;; st-mem-xx
-L342D:  PUSH    HL              ; save the result pointer.
-        EX      DE,HL           ; transfer to DE.
-        LD      HL,($5C68)      ; fetch MEM the base of memory area.
-        CALL    L3406           ; routine LOC-MEM sets HL to the destination.
-        EX      DE,HL           ; swap - HL is start, DE is destination.
-        CALL    L33C0           ; routine MOVE-FP.
-                                ; note. a short ld bc,5; ldir
-                                ; the embedded memory check is not required
-                                ; so these instructions would be faster.
-        EX      DE,HL           ; DE = STKEND
-        POP     HL              ; restore original result pointer
-        RET                     ; return.
-
-; -------------------------
-; THE 'EXCHANGE' SUBROUTINE
-; -------------------------
-; (offset: $01 'exchange')
-;   This routine swaps the last two values on the calculator stack.
-;   On entry, as always with binary operations,
-;   HL=first number, DE=second number
-;   On exit, HL=result, DE=stkend.
-
-;; exchange
-L343C:  LD      B,$05           ; there are five bytes to be swapped
-
-; start of loop.
-
-;; SWAP-BYTE
-L343E:  LD      A,(DE)          ; each byte of second
-        LD      C,(HL)          ; each byte of first
-        EX      DE,HL           ; swap pointers
-        LD      (DE),A          ; store each byte of first
-        LD      (HL),C          ; store each byte of second
-        INC     HL              ; advance both
-        INC     DE              ; pointers.
-        DJNZ    L343E           ; loop back to SWAP-BYTE until all 5 done.
-
-        EX      DE,HL           ; even up the exchanges so that DE addresses 
-                                ; STKEND.
-
-        RET                     ; return.
-
-; ------------------------------
-; THE 'SERIES GENERATOR' ROUTINE
-; ------------------------------
-; (offset: $86 'series-06')
-; (offset: $88 'series-08')
-; (offset: $8C 'series-0C')
-;   The Spectrum uses Chebyshev polynomials to generate approximations for
-;   SIN, ATN, LN and EXP.  These are named after the Russian mathematician
-;   Pafnuty Chebyshev, born in 1821, who did much pioneering work on numerical
-;   series.  As far as calculators are concerned, Chebyshev polynomials have an
-;   advantage over other series, for example the Taylor series, as they can
-;   reach an approximation in just six iterations for SIN, eight for EXP and
-;   twelve for LN and ATN.  The mechanics of the routine are interesting but
-;   for full treatment of how these are generated with demonstrations in
-;   Sinclair BASIC see "The Complete Spectrum ROM Disassembly" by Dr Ian Logan
-;   and Dr Frank O'Hara, published 1983 by Melbourne House.
-
-;; series-xx
-L3449:  LD      B,A             ; parameter $00 - $1F to B counter
-        CALL    L335E           ; routine GEN-ENT-1 is called.
-                                ; A recursive call to a special entry point
-                                ; in the calculator that puts the B register
-                                ; in the system variable BREG. The return
-                                ; address is the next location and where
-                                ; the calculator will expect its first
-                                ; instruction - now pointed to by HL'.
-                                ; The previous pointer to the series of
-                                ; five-byte numbers goes on the machine stack.
-
-; The initialization phase.
-
-        DEFB    $31             ;;duplicate       x,x
-        DEFB    $0F             ;;addition        x+x
-        DEFB    $C0             ;;st-mem-0        x+x
-        DEFB    $02             ;;delete          .
-        DEFB    $A0             ;;stk-zero        0
-        DEFB    $C2             ;;st-mem-2        0
-
-; a loop is now entered to perform the algebraic calculation for each of
-; the numbers in the series
-
-;; G-LOOP
-L3453:  DEFB    $31             ;;duplicate       v,v.
-        DEFB    $E0             ;;get-mem-0       v,v,x+2
-        DEFB    $04             ;;multiply        v,v*x+2
-        DEFB    $E2             ;;get-mem-2       v,v*x+2,v
-        DEFB    $C1             ;;st-mem-1
-        DEFB    $03             ;;subtract
-        DEFB    $38             ;;end-calc
-
-; the previous pointer is fetched from the machine stack to H'L' where it
-; addresses one of the numbers of the series following the series literal.
-
-        CALL    L33C6           ; routine STK-DATA is called directly to
-                                ; push a value and advance H'L'.
-        CALL    L3362           ; routine GEN-ENT-2 recursively re-enters
-                                ; the calculator without disturbing
-                                ; system variable BREG
-                                ; H'L' value goes on the machine stack and is
-                                ; then loaded as usual with the next address.
-
-        DEFB    $0F             ;;addition
-        DEFB    $01             ;;exchange
-        DEFB    $C2             ;;st-mem-2
-        DEFB    $02             ;;delete
-
-        DEFB    $35             ;;dec-jr-nz
-        DEFB    $EE             ;;back to L3453, G-LOOP
-
-; when the counted loop is complete the final subtraction yields the result
-; for example SIN X.
-
-        DEFB    $E1             ;;get-mem-1
-        DEFB    $03             ;;subtract
-        DEFB    $38             ;;end-calc
-
-        RET                     ; return with H'L' pointing to location
-                                ; after last number in series.
+        JR      L345C           ; loop back to SKIP-NEXT
 
 ; ---------------------------------
 ; THE 'ABSOLUTE MAGNITUDE' FUNCTION
@@ -17604,8 +17765,6 @@ L3524:  EX      DE,HL           ; make HL address second operand.
         EX      DE,HL           ; restore pointers.
         RET     NC              ; return if second non-zero, first is result.
 
-;
-
         AND     A               ; else clear carry.
         JR      L350B           ; back to FP-0/1 to overwrite first operand
                                 ; with zero for return value.
@@ -17725,7 +17884,7 @@ L3543:  RRCA                    ; the first RRCA sets carry for a swap.
         PUSH    HL              ; save HL - pointer to first operand.
                                 ; (DE points to second operand).
 
-        CALL    L343C           ; routine exchange swaps the two values.
+        CALL    L33F2           ; routine exchange swaps the two values.
                                 ; (HL = second operand, DE = STKEND)
 
         POP     DE              ; DE = first operand
@@ -18244,6 +18403,544 @@ L369B:  POP     AF              ; Drop the calculator return address RE-ENTRY
         EXX                     ; Switch back to main set.
         RET                     ; Return.
 
+; ---------------------
+; THE 'ARCCOS' FUNCTION
+; ---------------------
+; (Offset $23: 'acs')
+; the inverse cosine function with the result in radians.
+; Error A unless the argument is between -1 and +1.
+; Result in range 0 to pi.
+; Derived from asn above which is in turn derived from the preceding atn.
+; It could have been derived directly from atn using acs(x) = atn(sqr(1-x*x)/x).
+; However, as sine and cosine are horizontal translations of each other,
+; uses acs(x) = pi/2 - asn(x)
+
+; e.g. the arccosine of a known x value will give the required angle b in 
+; radians.
+; We know, from above, how to calculate the angle a using asn(x). 
+; Since the three angles of any triangle add up to 180 degrees, or pi radians,
+; and the largest angle in this case is a right-angle (pi/2 radians), then
+; we can calculate angle b as pi/2 (both angles) minus asn(x) (angle a).
+; 
+;
+;           /|
+;        1 /b|
+;         /  |x
+;        /a  |
+;       /----|    
+;         y
+;
+
+;; acs
+L36A0:  RST     28H             ;; FP-CALC      x.
+        DEFB    $22             ;;asn           asn(x).
+        DEFB    $A3             ;;stk-pi/2      asn(x), pi/2.
+        DEFB    $03             ;;subtract      asn(x) - pi/2.
+        DEFB    $1B             ;;negate        pi/2 -asn(x)  =  acs(x).
+        DEFB    $38             ;;end-calc      acs(x).
+
+        RET                     ; return.
+
+; ------------------------------
+; THE 'LOCATE MEMORY' SUBROUTINE
+; ------------------------------
+;   This routine, when supplied with a base address in HL and an index in A,
+;   will calculate the address of the A'th entry, where each entry occupies
+;   five bytes.  It is used for reading the semi-tone table and addressing
+;   floating-point numbers in the calculator's memory area.
+;   It is not possible to use this routine for the table of constants as these
+;   six values are held in compressed format.
+
+;; LOC-MEM
+L36A7:  LD      BC,5
+L36AA:  DEC     A
+        RET     M
+        ADD     HL,BC
+        JR      L36AA
+
+L36AF:  JP      L3296
+        NOP
+
+; -----------------------------
+; THE 'STACK NUMBER' SUBROUTINE
+; -----------------------------
+;   This routine is called to stack a hidden floating point number found in
+;   a BASIC line.  It is also called to stack a numeric variable value, and
+;   from BEEP, to stack an entry in the semi-tone table.  It is not part of the
+;   calculator suite of routines.  On entry, HL points to the number to be 
+;   stacked.
+
+;; STACK-NUM
+L36B3:  LD      DE,($5C65)      ; Load destination from STKEND system variable.
+
+        CALL    L32D7           ; Routine MOVE-FP puts on calculator stack 
+                                ; with a memory check.
+        LD      ($5C65),DE      ; Set STKEND to next free location.
+
+        RET                     ; Return.
+
+
+L36BF:  IN      L,(C)
+        JP      (HL)
+
+; --------------------------
+; THE 'SQUARE ROOT' FUNCTION
+; --------------------------
+; (Offset $28: 'sqr')
+; This routine is remarkable for its brevity - 7 bytes.
+; It wasn't written here but in the ZX81 where the programmers had to squeeze
+; a bulky operating system into an 8K ROM. It simply calculates 
+; the square root by stacking the value .5 and continuing into the 'to-power'
+; routine. With more space available the much faster Newton-Raphson method
+; could have been used as on the Jupiter Ace.
+
+;; sqr
+L36C2:  RST     28H             ;; FP-CALC
+        DEFB    $31             ;;duplicate
+        DEFB    $30             ;;not
+        DEFB    $00             ;;jump-true
+        DEFB    $1E             ;;to L36E4, LAST
+
+        DEFB    $A2             ;;stk-half
+        DEFB    $38             ;;end-calc
+
+
+; ------------------------------
+; THE 'EXPONENTIATION' OPERATION
+; ------------------------------
+; (Offset $06: 'to-power')
+; This raises the first number X to the power of the second number Y.
+; As with the ZX80,
+; 0 ^ 0 = 1.
+; 0 ^ +n = 0.
+; 0 ^ -n = arithmetic overflow.
+;
+
+;; to-power
+L36C9:  RST     28H             ;; FP-CALC              X, Y.
+        DEFB    $01             ;;exchange              Y, X.
+        DEFB    $31             ;;duplicate             Y, X, X.
+        DEFB    $30             ;;not                   Y, X, (1/0).
+        DEFB    $00             ;;jump-true
+        DEFB    $07             ;;to L36D5, XIS0   if X is zero.
+
+;   else X is non-zero. Function 'ln' will catch a negative value of X.
+
+        DEFB    $25             ;;ln                    Y, LN X.
+        DEFB    $04             ;;multiply              Y * LN X.
+        DEFB    $38             ;;end-calc
+
+        JP      L38AE           ; jump back to EXP routine   ->
+
+; ---
+
+;   these routines form the three simple results when the number is zero.
+;   begin by deleting the known zero to leave Y the power factor.
+
+;; XIS0
+L36D5:  DEFB    $02             ;;delete                Y.
+        DEFB    $31             ;;duplicate             Y, Y.
+        DEFB    $30             ;;not                   Y, (1/0).
+        DEFB    $00             ;;jump-true
+        DEFB    $09             ;;to L36E2, ONE         if Y is zero.
+
+        DEFB    $A0             ;;stk-zero              Y, 0.
+        DEFB    $01             ;;exchange              0, Y.
+        DEFB    $37             ;;greater-0             0, (1/0).
+        DEFB    $00             ;;jump-true             0.
+        DEFB    $06             ;;to L36E4, LAST        if Y was any positive 
+                                ;;                      number.
+
+;   else force division by zero thereby raising an Arithmetic overflow error.
+;   There are some one and two-byte alternatives but perhaps the most formal
+;   might have been to use end-calc; rst 08; defb 05.
+
+        DEFB    $A1             ;;stk-one               0, 1.
+        DEFB    $01             ;;exchange              1, 0.
+        DEFB    $05             ;;division              1/0        ouch!
+
+; ---
+
+;; ONE
+L36E2:  DEFB    $02             ;;delete                .
+        DEFB    $A1             ;;stk-one               1.
+
+;; LAST
+L36E4:  DEFB    $38             ;;end-calc              last value is 1 or 0.
+
+        RET                     ; return.               
+
+; --------------------------------
+; Store in a memory area ($C0 etc.)
+; --------------------------------
+; Offsets $C0 to $DF
+; Although 32 memory storage locations can be addressed, only six
+; $C0 to $C5 are required by the ROM and only the thirty bytes (6*5)
+; required for these are allocated. Spectrum programmers who wish to
+; use the floating point routines from assembly language may wish to
+; alter the system variable MEM to point to 160 bytes of RAM to have 
+; use the full range available.
+; A holds the derived offset $00-$1F.
+; This is a unary operation, so on entry HL points to the last value and DE 
+; points to STKEND.
+
+;; st-mem-xx
+L36E6:  PUSH    HL              ; save the result pointer.
+        EX      DE,HL           ; transfer to DE.
+        LD      HL,($5C68)      ; fetch MEM the base of memory area.
+        CALL    L36A7           ; routine LOC-MEM sets HL to the destination.
+        EX      DE,HL           ; swap - HL is start, DE is destination.
+        CALL    L32D7           ; routine MOVE-FP.
+                                ; note. a short ld bc,5; ldir
+                                ; the embedded memory check is not required
+                                ; so these instructions would be faster.
+        EX      DE,HL           ; DE = STKEND
+        POP     HL              ; restore original result pointer
+        RET                     ; return.
+
+L36F5:  XOR     B
+        ADD     A,A
+        RET     C
+        ADD     A,A
+        EX      AF,AF'
+        OUT     ($FE),A         ;11
+        IN      L,(C)
+        JP      (HL)
+L36FF:  INC     H
+        JR      NC,L36F5
+        XOR     B
+        XOR     $9C
+        LD      (DE),A
+        INC     DE
+        LD      A,$DC
+        EX      AF,AF'
+        IN      L,(C)           ;12
+        JP      (HL)            ;4
+
+        DEFB    $EC, $EC, $7F   ; 0D
+        DEFB    $EC, $EC, $7F   ; 10
+        DEFB    $EC, $EC, $7F   ; 13
+        DEFB    $EC, $EC, $7F   ; 16
+        DEFB    $EC, $EC, $7F   ; 19
+        DEFB    $EC, $EC, $7F   ; 1C
+        DEFB    $EC, $EC, $7F   ; 1F
+        DEFB    $EC, $EC, $7F   ; 22
+        DEFB    $EC, $EC, $7F   ; 25
+        DEFB    $ED, $ED, $7F   ; 28
+        DEFB    $ED, $ED, $7F   ; 2B
+        DEFB    $ED, $ED, $7F   ; 2E
+        DEFB    $ED, $ED, $7F   ; 31
+        DEFB    $ED, $ED, $7F   ; 34
+        DEFB    $ED, $ED, $7F   ; 37
+        DEFB    $ED, $ED, $7F   ; 3A
+        DEFB    $ED, $ED, $7F   ; 3D
+        DEFB    $ED, $ED, $7F   ; 40
+        DEFB    $ED, $EE, $7F   ; 43 --
+        DEFB    $EE, $EE, $7F   ; 46 --
+        DEFB    $EE, $EE, $7F   ; 49
+        DEFB    $EE, $EE, $7F   ; 4C
+        DEFB    $EE, $EE, $7F   ; 4F
+        DEFB    $EE, $EE, $7F   ; 52
+        DEFB    $EE, $EE, $7F   ; 55
+        DEFB    $EE, $EE, $7F   ; 58
+        DEFB    $EE, $EE, $7F   ; 5B
+        DEFB    $EE, $EF, $7F   ; 5E
+        DEFB    $EE, $EF, $7F   ; 61
+        DEFB    $EF, $EF, $7F   ; 64
+        DEFB    $EF, $EF, $7F   ; 67
+        DEFB    $EF, $EF, $7F   ; 6A
+        DEFB    $EF, $EF, $7F   ; 6D
+        DEFB    $EF, $EF, $7F   ; 70
+        DEFB    $EF, $EF, $7F   ; 73
+        DEFB    $EF, $EF, $7F   ; 76
+        DEFB    $EF, $7F, $7F   ; 79
+        DEFB    $EF, $7F, $7F   ; 7C
+        DEFB    $EF             ; 7F
+        DEFB    $EC, $EC, $7F   ; 80
+        DEFB    $EC, $EC, $7F   ; 83
+        DEFB    $EC, $EC, $7F   ; 86
+        DEFB    $EC, $EC, $7F   ; 89
+        DEFB    $EC, $EC, $7F   ; 8C
+        DEFB    $ED, $ED, $7F   ; 8F
+        DEFB    $ED, $ED, $7F   ; 92
+        DEFB    $ED, $ED, $7F   ; 95
+        DEFB    $ED, $ED, $7F   ; 98
+        DEFB    $ED, $EE, $7F   ; 9B --
+        DEFB    $EE, $EE, $7F   ; 9E
+        DEFB    $EE, $EE, $7F   ; A1
+        DEFB    $EE, $EE, $7F   ; A4
+        DEFB    $EE, $EE, $7F   ; A7
+        DEFB    $EE, $EF, $7F   ; AA
+        DEFB    $EF, $EF, $7F   ; AD
+        DEFB    $EF, $EF, $7F   ; B0
+        DEFB    $EF, $EF, $7F   ; B3
+        DEFB    $EF, $EF, $7F   ; B6
+        DEFB    $EF, $7F, $7F   ; B9
+        DEFB    $7F, $7F, $7F   ; BC
+
+L37BF:  LD      A,R
+        LD      L,A
+        LD      B,(HL)
+L37C3:  LD      A,IXL
+        LD      R,A
+        LD      A,B
+        EX      AF,AF'
+        DEC     H
+        IN      L,(C)
+        JP      (HL)
+
+; ----------------------------------
+; Storage of numbers in 5 byte form.
+; ==================================
+; Both integers and floating-point numbers can be stored in five bytes.
+; Zero is a special case stored as 5 zeros.
+; For integers the form is
+; Byte 1 - zero,
+; Byte 2 - sign byte, $00 +ve, $FF -ve.
+; Byte 3 - Low byte of integer.
+; Byte 4 - High byte
+; Byte 5 - unused but always zero.
+;
+; it seems unusual to store the low byte first but it is just as easy either
+; way. Statistically it just increases the chances of trailing zeros which
+; is an advantage elsewhere in saving ROM code.
+;
+;             zero     sign     low      high    unused
+; So +1 is  00000000 00000000 00000001 00000000 00000000
+;
+; and -1 is 00000000 11111111 11111111 11111111 00000000
+;
+; much of the arithmetic found in BASIC lines can be done using numbers
+; in this form using the Z80's 16 bit register operation ADD.
+; (multiplication is done by a sequence of additions).
+;
+; Storing -ve integers in two's complement form, means that they are ready for
+; addition and you might like to add the numbers above to prove that the
+; answer is zero. If, as in this case, the carry is set then that denotes that
+; the result is positive. This only applies when the signs don't match.
+; With positive numbers a carry denotes the result is out of integer range.
+; With negative numbers a carry denotes the result is within range.
+; The exception to the last rule is when the result is -65536
+;
+; Floating point form is an alternative method of storing numbers which can
+; be used for integers and larger (or fractional) numbers.
+;
+; In this form 1 is stored as
+;           10000001 00000000 00000000 00000000 00000000
+;
+; When a small integer is converted to a floating point number the last two
+; bytes are always blank so they are omitted in the following steps
+;
+; first make exponent +1 +16d  (bit 7 of the exponent is set if positive)
+
+; 10010001 00000000 00000001
+; 10010000 00000000 00000010 <-  now shift left and decrement exponent
+; ...
+; 10000010 01000000 00000000 <-  until a 1 abuts the imaginary point
+; 10000001 10000000 00000000     to the left of the mantissa.
+;
+; however since the leftmost bit of the mantissa is always set then it can
+; be used to denote the sign of the mantissa and put back when needed by the
+; PREP routines which gives
+;
+; 10000001 00000000 00000000
+
+; ----------------------------------------------
+; THE 'RE-STACK TWO "SMALL" INTEGERS' SUBROUTINE
+; ----------------------------------------------
+;   This routine is called to re-stack two numbers in full floating point form
+;   e.g. from mult when integer multiplication has overflowed.
+
+;; RE-ST-TWO
+L37CD:  CALL    L37D0           ; routine RESTK-SUB  below and continue
+                                ; into the routine to do the other one.
+
+;; RESTK-SUB
+L37D0:  EX      DE,HL           ; swap pointers
+
+; ---------------------------------------------
+; THE 'RE-STACK ONE "SMALL" INTEGER' SUBROUTINE
+; ---------------------------------------------
+; (offset: $3D 're-stack')
+;   This routine re-stacks an integer, usually on the calculator stack, in full 
+;   floating point form.  HL points to first byte.
+
+;; re-stack
+L37D1:  LD      A,(HL)          ; Fetch Exponent byte to A
+        AND     A               ; test it
+        RET     NZ              ; return if not zero as already in full
+                                ; floating-point form.
+
+        PUSH    DE              ; preserve DE.
+        CALL    L2D7F           ; routine INT-FETCH
+                                ; integer to DE, sign to C.
+
+; HL points to 4th byte.
+
+        XOR     A               ; clear accumulator.
+        INC     HL              ; point to 5th.
+        LD      (HL),A          ; and blank.
+        DEC     HL              ; point to 4th.
+        LD      (HL),A          ; and blank.
+
+        LD      B,$91           ; set exponent byte +ve $81
+                                ; and imaginary dec point 16 bits to right
+                                ; of first bit.
+
+;   we could skip to normalize now but it's quicker to avoid normalizing 
+;   through an empty D.
+
+        LD      A,D             ; fetch the high byte D
+        AND     A               ; is it zero ?
+        JR      NZ,L37EB        ; skip to RS-NRMLSE if not.
+
+        OR      E               ; low byte E to A and test for zero
+        LD      B,D             ; set B exponent to 0
+        JR      Z,L37F7         ; forward to RS-STORE if value is zero.
+
+        LD      D,E             ; transfer E to D
+        LD      E,B             ; set E to 0
+        LD      B,$89           ; reduce the initial exponent by eight.
+
+
+;; RS-NRMLSE
+L37EB:  EX      DE,HL           ; integer to HL, addr of 4th byte to DE.
+
+;; RSTK-LOOP
+L37EC:  DEC     B               ; decrease exponent
+        ADD     HL,HL           ; shift DE left
+        JR      NC,L37EC        ; loop back to RSTK-LOOP
+                                ; until a set bit pops into carry
+
+        RRC     C               ; now rotate the sign byte $00 or $FF
+                                ; into carry to give a sign bit
+
+        RR      H               ; rotate the sign bit to left of H
+        RR      L               ; rotate any carry into L
+
+        EX      DE,HL           ; address 4th byte, normalized int to DE
+
+;; RS-STORE
+L37F7:  DEC     HL              ; address 3rd byte
+        LD      (HL),E          ; place E
+        DEC     HL              ; address 2nd byte
+        LD      (HL),D          ; place D
+        DEC     HL              ; address 1st byte
+        LD      (HL),B          ; store the exponent
+
+        POP     DE              ; restore initial DE.
+        RET                     ; return.
+
+L37FF:  IN      L,(C)
+        JP      (HL)
+
+;3802
+ULTRA:  PUSH    IX              ; 133 bytes
+        POP     HL              ; pongo la direccion de comienzo en HL
+        EXX                     ; salvo DE, en caso de volver al cargador estandar y para hacer luego el checksum
+        LD      C,$00
+ULTR0:  DEFB    $2A
+ULTR1:  JR      NZ,ULTR3        ; return if at any time space is pressed.
+ULTR2:  LD      B,0
+        CALL    L05ED           ; leo la duracion de un pulso (positivo o negativo)
+        JR      NC,ULTR1        ; si el pulso es muy largo retorno a bucle
+        LD      A, B
+        CP      40              ; si el contador esta entre 24 y 40
+        JR      NC,ULTR4        ; y se reciben 8 pulsos (me falta inicializar HL a 00FF)
+        CP      24
+        RL      L
+        JR      NZ,ULTR4
+      IFDEF enram
+        DEFB    $28
+L381E:  OUT     (C),A
+ULTR3:  INC     L
+        JP      L3BB9
+      ELSE
+ULTR3:  EXX
+        LD      C,2
+        RET
+      ENDIF
+ULTR4:  CP      16              ; si el contador esta entre 10 y 16 es el tono guia
+        RR      H               ; de las ultracargas, si los ultimos 8 pulsos
+        CP      10              ; son de tono guia H debe valer FF
+        JR      NC,ULTR2
+        INC     H
+        INC     H
+        JR      NZ,ULTR0        ; si detecto sincronismo sin 8 pulsos de tono guia retorno a bucle
+        CALL    L05ED           ; leo pulso negativo de sincronismo
+        LD      L,$01           ; HL vale 0001, marker para leer 16 bits en HL (checksum y byte flag)
+        CALL    L39E9           ; leo 16 bits, ahora temporizo cada 2 pulsos
+        POP     AF              ; machaco la direccion de retorno de la carga estandar
+        EX      AF,AF'          ; A es el byte flag que espero
+        CP      L               ; lo comparo con el que me encuentro en la ultracarga
+        RET     NZ              ; salgo si no coinciden
+        XOR     H               ; xoreo el checksum con en byte flag, resultado en A
+        EXX                     ; guardo checksum por duplicado en H' y L'
+        PUSH    HL              ; pongo direccion de comienzo en pila
+        LD      C,A
+        EXX
+        LD      HL,$0020        ; leo 11 bits en HL
+        LD      D,A
+        LD      E,$FE
+        CALL    L39E9
+        SRL     H
+        PUSH    HL
+        LD      H,$33
+        POP     IX
+        JR      NC,ULTR5
+        RES     5,L
+        XOR     A
+        LD      A,(HL)
+        LD      IXL,A
+
+ULTR5:  LD      A,$D8           ; A' tiene que valer esto para entrar en Raudo
+        EX      AF,AF'
+        AND     IXH
+        JR      NZ,ULTR6
+        LD      SP,$C000
+        DEFB    $FE
+ULTR6:  POP     DE              ; recupero en DE la direccion de comienzo del bloque
+        INC     C               ; pongo en flag Z el signo del pulso
+        LD      BC,$EFFE        ; este valor es el que necesita B para entrar en Raudo
+        JR      Z,ULTR8
+        LD      H,$37
+ULTR7:  IN      F,(C)
+        JP      PE,ULTR7
+        CALL    L37C3           ; salto a Raudo segun el signo del pulso en flag Z
+        JR      ULTR9
+ULTR8:  IN      F,(C)
+        JP      PO,ULTR8
+        CALL    L3403           ; salto a Raudo
+ULTR9:  AND     IXH             ; en caso de no verificar checksum me salto la rutina
+        EXX                     ; ya se ha acabado la ultracarga (Raudo)
+        JR      Z,ULT12
+ULT10:  LD      B,E
+        LD      E,C
+        LD      C,D
+        XOR     A
+        CP      B
+        JR      Z,ULT11
+        INC     C
+ULT11:  XOR     (HL)
+        INC     HL
+        DJNZ    ULT11
+        DEC     C
+        JP      NZ,ULT11
+        XOR     E
+ULT12:  PUSH    HL              ; ha ido bien
+        LD      H,B
+        LD      L,E
+        LD      D,B
+        LD      E,B
+        POP     IX              ; IX debe apuntar al siguiente byte despues del bloque
+      IFDEF enram
+        JP      L3C05
+      ELSE
+        RET     NZ              ; si no coincide el checksum salgo con Carry desactivado
+        SCF
+        RET
+L3B8C:  JP      L3403
+      ENDIF
 
 ; ------------------------
 ; THE 'MODULUS' SUBROUTINE 
@@ -18256,7 +18953,7 @@ L369B:  POP     AF              ; Drop the calculator return address RE-ENTRY
 ;   used by PRINT-FP.
 
 ;; n-mod-m
-L36A0:  RST     28H             ;; FP-CALC          17, 3.
+L389F:  RST     28H             ;; FP-CALC          17, 3.
         DEFB    $C0             ;;st-mem-0          17, 3.
         DEFB    $02             ;;delete            17.
         DEFB    $31             ;;duplicate         17, 17.
@@ -18273,49 +18970,6 @@ L36A0:  RST     28H             ;; FP-CALC          17, 3.
 
         RET                     ; return.
 
-
-; ------------------
-; THE 'INT' FUNCTION
-; ------------------
-; (offset $27: 'int' )
-; This function returns the integer of x, which is just the same as truncate
-; for positive numbers. The truncate literal truncates negative numbers
-; upwards so that -3.4 gives -3 whereas the BASIC INT function has to
-; truncate negative numbers down so that INT -3.4 is -4.
-; It is best to work through using, say, +-3.4 as examples.
-
-;; int
-L36AF:  RST     28H             ;; FP-CALC              x.    (= 3.4 or -3.4).
-        DEFB    $31             ;;duplicate             x, x.
-        DEFB    $36             ;;less-0                x, (1/0)
-        DEFB    $00             ;;jump-true             x, (1/0)
-        DEFB    $04             ;;to L36B7, X-NEG
-
-        DEFB    $3A             ;;truncate              trunc 3.4 = 3.
-        DEFB    $38             ;;end-calc              3.
-
-        RET                     ; return with + int x on stack.
-
-; ---
-
-
-;; X-NEG
-L36B7:  DEFB    $31             ;;duplicate             -3.4, -3.4.
-        DEFB    $3A             ;;truncate              -3.4, -3.
-        DEFB    $C0             ;;st-mem-0              -3.4, -3.
-        DEFB    $03             ;;subtract              -.4
-        DEFB    $E0             ;;get-mem-0             -.4, -3.
-        DEFB    $01             ;;exchange              -3, -.4.
-        DEFB    $33             ;;jump
-        DEFB    $44             ;;to NEGC
-
-L36BF:  IN      L,(C)
-        JP      (HL)
-
-        DEFB    $38             ;;end-calc              -4.
-
-        RET                     ; return.
-
 ; ------------------
 ; THE 'EXP' FUNCTION
 ; ------------------
@@ -18326,7 +18980,7 @@ L36BF:  IN      L,(C)
 
 ;; EXP
 ;; exp
-L36C4:  RST     28H             ;; FP-CALC
+L38AE:  RST     28H             ;; FP-CALC
         DEFB    $3D             ;;re-stack      (not required - mult will do)
         DEFB    $34             ;;stk-data
         DEFB    $F1             ;;Exponent: $81, Bytes: 4
@@ -18361,42 +19015,47 @@ L36C4:  RST     28H             ;; FP-CALC
         DEFB    $38             ;;end-calc
 
         CALL    L2DD5           ; routine FP-TO-A
-        JP      EXPC
+        JR      NZ,L38EF        ; to N-NEGTV
 
-L36FF:  JP      LOWD
+        JR      C,L38ED         ; to REPORT-6b
+                                ; 'Number too big'
 
-NEGC:   DEFB    $30             ;;not                   -3, (0).
-        DEFB    $00             ;;jump-true             -3.
+        ADD     A,(HL)          ;
+        JR      NC,L38F6        ; to RESULT-OK
 
-        DEFB    $03             ;;to NEG1, EXIT        -3.
 
-        DEFB    $A1             ;;stk-one               -3, 1.
-        DEFB    $03             ;;subtract              -4.
+;; REPORT-6b
+L38ED:  RST     08H             ; ERROR-1
+        DEFB    $05             ; Error Report: Number too big
 
-;; EXIT
-NEG1:   DEFB    $38             ;;end-calc              -4.
+; ---
 
-        RET                     ; return.
+;; N-NEGTV
+L38EF:  JR      C,L38F8         ; to RSLT-ZERO
 
-L3709:  DEFB    $04
+        SUB     (HL)            ;
+        JR      NC,L38F8        ; to RSLT-ZERO
 
-L370A:  NEG                     ; Negate
+        NEG                     ; Negate
 
 ;; RESULT-OK
-L370C:  LD      (HL),A          ;
+L38F6:  LD      (HL),A          ;
         RET                     ; return.
 
 ; ---
 
 
 ;; RSLT-ZERO
-L370E:  RST     28H             ;; FP-CALC
+L38F8:  RST     28H             ;; FP-CALC
         DEFB    $02             ;;delete
         DEFB    $A0             ;;stk-zero
         DEFB    $38             ;;end-calc
 
         RET                     ; return.
 
+        DEFB    $FF, $FF; 2 bytes
+
+L38FF:  DEFB    $FF, $FF
 
 ; --------------------------------
 ; THE 'NATURAL LOGARITHM' FUNCTION 
@@ -18448,22 +19107,22 @@ L370E:  RST     28H             ;; FP-CALC
 ;   Error A if the argument is 0 or negative.
 
 ;; ln
-L3713:  RST     28H             ;; FP-CALC
+L3901:  RST     28H             ;; FP-CALC
         DEFB    $3D             ;;re-stack
         DEFB    $31             ;;duplicate
         DEFB    $37             ;;greater-0
         DEFB    $00             ;;jump-true
-        DEFB    $04             ;;to L371C, VALID
+        DEFB    $04             ;;to L390A, VALID
 
         DEFB    $38             ;;end-calc
 
 
 ;; REPORT-Ab
-L371A:  RST     08H             ; ERROR-1
+        RST     08H             ; ERROR-1
         DEFB    $09             ; Error Report: Invalid argument
 
 ;; VALID
-L371C:  DEFB    $A0             ;;stk-zero              Note. not 
+L390A:  DEFB    $A0             ;;stk-zero              Note. not 
         DEFB    $02             ;;delete                necessary.
         DEFB    $38             ;;end-calc
         LD      A,(HL)          ;
@@ -18484,7 +19143,7 @@ L371C:  DEFB    $A0             ;;stk-zero              Note. not
         DEFB    $03             ;;subtract
         DEFB    $37             ;;greater-0
         DEFB    $00             ;;jump-true
-        DEFB    $08             ;;to L373D, GRE.8
+        DEFB    $08             ;;to L392B, GRE.8
 
         DEFB    $01             ;;exchange
         DEFB    $A1             ;;stk-one
@@ -18497,7 +19156,7 @@ L371C:  DEFB    $A0             ;;stk-zero              Note. not
         RST     28H             ;; FP-CALC
 
 ;; GRE.8
-L373D:  DEFB    $01             ;;exchange
+L392B:  DEFB    $01             ;;exchange
         DEFB    $34             ;;stk-data
         DEFB    $F0             ;;Exponent: $80, Bytes: 4
         DEFB    $31,$72,$17,$F8 ;;
@@ -18545,6 +19204,80 @@ L373D:  DEFB    $01             ;;exchange
 
         RET                     ; return.
 
+; ---------------------
+; THE 'ARCTAN' FUNCTION
+; ---------------------
+; (Offset $24: 'atn')
+; the inverse tangent function with the result in radians.
+; This is a fundamental transcendental function from which others such as asn
+; and acs are directly, or indirectly, derived.
+; It uses the series generator to produce Chebyshev polynomials.
+
+;; atn
+L3971:  CALL    L37D1           ; routine re-stack
+        LD      A,(HL)          ; fetch exponent byte.
+        CP      $81             ; compare to that for 'one'
+        JR      C,L3987         ; forward, if less, to SMALL
+
+        RST     28H             ;; FP-CALC
+        DEFB    $A1             ;;stk-one
+        DEFB    $1B             ;;negate
+        DEFB    $01             ;;exchange
+        DEFB    $05             ;;division
+        DEFB    $31             ;;duplicate
+        DEFB    $36             ;;less-0
+        DEFB    $A3             ;;stk-pi/2
+        DEFB    $01             ;;exchange
+        DEFB    $00             ;;jump-true
+        DEFB    $06             ;;to L3989, CASES
+
+        DEFB    $1B             ;;negate
+        DEFB    $33             ;;jump
+        DEFB    $03             ;;to L3989, CASES
+
+;; SMALL
+L3987:  RST     28H             ;; FP-CALC
+        DEFB    $A0             ;;stk-zero
+
+;; CASES
+L3989:  DEFB    $01             ;;exchange
+        DEFB    $31             ;;duplicate
+        DEFB    $31             ;;duplicate
+        DEFB    $04             ;;multiply
+        DEFB    $31             ;;duplicate
+        DEFB    $0F             ;;addition
+        DEFB    $A1             ;;stk-one
+        DEFB    $03             ;;subtract
+        DEFB    $8C             ;;series-0C
+        DEFB    $10             ;;Exponent: $60, Bytes: 1
+        DEFB    $B2             ;;(+00,+00,+00)
+        DEFB    $13             ;;Exponent: $63, Bytes: 1
+        DEFB    $0E             ;;(+00,+00,+00)
+        DEFB    $55             ;;Exponent: $65, Bytes: 2
+        DEFB    $E4,$8D         ;;(+00,+00)
+        DEFB    $58             ;;Exponent: $68, Bytes: 2
+        DEFB    $39,$BC         ;;(+00,+00)
+        DEFB    $5B             ;;Exponent: $6B, Bytes: 2
+        DEFB    $98,$FD         ;;(+00,+00)
+        DEFB    $9E             ;;Exponent: $6E, Bytes: 3
+        DEFB    $00,$36,$75     ;;(+00)
+        DEFB    $A0             ;;Exponent: $70, Bytes: 3
+        DEFB    $DB,$E8,$B4     ;;(+00)
+        DEFB    $63             ;;Exponent: $73, Bytes: 2
+        DEFB    $42,$C4         ;;(+00,+00)
+        DEFB    $E6             ;;Exponent: $76, Bytes: 4
+        DEFB    $B5,$09,$36,$BE ;;
+        DEFB    $E9             ;;Exponent: $79, Bytes: 4
+        DEFB    $36,$73,$1B,$5D ;;
+        DEFB    $EC             ;;Exponent: $7C, Bytes: 4
+        DEFB    $D8,$DE,$63,$BE ;;
+        DEFB    $F0             ;;Exponent: $80, Bytes: 4
+        DEFB    $61,$A1,$B3,$0C ;;
+        DEFB    $04             ;;multiply
+        DEFB    $0F             ;;addition
+        DEFB    $38             ;;end-calc
+
+        RET                     ; return.
 
 ; -----------------------------
 ; THE 'TRIGONOMETRIC' FUNCTIONS
@@ -18603,7 +19336,7 @@ L373D:  DEFB    $01             ;;exchange
 ;
 
 ;; get-argt
-L3783:  RST     28H             ;; FP-CALC      X.
+L39C2:  RST     28H             ;; FP-CALC      X.
         DEFB    $3D             ;;re-stack      (not rquired done by mult)
         DEFB    $34             ;;stk-data
         DEFB    $EE             ;;Exponent: $7E, 
@@ -18637,7 +19370,7 @@ L3783:  RST     28H             ;; FP-CALC      X.
                                 ;;                 for cosine function.
 
         DEFB    $00             ;;jump-true
-        DEFB    $04             ;;to L37A1, ZPLUS  with quadrants II and III.
+        DEFB    $04             ;;to L39E0, ZPLUS  with quadrants II and III.
 
 ; else the angle lies in quadrant I or IV and value Y is already correct.
 
@@ -18652,12 +19385,12 @@ L3783:  RST     28H             ;; FP-CALC      X.
 ; Y will hold -2 to -1 if this is quadrant III.
 
 ;; ZPLUS
-L37A1:  DEFB    $A1             ;;stk-one         Y, Z, 1.
+L39E0:  DEFB    $A1             ;;stk-one         Y, Z, 1.
         DEFB    $03             ;;subtract        Y, Z-1.       Q3 = 0 to -1
         DEFB    $01             ;;exchange        Z-1, Y.
         DEFB    $36             ;;less-0          Z-1, (1/0).
         DEFB    $00             ;;jump-true       Z-1.
-        DEFB    $02             ;;to L37A8, YNEG
+        DEFB    $02             ;;to L39E7, YNEG
                                 ;;if angle in quadrant III
 
 ; else angle is within quadrant II (-1 to 0)
@@ -18665,10 +19398,215 @@ L37A1:  DEFB    $A1             ;;stk-one         Y, Z, 1.
         DEFB    $1B             ;;negate          range +1 to 0.
 
 ;; YNEG
-L37A8:  DEFB    $38             ;;end-calc        quadrants II and III correct.
+L39E7:  DEFB    $38             ;;end-calc        quadrants II and III correct.
 
         RET                     ; return.
 
+;GET16
+L39E9:  LD      B,0             ; 16 bytes
+        CALL    L05ED           ; esta rutina lee 2 pulsos e inicializa el contador de pulsos
+        CALL    L05ED
+        LD      A,B
+        CP      12
+        ADC     HL,HL
+        JR      NC,L39E9
+        RET
+
+;; EXO_GETBIT
+L39F9:  ADD     A,A             ; get one bit
+        RET     NZ
+        LD      A,(HL)
+        INC     HL
+        ADC     A,A
+        RET
+
+L39FF:  DEFB    $FF, $FF
+
+
+;****************************************
+;** Part 10. FLOATING-POINT CALCULATOR **
+;****************************************
+
+; As a general rule the calculator avoids using the IY register.
+; exceptions are val, val$ and str$.
+; So an assembly language programmer who has disabled interrupts to use
+; IY for other purposes can still use the calculator for mathematical
+; purposes.
+
+
+; ------------------------
+; THE 'TABLE OF ADDRESSES'
+; ------------------------
+;  "Each problem that I solved became a rule which served afterwards to solve 
+;   other problems" - Rene Descartes 1596 - 1650.
+;
+;   Starts with binary operations which have two operands and one result.
+;   Three pseudo binary operations first.
+
+;; tbl-addrs
+L3A01:  DEFW    L368F           ; $00 Address: $368F - jump-true
+        DEFW    L33F2           ; $01 Address: $343C - exchange
+        DEFW    L3453           ; $02 Address: $33A1 - delete
+
+;   True binary operations.
+
+        DEFW    L300F           ; $03 Address: $300F - subtract
+        DEFW    L30CA           ; $04 Address: $30CA - multiply
+        DEFW    L31AF           ; $05 Address: $31AF - division
+        DEFW    L36C9           ; $06 Address: $3851 - to-power
+        DEFW    L351B           ; $07 Address: $351B - or
+
+        DEFW    L3524           ; $08 Address: $3524 - no-&-no
+        DEFW    L353B           ; $09 Address: $353B - no-l-eql
+        DEFW    L353B           ; $0A Address: $353B - no-gr-eql
+        DEFW    L353B           ; $0B Address: $353B - nos-neql
+        DEFW    L353B           ; $0C Address: $353B - no-grtr
+        DEFW    L353B           ; $0D Address: $353B - no-less
+        DEFW    L353B           ; $0E Address: $353B - nos-eql
+        DEFW    L3014           ; $0F Address: $3014 - addition
+
+        DEFW    L352D           ; $10 Address: $352D - str-&-no
+        DEFW    L353B           ; $11 Address: $353B - str-l-eql
+        DEFW    L353B           ; $12 Address: $353B - str-gr-eql
+        DEFW    L353B           ; $13 Address: $353B - strs-neql
+        DEFW    L353B           ; $14 Address: $353B - str-grtr
+        DEFW    L353B           ; $15 Address: $353B - str-less
+        DEFW    L353B           ; $16 Address: $353B - strs-eql
+        DEFW    L359C           ; $17 Address: $359C - strs-add
+
+;   Unary follow.
+
+        DEFW    L35DE           ; $18 Address: $35DE - val$
+        DEFW    L34BC           ; $19 Address: $34BC - usr-$
+        DEFW    L3645           ; $1A Address: $3645 - read-in
+        DEFW    L346E           ; $1B Address: $346E - negate
+
+        DEFW    L3669           ; $1C Address: $3669 - code
+        DEFW    L35DE           ; $1D Address: $35DE - val
+        DEFW    L3674           ; $1E Address: $3674 - len
+        DEFW    L3AC1           ; $1F Address: $37B5 - sin
+        DEFW    L3AB6           ; $20 Address: $37AA - cos
+        DEFW    L32B7           ; $21 Address: $37DA - tan
+        DEFW    L32EF           ; $22 Address: $3833 - asn
+        DEFW    L36A0           ; $23 Address: $3843 - acs
+        DEFW    L3971           ; $24 Address: $37E2 - atn
+        DEFW    L3901           ; $25 Address: $3713 - ln
+        DEFW    L38AE           ; $26 Address: $36C4 - exp
+        DEFW    L3296           ; $27 Address: $36AF - int
+        DEFW    L36C2           ; $28 Address: $384A - sqr
+        DEFW    L3492           ; $29 Address: $3492 - sgn
+        DEFW    L346A           ; $2A Address: $346A - abs
+        DEFW    L34AC           ; $2B Address: $34AC - peek
+        DEFW    L34A5           ; $2C Address: $34A5 - in
+        DEFW    L34B3           ; $2D Address: $34B3 - usr-no
+        DEFW    L361F           ; $2E Address: $361F - str$
+        DEFW    L35C9           ; $2F Address: $35C9 - chrs
+        DEFW    L3501           ; $30 Address: $3501 - not
+
+;   End of true unary.
+
+        DEFW    L32D7           ; $31 Address: $33C0 - duplicate
+        DEFW    L389F           ; $32 Address: $36A0 - n-mod-m
+        DEFW    L3686           ; $33 Address: $3686 - jump
+        DEFW    L3A85           ; $34 Address: $33C6 - stk-data
+        DEFW    L367A           ; $35 Address: $367A - dec-jr-nz
+        DEFW    L3506           ; $36 Address: $3506 - less-0
+        DEFW    L34F9           ; $37 Address: $34F9 - greater-0
+        DEFW    L369B           ; $38 Address: $369B - end-calc
+        DEFW    L39C2           ; $39 Address: $3783 - get-argt
+        DEFW    L3214           ; $3A Address: $3214 - truncate
+        DEFW    L3454           ; $3B Address: $33A2 - fp-calc-2
+        DEFW    L2D4F           ; $3C Address: $2D4F - e-to-fp
+        DEFW    L37D1           ; $3D Address: $3297 - re-stack
+
+;   The following are just the next available slots for the 128 compound 
+;   literals which are in range $80 - $FF.
+
+        DEFW    L3BC0           ;     Address: $3449 - series-xx    $80 - $9F.
+        DEFW    L32DD           ;     Address: $341B - stk-const-xx $A0 - $BF.
+        DEFW    L36E6           ;     Address: $342D - st-mem-xx    $C0 - $DF.
+        DEFW    L3B01           ;     Address: $340F - get-mem-xx   $E0 - $FF.
+
+;   Aside: 3E - 3F are therefore unused calculator literals.
+;   If the literal has to be also usable as a function then bits 6 and 7 are 
+;   used to show type of arguments and result.
+
+
+; -------------------
+; Stack literals ($34)
+; -------------------
+; When a calculator subroutine needs to put a value on the calculator
+; stack that is not a regular constant this routine is called with a
+; variable number of following data bytes that convey to the routine
+; the integer or floating point form as succinctly as is possible.
+
+;; stk-data
+L3A85:  LD      H,D             ; transfer STKEND
+        LD      L,E             ; to HL for result.
+
+;; STK-CONST
+L3A87:  CALL    L3302           ; routine TEST-5-SP tests that room exists
+                                ; and sets BC to $05.
+
+        EXX                     ; switch to alternate set
+        PUSH    HL              ; save the pointer to next literal on stack
+        EXX                     ; switch back to main set
+
+        EX      (SP),HL         ; pointer to HL, destination to stack.
+
+        PUSH    BC              ; save BC - value 5 from test room ??.
+
+        LD      A,(HL)          ; fetch the byte following 'stk-data'
+        AND     $C0             ; isolate bits 7 and 6
+        RLCA                    ; rotate
+        RLCA                    ; to bits 1 and 0  range $00 - $03.
+        LD      C,A             ; transfer to C
+        INC     C               ; and increment to give number of bytes
+                                ; to read. $01 - $04
+        LD      A,(HL)          ; reload the first byte
+        AND     $3F             ; mask off to give possible exponent.
+        JR      NZ,L3A9D        ; forward to FORM-EXP if it was possible to
+                                ; include the exponent.
+
+; else byte is just a byte count and exponent comes next.
+
+        INC     HL              ; address next byte and
+        LD      A,(HL)          ; pick up the exponent ( - $50).
+
+;; FORM-EXP
+L3A9D:  ADD     A,$50           ; now add $50 to form actual exponent
+        LD      (DE),A          ; and load into first destination byte.
+        LD      A,$05           ; load accumulator with $05 and
+        SUB     C               ; subtract C to give count of trailing
+                                ; zeros plus one.
+        INC     HL              ; increment source
+        INC     DE              ; increment destination
+        LD      B,$00           ; prepare to copy
+        LDIR                    ; copy C bytes
+
+        POP     BC              ; restore 5 counter to BC ??.
+
+        EX      (SP),HL         ; put HL on stack as next literal pointer
+                                ; and the stack value - result pointer -
+                                ; to HL.
+
+        EXX                     ; switch to alternate set.
+        POP     HL              ; restore next literal pointer from stack
+                                ; to H'L'.
+        EXX                     ; switch back to main set.
+
+        LD      B,A             ; zero count to B
+        XOR     A               ; clear accumulator
+
+;; STK-ZEROS
+L3AB0:  DEC     B               ; decrement B counter
+        RET     Z               ; return if zero.          >>
+                                ; DE points to new STKEND
+                                ; HL to new number.
+
+        LD      (DE),A          ; else load zero to destination
+        INC     DE              ; increase destination
+        JR      L3AB0           ; loop back to STK-ZEROS until done.
 
 ; ---------------------
 ; THE 'COSINE' FUNCTION
@@ -18698,7 +19636,7 @@ L37A8:  DEFB    $38             ;;end-calc        quadrants II and III correct.
 ;
 
 ;; cos
-L37AA:  RST     28H             ;; FP-CALC              angle in radians.
+L3AB6:  RST     28H             ;; FP-CALC              angle in radians.
         DEFB    $39             ;;get-argt              X     reduce -1 to +1 
 
         DEFB    $2A             ;;abs                   ABS X.   0 to 1
@@ -18708,12 +19646,12 @@ L37AA:  RST     28H             ;; FP-CALC              angle in radians.
 
         DEFB    $E0             ;;get-mem-0             fetch the sign indicator
         DEFB    $00             ;;jump-true
-        DEFB    $06             ;;fwd to L37B7, C-ENT
+        DEFB    $06             ;;fwd to L3AC3, C-ENT
                                 ;;forward to common code if in QII or QIII.
 
         DEFB    $1B             ;;negate                else make sign +ve.
         DEFB    $33             ;;jump
-        DEFB    $03             ;;fwd to L37B7, C-ENT
+        DEFB    $03             ;;fwd to L3AC3, C-ENT
                                 ;; with quadrants I and IV.
 
 ; -------------------
@@ -18737,116 +19675,18 @@ L37AA:  RST     28H             ;; FP-CALC              angle in radians.
 ; into common code.
 
 ;; sin
-L37B5:  RST     28H             ;; FP-CALC      angle in radians
+L3AC1:  RST     28H             ;; FP-CALC      angle in radians
         DEFB    $39             ;;get-argt      reduce - sign now correct.
 
 ;; C-ENT
-L37B7:  DEFB    $31             ;;duplicate
+L3AC3:  DEFB    $31             ;;duplicate
         DEFB    $31             ;;duplicate
         DEFB    $04             ;;multiply
         DEFB    $31             ;;duplicate
         DEFB    $0F             ;;addition
         DEFB    $A1             ;;stk-one
+        DEFB    $03             ;;subtract
 
-        DEFB    $33
-        DEFB    $44             ;;jump to SINC
-
-L37BF:  JP      LOWD
-
-        DEFB    $1F,$0B         ;;(+00,+00)
-        DEFB    $A3             ;;Exponent: $73, Bytes: 3
-        DEFB    $8F,$38,$EE     ;;(+00)
-        DEFB    $E9             ;;Exponent: $79, Bytes: 4
-        DEFB    $15,$63,$BB,$23 ;;
-        DEFB    $EE             ;;Exponent: $7E, Bytes: 4
-        DEFB    $92,$0D,$CD,$ED ;;
-        DEFB    $F1             ;;Exponent: $81, Bytes: 4
-        DEFB    $23,$5D,$1B,$EA ;;
-        DEFB    $04             ;;multiply
-        DEFB    $38             ;;end-calc
-        RET                     ; return.
-
-; ----------------------
-; THE 'TANGENT' FUNCTION
-; ----------------------
-; (offset $21: 'tan')
-;
-; Evaluates tangent x as    sin(x) / cos(x).
-;
-;
-;           /|
-;        h / |
-;         /  |o
-;        /x  |
-;       /----|    
-;         a
-;
-; the tangent of angle x is the ratio of the length of the opposite side 
-; divided by the length of the adjacent side. As the opposite length can 
-; be calculates using sin(x) and the adjacent length using cos(x) then 
-; the tangent can be defined in terms of the previous two functions.
-
-; Error 6 if the argument, in radians, is too close to one like pi/2
-; which has an infinite tangent. e.g. PRINT TAN (PI/2)  evaluates as 1/0.
-; Similarly PRINT TAN (3*PI/2), TAN (5*PI/2) etc.
-
-;; tan
-L37DA:  RST     28H             ;; FP-CALC          x.
-        DEFB    $31             ;;duplicate         x, x.
-        DEFB    $1F             ;;sin               x, sin x.
-        DEFB    $01             ;;exchange          sin x, x.
-        DEFB    $20             ;;cos               sin x, cos x.
-        DEFB    $05             ;;division          sin x/cos x (= tan x).
-        DEFB    $38             ;;end-calc          tan x.
-
-        RET                     ; return.
-
-; ---------------------
-; THE 'ARCTAN' FUNCTION
-; ---------------------
-; (Offset $24: 'atn')
-; the inverse tangent function with the result in radians.
-; This is a fundamental transcendental function from which others such as asn
-; and acs are directly, or indirectly, derived.
-; It uses the series generator to produce Chebyshev polynomials.
-
-;; atn
-L37E2:  CALL    L3297           ; routine re-stack
-        LD      A,(HL)          ; fetch exponent byte.
-        CP      $81             ; compare to that for 'one'
-        JR      C,L37F8         ; forward, if less, to SMALL
-
-        RST     28H             ;; FP-CALC
-        DEFB    $A1             ;;stk-one
-        DEFB    $1B             ;;negate
-        DEFB    $01             ;;exchange
-        DEFB    $05             ;;division
-        DEFB    $31             ;;duplicate
-        DEFB    $36             ;;less-0
-        DEFB    $A3             ;;stk-pi/2
-        DEFB    $01             ;;exchange
-        DEFB    $00             ;;jump-true
-        DEFB    $06             ;;to L37FA, CASES
-
-        DEFB    $1B             ;;negate
-        DEFB    $33             ;;jump
-        DEFB    $03             ;;to L37FA, CASES
-
-;; SMALL
-L37F8:  RST     28H             ;; FP-CALC
-        DEFB    $A0             ;;stk-zero
-
-;; CASES
-L37FA:  DEFB    $01             ;;exchange
-        DEFB    $31             ;;duplicate
-        DEFB    $31             ;;duplicate
-        DEFB    $33
-        DEFB    $70             ;;jump to ATNC
-
-L37FF:  IN      L,(C)
-        JP      (HL)
-
-SINC:   DEFB    $03             ;;subtract
         DEFB    $86             ;;series-06
         DEFB    $14             ;;Exponent: $64, Bytes: 1
         DEFB    $E6             ;;(+00,+00,+00)
@@ -18862,493 +19702,59 @@ SINC:   DEFB    $03             ;;subtract
         DEFB    $23,$5D,$1B,$EA ;;
         DEFB    $04             ;;multiply
         DEFB    $38             ;;end-calc
-        RET                     ; return.
-
-        DEFB    $BE,$E9         ;;Exponent: $79, Bytes: 4
-        DEFB    $36,$73,$1B,$5D ;;
-        DEFB    $EC             ;;Exponent: $7C, Bytes: 4
-        DEFB    $D8,$DE,$63,$BE ;;
-        DEFB    $F0             ;;Exponent: $80, Bytes: 4
-        DEFB    $61,$A1,$B3,$0C ;;
-        DEFB    $04             ;;multiply
-        DEFB    $0F             ;;addition
-        DEFB    $38             ;;end-calc
-        RET                     ; return.
-
-; ---------------------
-; THE 'ARCSIN' FUNCTION
-; ---------------------
-; (Offset $22: 'asn')
-;   The inverse sine function with result in radians.
-;   Derived from arctan function above.
-;   Error A unless the argument is between -1 and +1 inclusive.
-;   Uses an adaptation of the formula asn(x) = atn(x/sqr(1-x*x))
-;
-;
-;                 /|
-;                / |
-;              1/  |x
-;              /a  |
-;             /----|    
-;               y
-;
-;   e.g. We know the opposite side (x) and hypotenuse (1) 
-;   and we wish to find angle a in radians.
-;   We can derive length y by Pythagoras and then use ATN instead. 
-;   Since y*y + x*x = 1*1 (Pythagoras Theorem) then
-;   y=sqr(1-x*x)                         - no need to multiply 1 by itself.
-;   So, asn(a) = atn(x/y)
-;   or more fully,
-;   asn(a) = atn(x/sqr(1-x*x))
-
-;   Close but no cigar.
-
-;   While PRINT ATN (x/SQR (1-x*x)) gives the same results as PRINT ASN x,
-;   it leads to division by zero when x is 1 or -1.
-;   To overcome this, 1 is added to y giving half the required angle and the 
-;   result is then doubled. 
-;   That is, PRINT ATN (x/(SQR (1-x*x) +1)) *2
-;
-;   GEOMETRIC PROOF.
-;
-;
-;               . /|
-;            .  c/ |
-;         .     /1 |x
-;      . c   b /a  |
-;    ---------/----|    
-;      1      y
-;
-;   By creating an isosceles triangle with two equal sides of 1, angles c and 
-;   c are also equal. If b+c+c = 180 degrees and b+a = 180 degrees then c=a/2.
-;
-;   A value higher than 1 gives the required error as attempting to find  the
-;   square root of a negative number generates an error in Sinclair BASIC.
-
-;; asn
-L3833:  RST     28H             ;; FP-CALC      x.
-        DEFB    $31             ;;duplicate     x, x.
-        DEFB    $31             ;;duplicate     x, x, x.
-        DEFB    $04             ;;multiply      x, x*x.
-        DEFB    $A1             ;;stk-one       x, x*x, 1.
-        DEFB    $03             ;;subtract      x, x*x-1.
-        DEFB    $1B             ;;negate        x, 1-x*x.
-        DEFB    $28             ;;sqr           x, sqr(1-x*x) = y
-        DEFB    $A1             ;;stk-one       x, y, 1.
-        DEFB    $0F             ;;addition      x, y+1.
-        DEFB    $05             ;;division      x/y+1.
-        DEFB    $24             ;;atn           a/2       (half the angle)
-        DEFB    $31             ;;duplicate     a/2, a/2.
-        DEFB    $0F             ;;addition      a.
-        DEFB    $38             ;;end-calc      a.
 
         RET                     ; return.
 
+;3AE6
+      IFDEF enram
+SN128:  POP     HL              ; 56 bytes
+        LD      SP,HL
+        POP     HL              ; reemplazo pila, 4 bytes
+        LD      ($BFFE),HL
+        POP     HL
+        JP      SNA41           ;SNAP48-2
+        DEFB    $38, $38, $38, $38, $38, $38, $38, $38;
+        DEFB    $38, $38, $38, $38, $38, $38;
+      ELSE
+SN128:  DEC     BC
+        EXX
+        LD      A,E
+        CP      $18
+        JP      Z,SNA48         ;SNA48
+        AND     A
+        EXX
+        OUT     (C),A
+        EXX
+        DEC     SP
+        DEC     SP
+        INC     E
+        EXX
+        LD      D,$C0
+        LD      B,$EF
+        JP      L32AB
+      ENDIF
 
-; ---------------------
-; THE 'ARCCOS' FUNCTION
-; ---------------------
-; (Offset $23: 'acs')
-; the inverse cosine function with the result in radians.
-; Error A unless the argument is between -1 and +1.
-; Result in range 0 to pi.
-; Derived from asn above which is in turn derived from the preceding atn.
-; It could have been derived directly from atn using acs(x) = atn(sqr(1-x*x)/x).
-; However, as sine and cosine are horizontal translations of each other,
-; uses acs(x) = pi/2 - asn(x)
+        DEFB    $FF; 1 byte
 
-; e.g. the arccosine of a known x value will give the required angle b in 
-; radians.
-; We know, from above, how to calculate the angle a using asn(x). 
-; Since the three angles of any triangle add up to 180 degrees, or pi radians,
-; and the largest angle in this case is a right-angle (pi/2 radians), then
-; we can calculate angle b as pi/2 (both angles) minus asn(x) (angle a).
-; 
-;
-;           /|
-;        1 /b|
-;         /  |x
-;        /a  |
-;       /----|    
-;         y
-;
-
-;; acs
-L3843:  RST     28H             ;; FP-CALC      x.
-        DEFB    $22             ;;asn           asn(x).
-        DEFB    $A3             ;;stk-pi/2      asn(x), pi/2.
-        DEFB    $03             ;;subtract      asn(x) - pi/2.
-        DEFB    $1B             ;;negate        pi/2 -asn(x)  =  acs(x).
-        DEFB    $38             ;;end-calc      acs(x).
-
-        RET                     ; return.
-
-
-; --------------------------
-; THE 'SQUARE ROOT' FUNCTION
-; --------------------------
-; (Offset $28: 'sqr')
-; This routine is remarkable for its brevity - 7 bytes.
-; It wasn't written here but in the ZX81 where the programmers had to squeeze
-; a bulky operating system into an 8K ROM. It simply calculates 
-; the square root by stacking the value .5 and continuing into the 'to-power'
-; routine. With more space available the much faster Newton-Raphson method
-; could have been used as on the Jupiter Ace.
-
-;; sqr
-L384A:  RST     28H             ;; FP-CALC
-        DEFB    $31             ;;duplicate
-        DEFB    $30             ;;not
-        DEFB    $00             ;;jump-true
-        DEFB    $1E             ;;to L386C, LAST
-
-        DEFB    $A2             ;;stk-half
-        DEFB    $38             ;;end-calc
-
+L3AFF:  DEFB    $FF, $FF
 
 ; ------------------------------
-; THE 'EXPONENTIATION' OPERATION
+; Get from memory area ($E0 etc.)
 ; ------------------------------
-; (Offset $06: 'to-power')
-; This raises the first number X to the power of the second number Y.
-; As with the ZX80,
-; 0 ^ 0 = 1.
-; 0 ^ +n = 0.
-; 0 ^ -n = arithmetic overflow.
-;
+; Literals $E0 to $FF
+; A holds $00-$1F offset.
+; The calculator stack increases by 5 bytes.
 
-;; to-power
-L3851:  RST     28H             ;; FP-CALC              X, Y.
-        DEFB    $01             ;;exchange              Y, X.
-        DEFB    $31             ;;duplicate             Y, X, X.
-        DEFB    $30             ;;not                   Y, X, (1/0).
-        DEFB    $00             ;;jump-true
-        DEFB    $07             ;;to L385D, XIS0   if X is zero.
-
-;   else X is non-zero. Function 'ln' will catch a negative value of X.
-
-        DEFB    $25             ;;ln                    Y, LN X.
-        DEFB    $04             ;;multiply              Y * LN X.
-        DEFB    $38             ;;end-calc
-
-        JP      L36C4           ; jump back to EXP routine   ->
-
-; ---
-
-;   these routines form the three simple results when the number is zero.
-;   begin by deleting the known zero to leave Y the power factor.
-
-;; XIS0
-L385D:  DEFB    $02             ;;delete                Y.
-        DEFB    $31             ;;duplicate             Y, Y.
-        DEFB    $30             ;;not                   Y, (1/0).
-        DEFB    $00             ;;jump-true
-        DEFB    $09             ;;to L386A, ONE         if Y is zero.
-
-        DEFB    $A0             ;;stk-zero              Y, 0.
-        DEFB    $01             ;;exchange              0, Y.
-        DEFB    $37             ;;greater-0             0, (1/0).
-        DEFB    $00             ;;jump-true             0.
-        DEFB    $06             ;;to L386C, LAST        if Y was any positive 
-                                ;;                      number.
-
-;   else force division by zero thereby raising an Arithmetic overflow error.
-;   There are some one and two-byte alternatives but perhaps the most formal
-;   might have been to use end-calc; rst 08; defb 05.
-
-        DEFB    $A1             ;;stk-one               0, 1.
-        DEFB    $01             ;;exchange              1, 0.
-        DEFB    $05             ;;division              1/0        ouch!
-
-; ---
-
-;; ONE
-L386A:  DEFB    $02             ;;delete                .
-        DEFB    $A1             ;;stk-one               1.
-
-;; LAST
-L386C:  DEFB    $38             ;;end-calc              last value is 1 or 0.
-
-        RET                     ; return.               
-
-
-ATNC:   DEFB    $04             ;;multiply
-        DEFB    $31             ;;duplicate
-        DEFB    $0F             ;;addition
-        DEFB    $A1             ;;stk-one
-        DEFB    $03             ;;subtract
-        DEFB    $8C             ;;series-0C
-        DEFB    $10             ;;Exponent: $60, Bytes: 1
-        DEFB    $B2             ;;(+00,+00,+00)
-        DEFB    $13             ;;Exponent: $63, Bytes: 1
-        DEFB    $0E             ;;(+00,+00,+00)
-        DEFB    $55             ;;Exponent: $65, Bytes: 2
-        DEFB    $E4,$8D         ;;(+00,+00)
-        DEFB    $58             ;;Exponent: $68, Bytes: 2
-        DEFB    $39,$BC         ;;(+00,+00)
-        DEFB    $5B             ;;Exponent: $6B, Bytes: 2
-        DEFB    $98,$FD         ;;(+00,+00)
-        DEFB    $9E             ;;Exponent: $6E, Bytes: 3
-        DEFB    $00,$36,$75     ;;(+00)
-        DEFB    $A0             ;;Exponent: $70, Bytes: 3
-        DEFB    $DB,$E8,$B4     ;;(+00)
-        DEFB    $63             ;;Exponent: $73, Bytes: 2
-        DEFB    $42,$C4         ;;(+00,+00)
-        DEFB    $E6             ;;Exponent: $76, Bytes: 4
-        DEFB    $B5,$09,$36,$BE ;;
-        DEFB    $E9             ;;Exponent: $79, Bytes: 4
-        DEFB    $36,$73,$1B,$5D ;;
-        DEFB    $EC             ;;Exponent: $7C, Bytes: 4
-        DEFB    $D8,$DE,$63,$BE ;;
-        DEFB    $F0             ;;Exponent: $80, Bytes: 4
-        DEFB    $61,$A1,$B3,$0C ;;
-        DEFB    $04             ;;multiply
-        DEFB    $0F             ;;addition
-        DEFB    $38             ;;end-calc
-
+;; get-mem-xx
+L3B01:  PUSH    DE              ; save STKEND
+        LD      HL,($5C68)      ; MEM is base address of the memory cells.
+        CALL    L36A7           ; routine LOC-MEM so that HL = first byte
+        CALL    L32D7           ; routine MOVE-FP moves 5 bytes with memory
+                                ; check.
+                                ; DE now points to new STKEND.
+        POP     HL              ; original STKEND is now RESULT pointer.
         RET                     ; return.
 
-;   "Everything should be made as simple as possible, but not simpler"
-;   - Albert Einstein, 1879-1955.
-
-EXPC:   JR      NZ,EXP2         ; to N-NEGTV
-
-        JR      C,EXP1          ; to REPORT-6b
-                                ; 'Number too big'
-
-        ADD     A,(HL)          ;
-        JP      NC,L370C        ; to RESULT-OK
-
-
-;; REPORT-6b
-EXP1:   RST     08H             ; ERROR-1
-        DEFB    $05             ; Error Report: Number too big
-
-; ---
-
-;; N-NEGTV
-EXP2:   JR      C,EXP3          ; to RSLT-ZERO
-
-        SUB     (HL)            ;
-        JP      C,L370A         ; to RSLT-ZERO
-
-EXP3:   JP      L370E
-
-LOWD:   LD      A,R             ;9
-        EXX                     ;4
-        LD      L,A             ;4
-        EX      AF,AF'          ;4
-        JR      NC,LOW2         ;7  12
-        OR      (HL)            ;7
-        EXX                     ;4
-        LD      (DE),A          ;7
-        INC     DE              ;6
-LOW1:   LD      A,$04           ;7
-        EX      AF,AF'          ;4
-        LD      A,IXL           ;8
-        LD      R,A             ;9
-        LD      A,$0A           ;7
-        OUT     ($FE),A         ;11= 98
-        IN      L,(C)
-        JP      (HL)
-LOW2:   OR      (HL)            ;7
-        EXX                     ;4
-        ADD     A,A             ;4
-        RET     C               ;5
-        ADD     A,A             ;4
-        EX      AF,AF'          ;4
-        LD      A,IXL           ;8
-        LD      R,A             ;9
-        LD      A,$0E           ;7
-        OUT     ($FE),A         ;11= 96
-        IN      L,(C)
-        JP      (HL)
-
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-
-ULTRA:  PUSH    IX
-        POP     BC              ; pongo la direccion de comienzo en HL
-        EXX                     ; salvo DE, en caso de volver al cargador estandar y para hacer luego el checksum
-        LD      C,$00
-ULTR1:  DEFB    $2A
-ULTR2:  JR      NZ,ULTR4        ; return if at any time space is pressed.
-ULTR3:  LD      B,0
-        CALL    L05ED           ; leo la duracion de un pulso (positivo o negativo)
-        JR      NC,ULTR2        ; si el pulso es muy largo retorno a bucle
-        LD      A, B
-        CP      40              ; si el contador esta entre 24 y 40
-        JR      NC,ULTR5        ; y se reciben 8 pulsos (me falta inicializar HL a 00FF)
-        CP      24
-        RL      L
-        JR      NZ,ULTR5
-ULTR4:  EXX
-        LD      C,2
-        RET
-ULTR5:  CP      16              ; si el contador esta entre 10 y 16 es el tono guia
-        RR      H               ; de las ultracargas, si los ultimos 8 pulsos
-        CP      10              ; son de tono guia H debe valer FF
-        JR      NC,ULTR3
-        INC     H
-        INC     H
-        JR      NZ,ULTR1        ; si detecto sincronismo sin 8 pulsos de tono guia retorno a bucle
-        CALL    L05ED           ; leo pulso negativo de sincronismo
-        LD      IXL,$C1         ; 48000Hz
-        BIT     3,B
-        JR      Z,ULTR6
-        LD      IXL,$BD         ; 44100Hz también vale $BA
-ULTR6:  LD      L,$01           ; HL vale 0001, marker para leer 16 bits en HL (checksum y byte flag)
-ULTR7:  LD      B,0             ; 16 bytes
-        CALL    L05ED           ; esta rutina lee 2 pulsos e inicializa el contador de pulsos
-        CALL    L05ED
-        LD      A,B
-        CP      12
-        ADC     HL,HL
-        JR      NC,ULTR7
-        POP     AF              ; machaco la direccion de retorno de la carga estandar
-        EX      AF,AF'          ; A es el byte flag que espero
-        CP      L               ; lo comparo con el que me encuentro en la ultracarga
-        RET     NZ              ; salgo si no coinciden
-        XOR     H               ; xoreo el checksum con en byte flag, resultado en A
-        LD      IXH,A
-        EXX                     ; guardo checksum por duplicado en H' y L'
-        PUSH    BC              ; pongo direccion de comienzo en pila
-        LD      H,$39
-        EXX
-        POP     DE              ; recupero en DE la direccion de comienzo del bloque
-        INC     C               ; pongo en flag Z el signo del pulso
-        LD      BC,$FFFE        ; este valor es el que necesita B para entrar en Raudo
-        LD      H,$37
-        JR      Z,ULTR9
-ULTR8:  IN      F,(C)
-        JP      PE,ULTR8
-        JR      ULT11
-ULTR9:  DEC     H
-ULT10:  IN      F,(C)
-        JP      PO,ULT10
-        JR      ULT11
-ULT11:  CALL    LOW1
-        EXX
-        LD      H,B
-        LD      L,C
-        LD      B,E
-        LD      C,D
-        XOR     A
-        CP      B
-        JR      Z,ULT12
-        INC     C
-ULT12:  XOR     (HL)
-        INC     HL
-        DJNZ    ULT12
-        DEC     C
-        JP      NZ,ULT12
-        PUSH    HL
-        LD      L,A
-        XOR     IXH
-        LD      H,B
-        LD      D,B
-        LD      E,B
-        POP     IX              ; IX debe apuntar al siguiente byte despues del bloque
-        RET     NZ              ; si no coincide el checksum salgo con Carry desactivado
-        SCF
-        RET
-
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        
-        DEFB    $00, $00, $FF   ; C5 C6
-        DEFB    $00, $00, $FF   ; C8 C9
-        DEFB    $00, $00, $FF   ; CB CC
-        DEFB    $00, $00, $FF   ; CE CF
-        DEFB    $00, $00, $FF   ; D1 D2
-        DEFB    $01, $01, $FF   ; D4 D5
-        DEFB    $01, $01, $FF   ; D7 D8
-        DEFB    $01, $01, $FF   ; DA DB
-        DEFB    $01, $01, $FF   ; DD DE
-        DEFB    $01, $02, $FF   ; E0 E1 --
-        DEFB    $02, $02, $FF   ; E3 E4
-        DEFB    $02, $02, $FF   ; E6 E7
-        DEFB    $02, $02, $FF   ; E9 EA
-        DEFB    $02, $02, $FF   ; EC ED
-        DEFB    $02, $03, $FF   ; EF F0
-        DEFB    $03, $03, $FF   ; F2 F3
-        DEFB    $03, $03, $FF   ; F5 F6
-        DEFB    $03, $03, $FF   ; F8 F9
-        DEFB    $03, $03, $FF   ; FB FC
-        DEFB    $03, $FF, $FF   ; FE FF
-
-L3A01:  DI
-        DEC     (IY+$02)
-L3A05:  LD      HL,L3BD7
-        ADD     A,(HL)
-        INC     HL
-        JR      NZ,L3A05+1
-        LD      B,$20
-L3A0E:  LD      A,$85
-        RST     10H
-        DJNZ    L3A0E
-L3A13:  LD      H, B
-        LD      L, C
-        LD      BC, $7FFE
-        LD      DE, $1820
-L3A1B:  IN      A, (C)
-        JP      PO,L3A23
-        JP      L3A25
-L3A23:  LD      A, D
-        INC     HL
-L3A25:  XOR     $10
-        OUT     (C), A
-        DJNZ    L3A1B
-        DEC     E
-        JR      NZ, L3A1B
-        RL      L
-        LD      A, H
-        LD      DE, $591E
-        LD      HL, $591F
-        LD      C, L
-        LD      (HL), B
-        LDDR
-        LD      L, A
-        LD      (HL), $5B
-        JR      NC,L3A13
-        LD      (HL), $43
-        INC     L
-        LD      (HL), D
-        JR      L3A13
-
-        DEFB    $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-L3B00:  DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF;
 
 ;EXO-A
 L3B0D:  LD      IY,$5B00        ; EXO_MAPBASEBITS
@@ -19364,7 +19770,7 @@ L3B16:  EX      AF,AF'
         LD      DE,1            ; DE=b2
 L3B21:  LD      C,16
         EX      AF,AF'
-L3B24:  CALL    L3BAA           ; EXO_GETBIT
+L3B24:  CALL    L39F9           ; EXO_GETBIT
         RL      C
         JR      NC,L3B24
         PUSH    HL
@@ -19385,16 +19791,16 @@ L3B33:  ADD     HL,HL
 ;; EXO_LITERALCOPY
 L3B45:  LDI
 ;; EXO_MAINLOOP
-L3B47:  CALL    L3BAA           ; EXO_GETBIT, literal?
+L3B47:  CALL    L39F9           ; EXO_GETBIT, literal?
         JR      C,L3B45         ; EXO_LITERALCOPY
         LD      C,255
 L3B4E:  INC     C
-        CALL    L3BAA           ; EXO_GETBIT
+        CALL    L39F9           ; EXO_GETBIT
         JR      NC,L3B4E
         BIT     4,C
         RET     NZ
         PUSH    DE
-        CALL    L3B88           ; EXO_GETPAIR
+        CALL    L3BE1           ; EXO_GETPAIR
         PUSH    BC
         POP     IX
         LD      DE,512+48       ; 1?
@@ -19407,13 +19813,13 @@ L3B68:  LD      DE,1024+32
         JR      Z,L3B6F         ; EXO_GOFORIT
         LD      E,16
 ;; EXO_GOFORIT
-L3B6F:  CALL    L3B9C           ; EXO_GETBITS
+L3B6F:  CALL    L33C2           ; EXO_GETBITS
         EX      AF,AF'
         LD      A,E
         ADD     A,C
         LD      C,A
         EX      AF,AF'
-        CALL    L3B88           ; EXO_GETPAIR, BC=offset
+        CALL    L3BE1           ; EXO_GETPAIR, BC=offset
         POP     DE              ; DE=destination
         PUSH    HL    
         LD      H,D
@@ -19425,10 +19831,147 @@ L3B6F:  CALL    L3B9C           ; EXO_GETBITS
         POP     HL              ; keep HL, DE is updated
         JR      L3B47           ; EXO_MAINLOOP
 
+;3B88
+      IFDEF enram
+SNA48:  XOR     A
+        JP      L3C06
+L3B8C:  JP      L3403
+      ELSE
+SNA48:  POP     HL              ; 56 bytes
+        LD      SP,HL
+        POP     HL              ; reemplazo pila, 4 bytes
+        LD      ($BFFE),HL
+        POP     HL
+      ENDIF
+
+SNA41:  LD      ($C000),HL
+      IFNDEF enram
+        JR      C, SNA42
+        EXX
+        DEC     SP
+        POP     AF              ; last byte 7FFD
+        OUT     (C),A
+SNA42:  
+      ENDIF
+        POP     BC              ; BC'
+        POP     DE              ; DE'
+        POP     HL              ; HL'
+        EXX
+        POP     AF              ; AF'
+        EX      AF,AF'
+        POP     BC              ; BC
+        POP     DE              ; DE
+        POP     HL              ; IR
+        POP     IX              ; IX
+        POP     IY              ; IY
+        LD      A,L
+        LD      I,A
+        POP     AF              ; IM,IFF
+        JR      NC,SNA43
+        IM      2
+SNA43:  JR      NZ,SNA44
+        EI
+SNA44:  PUSH    AF
+        DEC     SP
+        POP     AF
+        RRA
+        OUT     ($FE),A
+        LD      A,H
+        LD      HL,2
+        ADD     HL,SP
+        LD      R,A
+        POP     AF              ; AF
+        JP      (HL)
+
+      IFDEF enram
+L3BB9:  EXX
+        LD      C,$02
+        JP      L3C06
+        DEFB    $00; 1 byte
+      ENDIF
+
+; ------------------------------
+; THE 'SERIES GENERATOR' ROUTINE
+; ------------------------------
+; (offset: $86 'series-06')
+; (offset: $88 'series-08')
+; (offset: $8C 'series-0C')
+;   The Spectrum uses Chebyshev polynomials to generate approximations for
+;   SIN, ATN, LN and EXP.  These are named after the Russian mathematician
+;   Pafnuty Chebyshev, born in 1821, who did much pioneering work on numerical
+;   series.  As far as calculators are concerned, Chebyshev polynomials have an
+;   advantage over other series, for example the Taylor series, as they can
+;   reach an approximation in just six iterations for SIN, eight for EXP and
+;   twelve for LN and ATN.  The mechanics of the routine are interesting but
+;   for full treatment of how these are generated with demonstrations in
+;   Sinclair BASIC see "The Complete Spectrum ROM Disassembly" by Dr Ian Logan
+;   and Dr Frank O'Hara, published 1983 by Melbourne House.
+
+;; series-xx
+L3BC0:  LD      B,A             ; parameter $00 - $1F to B counter
+        CALL    L3410           ; routine GEN-ENT-1 is called.
+                                ; A recursive call to a special entry point
+                                ; in the calculator that puts the B register
+                                ; in the system variable BREG. The return
+                                ; address is the next location and where
+                                ; the calculator will expect its first
+                                ; instruction - now pointed to by HL'.
+                                ; The previous pointer to the series of
+                                ; five-byte numbers goes on the machine stack.
+
+; The initialization phase.
+
+        DEFB    $31             ;;duplicate       x,x
+        DEFB    $0F             ;;addition        x+x
+        DEFB    $C0             ;;st-mem-0        x+x
+        DEFB    $02             ;;delete          .
+        DEFB    $A0             ;;stk-zero        0
+        DEFB    $C2             ;;st-mem-2        0
+
+; a loop is now entered to perform the algebraic calculation for each of
+; the numbers in the series
+
+;; G-LOOP
+L3BCA:  DEFB    $31             ;;duplicate       v,v.
+        DEFB    $E0             ;;get-mem-0       v,v,x+2
+        DEFB    $04             ;;multiply        v,v*x+2
+        DEFB    $E2             ;;get-mem-2       v,v*x+2,v
+        DEFB    $C1             ;;st-mem-1
+        DEFB    $03             ;;subtract
+        DEFB    $38             ;;end-calc
+
+; the previous pointer is fetched from the machine stack to H'L' where it
+; addresses one of the numbers of the series following the series literal.
+
+        CALL    L3A85           ; routine STK-DATA is called directly to
+                                ; push a value and advance H'L'.
+        CALL    L3414           ; routine GEN-ENT-2 recursively re-enters
+                                ; the calculator without disturbing
+                                ; system variable BREG
+                                ; H'L' value goes on the machine stack and is
+                                ; then loaded as usual with the next address.
+
+        DEFB    $0F             ;;addition
+        DEFB    $01             ;;exchange
+        DEFB    $C2             ;;st-mem-2
+        DEFB    $02             ;;delete
+
+        DEFB    $35             ;;dec-jr-nz
+        DEFB    $EE             ;;back to L3BCA, G-LOOP
+
+; when the counted loop is complete the final subtraction yields the result
+; for example SIN X.
+
+        DEFB    $E1             ;;get-mem-1
+        DEFB    $03             ;;subtract
+        DEFB    $38             ;;end-calc
+
+        RET                     ; return with H'L' pointing to location
+                                ; after last number in series.
 ;; EXO_GETPAIR
-L3B88:  LD      IYL,C
+L3BE1:  LD      IYL,C
         LD      D,(IY+0)
-        CALL    L3B9C           ; EXO_GETBITS
+        CALL    L33C2           ; EXO_GETBITS
         PUSH    HL
         LD      L,(IY+52)
         LD      H,(IY+104)
@@ -19438,71 +19981,246 @@ L3B88:  LD      IYL,C
         POP     HL
         RET
 
-;; EXO_GETBITS
-L3B9C:  LD      BC,0            ; get D bits in BC
-L3B9F:  DEC     D
-        RET     M
-        CALL    L3BAA           ; EXO_GETBIT
-        RL      C
-        RL      B
-        JR      L3B9F
-
-;; EXO_GETBIT
-L3BAA:  ADD     A,A             ; get one bit
-        RET     NZ
-        LD      A,(HL)
-        INC     HL
-        ADC     A,A
+      IFDEF enram
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF; 10 bytes
+        DEFB    $FF, $FF;
+L3BFF:  DEFB    $FF, $FF, $FF, $FF, $FF; 5 bytes
         RET
-
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-L3BD0:  DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-L3BD7:  DEFB    $16-$0d, $07-$16, $0C-$07 ; locate cursor at 7, 12
-        DEFB    $10-$0C, $04-$10          ; ink 4 (green)
-        DEFB    $11-$10, $04-$11          ; paper 4 (green)
-        DEFB    $DC-$40, $0D-$24          ; print "BRIGHT"+CR (only see green blocks)
-        DEFB    $00;                      ; end
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-L3C00:  DEFB    $FF, $FF, $FF, $FF;
-L3C04:  RET
-        DEFB    $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+L3C05:  EX      AF, AF
+L3C06:  SCF
+L3C07:  EXX
+        LD      HL,$8000        ; GUARDO DATOS 6->4 / 2->0
+        LD      DE,$3CAC
+        LD      BC,$0054
+        LDIR
+        LD      D,H             ; PARCHEO EN 6 / 2
+        LD      C,L
+        LD      HL,$3C3E
+        LDIR
+        LD      BC,$1FFD
+        LD      A,4
+        LD      HL,$FC25
+        JP      L381E           ; R52x
+        JR      NC,L3C20
+        LD      D,$40
+L3C20:  LD      L,$3E           ; MUEVO PARCHE 4->2 / 0->2
+        LD      BC,$00C2
+        LD      E,B
+        LDIR
+        LD      BC,$7FFD
+        LD      H,D
+        JP      $8000
+        LD      A,$10
+        JR      NC,L3C30
+        LD      A,$14
+L3C30:  OUT     (C),A           ; R520 / R524
+        LD      DE,$FCAC        ; MUEVO PARCHE 2->0
+        LD      L,$6E
+        LD      BC,$0054
+        LDIR
+        LD      BC,$7FFD
+        LD      A,$11
+        OUT     (C),A           ; R521
+        LD      HL,$4000        ; 5->1 DESDE 2
+        LD      B,H
+        LD      C,L
+        LD      DE,$C000
+        JR      NC,L3C54
+        EX      DE,HL
+L3C54:  LDIR
+        LD      BC,$7FFD
+        LD      A,$16
+        OUT     (C),A           ; R526
+        LD      D,$80
+        LD      H,$C0
+        LD      BC,$4000        ; 6->2 DESDE 2
+        JR      NC,L3C6B
+        EX      DE,HL
+L3C6B:  LDIR
+        LD      BC,$7FFD
+        LD      A,$10
+        JR      NC,L3C70
+        LD      A,$14
+L3C70:  OUT     (C),A           ; R524 / R520
+        LD      A,1
+        JR      NC,L3C82
+        LD      A,5
+L3C82:  LD      BC,$1FFD
+        OUT     (C),A           ; 0123
+        JP      L3C8A
+L3C8A:  LD      HL,$3CAC        ; RECUPERO 2 CON PARCHE EN 0
+        LD      D,$80
+        LD      BC,$0054
+        LDIR
+        EXX
+        JP      NC,ULTRA
+        JP      Z,SN128
+        EX      AF,AF
+        LD      B,A
+        EX      AF,AF
+        LD      A,B
+        EX      AF,AF
+        RET     NZ              ; si no coincide el checksum salgo con Carry desactivado
+        SCF
+        RET
+        DEFB    $00, $00, $00, $00, $00, $00, $00, $00;
+        DEFB    $00, $00, $00, $00, $00, $00, $00, $00;
+        DEFB    $00, $00, $00, $00, $00, $00, $00, $00;
+        DEFB    $00, $00, $00, $00, $00, $00, $00, $00;
+        DEFB    $00, $00, $00, $00, $00, $00, $00, $00;
+        DEFB    $00, $00, $00, $00, $00, $00, $00, $00;
+        DEFB    $00, $00, $00, $00, $00, $00, $00, $00;
+        DEFB    $00, $00, $00, $00, $00, $00, $00, $00;
+        DEFB    $00, $00, $00, $00, $00, $00, $00, $00;
+        DEFB    $00, $00, $00, $00, $00, $00, $00, $00;
+        DEFB    $00, $00, $00, $00, $00, $00, $00, $00;
+        DEFB    $00, $00, $00, $00, $00;
+      ELSE
+        DEFB    'CargLeches'
+L3BFF:  DEFB    $FF, $FF;
+        DEFB    $FF, $FF; 2 bytes
+L3C03:  LD      (DE),A          ; Una de las dos opciones de subfuncion a llamar (En este caso pinta/borra pieza)
+        RET
+        DEFB    $FF, $FF, $FF, $FF; 4 bytes
+L3C09:  AND     D
+        RST     $10
+        DEC     (IY+$02)
+        LD      IXH,B
+L3C10:  LD      B,23            ; Dibujar 22 lineas (el primer CR se salta) con "RANDOMIZE " en tinta y fondo negros (se ve una columna negra de 10 caracteres de ancho)
+        LD      A,$11           ; Funcion que cambia el color de fondo
+        RST     $10
+        DB      $3A             ; xor   a, Opcode para LD A, (NN). En la primera pasada se salta el CR y carga A con el valor 0 (fondo negro)
+L3C16:  RST     $10             ; Funcion imprime caracter por pantalla, el codigo ASCII se introduce en el registro A
+        LD      A,13            ; Codigo ASCII para CR (retorno de carro)
+        LD      (IY-$0B),A      ; Pongo inicialmente a 13 la variable velo (velocidad) que en realidad es el retardo en frames de la caida de una pieza. Es necesario inicializarla porque durante el juego se decrementa y pierde su valor inicial (variable incrustada en codigo)
+        RST     $10             ; Envio por pantalla el retorno de carro (fondo negro en primera iteracion)
+        LD      A,249           ; Codigo ASCII para RANDOMIZE, lo uso porque es el token mas largo, que ademas me da el ancho de 10 cuadros que necesito (contando con el espacio del final)
+        DJNZ    L3C16           ; Repito el bucle 23 veces (dibujo 22 lineas). Si lo hago tras perder una partida se produce scroll (y la tipica pregunta scroll? mas?)
+        LD      HL,$0110        ; Inicializo las variables REPDEL, REPPER (frames para detectar una pulsacion continua y cadencia en frames del envio de la misma tecla) a unos valores mas optimos para jugar
+        LD      ($5C09),HL      ; Los que usa la ROM por defecto son muy lentos para la dinamica del juego
+L3C27:  LD      A,R             ; Leo un numero pseudoaleatorio del registro R
+L3C29:  SUB     7               ; Estas dos lineas equivalen a un MOD 7
+        JR      NC,L3C29        ; o resto de dividir el byte entre 7, ya que necesito elegir una pieza al azar de entre las 7
+        LD      L,A             ; Paso dicho valor al registro L para leer pieza de la tabla
+        INC     A
+        ADD     A,A             ; Multiplico por 9 (para usar el color tanto en tinta como en fondo, de lo contrario se verian los caracteres del RANDOMIZE)
+        ADD     A,A
+        ADD     A,A
+        ADD     A,L
+        AND     $3F
+        EX      AF,AF'          ; Guardo color generado en A'
+        LD      DE,$5846        ; La primera pieza parte de la coordenada (x, y)= (6, 2), en el registro DE guardo la posicion
+        LD      H,$3C           ; Posicion alta de la tabla de piezas
+        LD      L,(HL)          ; Leo byte de la tabla de piezas
+        LD      H,B             ; Pongo H a cero, con lo que inicialmente la pieza (almacenada en HL) contiene algo asi 00000000XXXXXXXX
+        CALL    $0E94           ; Multiplico por 16 o desplazo 4 bits para tener la pieza centrada y que no resulten extranas las rotaciones
+        LD      C,D             ; Pongo C a un valor mayor de 4 con los bits 1 y 2 a cero (que indican que entro en el bucle principal desde nueva pieza)
+L3C41:  LD      IXL,$F3         ; IX apunta a la subfuncion a llamar (dentro de la funcion L3CDC), en este caso es la que comprueba si hay colision antes de pintar la pieza
+        CALL    L3CDC           ; Llamo a la funcion L3CDC para testear la pieza (con -1 ahorro un byte porque PUSH DE coincide con el ultimo byte de la instruccion anterior)
+        JR      Z,L3C53         ; Si no hay colision, salto a ncol
+        POP     HL              ; Si hay colision, recupero los valores de posicion
+        POP     DE              ; y pieza anteriores a la colision
+        LD      SP,$FF40        ; Equilibro la pila, ya que la estaba desequilibrando con muchos PUSH HL,DE y un solo POP HL,DE
+        BIT     2,C             ; Compruebo si en punto de entrada del bucle es haber
+        JR      Z,L3C10         ; generado la pieza, en tal caso (con una colision nada mas generar la pieza) reinicio el juego
+        INC     C               ; Senalizo la colision poniendo a 1 el bit 1 del registro C
+L3C53:  LD      IXL,$03         ; IX apunta a la subfuncion pintar/borrar
+        EX      AF,AF'          ; recupero el color de A'
+        CALL    L3CDC           ; pinto la pieza
+        EX      AF,AF'          ; vuelvo a guardar el color en A'
+        BIT     1,C             ; Compruebo si ha habido colision (del tipo colision contra el suelo, no vale contra paredes ni tras rotar)
+        JR      NZ,L3C9E        ; Salto a L3C9E en caso de ese tipo de colision
+        PUSH    DE              ; Guardo posicion en pila
+L3C60:  LD      A,($5C78)       ; Leo contador de frames
+        LD      B,A             ; Lo guardo temporalmente en B
+        SUB     (IY)            ; Comparo con referencia (valor de frames que tenia la pieza antes de descender)
+        SUB     (IY-$0B)        ; Aplico un retardo (numero de frames que tarda la pieza en descender)
+        JR      Z,L3C75         ; Si se agota el tiempo, la pieza cae por gravedad, salto a "salt"
+        BIT     5,(IY+1)        ; Mientras tanto voy leyendo si se ha pulsado una tecla
+        JR      Z,L3C60         ; En tal caso, rompo el bucle de tiempo
+        LD      A,($5C08)       ; Con el registro A conteniendo el codigo ASCII de la tecla pulsada
+L3C75:  PUSH    HL              ; Guardo pieza en pila
+        CALL    L1F4F           ; res   5, (iy+1). Senalizo tecla leida. En este punto si A vale cero es que no se ha pulsado nada y la pieza cae por si sola
+        PUSH    AF              ; Guardo tecla pulsada
+        XOR     A               ; Borrar es pintar con color 0 (negro)
+        CALL    L3CDC           ; Borra pieza
+        POP     AF              ; Recupero tecla pulsada
+        SUB     $6F             ; He pulsado izquierda?
+        JR      NZ,L3C84        ; No, pues salto y no hago nada
+        DEC     E               ; Si, pues decremento posicion
+L3C84:  DEC     A               ; He pulsado derecha? seria caracter 'p' justo despues de 'o', por eso basta con un decremento para comparar
+        JR      NZ,L3C88        ; No, pues salto y no hago nada
+        INC     E               ; Si, pues incremento posicion
+L3C88:  DEC     A               ; He pulsado arriba (rotar)? seria caracter 'q', despues de 'p'
+        LD      C,1             ; Inicializo A y C a cero y uno respectivamente, independientemente de si salto o no
+        JR      Z,L3CCB         ; Si, pues salto a rota (con A y C inicializadas)
+        ADD     $0F             ; Se ha pulsado una tecla que cae fuera del rango 'b'-'q'? Como por ejemplo 'a', acelerar caida
+        LD      A,B             ; Pongo la actual variable FRAMES1 de B a A
+L3C90:  LD      BC,$2004        ; Inicializo B a 32 (bajo posicion una fila completa) y C a 4 indicando que entro al bucle principal via pieza no acelerada
+        JR      C,L3C41         ; Si la pieza cae por su peso (ninguna tecla pulsada), cierro bucle principal
+        INC     C               ; Si se ha pulsado 'a' o equivalente, senalizo pieza acelerada en registro C
+L3C96:  INC     DE              ; Avanza la posicion en una fila (32 caracteres)
+        DJNZ    L3C96
+        LD      (IY),A          ; Pongo FRAMES1 (antes guardada en A) como referencia en time (variable incrustada en codigo)
+        JR      L3C41           ; Cierro bucle principal
+L3C9E:  LD      HL,$5ABF        ; Parto desde una coordenada (31, 21) que es la parte inferior derecha de la pantalla
+L3CA1:  EX      DE,HL           ; Almaceno posicion en DE
+        XOR     A               ; Pongo A a cero (lo usare en la instruccion CPIR)
+        LD      HL,$FFE0        ; Hago que HL apunte 32 bytes por debajo de DE
+        ADD     HL,DE
+        LD      C,11            ; Comparo 11 caracteres (el primero es siempre blanco ya que es el situado en la columna 31)
+        PUSH    HL              ; Si alguno de los 11 caracteres es negro (linea no rellena)
+        CPIR                    ; lo detecto activando el flag Z tras la instruccion CPIR
+        POP     HL              ; Recupero HL, ya que CPIR modifica su valor
+        JR      Z,L3CA1         ; Bucle que voy repitiendo (probando con lineas que estan por encima) hasta detectar una falsa linea completa en la ROM (debajo de $4000)
+        LD      C,L             ; Pongo BC con el valor justo para que el desplazamiento (machacar la linea completada con las lineas superiores) solo ocurra en la zona de la memoria de video que corresponde a atributos
+        LD      A,H
+        SUB     $58
+        JP      C,L3C27         ; Si me salgo de la zona de atributos es que ya he llegado a la primera linea y por tanto salgo del bucle (a generar una nueva pieza)
+        LD      B,A
+        LDDR                    ; Hago el corrimiento de lineas
+        RLC     (IY-$22)        ; Esto me permite aumentar el nivel de velocidad cada 8 lineas completadas
+        JR      NC,L3C9E
+        DEC     (IY-$0B)        ; Decremento retardo de caida de piezas (aumento por tanto la velocidad)
+        JR      L3C9E           ; Cierro bucle
+L3CC4:  DJNZ    L3CCE           ; Repito bucle interior 4 veces
+        POP     HL              ; Recupero HL de pila
+        RR      H               ; Desplazo HL hacia la derecha
+        RR      L
+L3CCB:  LD      B,4             ; Pongo contador a 4
+        PUSH    HL              ; Guardo HL en pila, ya que no quiero que pierda su valor al desplazarlo 4 veces
+L3CCE:  ADD     HL,HL           ; Desplazo 4 veces HL a la izquierda
+        ADD     HL,HL
+        ADD     HL,HL
+        ADD     HL,HL
+        RL      C               ; Propago el contenido al par de registros (A, C)
+        RLA
+        JR      NC,L3CC4        ; Como inicialmente (A, C) valia 1, esto me indica que he llegado al bit marcador, por tanto ya he movido 16 bits
+        POP     HL              ; Salgo del bucle, pero necesito equilibrar pila (no me importa el valor)
+        LD      H,A             ; Finalmente la pieza rotada queda en (A, C), que la muevo a HL
+        LD      L,C
+        JR      L3C90           ; Salto al bucle principal (con indicador de pieza no acelerada)
+L3CDC:  PUSH    DE              ; Guardo DE, HL y BC en pila
+        PUSH    HL
+        PUSH    BC
+L3CDF:  LD      B,4             ; El bucle interior es de 4 y el exterior es de C, por tanto se repite 4xC veces, siendo C siempre mayor que 4. Como HL no puede tener mas de 16 bits solo se pinta/borra/comprueba colision en una reticula de 4x4
+L3CE1:  ADD     HL,HL           ; Siguiente bit dentro de la reticula 4x4 a comparar
+        CALL    C,$03F4         ; Si esta a 1 realizo una subfuncion (pintar/borra o comprobar si hay colision). La subfuncion esta apuntada por el registro IX. Como $03f4 en ROM es una instruccion JP (IX), esta instruccion equivaldria a CALL C, (IX)
+        DEC     DE              ; Voy pintando hacia atras y de abajo hacia arriba (decrementando DE)
+        DJNZ    L3CE1           ; Cierro bucle interior
+        LD      B,28            ; Como ya he completado 4 bytes de la linea, necesito 28 mas para posicionarme en la siguiente linea (en este caso la de arriba)
+L3CEA:  DEC     DE              ; Hago la resta via bucle con djnz, que equivaldria a SUB DE, 28
+        DJNZ    L3CEA
+        DEC     C               ; Cierro bucle exterior
+        JR      NZ,L3CDF
+L3CF0:  POP     BC              ; Recupero BC, HL y DE de la pila
+        JP      $1A45
+        OR      A               ; Compruebo si el color es negro (color 0)
+        RET     Z               ; Si es negro, retorno de subfuncion con carry Z activado (indica no que hay colision)
+        POP     DE              ; Si no es negro, hay colision, lo indico con carry Z desactivo y salgo de la subfuncion y de la funcion L3CDC
+        JR      L3CF0
+L3CF9:  DEFB    $66, $0F, $2E, $4E, $6C, $8E, $C6;
+      ENDIF
 
 ; -------------------------------
 ; THE 'ZX SPECTRUM CHARACTER SET'
@@ -20159,8 +20877,36 @@ L3D00:  DEFB    %00000000
         DEFB    %01111110
         DEFB    %00000000
 
+      IFDEF spanish
+; $5B - Character: '!inv'       CHR$(91)
+        DEFB    %00000000
+        DEFB    %00001000
+        DEFB    %00000000
+        DEFB    %00001000
+        DEFB    %00001000
+        DEFB    %00001000
+        DEFB    %00001000
+        DEFB    %00000000
+; $5C - Character: 'ntilde'     CHR$(92)
+        DEFB    %00111100
+        DEFB    %00000000
+        DEFB    %01100010
+        DEFB    %01010010
+        DEFB    %01001010
+        DEFB    %01000110
+        DEFB    %01000010
+        DEFB    %00000000
+; $5D - Character: '?inv'       CHR$(93)
+        DEFB    %00010000
+        DEFB    %00000000
+        DEFB    %00010000
+        DEFB    %00100000
+        DEFB    %01000000
+        DEFB    %01000010
+        DEFB    %00111100
+        DEFB    %00000000
+      ELSE
 ; $5B - Character: '['          CHR$(91)
-
         DEFB    %00000000
         DEFB    %00001110
         DEFB    %00001000
@@ -20169,9 +20915,7 @@ L3D00:  DEFB    %00000000
         DEFB    %00001000
         DEFB    %00001110
         DEFB    %00000000
-
 ; $5C - Character: '\'          CHR$(92)
-
         DEFB    %00000000
         DEFB    %00000000
         DEFB    %01000000
@@ -20180,9 +20924,7 @@ L3D00:  DEFB    %00000000
         DEFB    %00001000
         DEFB    %00000100
         DEFB    %00000000
-
 ; $5D - Character: ']'          CHR$(93)
-
         DEFB    %00000000
         DEFB    %01110000
         DEFB    %00010000
@@ -20191,6 +20933,7 @@ L3D00:  DEFB    %00000000
         DEFB    %00010000
         DEFB    %01110000
         DEFB    %00000000
+      ENDIF
 
 ; $5E - Character: '^'          CHR$(94)
 
@@ -20214,8 +20957,18 @@ L3D00:  DEFB    %00000000
         DEFB    %00000000
         DEFB    %11111111
 
+      IFDEF spanish
+; $60 - Character: ' Pt '       CHR$(96)
+        DEFB    %00000000
+        DEFB    %11110000
+        DEFB    %10001000
+        DEFB    %10001010
+        DEFB    %11110111
+        DEFB    %10000010
+        DEFB    %10000011
+        DEFB    %00000000
+      ELSE
 ; $60 - Character: ' £ '        CHR$(96)
-
         DEFB    %00000000
         DEFB    %00011100
         DEFB    %00100010
@@ -20224,6 +20977,7 @@ L3D00:  DEFB    %00000000
         DEFB    %00100000
         DEFB    %01111110
         DEFB    %00000000
+      ENDIF
 
 ; $61 - Character: 'a'          CHR$(97)
 
@@ -20522,8 +21276,18 @@ L3D00:  DEFB    %00000000
         DEFB    %00001110
         DEFB    %00000000
 
+      IFDEF spanish
+; $7C - Character: 'ntilde'     CHR$(124)
+        DEFB    %00111000
+        DEFB    %00000000
+        DEFB    %01011000
+        DEFB    %01100100
+        DEFB    %01000100
+        DEFB    %01000100
+        DEFB    %01000100
+        DEFB    %00000000
+      ELSE
 ; $7C - Character: '|'          CHR$(124)
-
         DEFB    %00000000
         DEFB    %00001000
         DEFB    %00001000
@@ -20532,6 +21296,7 @@ L3D00:  DEFB    %00000000
         DEFB    %00001000
         DEFB    %00001000
         DEFB    %00000000
+      ENDIF
 
 ; $7D - Character: '}'          CHR$(125)
 
@@ -20580,8 +21345,11 @@ L3D00:  DEFB    %00000000
 ; Alex Pallero Gonzales     for corrections.
 ; Mike Dailly               for comments.
 ; Alvin Albrecht            for comments.
-; Andy Styles               for full relocatability implementation and testing.                    testing.
+; Andy Styles               for full relocatability implementation and testing.
 ; Andrew Owen               for ZASM compatibility and format improvements.
+; Francisco Villa           for CargandoLeches main ultraloader code.
+; Metalbrain                for CargandoLeches exomizer decrunch routine.
+; Antonio Villena           for CargandoLeches rest of code.
 
 ;   For other assemblers you may have to add directives like these near the 
 ;   beginning - see accompanying documentation.
@@ -20594,3 +21362,8 @@ L3D00:  DEFB    %00000000
 ;   Note. The Sinclair Interface 1 ROM written by Dr. Ian Logan and Martin 
 ;   Brennan calls numerous routines in this ROM.  
 ;   Non-standard entry points have a label beginning with X. 
+
+;   CargandoLeches modification: The file assembles well in sjasmplus, delete
+;   or comment the first directive "OUTPUT 48.rom" and conditional assembly
+;   directives "IFDEF,ELSE,ENDIF" if you have problems with your assembler.
+
