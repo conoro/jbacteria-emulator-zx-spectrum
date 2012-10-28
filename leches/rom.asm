@@ -18913,21 +18913,21 @@ ULTR8:  IN      F,(C)
         CALL    L3403           ; salto a Raudo
 ULTR9:  AND     IXH             ; en caso de no verificar checksum me salto la rutina
         EXX                     ; ya se ha acabado la ultracarga (Raudo)
-        JR      Z,ULT12
-ULT10:  LD      B,E
+        JR      Z,ULT11
+        LD      B,E
         LD      E,C
         LD      C,D
         XOR     A
         CP      B
-        JR      Z,ULT11
+        JR      Z,ULT10
         INC     C
-ULT11:  XOR     (HL)
+ULT10:  XOR     (HL)
         INC     HL
-        DJNZ    ULT11
+        DJNZ    ULT10
         DEC     C
-        JP      NZ,ULT11
+        JP      NZ,ULT10
         XOR     E
-ULT12:  PUSH    HL              ; ha ido bien
+ULT11:  PUSH    HL              ; ha ido bien
         LD      H,B
         LD      L,E
         LD      D,B

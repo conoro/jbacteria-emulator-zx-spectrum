@@ -1,18 +1,14 @@
-;        DEFINE  enram
         DEFINE  copymsg
         DEFINE  resetplay
 
-;        DEFINE  plus
-;        DEFINE  spanish
-
-        OUTPUT  48.rom
+        OUTPUT  fireplay.rom
 
 ;************************************************************************
 ;** An Assembly File Listing to generate a 16K ROM for the ZX Spectrum **
 ;************************************************************************
 
 ; -------------------------
-; Last updated: 05-FEB-2012
+; Last updated: 28-OCT-2012
 ; -------------------------
 
 
@@ -76,15 +72,7 @@ L0010:  JP      L15F2           ; Jump forward to continue at PRINT-A-2.
 
 ; ---
 
-    IFDEF plus
-      IFDEF spanish
-        DEFB    $FF, $FC, $FF   ; Five unused locations.
-      ELSE
-        DEFB    $A7, $FF, $FF   ; Five unused locations.
-      ENDIF
-    ELSE
         DEFB    $FF, $FF, $FF   ; Five unused locations.
-    ENDIF
         DEFB    $FF, $FF        ;
 
 ; -------------------------------
@@ -253,17 +241,6 @@ L0055:  LD      (IY+$00),L      ; Store it in the system variable ERR_NR.
 ;   placing two zeros in the NMIADD system variable.
 
 ;; RESET
-      IFDEF enram
-L005F:  LDDR
-L0061:  LD      SP,$FF56
-        LD      A,$03
-L0066:  DJNZ    L0061
-        NOP
-        LD      BC,$1FFD
-        OUT     (C),A
-        LD      DE,$4000
-        JP      L04AA
-      ELSE
 L005F:  DEFB    $FF, $FF, $FF   ; Unused locations
         DEFB    $FF, $FF, $FF   ; before the fixed-position
         DEFB    $FF             ; NMI routine.
@@ -281,7 +258,6 @@ L0066:  PUSH    AF              ; save the
 L0070:  POP     HL              ; restore the
         POP     AF              ; registers.
         RETN                    ; return to previous interrupt state.
-      ENDIF
 
 ; ---------------------------
 ; THE 'CH ADD + 1' SUBROUTINE
@@ -1487,20 +1463,6 @@ L046E:  DEFB    $89, $02, $D0, $12, $86;  261.625565290         C
 
 ;; zx81-name
 
-      IFDEF enram
-L04AA:  LD      IY,$5C3A
-        IM      1
-        LD      HL,$C000
-        LD      B,D
-        LD      C,E
-        LDIR
-        LD      BC,$1FFD
-        INC     A
-        INC     A
-        OUT     (C),A
-        EI
-        JP      L1300
-      ELSE
 L04AA:  CALL    L24FB           ; routine SCANNING to evaluate expression.
         LD      A,($5C3B)       ; fetch system variable FLAGS.
         ADD     A,A             ; test bit 7 - syntax, bit 6 - result type.
@@ -1522,7 +1484,6 @@ L04AA:  CALL    L24FB           ; routine SCANNING to evaluate expression.
                                 ; and also clear carry.
         SET     7,(HL)          ; invert it.
         RET                     ; return.
-      ENDIF
 
 ; =========================================
 ;
@@ -1796,11 +1757,7 @@ L0556:  INC     D               ; reset the zero flag without disturbing carry.
         IN      A,($FE)         ; read the ear state - bit 6.
         RRA                     ; rotate to bit 5.
         AND     $20             ; isolate this bit.
-      IFDEF enram
-        CALL    L3C07
-      ELSE
         CALL    ULTRA
-      ENDIF
         CP      A               ; set the zero flag.
 
 ; 
@@ -1834,11 +1791,7 @@ L0574:  DJNZ    L0574           ; self loop to LD-WAIT (for 256 times)
                                 ; if no edges at all.
 
 ;; LD-LEADER
-L0580:IFDEF enram
-        LD      B,$A4           ; two edges must be spaced apart.
-      ELSE
-        LD      B,$9C           ; two edges must be spaced apart.
-      ENDIF
+L0580:  LD      B,$9C           ; two edges must be spaced apart.
         CALL    L05E3           ; routine LD-EDGE-2
         JR      NC,L056B        ; back to LD-BREAK if time-out
 
@@ -1854,11 +1807,7 @@ L0580:IFDEF enram
 ;   Now test every edge looking for the terminal sync signal.
 
 ;; LD-SYNC
-L058F:IFDEF enram
-        LD      B,$CD           ; two edges must be spaced apart.
-      ELSE
-        LD      B,$C9           ; two edges must be spaced apart.
-      ENDIF
+L058F:  LD      B,$C9           ; two edges must be spaced apart.
         CALL    L05E7           ; routine LD-EDGE-1
         JR      NC,L056B        ; back to LD-BREAK with time-out.
 
@@ -1882,11 +1831,7 @@ L058F:IFDEF enram
         LD      C,A             ; store the new long-term byte.
 
         LD      H,$00           ; set up parity byte as zero.
-      IFDEF enram
-        LD      B,$B8           ; two edges must be spaced apart.
-      ELSE
         LD      B,$B0           ; two edges must be spaced apart.
-      ENDIF
         JR      L05C8           ; forward to LD-MARKER 
                                 ; the loop mid entry point with the alternate 
                                 ; zero flag reset to indicate first byte 
@@ -1938,11 +1883,7 @@ L05C2:  INC     IX              ; increment byte pointer.
 ;; LD-DEC
 L05C4:  DEC     DE              ; decrement length.
         EX      AF,AF'          ; store the flags.
-      IFDEF enram
-        LD      B,$BA           ; timing.
-      ELSE
         LD      B,$B2           ; timing.
-      ENDIF
 
 ;   when starting to read 8 bits the receiving byte is marked with bit at right.
 ;   when this is rotated out again then 8 bits have been read.
@@ -1962,11 +1903,7 @@ L05CA:  CALL    L05E3           ; routine LD-EDGE-2 increments B relative to
 
         RL      L               ; rotate the carry bit into L.
 
-      IFDEF enram
-        LD      B,$B8           ; reset the B timer byte.
-      ELSE
         LD      B,$B0           ; reset the B timer byte.
-      ENDIF
         JP      NC,L05CA        ; JUMP back to LD-8-BITS
 
 ;   when carry set then marker bit has been passed out and byte is complete.
@@ -3045,29 +2982,8 @@ L0991:  HALT                    ; wait for interrupt
 ;   Starts with normal initial step-over byte.
 
 ;; tape-msgs
-    IFDEF spanish
 L09A1:  DEFB    $80
-        DEFM    "PREPARE LA CINTA Y PULSE ENTER"
-L09C0:  DEFB    '.'+$80
-        DEFB    $0D
-        DEFM    "PROGRAMA:"
-        DEFB    ' '+$80
-        DEFB    $0D
-        DEFM    "MATRIZ NUM.:"
-        DEFB    ' '+$80
-        DEFB    $0D
-        DEFM    "MATRIZ LITERAL:"
-        DEFB    ' '+$80
-        DEFB    $0D
-        DEFM    "BYTES: "
-        DEFB    ' '+$80
-    ELSE
-L09A1:  DEFB    $80
-      IFDEF plus
-        DEFM    "Press REC & PLAY, then any key"
-      ELSE
         DEFM    "Start tape, then press any key"
-      ENDIF
 L09C0:  DEFB    '.'+$80
         DEFB    $0D
         DEFM    "Program:"
@@ -3081,7 +2997,6 @@ L09C0:  DEFB    '.'+$80
         DEFB    $0D
         DEFM    "Bytes:"
         DEFB    ' '+$80
-    ENDIF
 
 ;**************************************************
 ;** Part 5. SCREEN AND PRINTER HANDLING ROUTINES **
@@ -3977,13 +3892,8 @@ L0CF0:  LD      (DE),A          ; transfer
 
 ;; scrl-mssg
 L0CF8:  DEFB    $80             ; initial step-over byte.
-      IFDEF spanish
-        DEFM    "]MAS? "
-        DEFB    ' '+$80
-      ELSE
         DEFM    "scroll"
         DEFB    '?'+$80
-      ENDIF
 
 ;; REPORT-D
 L0D00:  RST     08H             ; ERROR-1
@@ -5668,7 +5578,7 @@ L1201:  LD      ($5CB2),HL      ; set system variable RAMTOP to HL.
 
         JR      L1303-11        ; jump to one instruction before MAIN-4
 
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF; 32 bytes
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
@@ -6114,75 +6024,6 @@ L1386:  LD      (IY+$0A),$FF    ; update NSPPC - signal 'no jump'.
 ;; rpt-mesgs
 L1391:  DEFB    $80
         DEFB    'O','K'+$80                             ; 0
-  IFDEF spanish
-        DEFM    "NEXT SIN FO"
-        DEFB    'R'+$80                                 ; 1
-        DEFM    "VARIABLE NO DEFINID"
-        DEFB    'A'+$80                                 ; 2
-        DEFM    "SUBINDICE INCORRECT"
-        DEFB    'O'+$80                                 ; 3
-        DEFM    "MEMORIA AGOTAD"
-        DEFB    'A'+$80                                 ; 4
-        DEFM    "FUERA DE PANTALL"
-        DEFB    'A'+$80                                 ; 5
-        DEFM    "NUMERO MUY GRAND"
-        DEFB    'E'+$80                                 ; 6
-        DEFM    "RETURN SIN GOSU"
-        DEFB    'B'+$80                                 ; 7
-        DEFM    "FIN DE FICHER"
-        DEFB    'O'+$80                                 ; 8
-        DEFM    "SENTENCIA STO"
-        DEFB    'P'+$80                                 ; 9
-        DEFM    "ARG. INVALID"
-        DEFB    'O'+$80                                 ; A
-        DEFM    "ENTERO EXCEDE MARGE"
-        DEFB    'N'+$80                                 ; B
-        DEFM    "SIN SENTIDO EN BASI"
-        DEFB    'C'+$80                                 ; C
-        DEFM    "BREAK/CONT REPIT"
-        DEFB    'E'+$80                                 ; D
-        DEFM    "DATOS AGOTADO"
-        DEFB    'S'+$80                                 ; E
-        DEFM    "NOMBRE INCORRECT"
-        DEFB    'O'+$80                                 ; F
-        DEFM    "NO CABE LA LINE"
-        DEFB    'A'+$80                                 ; G
-        DEFM    "STOP EN INPU"
-        DEFB    'T'+$80                                 ; H
-        DEFM    "FOR SIN NEX"
-        DEFB    'T'+$80                                 ; I
-        DEFM    "DISP. E/S INCORRECT"
-        DEFB    'O'+$80                                 ; J
-        DEFM    "COLOR NO VALID"
-        DEFB    'O'+$80                                 ; K
-        DEFM    "PROGR. INTERRUMPID"
-        DEFB    'O'+$80                                 ; L
-        DEFM    "RAMTOP INCORRECT"
-        DEFB    'A'+$80                                 ; M
-        DEFM    "SENT. PERDID"
-        DEFB    'A'+$80                                 ; N
-        DEFM    "CANAL NO VALID"
-        DEFB    'O'+$80                                 ; O
-        DEFM    "FN SIN DE"
-        DEFB    'F'+$80                                 ; P
-        DEFM    "PARAMETRO ERRONE"
-        DEFB    'O'+$80                                 ; Q
-        DEFM    "ERROR CARGANDO CINT"
-L1536:  DEFB    'A'+$80                                 ; R
-;; comma-sp   
-L1537:  DEFB    ',',' '+$80                             ; used in report line.
-;; copyright
-L1539:
-
-    IFDEF resetplay
-        DEFM    "Play o Espaci"
-L1547:  DEFB    'o'+$80
-    ELSE
-        DEFB    $7F                                     ; copyright
-        DEFM    " 1982 Amstra"
-L1547:  DEFB    'd'+$80
-    ENDIF
-  ELSE
         DEFM    "NEXT without FO"
         DEFB    'R'+$80                                 ; 1
         DEFM    "Variable not foun"
@@ -6246,20 +6087,13 @@ L1539:
         DEFB    'k'+$80
    ELSE
         DEFB    $7F                                     ; copyright
-    IFDEF plus
-        DEFM    " 1982 Amstrad             "
-L1547:  DEFB    ' '+$80
-    ELSE
       IFDEF copymsg
-        DEFM    " 2012 ROM CargandoLeches  "
-        DEFB    ' '+$80
+        DEFM    " 2012 Fireplay Research Lt"
       ELSE
         DEFM    " 1982 Sinclair Research Lt"
-        DEFB    'd'+$80
       ENDIF
-    ENDIF
+        DEFB    'd'+$80
    ENDIF
-  ENDIF
 
 ; -------------
 ; REPORT-G
@@ -8464,11 +8298,7 @@ L1B10:  DEFB    $0A             ; Class-0A - A string expression must follow.
 
 ;; P-CAT
 L1B14:  DEFB    $00             ; Class-00 - No further operands.
-      IFDEF enram
         DEFW    L1793           ; Address: $1793; Address: CAT-ETC
-      ELSE
-        DEFW    L3C09           ; Address: $3c09;
-      ENDIF
 
 ; * Note that a comma is required as a separator with the OPEN command
 ; but the Interface 1 programmers relaxed this allowing ';' as an
@@ -16877,17 +16707,8 @@ L32A9:  DEFB    $38             ;;end-calc              -4.
 
         RET                     ; return.
 
-      IFDEF enram
-L32AB:  DEFB    $C9, $C9, $C9, $C9, $C9, $C9, $C9, $C9; 12 bytes
-        DEFB    $C9, $C9, $C9, $C9;
-      ELSE
-L32AB:  INC     C
-        LD      A,$D8           ; A' tiene que valer esto para entrar en Raudo
-        EX      AF,AF'
-        BIT     1,H
-        JP      Z,L3B8C         ; salto a Raudo segun el signo del pulso en flag Z
-        JP      L37C3           ; salto a Raudo
-      ENDIF
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF; 12 bytes
+        DEFB    $FF, $FF, $FF, $FF;
 
 ; ----------------------
 ; THE 'TANGENT' FUNCTION
@@ -17141,18 +16962,10 @@ L3302:  PUSH    DE              ; save
 L33BF:  IN      L,(C)
         JP      (HL)
 
-;; EXO_GETBITS
-L33C2:  LD      BC,0            ; get D bits in BC
-L33C5:  DEC     D
-        RET     M
-        CALL    L39F9           ; EXO_GETBIT
-        RL      C
-        RL      B
-        JR      L33C5
-
-; Tabla
-L33D0:  DEFB    $ED, $DE, $D2, $C3, $00, $71, $62, $53;
-        DEFB    $F1, $E5, $D6, $C7, $04, $78, $69, $5D;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF; 30 bytes
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF;
 
 ; ------------------------
 ; THE 'TABLE OF CONSTANTS'
@@ -18850,16 +18663,9 @@ ULTR2:  LD      B,0
         CP      24
         RL      L
         JR      NZ,ULTR4
-      IFDEF enram
-        DEFB    $28
-L381E:  OUT     (C),A
-ULTR3:  INC     L
-        JP      L3BB9
-      ELSE
 ULTR3:  EXX
         LD      C,2
         RET
-      ENDIF
 ULTR4:  CP      16              ; si el contador esta entre 10 y 16 es el tono guia
         RR      H               ; de las ultracargas, si los ultimos 8 pulsos
         CP      10              ; son de tono guia H debe valer FF
@@ -18878,28 +18684,14 @@ ULTR4:  CP      16              ; si el contador esta entre 10 y 16 es el tono g
         EXX                     ; guardo checksum por duplicado en H' y L'
         PUSH    HL              ; pongo direccion de comienzo en pila
         LD      C,A
-        EXX
-        LD      HL,$0020        ; leo 11 bits en HL
-        LD      D,A
-        LD      E,$FE
-        CALL    L39E9
-        SRL     H
-        PUSH    HL
-        LD      H,$33
-        POP     IX
-        JR      NC,ULTR5
-        RES     5,L
-        XOR     A
-        LD      A,(HL)
-        LD      IXL,A
-
-ULTR5:  LD      A,$D8           ; A' tiene que valer esto para entrar en Raudo
+        LD      A,$D8           ; A' tiene que valer esto para entrar en Raudo
         EX      AF,AF'
-        AND     IXH
-        JR      NZ,ULTR6
-        LD      SP,$C000
-        DEFB    $FE
-ULTR6:  POP     DE              ; recupero en DE la direccion de comienzo del bloque
+        EXX
+        LD      H,$01           ; leo 8 bits en HL
+        CALL    L39E9
+        LD      A,L
+        LD      IXL,A
+        POP     DE              ; recupero en DE la direccion de comienzo del bloque
         INC     C               ; pongo en flag Z el signo del pulso
         LD      BC,$EFFE        ; este valor es el que necesita B para entrar en Raudo
         JR      Z,ULTR8
@@ -18911,10 +18703,8 @@ ULTR7:  IN      F,(C)
 ULTR8:  IN      F,(C)
         JP      PO,ULTR8
         CALL    L3403           ; salto a Raudo
-ULTR9:  AND     IXH             ; en caso de no verificar checksum me salto la rutina
-        EXX                     ; ya se ha acabado la ultracarga (Raudo)
-        JR      Z,ULT12
-ULT10:  LD      B,E
+ULTR9:  EXX                     ; ya se ha acabado la ultracarga (Raudo)
+        LD      B,E
         LD      E,C
         LD      C,D
         XOR     A
@@ -18926,21 +18716,21 @@ ULT11:  XOR     (HL)
         DJNZ    ULT11
         DEC     C
         JP      NZ,ULT11
+        PUSH    HL              ; ha ido bien
         XOR     E
-ULT12:  PUSH    HL              ; ha ido bien
         LD      H,B
         LD      L,E
         LD      D,B
         LD      E,B
         POP     IX              ; IX debe apuntar al siguiente byte despues del bloque
-      IFDEF enram
-        JP      L3C05
-      ELSE
         RET     NZ              ; si no coincide el checksum salgo con Carry desactivado
         SCF
         RET
-L3B8C:  JP      L3403
-      ENDIF
+
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF; 31 bytes
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF;
 
 ; ------------------------
 ; THE 'MODULUS' SUBROUTINE 
@@ -19053,9 +18843,7 @@ L38F8:  RST     28H             ;; FP-CALC
 
         RET                     ; return.
 
-        DEFB    $FF, $FF; 2 bytes
-
-L38FF:  DEFB    $FF, $FF
+        DEFB    $FF, $FF, $FF, $FF; 4 bytes
 
 ; --------------------------------
 ; THE 'NATURAL LOGARITHM' FUNCTION 
@@ -19412,16 +19200,7 @@ L39E9:  LD      B,0             ; 16 bytes
         JR      NC,L39E9
         RET
 
-;; EXO_GETBIT
-L39F9:  ADD     A,A             ; get one bit
-        RET     NZ
-        LD      A,(HL)
-        INC     HL
-        ADC     A,A
-        RET
-
-L39FF:  DEFB    $FF, $FF
-
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF; 8 bytes
 
 ;****************************************
 ;** Part 10. FLOATING-POINT CALCULATOR **
@@ -19525,7 +19304,7 @@ L3A01:  DEFW    L368F           ; $00 Address: $368F - jump-true
         DEFW    L3BC0           ;     Address: $3449 - series-xx    $80 - $9F.
         DEFW    L32DD           ;     Address: $341B - stk-const-xx $A0 - $BF.
         DEFW    L36E6           ;     Address: $342D - st-mem-xx    $C0 - $DF.
-        DEFW    L3B01           ;     Address: $340F - get-mem-xx   $E0 - $FF.
+        DEFW    L3AE6           ;     Address: $340F - get-mem-xx   $E0 - $FF.
 
 ;   Aside: 3E - 3F are therefore unused calculator literals.
 ;   If the literal has to be also usable as a function then bits 6 and 7 are 
@@ -19705,39 +19484,6 @@ L3AC3:  DEFB    $31             ;;duplicate
 
         RET                     ; return.
 
-;3AE6
-      IFDEF enram
-SN128:  POP     HL              ; 56 bytes
-        LD      SP,HL
-        POP     HL              ; reemplazo pila, 4 bytes
-        LD      ($BFFE),HL
-        POP     HL
-        JP      SNA41           ;SNAP48-2
-        DEFB    $38, $38, $38, $38, $38, $38, $38, $38;
-        DEFB    $38, $38, $38, $38, $38, $38;
-      ELSE
-SN128:  DEC     BC
-        EXX
-        LD      A,E
-        CP      $18
-        JP      Z,SNA48         ;SNA48
-        AND     A
-        EXX
-        OUT     (C),A
-        EXX
-        DEC     SP
-        DEC     SP
-        INC     E
-        EXX
-        LD      D,$C0
-        LD      B,$EF
-        JP      L32AB
-      ENDIF
-
-        DEFB    $FF; 1 byte
-
-L3AFF:  DEFB    $FF, $FF
-
 ; ------------------------------
 ; Get from memory area ($E0 etc.)
 ; ------------------------------
@@ -19746,7 +19492,7 @@ L3AFF:  DEFB    $FF, $FF
 ; The calculator stack increases by 5 bytes.
 
 ;; get-mem-xx
-L3B01:  PUSH    DE              ; save STKEND
+L3AE6:  PUSH    DE              ; save STKEND
         LD      HL,($5C68)      ; MEM is base address of the memory cells.
         CALL    L36A7           ; routine LOC-MEM so that HL = first byte
         CALL    L32D7           ; routine MOVE-FP moves 5 bytes with memory
@@ -19755,140 +19501,32 @@ L3B01:  PUSH    DE              ; save STKEND
         POP     HL              ; original STKEND is now RESULT pointer.
         RET                     ; return.
 
-
-;EXO-A
-L3B0D:  LD      IY,$5B00        ; EXO_MAPBASEBITS
-        LD      A,128
-        LD      B,52
-        PUSH    DE
-;; EXO_INITBITS
-L3B16:  EX      AF,AF'
-        LD      A,B
-        SUB     4
-        AND     15
-        JR      NZ,L3B21
-        LD      DE,1            ; DE=b2
-L3B21:  LD      C,16
-        EX      AF,AF'
-L3B24:  CALL    L39F9           ; EXO_GETBIT
-        RL      C
-        JR      NC,L3B24
-        PUSH    HL
-        LD      (IY+0),C        ; bits[i]=b1
-        LD      HL,1
-        DEFB    $D2             ; 3 bytes nop (JP NC)
-L3B33:  ADD     HL,HL
-        DEC     C
-        JR      NZ,L3B33
-        LD      (IY+52),E
-        LD      (IY+104),D      ; base[i]=b2
-        ADD     HL,DE
-        EX      DE,HL
-        INC     IY
-        POP     HL
-        DJNZ    L3B16           ; EXO_INITBITS
-        POP     DE
-;; EXO_LITERALCOPY
-L3B45:  LDI
-;; EXO_MAINLOOP
-L3B47:  CALL    L39F9           ; EXO_GETBIT, literal?
-        JR      C,L3B45         ; EXO_LITERALCOPY
-        LD      C,255
-L3B4E:  INC     C
-        CALL    L39F9           ; EXO_GETBIT
-        JR      NC,L3B4E
-        BIT     4,C
-        RET     NZ
-        PUSH    DE
-        CALL    L3BE1           ; EXO_GETPAIR
-        PUSH    BC
-        POP     IX
-        LD      DE,512+48       ; 1?
-        INC     B
-        DJNZ    L3B68
-        DEC     C
-        JR      Z,L3B6F         ; EXO_GOFORIT
-        DEC     C
-L3B68:  LD      DE,1024+32
-        JR      Z,L3B6F         ; EXO_GOFORIT
-        LD      E,16
-;; EXO_GOFORIT
-L3B6F:  CALL    L33C2           ; EXO_GETBITS
-        EX      AF,AF'
-        LD      A,E
-        ADD     A,C
-        LD      C,A
-        EX      AF,AF'
-        CALL    L3BE1           ; EXO_GETPAIR, BC=offset
-        POP     DE              ; DE=destination
-        PUSH    HL    
-        LD      H,D
-        LD      L,E
-        SBC     HL,BC           ; HL=origin
-        PUSH    IX
-        POP     BC              ; BC=lenght
-        LDIR
-        POP     HL              ; keep HL, DE is updated
-        JR      L3B47           ; EXO_MAINLOOP
-
-;3B88
-      IFDEF enram
-SNA48:  XOR     A
-        JP      L3C06
-L3B8C:  JP      L3403
-      ELSE
-SNA48:  POP     HL              ; 56 bytes
-        LD      SP,HL
-        POP     HL              ; reemplazo pila, 4 bytes
-        LD      ($BFFE),HL
-        POP     HL
-      ENDIF
-
-SNA41:  LD      ($C000),HL
-      IFNDEF enram
-        JR      C, SNA42
-        EXX
-        DEC     SP
-        POP     AF              ; last byte 7FFD
-        OUT     (C),A
-SNA42:  
-      ENDIF
-        POP     BC              ; BC'
-        POP     DE              ; DE'
-        POP     HL              ; HL'
-        EXX
-        POP     AF              ; AF'
-        EX      AF,AF'
-        POP     BC              ; BC
-        POP     DE              ; DE
-        POP     HL              ; IR
-        POP     IX              ; IX
-        POP     IY              ; IY
-        LD      A,L
-        LD      I,A
-        POP     AF              ; IM,IFF
-        JR      NC,SNA43
-        IM      2
-SNA43:  JR      NZ,SNA44
-        EI
-SNA44:  PUSH    AF
-        DEC     SP
-        POP     AF
-        RRA
-        OUT     ($FE),A
-        LD      A,H
-        LD      HL,2
-        ADD     HL,SP
-        LD      R,A
-        POP     AF              ; AF
-        JP      (HL)
-
-      IFDEF enram
-L3BB9:  EXX
-        LD      C,$02
-        JP      L3C06
-        DEFB    $00; 1 byte
-      ENDIF
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF; 206 bytes
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF;
 
 ; ------------------------------
 ; THE 'SERIES GENERATOR' ROUTINE
@@ -19968,259 +19606,44 @@ L3BCA:  DEFB    $31             ;;duplicate       v,v.
 
         RET                     ; return with H'L' pointing to location
                                 ; after last number in series.
-;; EXO_GETPAIR
-L3BE1:  LD      IYL,C
-        LD      D,(IY+0)
-        CALL    L33C2           ; EXO_GETBITS
-        PUSH    HL
-        LD      L,(IY+52)
-        LD      H,(IY+104)
-        ADD     HL,BC           ; always clear C flag
-        LD      B,H
-        LD      C,L
-        POP     HL
-        RET
 
-      IFDEF enram
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF; 10 bytes
-        DEFB    $FF, $FF;
-L3BFF:  DEFB    $FF, $FF, $FF, $FF, $FF; 5 bytes
-        RET
-L3C05:  EX      AF, AF
-L3C06:  SCF
-L3C07:  EXX
-        LD      HL,$8000        ; GUARDO DATOS 6->4 / 2->0
-        LD      DE,$3CAC
-        LD      BC,$0054
-        LDIR
-        LD      D,H             ; PARCHEO EN 6 / 2
-        LD      C,L
-        LD      HL,$3C3E
-        LDIR
-        LD      BC,$1FFD
-        LD      A,4
-        LD      HL,$FC25
-        JP      L381E           ; R52x
-        JR      NC,L3C20
-        LD      D,$40
-L3C20:  LD      L,$3E           ; MUEVO PARCHE 4->2 / 0->2
-        LD      BC,$00C2
-        LD      E,B
-        LDIR
-        LD      BC,$7FFD
-        LD      H,D
-        JP      $8000
-        LD      A,$10
-        JR      NC,L3C30
-        LD      A,$14
-L3C30:  OUT     (C),A           ; R520 / R524
-        LD      DE,$FCAC        ; MUEVO PARCHE 2->0
-        LD      L,$6E
-        LD      BC,$0054
-        LDIR
-        LD      BC,$7FFD
-        LD      A,$11
-        OUT     (C),A           ; R521
-        LD      HL,$4000        ; 5->1 DESDE 2
-        LD      B,H
-        LD      C,L
-        LD      DE,$C000
-        JR      NC,L3C54
-        EX      DE,HL
-L3C54:  LDIR
-        LD      BC,$7FFD
-        LD      A,$16
-        OUT     (C),A           ; R526
-        LD      D,$80
-        LD      H,$C0
-        LD      BC,$4000        ; 6->2 DESDE 2
-        JR      NC,L3C6B
-        EX      DE,HL
-L3C6B:  LDIR
-        LD      BC,$7FFD
-        LD      A,$10
-        JR      NC,L3C70
-        LD      A,$14
-L3C70:  OUT     (C),A           ; R524 / R520
-        LD      A,1
-        JR      NC,L3C82
-        LD      A,5
-L3C82:  LD      BC,$1FFD
-        OUT     (C),A           ; 0123
-        JP      L3C8A
-L3C8A:  LD      HL,$3CAC        ; RECUPERO 2 CON PARCHE EN 0
-        LD      D,$80
-        LD      BC,$0054
-        LDIR
-        EXX
-        JP      NC,ULTRA
-        JP      Z,SN128
-        EX      AF,AF
-        LD      B,A
-        EX      AF,AF
-        LD      A,B
-        EX      AF,AF
-        RET     NZ              ; si no coincide el checksum salgo con Carry desactivado
-        SCF
-        RET
-        DEFB    $00, $00, $00, $00, $00, $00, $00, $00;
-        DEFB    $00, $00, $00, $00, $00, $00, $00, $00;
-        DEFB    $00, $00, $00, $00, $00, $00, $00, $00;
-        DEFB    $00, $00, $00, $00, $00, $00, $00, $00;
-        DEFB    $00, $00, $00, $00, $00, $00, $00, $00;
-        DEFB    $00, $00, $00, $00, $00, $00, $00, $00;
-        DEFB    $00, $00, $00, $00, $00, $00, $00, $00;
-        DEFB    $00, $00, $00, $00, $00, $00, $00, $00;
-        DEFB    $00, $00, $00, $00, $00, $00, $00, $00;
-        DEFB    $00, $00, $00, $00, $00, $00, $00, $00;
-        DEFB    $00, $00, $00, $00, $00, $00, $00, $00;
-        DEFB    $00, $00, $00, $00, $00;
-      ELSE
-        DEFB    'CargLeches'
-L3BFF:  DEFB    $FF, $FF;
-        DEFB    $FF, $FF; 2 bytes
-L3C03:  LD      (DE),A          ; Una de las dos opciones de subfuncion a llamar (En este caso pinta/borra pieza)
-        RET
-        DEFB    $FF, $FF, $FF, $FF; 4 bytes
-L3C09:  AND     D
-        RST     $10
-        DEC     (IY+$02)
-        LD      IXH,B
-L3C10:  LD      B,23            ; Dibujar 22 lineas (el primer CR se salta) con "RANDOMIZE " en tinta y fondo negros (se ve una columna negra de 10 caracteres de ancho)
-        LD      A,$11           ; Funcion que cambia el color de fondo
-        RST     $10
-        DB      $3A             ; xor   a, Opcode para LD A, (NN). En la primera pasada se salta el CR y carga A con el valor 0 (fondo negro)
-L3C16:  RST     $10             ; Funcion imprime caracter por pantalla, el codigo ASCII se introduce en el registro A
-        LD      A,13            ; Codigo ASCII para CR (retorno de carro)
-        LD      (IY-$0B),A      ; Pongo inicialmente a 13 la variable velo (velocidad) que en realidad es el retardo en frames de la caida de una pieza. Es necesario inicializarla porque durante el juego se decrementa y pierde su valor inicial (variable incrustada en codigo)
-        RST     $10             ; Envio por pantalla el retorno de carro (fondo negro en primera iteracion)
-        LD      A,249           ; Codigo ASCII para RANDOMIZE, lo uso porque es el token mas largo, que ademas me da el ancho de 10 cuadros que necesito (contando con el espacio del final)
-        DJNZ    L3C16           ; Repito el bucle 23 veces (dibujo 22 lineas). Si lo hago tras perder una partida se produce scroll (y la tipica pregunta scroll? mas?)
-        LD      HL,$0110        ; Inicializo las variables REPDEL, REPPER (frames para detectar una pulsacion continua y cadencia en frames del envio de la misma tecla) a unos valores mas optimos para jugar
-        LD      ($5C09),HL      ; Los que usa la ROM por defecto son muy lentos para la dinamica del juego
-L3C27:  LD      A,R             ; Leo un numero pseudoaleatorio del registro R
-L3C29:  SUB     7               ; Estas dos lineas equivalen a un MOD 7
-        JR      NC,L3C29        ; o resto de dividir el byte entre 7, ya que necesito elegir una pieza al azar de entre las 7
-        LD      L,A             ; Paso dicho valor al registro L para leer pieza de la tabla
-        INC     A
-        ADD     A,A             ; Multiplico por 9 (para usar el color tanto en tinta como en fondo, de lo contrario se verian los caracteres del RANDOMIZE)
-        ADD     A,A
-        ADD     A,A
-        ADD     A,L
-        AND     $3F
-        EX      AF,AF'          ; Guardo color generado en A'
-        LD      DE,$5846        ; La primera pieza parte de la coordenada (x, y)= (6, 2), en el registro DE guardo la posicion
-        LD      H,$3C           ; Posicion alta de la tabla de piezas
-        LD      L,(HL)          ; Leo byte de la tabla de piezas
-        LD      H,B             ; Pongo H a cero, con lo que inicialmente la pieza (almacenada en HL) contiene algo asi 00000000XXXXXXXX
-        CALL    $0E94           ; Multiplico por 16 o desplazo 4 bits para tener la pieza centrada y que no resulten extranas las rotaciones
-        LD      C,D             ; Pongo C a un valor mayor de 4 con los bits 1 y 2 a cero (que indican que entro en el bucle principal desde nueva pieza)
-L3C41:  LD      IXL,$F3         ; IX apunta a la subfuncion a llamar (dentro de la funcion L3CDC), en este caso es la que comprueba si hay colision antes de pintar la pieza
-        CALL    L3CDC           ; Llamo a la funcion L3CDC para testear la pieza (con -1 ahorro un byte porque PUSH DE coincide con el ultimo byte de la instruccion anterior)
-        JR      Z,L3C53         ; Si no hay colision, salto a ncol
-        POP     HL              ; Si hay colision, recupero los valores de posicion
-        POP     DE              ; y pieza anteriores a la colision
-        LD      SP,$FF40        ; Equilibro la pila, ya que la estaba desequilibrando con muchos PUSH HL,DE y un solo POP HL,DE
-        BIT     2,C             ; Compruebo si en punto de entrada del bucle es haber
-        JR      Z,L3C10         ; generado la pieza, en tal caso (con una colision nada mas generar la pieza) reinicio el juego
-        INC     C               ; Senalizo la colision poniendo a 1 el bit 1 del registro C
-L3C53:  LD      IXL,$03         ; IX apunta a la subfuncion pintar/borrar
-        EX      AF,AF'          ; recupero el color de A'
-        CALL    L3CDC           ; pinto la pieza
-        EX      AF,AF'          ; vuelvo a guardar el color en A'
-        BIT     1,C             ; Compruebo si ha habido colision (del tipo colision contra el suelo, no vale contra paredes ni tras rotar)
-        JR      NZ,L3C9E        ; Salto a L3C9E en caso de ese tipo de colision
-        PUSH    DE              ; Guardo posicion en pila
-L3C60:  LD      A,($5C78)       ; Leo contador de frames
-        LD      B,A             ; Lo guardo temporalmente en B
-        SUB     (IY)            ; Comparo con referencia (valor de frames que tenia la pieza antes de descender)
-        SUB     (IY-$0B)        ; Aplico un retardo (numero de frames que tarda la pieza en descender)
-        JR      Z,L3C75         ; Si se agota el tiempo, la pieza cae por gravedad, salto a "salt"
-        BIT     5,(IY+1)        ; Mientras tanto voy leyendo si se ha pulsado una tecla
-        JR      Z,L3C60         ; En tal caso, rompo el bucle de tiempo
-        LD      A,($5C08)       ; Con el registro A conteniendo el codigo ASCII de la tecla pulsada
-L3C75:  PUSH    HL              ; Guardo pieza en pila
-        CALL    L1F4F           ; res   5, (iy+1). Senalizo tecla leida. En este punto si A vale cero es que no se ha pulsado nada y la pieza cae por si sola
-        PUSH    AF              ; Guardo tecla pulsada
-        XOR     A               ; Borrar es pintar con color 0 (negro)
-        CALL    L3CDC           ; Borra pieza
-        POP     AF              ; Recupero tecla pulsada
-        SUB     $6F             ; He pulsado izquierda?
-        JR      NZ,L3C84        ; No, pues salto y no hago nada
-        DEC     E               ; Si, pues decremento posicion
-L3C84:  DEC     A               ; He pulsado derecha? seria caracter 'p' justo despues de 'o', por eso basta con un decremento para comparar
-        JR      NZ,L3C88        ; No, pues salto y no hago nada
-        INC     E               ; Si, pues incremento posicion
-L3C88:  DEC     A               ; He pulsado arriba (rotar)? seria caracter 'q', despues de 'p'
-        LD      C,1             ; Inicializo A y C a cero y uno respectivamente, independientemente de si salto o no
-        JR      Z,L3CCB         ; Si, pues salto a rota (con A y C inicializadas)
-        ADD     $0F             ; Se ha pulsado una tecla que cae fuera del rango 'b'-'q'? Como por ejemplo 'a', acelerar caida
-        LD      A,B             ; Pongo la actual variable FRAMES1 de B a A
-L3C90:  LD      BC,$2004        ; Inicializo B a 32 (bajo posicion una fila completa) y C a 4 indicando que entro al bucle principal via pieza no acelerada
-        JR      C,L3C41         ; Si la pieza cae por su peso (ninguna tecla pulsada), cierro bucle principal
-        INC     C               ; Si se ha pulsado 'a' o equivalente, senalizo pieza acelerada en registro C
-L3C96:  INC     DE              ; Avanza la posicion en una fila (32 caracteres)
-        DJNZ    L3C96
-        LD      (IY),A          ; Pongo FRAMES1 (antes guardada en A) como referencia en time (variable incrustada en codigo)
-        JR      L3C41           ; Cierro bucle principal
-L3C9E:  LD      HL,$5ABF        ; Parto desde una coordenada (31, 21) que es la parte inferior derecha de la pantalla
-L3CA1:  EX      DE,HL           ; Almaceno posicion en DE
-        XOR     A               ; Pongo A a cero (lo usare en la instruccion CPIR)
-        LD      HL,$FFE0        ; Hago que HL apunte 32 bytes por debajo de DE
-        ADD     HL,DE
-        LD      C,11            ; Comparo 11 caracteres (el primero es siempre blanco ya que es el situado en la columna 31)
-        PUSH    HL              ; Si alguno de los 11 caracteres es negro (linea no rellena)
-        CPIR                    ; lo detecto activando el flag Z tras la instruccion CPIR
-        POP     HL              ; Recupero HL, ya que CPIR modifica su valor
-        JR      Z,L3CA1         ; Bucle que voy repitiendo (probando con lineas que estan por encima) hasta detectar una falsa linea completa en la ROM (debajo de $4000)
-        LD      C,L             ; Pongo BC con el valor justo para que el desplazamiento (machacar la linea completada con las lineas superiores) solo ocurra en la zona de la memoria de video que corresponde a atributos
-        LD      A,H
-        SUB     $58
-        JP      C,L3C27         ; Si me salgo de la zona de atributos es que ya he llegado a la primera linea y por tanto salgo del bucle (a generar una nueva pieza)
-        LD      B,A
-        LDDR                    ; Hago el corrimiento de lineas
-        RLC     (IY-$22)        ; Esto me permite aumentar el nivel de velocidad cada 8 lineas completadas
-        JR      NC,L3C9E
-        DEC     (IY-$0B)        ; Decremento retardo de caida de piezas (aumento por tanto la velocidad)
-        JR      L3C9E           ; Cierro bucle
-L3CC4:  DJNZ    L3CCE           ; Repito bucle interior 4 veces
-        POP     HL              ; Recupero HL de pila
-        RR      H               ; Desplazo HL hacia la derecha
-        RR      L
-L3CCB:  LD      B,4             ; Pongo contador a 4
-        PUSH    HL              ; Guardo HL en pila, ya que no quiero que pierda su valor al desplazarlo 4 veces
-L3CCE:  ADD     HL,HL           ; Desplazo 4 veces HL a la izquierda
-        ADD     HL,HL
-        ADD     HL,HL
-        ADD     HL,HL
-        RL      C               ; Propago el contenido al par de registros (A, C)
-        RLA
-        JR      NC,L3CC4        ; Como inicialmente (A, C) valia 1, esto me indica que he llegado al bit marcador, por tanto ya he movido 16 bits
-        POP     HL              ; Salgo del bucle, pero necesito equilibrar pila (no me importa el valor)
-        LD      H,A             ; Finalmente la pieza rotada queda en (A, C), que la muevo a HL
-        LD      L,C
-        JR      L3C90           ; Salto al bucle principal (con indicador de pieza no acelerada)
-L3CDC:  PUSH    DE              ; Guardo DE, HL y BC en pila
-        PUSH    HL
-        PUSH    BC
-L3CDF:  LD      B,4             ; El bucle interior es de 4 y el exterior es de C, por tanto se repite 4xC veces, siendo C siempre mayor que 4. Como HL no puede tener mas de 16 bits solo se pinta/borra/comprueba colision en una reticula de 4x4
-L3CE1:  ADD     HL,HL           ; Siguiente bit dentro de la reticula 4x4 a comparar
-        CALL    C,$03F4         ; Si esta a 1 realizo una subfuncion (pintar/borra o comprobar si hay colision). La subfuncion esta apuntada por el registro IX. Como $03f4 en ROM es una instruccion JP (IX), esta instruccion equivaldria a CALL C, (IX)
-        DEC     DE              ; Voy pintando hacia atras y de abajo hacia arriba (decrementando DE)
-        DJNZ    L3CE1           ; Cierro bucle interior
-        LD      B,28            ; Como ya he completado 4 bytes de la linea, necesito 28 mas para posicionarme en la siguiente linea (en este caso la de arriba)
-L3CEA:  DEC     DE              ; Hago la resta via bucle con djnz, que equivaldria a SUB DE, 28
-        DJNZ    L3CEA
-        DEC     C               ; Cierro bucle exterior
-        JR      NZ,L3CDF
-L3CF0:  POP     BC              ; Recupero BC, HL y DE de la pila
-        JP      $1A45
-        OR      A               ; Compruebo si el color es negro (color 0)
-        RET     Z               ; Si es negro, retorno de subfuncion con carry Z activado (indica no que hay colision)
-        POP     DE              ; Si no es negro, hay colision, lo indico con carry Z desactivo y salgo de la subfuncion y de la funcion L3CDC
-        JR      L3CF0
-L3CF9:  DEFB    $66, $0F, $2E, $4E, $6C, $8E, $C6;
-      ENDIF
+        DEFB    'Fireplay'
+
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF; 277 bytes
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF;
 
 ; -------------------------------
 ; THE 'ZX SPECTRUM CHARACTER SET'
@@ -20877,36 +20300,8 @@ L3D00:  DEFB    %00000000
         DEFB    %01111110
         DEFB    %00000000
 
-      IFDEF spanish
-; $5B - Character: '!inv'       CHR$(91)
-        DEFB    %00000000
-        DEFB    %00001000
-        DEFB    %00000000
-        DEFB    %00001000
-        DEFB    %00001000
-        DEFB    %00001000
-        DEFB    %00001000
-        DEFB    %00000000
-; $5C - Character: 'ntilde'     CHR$(92)
-        DEFB    %00111100
-        DEFB    %00000000
-        DEFB    %01100010
-        DEFB    %01010010
-        DEFB    %01001010
-        DEFB    %01000110
-        DEFB    %01000010
-        DEFB    %00000000
-; $5D - Character: '?inv'       CHR$(93)
-        DEFB    %00010000
-        DEFB    %00000000
-        DEFB    %00010000
-        DEFB    %00100000
-        DEFB    %01000000
-        DEFB    %01000010
-        DEFB    %00111100
-        DEFB    %00000000
-      ELSE
 ; $5B - Character: '['          CHR$(91)
+
         DEFB    %00000000
         DEFB    %00001110
         DEFB    %00001000
@@ -20915,7 +20310,9 @@ L3D00:  DEFB    %00000000
         DEFB    %00001000
         DEFB    %00001110
         DEFB    %00000000
+
 ; $5C - Character: '\'          CHR$(92)
+
         DEFB    %00000000
         DEFB    %00000000
         DEFB    %01000000
@@ -20924,7 +20321,9 @@ L3D00:  DEFB    %00000000
         DEFB    %00001000
         DEFB    %00000100
         DEFB    %00000000
+
 ; $5D - Character: ']'          CHR$(93)
+
         DEFB    %00000000
         DEFB    %01110000
         DEFB    %00010000
@@ -20933,7 +20332,6 @@ L3D00:  DEFB    %00000000
         DEFB    %00010000
         DEFB    %01110000
         DEFB    %00000000
-      ENDIF
 
 ; $5E - Character: '^'          CHR$(94)
 
@@ -20957,18 +20355,8 @@ L3D00:  DEFB    %00000000
         DEFB    %00000000
         DEFB    %11111111
 
-      IFDEF spanish
-; $60 - Character: ' Pt '       CHR$(96)
-        DEFB    %00000000
-        DEFB    %11110000
-        DEFB    %10001000
-        DEFB    %10001010
-        DEFB    %11110111
-        DEFB    %10000010
-        DEFB    %10000011
-        DEFB    %00000000
-      ELSE
 ; $60 - Character: ' £ '        CHR$(96)
+
         DEFB    %00000000
         DEFB    %00011100
         DEFB    %00100010
@@ -20977,7 +20365,6 @@ L3D00:  DEFB    %00000000
         DEFB    %00100000
         DEFB    %01111110
         DEFB    %00000000
-      ENDIF
 
 ; $61 - Character: 'a'          CHR$(97)
 
@@ -21276,18 +20663,8 @@ L3D00:  DEFB    %00000000
         DEFB    %00001110
         DEFB    %00000000
 
-      IFDEF spanish
-; $7C - Character: 'ntilde'     CHR$(124)
-        DEFB    %00111000
-        DEFB    %00000000
-        DEFB    %01011000
-        DEFB    %01100100
-        DEFB    %01000100
-        DEFB    %01000100
-        DEFB    %01000100
-        DEFB    %00000000
-      ELSE
 ; $7C - Character: '|'          CHR$(124)
+
         DEFB    %00000000
         DEFB    %00001000
         DEFB    %00001000
@@ -21296,7 +20673,6 @@ L3D00:  DEFB    %00000000
         DEFB    %00001000
         DEFB    %00001000
         DEFB    %00000000
-      ENDIF
 
 ; $7D - Character: '}'          CHR$(125)
 
@@ -21331,9 +20707,6 @@ L3D00:  DEFB    %00000000
         DEFB    %01000010
         DEFB    %00111100
 
-
-.end                            ; generic cross-assembler directive 
-
 ; Acknowledgements
 ; -----------------
 ; Sean Irvine               for default list of section headings
@@ -21347,23 +20720,25 @@ L3D00:  DEFB    %00000000
 ; Alvin Albrecht            for comments.
 ; Andy Styles               for full relocatability implementation and testing.
 ; Andrew Owen               for ZASM compatibility and format improvements.
-; Francisco Villa           for CargandoLeches main ultraloader code.
-; Metalbrain                for CargandoLeches exomizer decrunch routine.
-; Antonio Villena           for CargandoLeches rest of code.
+; Francisco Villa           for Fireplay main ultraloader code.
+; Antonio Villena           for Fireplay rest of code.
 
-;   For other assemblers you may have to add directives like these near the 
-;   beginning - see accompanying documentation.
-;   ZASM (MacOs) cross-assembler directives. (uncomment by removing ';' )
-;   #target rom           ; declare target file format as binary.
-;   #code   0,$4000       ; declare code segment.
-;   Also see notes at Address Labels 0609 and 1CA5 if your assembler has 
-;   trouble with expressions.
-;
-;   Note. The Sinclair Interface 1 ROM written by Dr. Ian Logan and Martin 
-;   Brennan calls numerous routines in this ROM.  
-;   Non-standard entry points have a label beginning with X. 
+; Fireplay modification: The file assembles well in sjasmplus, delete
+; or comment the first directive "OUTPUT 48.rom" and conditional assembly
+; directives "IFDEF,ELSE,ENDIF" if you have problems with your assembler.
 
-;   CargandoLeches modification: The file assembles well in sjasmplus, delete
-;   or comment the first directive "OUTPUT 48.rom" and conditional assembly
-;   directives "IFDEF,ELSE,ENDIF" if you have problems with your assembler.
-
+; Bytes Location
+; 5     0013
+; 3     0025
+; 5     002b
+; 7     005f
+; 32    127d
+; 12    32ab
+; 30    33c2
+; 31    3880
+; 4     38fd
+; 8     39f9
+; 206   3af2
+; 285   3be1
+;-----
+; 628 bytes
