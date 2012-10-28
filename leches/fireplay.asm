@@ -10179,7 +10179,7 @@ L2070:  CP      $23             ; is character '#' ?
         RET     NZ              ; return if no match.
 
 
-        RST      20H            ; NEXT-CHAR
+        RST     20H             ; NEXT-CHAR
         CALL    L1C82           ; routine EXPT-1NUM gets stream number
         AND     A               ; prepare to exit early with carry reset
         CALL    L1FC3           ; routine UNSTACK-Z exits early if parsing
@@ -15192,7 +15192,7 @@ L2DC1:  LD      D,A             ; store a copy of A in D.
 
 ; now multiply exponent by log to the base 10 of two.
 
-        RST      28H            ;; FP-CALC
+        RST     28H             ;; FP-CALC
 
         DEFB    $34             ;;stk-data                      .30103 (log 2)
         DEFB    $EF             ;;Exponent: $7F, Bytes: 4
@@ -16898,20 +16898,20 @@ L3302:  PUSH    DE              ; save
         POP     DE              ; registers.
         RET                     ; return with BC set at 5.
 
-        DEFB    $EC, $EC, $7F   ; 0D
-        DEFB    $EC, $EC, $7F   ; 10
-        DEFB    $EC, $EC, $7F   ; 13
-        DEFB    $EC, $EC, $7F   ; 16
-        DEFB    $EC, $EC, $7F   ; 19
-        DEFB    $EC, $EC, $7F   ; 1C
-        DEFB    $EC, $EC, $7F   ; 1F
-        DEFB    $EC, $EC, $7F   ; 22
-        DEFB    $EC, $EC, $7F   ; 25
-        DEFB    $ED, $ED, $7F   ; 28
-        DEFB    $ED, $ED, $7F   ; 2B
-        DEFB    $ED, $ED, $7F   ; 2E
-        DEFB    $ED, $ED, $7F   ; 31
-        DEFB    $ED, $ED, $7F   ; 34
+        DEFB    $EC, $EC, $01   ; 0D
+        DEFB    $EC, $EC, $02   ; 10
+        DEFB    $EC, $EC, $03   ; 13
+        DEFB    $EC, $EC, $04   ; 16
+        DEFB    $EC, $EC, $05   ; 19
+        DEFB    $EC, $EC, $06   ; 1C
+        DEFB    $EC, $EC, $07   ; 1F
+        DEFB    $EC, $EC, $08   ; 22
+        DEFB    $EC, $EC, $09   ; 25
+        DEFB    $ED, $ED, $0A   ; 28
+        DEFB    $ED, $ED, $0B   ; 2B
+        DEFB    $ED, $ED, $0C   ; 2E
+        DEFB    $ED, $ED, $0D   ; 31
+        DEFB    $ED, $ED, $0E   ; 34
         DEFB    $ED, $ED, $7F   ; 37
         DEFB    $ED, $ED, $7F   ; 3A
         DEFB    $ED, $ED, $7F   ; 3D
@@ -16922,50 +16922,50 @@ L3302:  PUSH    DE              ; save
         DEFB    $EE, $EE, $7F   ; 4C
         DEFB    $EE, $EE, $7F   ; 4F
         DEFB    $EE, $EE, $7F   ; 52
-        DEFB    $EE, $EE, $7F   ; 55
-        DEFB    $EE, $EE, $7F   ; 58
-        DEFB    $EE, $EE, $7F   ; 5B
-        DEFB    $EE, $EF, $7F   ; 5E
-        DEFB    $EE, $EF, $7F   ; 61
-        DEFB    $EF, $EF, $7F   ; 64
-        DEFB    $EF, $EF, $7F   ; 67
-        DEFB    $EF, $EF, $7F   ; 6A
-        DEFB    $EF, $EF, $7F   ; 6D
-        DEFB    $EF, $EF, $7F   ; 70
-        DEFB    $EF, $EF, $7F   ; 73
-        DEFB    $EF, $EF, $7F   ; 76
-        DEFB    $EF, $7F, $7F   ; 79
-        DEFB    $EF, $7F, $7F   ; 7C
+        DEFB    $EE, $EE, $0F   ; 55
+        DEFB    $EE, $EE, $10   ; 58
+        DEFB    $EE, $EE, $11   ; 5B
+        DEFB    $EE, $EF, $12   ; 5E
+        DEFB    $EE, $EF, $13   ; 61
+        DEFB    $EF, $EF, $14   ; 64
+        DEFB    $EF, $EF, $15   ; 67
+        DEFB    $EF, $EF, $16   ; 6A
+        DEFB    $EF, $EF, $17   ; 6D
+        DEFB    $EF, $EF, $18   ; 70
+        DEFB    $EF, $EF, $19   ; 73
+        DEFB    $EF, $EF, $1A   ; 76
+        DEFB    $EF, $1B, $1C   ; 79
+        DEFB    $EF, $1D, $1E   ; 7C
         DEFB    $EF             ; 7F
-        DEFB    $EC, $EC, $7F   ; 80
-        DEFB    $EC, $EC, $7F   ; 83
-        DEFB    $EC, $EC, $7F   ; 86
-        DEFB    $EC, $EC, $7F   ; 89
-        DEFB    $EC, $EC, $7F   ; 8C
-        DEFB    $ED, $ED, $7F   ; 8F
-        DEFB    $ED, $ED, $7F   ; 92
+        DEFB    $EC, $EC, $1F   ; 80
+        DEFB    $EC, $EC, $20   ; 83
+        DEFB    $EC, $EC, $21   ; 86
+        DEFB    $EC, $EC, $22   ; 89
+        DEFB    $EC, $EC, $23   ; 8C
+        DEFB    $ED, $ED, $7E   ; 8F
+        DEFB    $ED, $ED, $7D   ; 92
         DEFB    $ED, $ED, $7F   ; 95
         DEFB    $ED, $ED, $7F   ; 98
         DEFB    $ED, $EE, $7F   ; 9B --
         DEFB    $EE, $EE, $7F   ; 9E
         DEFB    $EE, $EE, $7F   ; A1
-        DEFB    $EE, $EE, $7F   ; A4
-        DEFB    $EE, $EE, $7F   ; A7
-        DEFB    $EE, $EF, $7F   ; AA
-        DEFB    $EF, $EF, $7F   ; AD
-        DEFB    $EF, $EF, $7F   ; B0
-        DEFB    $EF, $EF, $7F   ; B3
-        DEFB    $EF, $EF, $7F   ; B6
-        DEFB    $EF, $7F, $7F   ; B9
-        DEFB    $7F, $7F, $7F   ; BC
+        DEFB    $EE, $EE, $7D   ; A4
+        DEFB    $EE, $EE, $7E   ; A7
+        DEFB    $EE, $EF, $24   ; AA
+        DEFB    $EF, $EF, $25   ; AD
+        DEFB    $EF, $EF, $26   ; B0
+        DEFB    $EF, $EF, $27   ; B3
+        DEFB    $EF, $EF, $28   ; B6
+        DEFB    $EF, $29, $2A   ; B9
+        DEFB    $2B, $2C, $2D   ; BC
 
 L33BF:  IN      L,(C)
         JP      (HL)
 
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF; 30 bytes
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $2E, $2F, $30, $31, $32, $33, $34, $35; 30 bytes
+        DEFB    $36, $37, $38, $39, $3A, $3B, $3C, $3D;
+        DEFB    $3E, $3F, $40, $41, $42, $43, $44, $45;
+        DEFB    $46, $47, $48, $49, $4A, $4B;
 
 ; ------------------------
 ; THE 'TABLE OF CONSTANTS'
@@ -18430,20 +18430,20 @@ L36FF:  INC     H
         IN      L,(C)           ;12
         JP      (HL)            ;4
 
-        DEFB    $EC, $EC, $7F   ; 0D
-        DEFB    $EC, $EC, $7F   ; 10
-        DEFB    $EC, $EC, $7F   ; 13
-        DEFB    $EC, $EC, $7F   ; 16
-        DEFB    $EC, $EC, $7F   ; 19
-        DEFB    $EC, $EC, $7F   ; 1C
-        DEFB    $EC, $EC, $7F   ; 1F
-        DEFB    $EC, $EC, $7F   ; 22
-        DEFB    $EC, $EC, $7F   ; 25
-        DEFB    $ED, $ED, $7F   ; 28
-        DEFB    $ED, $ED, $7F   ; 2B
-        DEFB    $ED, $ED, $7F   ; 2E
-        DEFB    $ED, $ED, $7F   ; 31
-        DEFB    $ED, $ED, $7F   ; 34
+        DEFB    $EC, $EC, $01   ; 0D
+        DEFB    $EC, $EC, $02   ; 10
+        DEFB    $EC, $EC, $03   ; 13
+        DEFB    $EC, $EC, $04   ; 16
+        DEFB    $EC, $EC, $05   ; 19
+        DEFB    $EC, $EC, $06   ; 1C
+        DEFB    $EC, $EC, $07   ; 1F
+        DEFB    $EC, $EC, $08   ; 22
+        DEFB    $EC, $EC, $09   ; 25
+        DEFB    $ED, $ED, $0A   ; 28
+        DEFB    $ED, $ED, $0B   ; 2B
+        DEFB    $ED, $ED, $0C   ; 2E
+        DEFB    $ED, $ED, $0D   ; 31
+        DEFB    $ED, $ED, $0E   ; 34
         DEFB    $ED, $ED, $7F   ; 37
         DEFB    $ED, $ED, $7F   ; 3A
         DEFB    $ED, $ED, $7F   ; 3D
@@ -18454,42 +18454,42 @@ L36FF:  INC     H
         DEFB    $EE, $EE, $7F   ; 4C
         DEFB    $EE, $EE, $7F   ; 4F
         DEFB    $EE, $EE, $7F   ; 52
-        DEFB    $EE, $EE, $7F   ; 55
-        DEFB    $EE, $EE, $7F   ; 58
-        DEFB    $EE, $EE, $7F   ; 5B
-        DEFB    $EE, $EF, $7F   ; 5E
-        DEFB    $EE, $EF, $7F   ; 61
-        DEFB    $EF, $EF, $7F   ; 64
-        DEFB    $EF, $EF, $7F   ; 67
-        DEFB    $EF, $EF, $7F   ; 6A
-        DEFB    $EF, $EF, $7F   ; 6D
-        DEFB    $EF, $EF, $7F   ; 70
-        DEFB    $EF, $EF, $7F   ; 73
-        DEFB    $EF, $EF, $7F   ; 76
-        DEFB    $EF, $7F, $7F   ; 79
-        DEFB    $EF, $7F, $7F   ; 7C
+        DEFB    $EE, $EE, $0F   ; 55
+        DEFB    $EE, $EE, $10   ; 58
+        DEFB    $EE, $EE, $11   ; 5B
+        DEFB    $EE, $EF, $12   ; 5E
+        DEFB    $EE, $EF, $13   ; 61
+        DEFB    $EF, $EF, $14   ; 64
+        DEFB    $EF, $EF, $15   ; 67
+        DEFB    $EF, $EF, $16   ; 6A
+        DEFB    $EF, $EF, $17   ; 6D
+        DEFB    $EF, $EF, $18   ; 70
+        DEFB    $EF, $EF, $19   ; 73
+        DEFB    $EF, $EF, $1A   ; 76
+        DEFB    $EF, $1B, $1C   ; 79
+        DEFB    $EF, $1D, $1E   ; 7C
         DEFB    $EF             ; 7F
-        DEFB    $EC, $EC, $7F   ; 80
-        DEFB    $EC, $EC, $7F   ; 83
-        DEFB    $EC, $EC, $7F   ; 86
-        DEFB    $EC, $EC, $7F   ; 89
-        DEFB    $EC, $EC, $7F   ; 8C
-        DEFB    $ED, $ED, $7F   ; 8F
-        DEFB    $ED, $ED, $7F   ; 92
+        DEFB    $EC, $EC, $1F   ; 80
+        DEFB    $EC, $EC, $20   ; 83
+        DEFB    $EC, $EC, $21   ; 86
+        DEFB    $EC, $EC, $22   ; 89
+        DEFB    $EC, $EC, $23   ; 8C
+        DEFB    $ED, $ED, $7E   ; 8F
+        DEFB    $ED, $ED, $7D   ; 92
         DEFB    $ED, $ED, $7F   ; 95
         DEFB    $ED, $ED, $7F   ; 98
         DEFB    $ED, $EE, $7F   ; 9B --
         DEFB    $EE, $EE, $7F   ; 9E
         DEFB    $EE, $EE, $7F   ; A1
-        DEFB    $EE, $EE, $7F   ; A4
-        DEFB    $EE, $EE, $7F   ; A7
-        DEFB    $EE, $EF, $7F   ; AA
-        DEFB    $EF, $EF, $7F   ; AD
-        DEFB    $EF, $EF, $7F   ; B0
-        DEFB    $EF, $EF, $7F   ; B3
-        DEFB    $EF, $EF, $7F   ; B6
-        DEFB    $EF, $7F, $7F   ; B9
-        DEFB    $7F, $7F, $7F   ; BC
+        DEFB    $EE, $EE, $7D   ; A4
+        DEFB    $EE, $EE, $7E   ; A7
+        DEFB    $EE, $EF, $24   ; AA
+        DEFB    $EF, $EF, $25   ; AD
+        DEFB    $EF, $EF, $26   ; B0
+        DEFB    $EF, $EF, $27   ; B3
+        DEFB    $EF, $EF, $28   ; B6
+        DEFB    $EF, $29, $2A   ; B9
+        DEFB    $2B, $2C, $2D   ; BC
 
 L37BF:  LD      A,R
         LD      L,A
@@ -18694,28 +18694,43 @@ ULTR4:  CP      16              ; si el contador esta entre 10 y 16 es el tono g
         POP     DE              ; recupero en DE la direccion de comienzo del bloque
         INC     C               ; pongo en flag Z el signo del pulso
         LD      BC,$EFFE        ; este valor es el que necesita B para entrar en Raudo
-        JR      Z,ULTR8
+        JP      Z,ULT55
         LD      H,$37
-ULTR7:  IN      F,(C)
-        JP      PE,ULTR7
+ULTR5:  IN      F,(C)
+        JP      PE,ULTR5
         CALL    L37C3           ; salto a Raudo segun el signo del pulso en flag Z
-        JR      ULTR9
-ULTR8:  IN      F,(C)
-        JP      PO,ULTR8
+        JR      ULTR7
+ULT55:  LD      H,$33
+ULTR6:  IN      F,(C)
+        JP      PO,ULTR6
         CALL    L3403           ; salto a Raudo
-ULTR9:  EXX                     ; ya se ha acabado la ultracarga (Raudo)
+ULTR7:  LD      A,B
+        CP      $7F
+        JR      Z,ULT75
+        RRCA
+        RRCA
+        RRCA
+        RRCA
+        AND     $0F
+        ADD     A,$30
+        RST     $10
+        LD      A,B
+        AND     $0F
+        ADD     A,$30
+        RST     $10
+ULT75:  EXX                     ; ya se ha acabado la ultracarga (Raudo)
         LD      B,E
         LD      E,C
         LD      C,D
         XOR     A
         CP      B
-        JR      Z,ULT11
+        JR      Z,ULTR8
         INC     C
-ULT11:  XOR     (HL)
+ULTR8:  XOR     (HL)
         INC     HL
-        DJNZ    ULT11
+        DJNZ    ULTR8
         DEC     C
-        JP      NZ,ULT11
+        JP      NZ,ULTR8
         PUSH    HL              ; ha ido bien
         XOR     E
         LD      H,B
@@ -18727,10 +18742,7 @@ ULT11:  XOR     (HL)
         SCF
         RET
 
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF; 31 bytes
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF; 8 bytes
 
 ; ------------------------
 ; THE 'MODULUS' SUBROUTINE 
@@ -20735,10 +20747,10 @@ L3D00:  DEFB    %00000000
 ; 32    127d
 ; 12    32ab
 ; 30    33c2
-; 31    3880
+; 30    3880
 ; 4     38fd
 ; 8     39f9
 ; 206   3af2
 ; 285   3be1
 ;-----
-; 628 bytes
+; 627 bytes
