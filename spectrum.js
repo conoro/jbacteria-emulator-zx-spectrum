@@ -193,6 +193,11 @@ function words(a) {
   }
 }
 
+function cond() {
+  if( pc==0x9d31 )
+    console.log( 'aaa', b, (l|h<<8).toString(16) );
+}
+
 function run() {
   while( st < 69888 )                       // execute z80 instructions during a frame
 //cond(),
@@ -605,6 +610,8 @@ function rp(addr) {
       if( ~addr & 1<<k )            // scan row
         j&= ks[k-8];
   }
+  else if( (addr&0xff) == 0x3f )
+    j&= sdin();
   else{
     t= parseInt(st/224);
     u= st%224;
