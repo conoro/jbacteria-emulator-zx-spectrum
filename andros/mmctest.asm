@@ -35,10 +35,6 @@ FATSIZE         equ     8       ; dimensioni FAT in termini di blocchi da 64KByt
                                 ; da caricare nella word MSB dell'indirizzo della SD per accedere al primo
                                 ; cluster di dati, subito oltre la FAT). 8 = 512KBytes (8192 entries da 64 bytes)
 
-        org     41400           ; variables
-temp_ram        equ     $
-        org     $+512
-
         org     40000
 
         jp      init            ; CARD INIT
@@ -47,11 +43,11 @@ temp_ram        equ     $
 
 init    di
         ld      c, SPI_PORT
-        ld      hl, temp_ram    ; tenta di leggere il CID di una eventuale SD/MMC salvandolo a TEMP_RAM
         call    gcidpo
-        ld      bc, 0
-        jr      nz, nodet       ; salta se la card non e` stata rilevata
-        inc     c
+        ld      b, 0
+        ld c,a
+;        jr      nz, nodet       ; salta se la card non e` stata rilevata
+;        inc     c
 nodet   ei
         ret
 
@@ -101,10 +97,9 @@ writecard
 ;
 ; iF != 0 AND != $ff, the mmc_get_cid returned error code is displayed on screen.
 ;-------------------------------------------------------------------------------------------
-getcid  push    bc
-        push    de
-        ld      hl, 0
-        ld      de, 0
+getcid  ld      hl, 0
+        ld      d, l
+        ld      e, l
         ld      a, READ_CID
         call    send_command    ; return A
         jr      nz, cidexit
@@ -116,8 +111,6 @@ getcid  push    bc
         xor     a
 cidexit call    cs_high         ; set cs high
         in      f, (c)
-        pop     de
-        pop     bc
         ret
 gcidpo  call    getcid          ; try to read the MMC CID INFO --> (HL)
         ret     z               ; to SPI mode (MMC_INIT) communications (once after power-on)
@@ -452,7 +445,7 @@ write_command
         out     (c), a
         out     (c), a
         out     (c), a
-        ld      a, $95          ; $95 is only needed when the CARD INIT is being performed,
+;        ld      a, $95          ; $95 is only needed when the CARD INIT is being performed,
         out     (c), a          ; then this byte is ignored.
         ret
 
