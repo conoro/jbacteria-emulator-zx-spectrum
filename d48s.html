@@ -15,7 +15,7 @@
 pb= []; // playback
 pbf=pbt=frc=game=t=u=0;
 function cb(b,c){
-  if( c=='m' )
+  if( c=='_' )
     emul=b;
   else
     game=b;
@@ -84,7 +84,7 @@ function ajax(f,g){
   else
     xhr.onreadystatechange=function(){
       if(xhr&&xhr.readyState==4)
-        cb(ie ? bin2arr(xhr.responseBody) : bin2str(xhr.responseText), xhr.getResponseHeader('Content-Type').slice(-1));
+        cb(ie ? bin2arr(xhr.responseBody) : bin2str(xhr.responseText), f[0]);
       };
   xhr.open('POST',f,true);
   if (!ie)

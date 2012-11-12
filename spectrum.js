@@ -194,13 +194,13 @@ function words(a) {
 }
 
 function cond() {
-  if( pc==0x9d31 )
-    console.log( 'aaa', b, (l|h<<8).toString(16) );
+  if( pc==0x9cd4 )
+    console.log( 'aaa', (c|b<<8).toString(16), (l|h<<8).toString(16), (e|d<<8).toString(16), (xl|xh<<8).toString(16) );
 }
 
 function run() {
   while( st < 69888 )                       // execute z80 instructions during a frame
-//cond(),
+cond(),
     r++,
     g[m[pc++&0xffff]]();
   if( pbt ){

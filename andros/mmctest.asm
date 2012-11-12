@@ -30,24 +30,129 @@ READ_MULTIPLE   equ     $52
 TERMINATE_MULTI equ     $4C
 WRITE_SINGLE    equ     $58
 BLOCKSIZE       equ     $200    ; SD/MMC block size (bytes)
-FATSIZE         equ     8       ; dimensioni FAT in termini di blocchi da 64KBytes (in pratica e` l'offset
-                                ; da caricare nella word MSB dell'indirizzo della SD per accedere al primo
-                                ; cluster di dati, subito oltre la FAT). 8 = 512KBytes (8192 entries da 64 bytes)
 
         org     40000
 
 readcard
         di
         ld      c, SPI_PORT
-        ld      hl, FATSIZE     ; MSB = FATSIZE = reads from a 512Kbytes offset
+;        ld      hl, $800        ; read MBR
+        ld      hl, $2        ; read MBR
         ld      de, 0
-        ld      ix, $5800
-        ld      b, 5
+        ld      ix, $8000
         call    readata
+        ld      hl, ($800e)
+        add     hl, hl
+        ld      (fat), hl
+        ex      de, hl
+        ld      hl, ($8024)
+        add     hl, hl
+        add     hl, hl
+        add     hl, de
+        inc     hl
+        inc     hl
+        ld      (dire), hl
+        ex      de, hl
+        ld      hl, ($802c)
+tica    push    hl
+        call    calcs
+        add     hl, de
+        ld      d, 0
+        ld      e, d
+        ld      ix, $9000
+        push    ix
+        ld      a, ($800d)
+        ld      b, a
+otve    call    readata
+        inc     ixh
+        inc     ixh
+        inc     hl
+        inc     hl
+        djnz    otve
+        pop     hl
+        ld      b, 16
+        ld      a, ($800d)
+        ld      c, a
+        
+bubi    push    bc
+        ld      b, 11
+        ld      a, (hl)
+        cp      $e5
+        jr      z, desc
+        ld      de, filena
+        push    hl
+buub    ld      a, (de)
+        cp      (hl)
+        inc     hl
+        inc     de
+        jr      nz, beeb
+        djnz    buub
+beeb    pop     hl
+        jr      z, bien
+desc    pop     bc
+        ld      de, $0020
+        add     hl, de
+        djnz    bubi
+        ld      b, 16
+        dec     c
+        jr      nz, bubi
+        ld      c, $3f
+        ld      de, (fat)
+        pop     hl
+        ld      a, l
+        or      h
+        inc     a
+        jr      z, fina
+        add     hl, hl
+        ld      b, l
+        inc     h
+        add     hl, hl
+        ld      l, h
+        ld      h, 0
+        add     hl, de
+        ld      d, 0
+        ld      e, d
+        ld      ix, $9000
+        call    readata
+        ld      h, $48
+        ld      l, b
+        add     hl, hl
+        ld      b, (hl)
+        inc     hl
+        ld      h, (hl)
+        ld      l, b
+        ld      de, (dire)
+        jr      tica
+        
+fina    ld      a, 'M'
+        rst     $10
+hhh jr hhh
+
+
+bien    pop     hl
+        ld      a, 'B'
+        rst     $10
+    jr hhh
+
+;( 2*[2c]*[0d] + 4*[24] + 2*[0e] + 2 )  * 100
+;( (2-2)*2*4       + F64 + 309C + 2     ;689000
+
         ld      b, 0
         ld      c, a
         ei
         ret
+
+calcs   ld      a, [$800d]
+        dec     hl
+        dec     hl
+;        defb    $fe
+agai    add     hl, hl
+        rrca
+        jr      nc, agai
+        ret
+
+        
+
 
 ;-----------------------------------------------------------------------------------------
 ; READ DATA TEST subroutine
@@ -66,25 +171,29 @@ readata ld      a, READ_SINGLE  ; Command code for multiple block read
         call    cs_low          ; set cs high
         out     (c), a
         nop
+        out     (c), l
+        nop
         out     (c), h
         nop
-        out     (c), l
+        out     (c), e
         nop
         out     (c), d
         nop
-        out     (c), e
-        nop
-        out     (c), e
+        out     (c), d
         call    waitr           ; waits for the MMC to reply != $FF
         dec     a
         jr      nz, reinit
+        call    waittok
+        ret     nz
+        push    bc
+        push    hl
         push    ix
         pop     hl              ; INI usa HL come puntatore
-jrhere  call    waittok
-        ret     nz
         ld      b, a
         inir
         inir
+        pop     hl
+        pop     bc
         ret
 
 ;
@@ -97,7 +206,8 @@ jrhere  call    waittok
 ;
 ; Destroys AF, B.
 ;-----------------------------------------------------------------------------------------
-mmcinit push    hl
+mmcinit push    bc
+        push    hl
         ld      hl, $FF00 + IDLE_STATE
         call    cs_high         ; set cs high
         ld      b, 9            ; sends 80 clocks
@@ -139,6 +249,7 @@ ninitok djnz    resetok         ; if no response, tries to send the entire block
         jr      nz, resetok
         inc     l
 mmcfin  pop     hl
+        pop     bc
 cs_high push    af
         ld      a, $ff
 cs_hig1 out     (OUT_PORT), a
@@ -172,6 +283,11 @@ resp    in      a, (SPI_PORT)   ; reads a byte from MMC
 resp_ok pop     bc
         ret
 
+dire    defw    0
+fat     defw    0
+filena  defb    'AIRRAI3aTAP'
+;filena  defb    'AGPITON TAP'
+;filena  defb    'AIRWOLF TAP'
 ; suponer 512 bytes por sector
 ;0b-   200      512 bytes por sector
 ;0d-     4      4 sectores por cluster
@@ -183,9 +299,13 @@ resp_ok pop     bc
 
 ;03d9*200= 07b200 bytes por fat
 ;184e*200= 309C00 direccion fat1
-;309C00+07b200= 384E00 direccion fat1
+;309C00+07b200= 384E00 direccion fat2
 ;384E00+07b200= 400000 direccion datos
 
+;(2c)*(0d)*200+(24)*400+(0e)*200
+;( 2*[2c]*[0d] + 4*[24] + 2*[0e] + 2 )  * 100
+
+;(2*4+2*3d9+184e)*200= 
 ;A5000,7AD800= 852800,1000000
 ;
 ; 384e00
