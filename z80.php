@@ -1590,7 +1590,7 @@ a(rlc('d'));                                                // 02 // RLC D
 a(rlc('e'));                                                // 03 // RLC E
 a(rlc('h'));                                                // 04 // RLC H
 a(rlc('l'));                                                // 05 // RLC L
-a('st+='.($cpc?4:15).';'.                                   // 06 // RLC (HL)
+a('st+='.($cpc?2:7).';'.                                    // 06 // RLC (HL)
 ($pag==1
   ? 'v=m[t=h>>6][u=l|h<<8&16383];'.rlc('v').';mw[t][u]=v'
   : 't=l|h<<8;u=m[t];'.rlc('u').';'.wb('t','u')));
@@ -1601,7 +1601,7 @@ a(rrc('d'));                                                // 0a // RRC D
 a(rrc('e'));                                                // 0b // RRC E
 a(rrc('h'));                                                // 0c // RRC H
 a(rrc('l'));                                                // 0d // RRC L
-a('st+='.($cpc?4:15).';'.                                   // 0e // RRC (HL)
+a('st+='.($cpc?2:7).';'.                                    // 0e // RRC (HL)
 ($pag==1
   ? 'v=m[t=h>>6][u=l|h<<8&16383];'.rrc('v').';mw[t][u]=v'
   : 't=l|h<<8;u=m[t];'.rrc('u').';'.wb('t','u')));
@@ -1612,7 +1612,7 @@ a(rl('d'));                                                 // 12 // RL D
 a(rl('e'));                                                 // 13 // RL E
 a(rl('h'));                                                 // 14 // RL H
 a(rl('l'));                                                 // 15 // RL L
-a('st+='.($cpc?4:15).';'.                                   // 16 // RL (HL)
+a('st+='.($cpc?2:7).';'.                                    // 16 // RL (HL)
 ($pag==1
   ? 'v=m[t=h>>6][u=l|h<<8&16383];'.rl('v').';mw[t][u]=v'
   : 't=l|h<<8;u=m[t];'.rl('u').';'.wb('t','u')));
@@ -1623,7 +1623,7 @@ a(rr('d'));                                                 // 1a // RR D
 a(rr('e'));                                                 // 1b // RR E
 a(rr('h'));                                                 // 1c // RR H
 a(rr('l'));                                                 // 1d // RR L
-a('st+='.($cpc?4:15).';'.                                   // 1e // RR (HL)
+a('st+='.($cpc?2:7).';'.                                    // 1e // RR (HL)
 ($pag==1
   ? 'v=m[t=h>>6][u=l|h<<8&16383];'.rr('v').';mw[t][u]=v'
   : 't=l|h<<8;u=m[t];'.rr('u').';'.wb('t','u')));
@@ -1634,7 +1634,7 @@ a(sla('d'));                                                // 22 // SLA D
 a(sla('e'));                                                // 23 // SLA E
 a(sla('h'));                                                // 24 // SLA H
 a(sla('l'));                                                // 25 // SLA L
-a('st+='.($cpc?4:15).';'.                                   // 26 // SLA (HL)
+a('st+='.($cpc?2:7).';'.                                    // 26 // SLA (HL)
 ($pag==1
   ? 'v=m[t=h>>6][u=l|h<<8&16383];'.sla('v').';mw[t][u]=v'
   : 't=l|h<<8;u=m[t];'.sla('u').';'.wb('t','u')));
@@ -1645,7 +1645,7 @@ a(sra('d'));                                                // 2a // SRA D
 a(sra('e'));                                                // 2b // SRA E
 a(sra('h'));                                                // 2c // SRA H
 a(sra('l'));                                                // 2d // SRA L
-a('st+='.($cpc?4:15).';'.                                   // 2e // SRA (HL)
+a('st+='.($cpc?2:7).';'.                                    // 2e // SRA (HL)
 ($pag==1
   ? 'v=m[t=h>>6][u=l|h<<8&16383];'.sra('v').';mw[t][u]=v'
   : 't=l|h<<8;u=m[t];'.sra('u').';'.wb('t','u')));
@@ -1656,7 +1656,7 @@ a(sll('d'));                                                // 32 // SLL D
 a(sll('e'));                                                // 33 // SLL E
 a(sll('h'));                                                // 34 // SLL H
 a(sll('l'));                                                // 35 // SLL L
-a('st+='.($cpc?4:15).';'.                                   // 36 // SLL (HL)
+a('st+='.($cpc?2:7).';'.                                    // 36 // SLL (HL)
 ($pag==1
   ? 'v=m[t=h>>6][u=l|h<<8&16383];'.sll('v').';mw[t][u]=v'
   : 't=l|h<<8;u=m[t];'.sll('u').';'.wb('t','u')));
@@ -1667,7 +1667,7 @@ a(srl('d'));                                                // 3a // SRL D
 a(srl('e'));                                                // 3b // SRL E
 a(srl('h'));                                                // 3c // SRL H
 a(srl('l'));                                                // 3d // SRL L
-a('st+='.($cpc?4:15).';'.                                   // 3e // SRL (HL)
+a('st+='.($cpc?2:7).';'.                                    // 3e // SRL (HL)
 ($pag==1
   ? 'v=m[t=h>>6][u=l|h<<8&16383];'.srl('v').';mw[t][u]=v'
   : 't=l|h<<8;u=m[t];'.srl('u').';'.wb('t','u')));

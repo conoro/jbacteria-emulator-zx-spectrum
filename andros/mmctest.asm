@@ -1,24 +1,4 @@
         output "mmctest.bin"
-;---------------------------------------------------------------------------------------------
-;
-; ZXMMC+ test software; allows reading/writing blocks to/from the screen and restoring
-; 16K snapshots in ZX-Badaloc's BOOTROM firmware format.
-;
-; Unica modifica rispetto a zxmmc: la copia dei 512K avviene ad inizio card.
-;
-; MMC routines are from ZX-Badaloc BOOTROM Version 4.96 01/03/2007, that could run at 21MHz.
-; NEW VERSION with OUTI/INI instruction unrolling, suggested by Paolo Ferraris, for maximum
-; performance (218Kbytes/sec @3.5MHz)
-;
-; 4 Functions are provided:
-;
-; 40.000:       CARD INIT. Returns number of found cards (0, 1 or 2)
-; 40.003:       13 blocks (512 bytes each) at offset +512KB are written to the card (from screen content)
-; 40.006:       13 blocks (512 bytes each) from offset +512KB are read from the card to the screen
-;
-;---------------------------------------------------------------------------------------------
-;
-
 
 SPI_PORT        equ     $3F
 OUT_PORT        equ     $1F     ; port for CS control (D1:D0)
@@ -31,34 +11,53 @@ TERMINATE_MULTI equ     $4C
 WRITE_SINGLE    equ     $58
 BLOCKSIZE       equ     $200    ; SD/MMC block size (bytes)
 
-        org     40000
+        org     50000
 
-readcard
         di
         ld      c, SPI_PORT
-;        ld      hl, $800        ; read MBR
-        ld      hl, $2        ; read MBR
-        ld      de, 0
+        sbc     hl, hl          ; read MBR
+        ld      e, l
         ld      ix, $8000
         call    readata
+        ld      hl, ($81c6)
+        ld      a, ($81c8)
+        add     hl, hl
+        adc     a, a
+        ld      e, a
+        call    readata
+        ld      a, e
+        ex      de, hl
         ld      hl, ($800e)
         add     hl, hl
+        adc     a, 0  ;b
+        add     hl, de
+        adc     a, 0  ;b
         ld      (fat), hl
+        ld      (fat+2), a
+        ld      b, a
         ex      de, hl
         ld      hl, ($8024)
+        ld      a, ($8026)
         add     hl, hl
+        adc     a, a
         add     hl, hl
+        adc     a, a
         add     hl, de
-        inc     hl
-        inc     hl
+        adc     a, b
         ld      (dire), hl
-        ex      de, hl
+        ld      (dire+2), a
         ld      hl, ($802c)
+        ld      a, ($802e)
+        ld      b, a
 tica    push    hl
+        push    bc
         call    calcs
+        ld      de, (dire)
         add     hl, de
+        ld      a, (dire+2)
+        adc     a, b
+        ld      e, a
         ld      d, 0
-        ld      e, d
         ld      ix, $9000
         push    ix
         ld      a, ($800d)
@@ -66,14 +65,13 @@ tica    push    hl
 otve    call    readata
         inc     ixh
         inc     ixh
-        inc     hl
+        inc     l
         inc     hl
         djnz    otve
         pop     hl
-        ld      b, 16
         ld      a, ($800d)
         ld      c, a
-        
+buba    ld      b, 16
 bubi    push    bc
         ld      b, 11
         ld      a, (hl)
@@ -87,72 +85,94 @@ buub    ld      a, (de)
         inc     de
         jr      nz, beeb
         djnz    buub
-beeb    pop     hl
-        jr      z, bien
+beeb    jr      z, bien
+        pop     hl
 desc    pop     bc
         ld      de, $0020
         add     hl, de
         djnz    bubi
-        ld      b, 16
         dec     c
-        jr      nz, bubi
-        ld      c, $3f
-        ld      de, (fat)
+        jr      nz, buba
+        pop     bc
+        ld      c, SPI_PORT
         pop     hl
         ld      a, l
         or      h
+        or      b
         inc     a
         jr      z, fina
         add     hl, hl
-        ld      b, l
-        inc     h
-        add     hl, hl
+        rl      b
+        push    hl
+        rl      h
+        rl      b
         ld      l, h
-        ld      h, 0
+        ld      h, b
+        ld      de, (fat)
         add     hl, de
-        ld      d, 0
-        ld      e, d
+        ld      e, 0
         ld      ix, $9000
         call    readata
+        pop     hl
         ld      h, $48
-        ld      l, b
         add     hl, hl
-        ld      b, (hl)
+        ld      e, (hl)
         inc     hl
-        ld      h, (hl)
-        ld      l, b
-        ld      de, (dire)
-        jr      tica
+        ld      d, (hl)
+        inc     hl
+        ld      b, (hl)
+        ex      de, hl
+        jp      tica
         
 fina    ld      a, 'M'
         rst     $10
 hhh jr hhh
 
 
-bien    pop     hl
-        ld      a, 'B'
-        rst     $10
+bien    ld      c, SPI_PORT
+        ld      de, 9
+        add     hl, de
+        ld      b, (hl)
+        ld      e, 6
+        add     hl, de
+        ld      a, (hl)
+        inc     hl
+        ld      h, (hl)
+        ld      l, a
+        call    calcs
+        ld      de, (dire)
+        add     hl, de
+        ld      a, (dire+2)
+        adc     a, b
+        ld      e, a
+        ld      d, 0
+        ld      ix, $4000
+        ld      a, ($800d)
+        ld      b, 16
+cuan    call    readata
+        inc     ixh
+        inc     ixh
+        inc     l
+        inc     hl
+        djnz    cuan
     jr hhh
 
-;( 2*[2c]*[0d] + 4*[24] + 2*[0e] + 2 )  * 100
-;( (2-2)*2*4       + F64 + 309C + 2     ;689000
-
-        ld      b, 0
-        ld      c, a
-        ei
-        ret
 
 calcs   ld      a, [$800d]
-        dec     hl
-        dec     hl
-;        defb    $fe
+        call    decbhl
+        call    decbhl
 agai    add     hl, hl
+        rl      b
         rrca
         jr      nc, agai
         ret
 
-        
-
+decbhl  dec     l
+        ret     nc
+        dec     h
+        ret     nc
+        dec     b
+        ret
 
 ;-----------------------------------------------------------------------------------------
 ; READ DATA TEST subroutine
@@ -171,15 +191,15 @@ readata ld      a, READ_SINGLE  ; Command code for multiple block read
         call    cs_low          ; set cs high
         out     (c), a
         nop
-        out     (c), l
+        out     (c), e
         nop
         out     (c), h
         nop
-        out     (c), e
+        out     (c), l
         nop
-        out     (c), d
+        out     (c), 0
         nop
-        out     (c), d
+        out     (c), 0
         call    waitr           ; waits for the MMC to reply != $FF
         dec     a
         jr      nz, reinit
@@ -217,8 +237,7 @@ l_init  out     (c), h
         out     (c), l          ; sends the command
         ld      b, 4
         ld      hl, $9540       ; $40= 64
-        xor     a
-lsen0   out     (c), a          ; then sends four "00" bytes (parameters = NULL)
+lsen0   out     (c), 0          ; then sends four "00" bytes (parameters = NULL)
         djnz    lsen0
         out     (c), h          ; then this byte is ignored.
         call    waitr
@@ -229,12 +248,11 @@ resetok call    cs_high         ; set cs high
         call    cs_low          ; set cs low
         ld      a, OP_COND      ; Sends OP_COND command
         out     (c), a          ; sends the command
-        xor     a
-        out     (c), a          ; then sends four "00" bytes (parameters = NULL)
-        out     (c), a
-        out     (c), a
-        out     (c), a
-        out     (c), a          ; then this byte is ignored.
+        out     (c), 0          ; then sends four "00" bytes (parameters = NULL)
+        out     (c), 0
+        out     (c), 0
+        out     (c), 0
+        out     (c), 0          ; then this byte is ignored.
         call    waitr           ; waitr tries to receive a response reading an SPI
         bit     0, a            ; D0 SET = initialization still in progress...
         jr      z, ninitok
@@ -283,41 +301,36 @@ resp    in      a, (SPI_PORT)   ; reads a byte from MMC
 resp_ok pop     bc
         ret
 
-dire    defw    0
-fat     defw    0
-filena  defb    'AIRRAI3aTAP'
-;filena  defb    'AGPITON TAP'
-;filena  defb    'AIRWOLF TAP'
-; suponer 512 bytes por sector
-;0b-   200      512 bytes por sector
-;0d-     4      4 sectores por cluster
-;0e-  184e      6222 sectores reservados
-;10-     2      2 copias FAT
-;1e-     1      1 sector oculto
-;24-  03d9      sectores por FAT  
-;2c-     2      direccion cluster de la raiz
+dire    defb    0, 0, 0
+fat     defb    0, 0, 0
+filena  defb    'BOOT    SCR'
 
-;03d9*200= 07b200 bytes por fat
-;184e*200= 309C00 direccion fat1
-;309C00+07b200= 384E00 direccion fat2
-;384E00+07b200= 400000 direccion datos
-
-;(2c)*(0d)*200+(24)*400+(0e)*200
-;( 2*[2c]*[0d] + 4*[24] + 2*[0e] + 2 )  * 100
-
-;(2*4+2*3d9+184e)*200= 
-;A5000,7AD800= 852800,1000000
-;
-; 384e00
+hex:    push    af
+        and     $f0
+        rrca
+        rrca
+        rrca
+        rrca
+        cp      $0a
+        jr      c, mayo
+        add     a, 7
+mayo:   add     a, $30
+        rst     $10
+        pop     af
+        and     $0f
+        cp      $0a
+        jr      c, maya
+        add     a, 7
+maya:   add     a, $30
+        rst     $10
+        ret
 
 /*<?php require 'zx.inc.php';
   $bas= line(10,"\xef\x22\x22\xaf").
-        line(20,"\xf5\xc0" . number('40000'));
+        line(20,"\xf5\xc0" . number('50000'));
   $asm= assemble('mmctest');
   file_put_contents('mmc.tap',
       head_basic('mmctest', strlen($bas), 10).
       data($bas).
-      head_code('mmctest', strlen($asm), 40000).
+      head_code('mmctest', strlen($asm), 50000).
       data($asm));?>*/
-
-
