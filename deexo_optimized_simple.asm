@@ -1,7 +1,7 @@
 ; Note: mapbase must be 256 byte aligned
 ; exomizer raw <input_file> -c -o <intermediate_file>
 ; exoopt <intermediate_file> <output_file>
-; 0=159, 1=161, 2= 182, 3ram= 192, 3rom= 194, 4ram= 242, 4rom= 243
+; 0=159, 1=161, 2= 181, 3ram= 191, 3rom= 193, 4ram= 242, 4rom= 243
 ;        output  deexo_optimized_simple.bin
 ;        define  mapbase $5b00
 ;        define  speed   4
@@ -37,10 +37,17 @@ get4
       ENDIF
 gb4c    rl      c
         jr      nc, get4
+      IF  speed=2 OR speed=3
+        inc     c
+      ENDIF
         ld      (iy+0), c
         push    hl
         ld      hl, 1
+      IF  speed=2 OR speed=3
+        defb    48
+      ELSE
         defb    210
+      ENDIF
 setbit  add     hl, hl
         dec     c
         jr      nz, setbit
@@ -123,11 +130,19 @@ gbic    bit     4, c
     ENDIF
         inc     b
         djnz    dontgo
+      IF  speed=2 OR speed=3
+        ld      bc, 768+48
+      ELSE
         ld      bc, 512+48
+      ENDIF
         dec     e
         jr      z, goit
         dec     e
+      IF  speed=2 OR speed=3
+dontgo  ld      bc, 1280+32
+      ELSE
 dontgo  ld      bc, 1024+32
+      ENDIF
         jr      z, goit
         ld      c, 16
 goit
@@ -244,8 +259,7 @@ gbcont  adc     a, a
         jr      z, gbg
         rl      e
         rl      d
-getbits dec     b
-        jp      p, gbcont
+getbits djnz    gbcont
         ret
     ENDIF
   ELSE
