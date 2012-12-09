@@ -1,11 +1,10 @@
 ; Note: mapbase must be 256 byte aligned
 ; exomizer raw <input_file> -c -o <intermediate_file>
 ; exoopt <intermediate_file> <output_file>
-; 0=159, 1=161, 2= 181, 3ram= 191, 3rom= 193, 4ram= 242, 4rom= 243
+; 0=154, 1=156, 2= 176, 3= 185, 4= 224
 ;        output  deexo_optimized_simple.bin
 ;        define  mapbase $5b00
 ;        define  speed   4
-;        define  rom     0
   IF  speed<4
         ld      iy, mapbase
         ld      a, 128
@@ -114,20 +113,12 @@ gbic    bit     4, c
         ld      c, (iy+52)
         ld      b, (iy+104)
         add     hl, bc
-      IF  rom=1
         ex      de, hl
-        ld      ixl, e
-        ld      ixh, d
-      ELSE
-        ld      (toklen+1), hl
-        ex      de, hl
-      ENDIF
         ld      b, d
     ELSE
         call    getpair
-        push    de
-        pop     ix
     ENDIF
+        push    de
         inc     b
         djnz    dontgo
       IF  speed=2 OR speed=3
@@ -161,26 +152,14 @@ goit
         ld      b, (iy+104)
         add     hl, bc
         ex      de, hl
-        ld      b, d
       ELSE
         call    getpair
       ENDIF
-        ld      c, e
-        ex      (sp), hl
-        ld      d, h
-        ld      e, l
-        sbc     hl, bc
-    IF  speed=3
-      IF  rom=1
-        ld      c, ixl
-        ld      b, ixh
-      ELSE
-toklen  ld      bc, 0
-      ENDIF
-    ELSE
-        push    ix
         pop     bc
-    ENDIF
+        ex      (sp), hl
+        push    hl
+        sbc     hl, de
+        pop     de
         ldir
         pop     hl
         jr      mloop
@@ -264,7 +243,7 @@ getbits djnz    gbcont
     ENDIF
   ELSE
         xor     a
-        ld      iyl, a
+        ld      iyl, 240
         ld      a, 128
         ld      b, 52
         push    de
@@ -277,10 +256,11 @@ get4    add     a, a
 gb4c    rl      c
         jr      nc, get4
         ld      iyh, mapbase/256
+        inc     c
         ld      (iy+0), c
         push    hl
         ld      hl, 1
-        defb    210
+        defb    48
 setbit  add     hl, hl
         dec     c
         jr      nz, setbit
@@ -294,28 +274,26 @@ setbit  add     hl, hl
         pop     hl
         dec     ixl
         djnz    init
-        ld      c, b
         pop     de
-litcop  inc     c
-        ldi
+litcop  ldi
 mloop   add     a, a
         jr      z, gbm
         jr      c, litcop
 gbmc    push    de
-        ld      de, mapbase+255
-getind  inc     e
-        add     a, a
+        ld      bc, mapbase+240-1
+getind  add     a, a
         jr      z, gbi
+geti2   inc     c
         jr      nc, getind
-gbic    bit     4, e
-        jr      nz, final
-        and     a
-        ex      de, hl
-        ld      h, (hl)
-        ex      de, hl
-        dec     d
-        jp      p, gbcon1
-        jp      gbfin1
+        jr      z, final
+gbic    ld      d, a
+        xor     a
+        ld      e, a
+        ld      a, (bc)
+        ld      b, a
+        ld      a, d
+        ld      d, e
+        jp      gbfin1        ;gbfin1+2
 gb4     ld      a, (hl)
         inc     hl
         adc     a, a
@@ -323,15 +301,16 @@ gb4     ld      a, (hl)
 gbi     ld      a, (hl)
         inc     hl
         adc     a, a
-        jr      c, gbic
-        jp      getind
+        jr      nc, geti2
+        inc     c
+        jp      nz, gbic
+final   pop     de
+        ret
 gbm     ld      a, (hl)
         inc     hl
         adc     a, a
         jr      nc, gbmc
         jp      litcop
-final   pop     de
-        ret
 gbg2    ld      a, (hl)
         inc     hl
         jp      gbcon2
@@ -339,85 +318,71 @@ gbg1    ld      a, (hl)
         inc     hl
 gbcon1  adc     a, a
         jr      z, gbg1
-        rl      c
-        rl      b
-        dec     d
-        jp      p, gbcon1
-gbfin1  ex      af, af'
-        ld      d, (mapbase/256)+1
-        ld      a, (de)
-        inc     d
-        add     a, c
-        ld      c, a
-        ld      a, (de)
-        adc     a, b
-        ld      b, a
-      IF  rom=1
-        ld      ixl, c
-        ld      ixh, b
-      ELSE
-        ld      (toklen+1), bc
-      ENDIF
+        rl      e
+        rl      d                   ; se puede quitar
+gbfin1  djnz    gbcon1
+        ex      af, af'
+        ld      b, (mapbase/256)+1
+        ld      a, (bc)
+        inc     b
+        add     a, e
+        ld      e, a
+        ld      a, (bc)
+        adc     a, d
+        ld      d, a
+        push    de
         jr      nz, dontgo
-        ld      de, 512+48        ;1?
-        dec     c
+        ld      bc, 512+32
+        dec     e
         jr      z, goit
-        dec     c                 ;2?
-        ld      de, 1024+16
-        jr      nz, goit
-        ld      e, 32
-goit    ld      c, b
-goit2   ex      af, af'
+        dec     e
+        ld      bc, 1024+16
+        jr      z, goit
+        ld      c, d
+        ld      e, d
+goit    ex      af, af'
 gbcon2  adc     a, a
         jr      z, gbg2
-        rl      c
-        rl      b
-        dec     d
-        jp      nz, gbcon2
+        rl      e
+        rl      d             ; se puede quitar
+        djnz    gbcon2
         ex      af, af'
         ld      a, e
         add     a, c
-        ld      e, a
-        ld      b, d
-        ld      c, d
-        ld      d, mapbase/256
-        ld      a, (de)
-        ld      d, a
+        ld      c, a
+        ld      e, b
+        ld      d, b          ; se puede quitar
+        ld      b, mapbase/256
+        ld      a, (bc)
+        ld      b, a
         ex      af, af'
-        dec     d
-        jp      p, gbcon3
         jp      gbfin3
-dontgo  ld      de, 1024+16
-        ld      bc, 0
-        jr      goit2
+dontgo  ld      bc, 1024
+        ld      d, c
+        ld      e, c
+        jp      goit
 gbg3    ld      a, (hl)
         inc     hl
 gbcon3  adc     a, a
         jr      z, gbg3
-        rl      c
-        rl      b
-        dec     d
-        jp      p, gbcon3
-gbfin3  ex      af, af'
-        ld      d, (mapbase/256)+1
-        ld      a, (de)
-        inc     d
-        add     a, c
-        ld      c, a
-        ld      a, (de)
-        adc     a, b
-        ld      b, a
+        rl      e
+        rl      d
+gbfin3  djnz    gbcon3
         ex      af, af'
+        ld      b, (mapbase/256)+1
+        ld      a, (bc)
+        inc     b
+        add     a, e
+        ld      e, a
+        ld      a, (bc)
+        adc     a, d
+        ld      d, a
+        ex      af, af'
+        pop     bc
         ex      (sp), hl
-        ld      d, h
-        ld      e, l
-        sbc     hl, bc
-      IF  rom=1
-        ld      c, ixl
-        ld      b, ixh
-      ELSE
-toklen  ld      bc, 0
-      ENDIF
+        push    hl
+        sbc     hl, de
+        pop     de
         ldir
         pop     hl
         jp      mloop
