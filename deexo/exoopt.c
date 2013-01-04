@@ -105,7 +105,7 @@ int main(int argc, char* argv[]){
     printf("\nInvalid number of parameters\n"),
     exit(-1);
   if( argc==5 )
-    back= ~argv[4][0] & 4,
+    back= (~argv[4][0] & 4)>>2,
     speed= argv[4][1] - '0',
     s34= speed>2;
   mapbase= strtol(argv[3], NULL, 16);
