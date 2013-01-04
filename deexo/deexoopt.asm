@@ -20,30 +20,30 @@
         ld      b, 52
         push    de
         cp      a
-init    ld      c, 16
-        jr      nz, get4
+exinit  ld      c, 16
+        jr      nz, exget4
         ld      de, 1
         ld      ixl, c
       IF  speed=0
-get4    call    getbit
+exget4: call    exgetb
       ENDIF
       IF  speed=1
-get4    add     a, a
-        call    z, getbit
+exget4: add     a, a
+        call    z, exgetb
       ENDIF
       IF  speed=2 OR speed=3
         defb    218
-gb4     ld      a, (hl)
+exgb4:  ld      a, (hl)
         IF  back=1
         dec     hl
         ELSE
         inc     hl
         ENDIF
-get4    adc     a, a
-        jr      z, gb4
+exget4: adc     a, a
+        jr      z, exgb4
       ENDIF
         rl      c
-        jr      nc, get4
+        jr      nc, exget4
     IF  speed=0 OR speed=1
       IF  mapbase-mapbase/256*256<240 AND mapbase-mapbase/256*256>135
         ld      (iy-256+mapbase-mapbase/256*256), c
@@ -69,9 +69,9 @@ get4    adc     a, a
         ex      af, af'
         ld      a, c
         cp      8
-        jr      c, get5
+        jr      c, exget5
         xor     136
-get5    inc     a
+exget5: inc     a
       IF  mapbase-mapbase/256*256<240 AND mapbase-mapbase/256*256>135
         ld      (iy-256+mapbase-mapbase/256*256), a
       ELSE
@@ -82,9 +82,9 @@ get5    inc     a
         ex      af, af'
         defb    210
     ENDIF
-setbit  add     hl, hl
+exsetb: add     hl, hl
         dec     c
-        jr      nz, setbit
+        jr      nz, exsetb
       IF  mapbase-mapbase/256*256<240 AND mapbase-mapbase/256*256>135
         ld      (iy-204+mapbase-mapbase/256*256), e
         ld      (iy-152+mapbase-mapbase/256*256), d
@@ -97,51 +97,50 @@ setbit  add     hl, hl
         inc     iyl
         pop     hl
         dec     ixl
-        djnz    init
+        djnz    exinit
         pop     de
-litcop  
+  
       IF  back=1
-        ldd
+exlit:  ldd
       ELSE
-        ldi
+exlit:  ldi
       ENDIF
-mloop 
     IF  speed=0
-        call    getbit
-        jr      c, litcop
+exloop: call    exgetb
+        jr      c, exlit
       IF  mapbase-mapbase/256*256<240 AND mapbase-mapbase/256*256>135
         ld      c, 256-1
       ELSE
         ld      c, 112-1
       ENDIF
-getind  call    getbit
+exgeti: call    exgetb
     ENDIF
     IF  speed=1
-        add     a, a
-        call    z, getbit
-        jr      c, litcop
+exloop: add     a, a
+        call    z, exgetb
+        jr      c, exlit
       IF  mapbase-mapbase/256*256<240 AND mapbase-mapbase/256*256>135
         ld      c, 256-1
       ELSE
         ld      c, 112-1
       ENDIF
-getind  add     a, a
-        call    z, getbit
+exgeti: add     a, a
+        call    z, exgetb
     ENDIF
     IF  speed=2 OR speed=3
-        add     a, a
-        jr      z, gbm
-        jr      c, litcop
+exloop: add     a, a
+        jr      z, exgbm
+        jr      c, exlit
       IF  mapbase-mapbase/256*256<240 AND mapbase-mapbase/256*256>135
-gbmc    ld      c, 256-1
+exgbmc: ld      c, 256-1
       ELSE
-gbmc    ld      c, 112-1
+exgbmc: ld      c, 112-1
       ENDIF
-getind  add     a, a
-        jr      z, gbi
+exgeti: add     a, a
+        jr      z, exgbi
     ENDIF
-gbic    inc     c
-        jr      c, getind
+exgbic: inc     c
+        jr      c, exgeti
       IF  mapbase-mapbase/256*256<240 AND mapbase-mapbase/256*256>135
         bit     4, c
         ret     nz
@@ -160,7 +159,7 @@ gbic    inc     c
         ld      b, (iy-112+mapbase-(mapbase+16)/256*256)
       ENDIF
         dec     b
-        call    nz, getbits
+        call    nz, exgbts
         ex      de, hl
       IF  mapbase-mapbase/256*256<240 AND mapbase-mapbase/256*256>135
         ld      c, (iy-204+mapbase-mapbase/256*256)
@@ -172,38 +171,38 @@ gbic    inc     c
         add     hl, bc
         ex      de, hl
     ELSE
-        call    getpair
+        call    expair
     ENDIF
         push    de
       IF  mapbase-mapbase/256*256<240 AND mapbase-mapbase/256*256>135
         ld      bc, 512+48
         dec     e
-        jr      z, goit
+        jr      z, exgoit
         dec     e
         ld      bc, 1024+32
-        jr      z, goit
+        jr      z, exgoit
         ld      c, 16
       ELSE
         ld      bc, 512+160
         dec     e
-        jr      z, goit
+        jr      z, exgoit
         dec     e
         ld      bc, 1024+144
-        jr      z, goit
+        jr      z, exgoit
         ld      c, 128
       ENDIF
     IF  speed=0 OR speed=1
-goit    call    getbits
+exgoit: call    exgbts
     ENDIF
     IF  speed=2
         ld      e, 0
-goit    ld      d, e
-        call    getbits
+exgoit: ld      d, e
+        call    exgbts
     ENDIF
     IF  speed=3
         ld      e, 0
-goit    ld      d, e
-        call    lee8
+exgoit: ld      d, e
+        call    exlee8
     ENDIF
         ld      iyl, c
         add     iy, de
@@ -217,7 +216,7 @@ goit    ld      d, e
         ld      b, (iy-112+mapbase-(mapbase+16)/256*256)
       ENDIF
         dec     b
-        call    nz, getbits
+        call    nz, exgbts
         ex      de, hl
       IF  mapbase-mapbase/256*256<240 AND mapbase-mapbase/256*256>135
         ld      c, (iy-204+mapbase-mapbase/256*256)
@@ -229,7 +228,7 @@ goit    ld      d, e
         add     hl, bc
         ex      de, hl
     ELSE
-        call    getpair
+        call    expair
     ENDIF
         pop     bc
         ex      (sp), hl
@@ -244,28 +243,28 @@ goit    ld      d, e
         ldir
       ENDIF
         pop     hl
-        jr      mloop
+        jr      exloop
     IF  speed=2 OR speed=3
-gbm     ld      a, (hl)
+exgbm:  ld      a, (hl)
         IF  back=1
         dec     hl
         ELSE
         inc     hl
         ENDIF
         adc     a, a
-        jr      nc, gbmc
-        jp      litcop
-gbi     ld      a, (hl)
+        jr      nc, exgbmc
+        jp      exlit
+exgbi:  ld      a, (hl)
         IF  back=1
         dec     hl
         ELSE
         inc     hl
         ENDIF
         adc     a, a
-        jp      gbic
+        jp      exgbic
     ENDIF
     IF  speed=3
-getbits jp      p, lee8
+exgbts: jp      p, exlee8
         ld      e, (hl)
         IF  back=1
         dec     hl
@@ -276,39 +275,39 @@ getbits jp      p, lee8
         ret     z
         srl     b
         defb    250
-xopy    ld      a, (hl)
+exxopy: ld      a, (hl)
         IF  back=1
         dec     hl
         ELSE
         inc     hl
         ENDIF
-lee16   adc     a, a
-        jr      z, xopy
+exl16:  adc     a, a
+        jr      z, exxopy
         rl      d
-        djnz    lee16
+        djnz    exl16
         ret
-copy    ld      a, (hl)
+excopy: ld      a, (hl)
         IF  back=1
         dec     hl
         ELSE
         inc     hl
         ENDIF
-lee8    adc     a, a
-        jr      z, copy
+exlee8: adc     a, a
+        jr      z, excopy
         rl      e
-        djnz    lee8
+        djnz    exlee8
         ret
     ELSE
       IF  mapbase-mapbase/256*256<240 AND mapbase-mapbase/256*256>135
-getpair ld      b, (iy-256+mapbase-mapbase/256*256)
+expair: ld      b, (iy-256+mapbase-mapbase/256*256)
       ELSE
-getpair ld      b, (iy-112+mapbase-(mapbase+16)/256*256)
+expair: ld      b, (iy-112+mapbase-(mapbase+16)/256*256)
       ENDIF
       IF speed=2
         dec     b
-        call    nz, getbits
+        call    nz, exgbts
       ELSE
-        call    getbits
+        call    exgbts
       ENDIF
         ex      de, hl
       IF  mapbase-mapbase/256*256<240 AND mapbase-mapbase/256*256>135
@@ -323,20 +322,20 @@ getpair ld      b, (iy-112+mapbase-(mapbase+16)/256*256)
         ret
     ENDIF
     IF  speed=0 OR speed=1
-getbits ld      de, 0
-gbcont  dec     b
+exgbts: ld      de, 0
+excont: dec     b
         ret     m
       IF  speed=0
-        call    getbit
+        call    exgetb
       ELSE
         add     a, a
-        call    z, getbit
+        call    z, exgetb
       ENDIF
         rl      e
         rl      d
-        jr      gbcont
+        jr      excont
       IF  speed=0
-getbit  add     a, a
+exgetb: add     a, a
         ret     nz
         ld      a, (hl)
         IF  back=1
@@ -347,7 +346,7 @@ getbit  add     a, a
         adc     a, a
         ret
       ELSE
-getbit  ld      a, (hl)
+exgetb: ld      a, (hl)
         IF  back=1
         dec     hl
         ELSE
@@ -358,16 +357,16 @@ getbit  ld      a, (hl)
       ENDIF
     ENDIF
     IF  speed=2
-gbg     ld      a, (hl)
+exgbg:  ld      a, (hl)
         IF  back=1
         dec     hl
         ELSE
         inc     hl
         ENDIF
-getbits adc     a, a
-        jr      z, gbg
+exgbts: adc     a, a
+        jr      z, exgbg
         rl      e
         rl      d
-        djnz    getbits
+        djnz    exgbts
         ret
     ENDIF

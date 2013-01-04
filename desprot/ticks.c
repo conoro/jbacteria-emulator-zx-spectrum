@@ -468,9 +468,9 @@ int f(void){
         | !fr << 6
         | fb >> 8 & 2
         | (fr ^ fa ^ fb ^ fb >> 8) & 16
-      | (fa & -256 
-          ? 154020 >> ((fr ^ fr >> 4) & 15)
-          : ((fr ^ fa) & (fr ^ fb)) >> 5) & 4;
+        | (fa & -256 
+            ? 154020 >> ((fr ^ fr >> 4) & 15)
+            : ((fr ^ fa) & (fr ^ fb)) >> 5) & 4;
 }
 
 void setf(int a){
@@ -655,7 +655,7 @@ int main (int argc, char **argv){
     fread(&wavpos, 4, 1, fh);
     ear= wavpos<<6 | 191;
     wavpos>>= 1;
-    if( wavpos )
+    if( wavpos && ft )
       fseek(ft, wavlen-wavpos, SEEK_SET),
       wavlen= wavpos,
       wavpos= 0,

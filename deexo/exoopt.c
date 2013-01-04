@@ -1,9 +1,14 @@
 #include <stdio.h>
 
-FILE *fi, *fo;
+FILE *fi, *fo, *fa;
 unsigned char *input, *output, *mem;
 unsigned short base[52];
 unsigned char bits[52];
+unsigned char sizes[]= {148, 150, 166, 203};
+char  tmpstr1[100]
+    , tmpstr2[100]
+    , tmpstr3[100]
+    ;
 unsigned short
     index
   , indoff
@@ -17,6 +22,9 @@ unsigned short
   , mempos= 0
   , b1
   , b2
+  , mapb= 0
+  , mapbase
+  , speed
   , s34= 0
   , back= 0
   ;
@@ -83,20 +91,26 @@ unsigned short encodebits(unsigned short value, char nbits, char offs){
 
 int main(int argc, char* argv[]){
   if( argc==1 )
-    printf("\nexoopt v1.00, Metalbrain/Antonio Villena, 17 Dec 2012\n\n"),
-    printf("  exoopt <input_file> <output_file> [-r]\n\n"),
-    printf("  <input_file>   Origin file\n"),
-    printf("  <output_file>  Genetated output file\n"),
-    printf("  <type>         Target decruncher\n\n"),
-    printf("<input_file> and <output_file> params are mandatory, <type> param is optional.\n"),
+    printf("\nexoopt v1.01, Metalbrain/Antonio Villena, 4 Jan 2013\n\n"),
+    printf("  exoopt <input_file> <output_file> <table_address> [<type>]\n\n"),
+    printf("  <input_file>     Origin file\n"),
+    printf("  <output_file>    Genetated output file\n"),
+    printf("  <table_address>  Hexadecimal address for the temporal 156 bytes table\n"),
+    printf("  <type>           Target decruncher\n\n"),
+    printf("All params except <type> are mandatory, <type> param is optional.\n"),
     printf("<type> values are: f0, f1, f2, f3, b0, b1, b2 and b3. Default is f0.\n"),
+    printf("It will generate the decruncher into the file d.asm\n"),
     exit(0);
-  if( argc<3 || argc>4 )
+  if( argc<4 || argc>5 )
     printf("\nInvalid number of parameters\n"),
     exit(-1);
-  if( argc==4 )
-    back= ~argv[3][0] & 4,
-    s34= ++argv[3][1] & 4;
+  if( argc==5 )
+    back= ~argv[4][0] & 4,
+    speed= argv[4][1] - '0',
+    s34= speed>2;
+  mapbase= strtol(argv[3], NULL, 16);
+  if( (mapbase&0xff)>0x87 && (mapbase&0xff)<0xf0 )
+    mapb++;
   fi= fopen(argv[1], "rb");
   if( !fi )
     printf("\nInput file not found: %s\n", argv[1]),
@@ -105,6 +119,264 @@ int main(int argc, char* argv[]){
   if( !fo )
     printf("\nCannot create output file: %s\n", argv[2]),
     exit(-1);
+  fa= fopen("d.asm", "wb+");
+  if( !fa )
+    printf("\nCannot create d.asm file"),
+    exit(-1);
+  fprintf(fa, "; %s [%s] %d bytes\n", argv[4]
+                                    , mapb ? "88..ef" : "f0..87"
+                                    , sizes[speed]-back*2+mapb);
+  fprintf(fa, "        ld      iy, %d\n", mapb
+                                            ? mapbase+0x100 & 0xff00
+                                            : mapbase+0x10  & 0xff00 | 0x70);
+  fprintf(fa, "        ld      a, 128\n");
+  fprintf(fa, "        ld      b, 52\n");
+  fprintf(fa, "        push    de\n");
+  fprintf(fa, "        cp      a\n");
+  fprintf(fa, "exinit: ld      c, 16\n");
+  fprintf(fa, "        jr      nz, exget4\n");
+  fprintf(fa, "        ld      de, 1\n");
+  fprintf(fa, "        ld      ixl, c\n");
+  if( speed==0 )
+    fprintf(fa, "exget4: call    exgetb\n");
+  else if ( speed==1 )
+    fprintf(fa, "exget4: add     a, a\n"),
+    fprintf(fa, "        call    z, exgetb\n");
+  else
+    fprintf(fa, "        defb    218\n"),
+    fprintf(fa, "exgb4:  ld      a, (hl)\n"),
+    fprintf(fa, "        %sc     hl\n", back ? "de" : "in"),
+    fprintf(fa, "exget4: adc     a, a\n"),
+    fprintf(fa, "        jr      z, exgb4\n");
+  fprintf(fa, "        rl      c\n");
+  fprintf(fa, "        jr      nc, exget4\n");
+  if( mapb )
+    sprintf(tmpstr1, "-%d", 256-(mapbase&0xff));
+  else
+    sprintf(tmpstr1, "%c%d", mapbase-(mapbase+16)/256*256>111 ? '+' : '-'
+                           , abs(mapbase-(mapbase+16)/256*256-112));
+  if( speed<2 )
+    fprintf(fa, "        ld      (iy%s), c\n", tmpstr1),
+    fprintf(fa, "        push    hl\n"),
+    fprintf(fa, "        ld      hl, 1\n"),
+    fprintf(fa, "        defb    210\n");
+  else if ( speed==2 )
+    fprintf(fa, "        inc     c\n"),
+    fprintf(fa, "        ld      (iy%s), c\n", tmpstr1),
+    fprintf(fa, "        push    hl\n"),
+    fprintf(fa, "        ld      hl, 1\n"),
+    fprintf(fa, "        defb    48\n");
+  else
+    fprintf(fa, "        ex      af, af'\n"),
+    fprintf(fa, "        ld      a, c\n"),
+    fprintf(fa, "        cp      8\n"),
+    fprintf(fa, "        jr      c, exget5\n"),
+    fprintf(fa, "        xor     136\n"),
+    fprintf(fa, "exget5: inc     a\n"),
+    fprintf(fa, "        ld      (iy%s), a\n", tmpstr1),
+    fprintf(fa, "        push    hl\n"),
+    fprintf(fa, "        ld      hl, 1\n"),
+    fprintf(fa, "        ex      af, af'\n"),
+    fprintf(fa, "        defb    210\n");
+  fprintf(fa, "exsetb: add     hl, hl\n");
+  fprintf(fa, "        dec     c\n");
+  fprintf(fa, "        jr      nz, exsetb\n");
+  if( mapb )
+    sprintf(tmpstr2, "%c%d", (mapbase&0xff)>203 ? '+' : '-'
+                           , abs((mapbase&0xff)-204)),
+    sprintf(tmpstr3, "%c%d", (mapbase&0xff)>151 ? '+' : '-'
+                           , abs((mapbase&0xff)-152));
+  else
+    sprintf(tmpstr2, "%c%d", mapbase-(mapbase+16)/256*256>59 ? '+' : '-'
+                           , abs(mapbase-(mapbase+16)/256*256-60)),
+    sprintf(tmpstr3, "%c%d", mapbase-(mapbase+16)/256*256>7 ? '+' : '-'
+                           , abs(mapbase-(mapbase+16)/256*256-8));
+  fprintf(fa, "        ld      (iy%s), e\n", tmpstr2);
+  fprintf(fa, "        ld      (iy%s), d\n", tmpstr3);
+  fprintf(fa, "        add     hl, de\n");
+  fprintf(fa, "        ex      de, hl\n");
+  fprintf(fa, "        inc     iyl\n");
+  fprintf(fa, "        pop     hl\n");
+  fprintf(fa, "        dec     ixl\n");
+  fprintf(fa, "        djnz    exinit\n");
+  fprintf(fa, "        pop     de\n");
+  fprintf(fa, "exlit:  ld%c\n", back ? 'd' : 'i');
+  if( speed==0 )
+    fprintf(fa, "exloop: call    exgetb\n"),
+    fprintf(fa, "        jr      c, exlit\n"),
+    fprintf(fa, "        ld      c, %d\n", mapb ? 255 : 111),
+    fprintf(fa, "exgeti: call    exgetb\n");
+  else if ( speed==1 )
+    fprintf(fa, "exloop: add     a, a\n"),
+    fprintf(fa, "        call    z, exgetb\n"),
+    fprintf(fa, "        jr      c, exlit\n"),
+    fprintf(fa, "        ld      c, %d\n", mapb ? 255 : 111),
+    fprintf(fa, "exgeti: add     a, a\n"),
+    fprintf(fa, "        call    z, exgetb\n");
+  else
+    fprintf(fa, "exloop: add     a, a\n"),
+    fprintf(fa, "        jr      z, exgbm\n"),
+    fprintf(fa, "        jr      c, exlit\n"),
+    fprintf(fa, "exgbmc: ld      c, %d\n", mapb ? 255 : 111),
+    fprintf(fa, "exgeti: add     a, a\n"),
+    fprintf(fa, "        jr      z, exgbi\n");
+  fprintf(fa, "exgbic: inc     c\n");
+  fprintf(fa, "        jr      c, exgeti\n");
+  if( mapb )
+    fprintf(fa, "        bit     4, c\n"),
+    fprintf(fa, "        ret     nz\n");
+  else
+    fprintf(fa, "        ret     m\n");
+  fprintf(fa, "        push    de\n");
+  fprintf(fa, "        ld      iyl, c\n");
+  if( speed>1 )
+    fprintf(fa, "        ld      de, 0\n");
+  if( speed==3 )
+    fprintf(fa, "        ld      b, (iy%s)\n", tmpstr1),
+    fprintf(fa, "        dec     b\n"),
+    fprintf(fa, "        call    nz, exgbts\n"),
+    fprintf(fa, "        ex      de, hl\n"),
+    fprintf(fa, "        ld      c, (iy%s)\n", tmpstr2),
+    fprintf(fa, "        ld      b, (iy%s)\n", tmpstr3),
+    fprintf(fa, "        add     hl, bc\n"),
+    fprintf(fa, "        ex      de, hl\n");
+  else
+    fprintf(fa, "        call    expair\n");
+  fprintf(fa, "        push    de\n");
+  if( mapb )
+    fprintf(fa, "        ld      bc, 560\n"),
+    fprintf(fa, "        dec     e\n"),
+    fprintf(fa, "        jr      z, exgoit\n"),
+    fprintf(fa, "        dec     e\n"),
+    fprintf(fa, "        ld      bc, 1056\n"),
+    fprintf(fa, "        jr      z, exgoit\n"),
+    fprintf(fa, "        ld      c, 16\n");
+  else
+    fprintf(fa, "        ld      bc, 672\n"),
+    fprintf(fa, "        dec     e\n"),
+    fprintf(fa, "        jr      z, exgoit\n"),
+    fprintf(fa, "        dec     e\n"),
+    fprintf(fa, "        ld      bc, 1168\n"),
+    fprintf(fa, "        jr      z, exgoit\n"),
+    fprintf(fa, "        ld      c, 128\n");
+  if( speed<2 )
+    fprintf(fa, "exgoit: call    exgbts\n");
+  else if ( speed==2 )
+    fprintf(fa, "        ld      e, 0\n"),
+    fprintf(fa, "exgoit: ld      d, e\n"),
+    fprintf(fa, "        call    exgbts\n");
+  else
+    fprintf(fa, "        ld      e, 0\n"),
+    fprintf(fa, "exgoit: ld      d, e\n"),
+    fprintf(fa, "        call    exlee8\n");
+  fprintf(fa, "        ld      iyl, c\n");
+  fprintf(fa, "        add     iy, de\n");
+  if( speed>1 )
+    fprintf(fa, "        ld      e, d\n");
+  if( speed==3 )
+    fprintf(fa, "        ld      b, (iy%s)\n", tmpstr1),
+    fprintf(fa, "        dec     b\n"),
+    fprintf(fa, "        call    nz, exgbts\n"),
+    fprintf(fa, "        ex      de, hl\n"),
+    fprintf(fa, "        ld      c, (iy%s)\n", tmpstr2),
+    fprintf(fa, "        ld      b, (iy%s)\n", tmpstr3),
+    fprintf(fa, "        add     hl, bc\n"),
+    fprintf(fa, "        ex      de, hl\n");
+  else
+    fprintf(fa, "        call    expair\n");
+  fprintf(fa, "        pop     bc\n");
+  fprintf(fa, "        ex      (sp), hl\n");
+  if( back )
+    fprintf(fa, "        ex      de, hl\n"),
+    fprintf(fa, "        add     hl, de\n"),
+    fprintf(fa, "        lddr\n");
+  else
+    fprintf(fa, "        push    hl\n"),
+    fprintf(fa, "        sbc     hl, de\n"),
+    fprintf(fa, "        pop     de\n"),
+    fprintf(fa, "        ldir\n");
+  fprintf(fa, "        pop     hl\n");
+  fprintf(fa, "        jr      exloop\n");
+  if( speed>1 )
+    fprintf(fa, "exgbm:  ld      a, (hl)\n"),
+    fprintf(fa, "        %sc     hl\n", back ? "de" : "in"),
+    fprintf(fa, "        adc     a, a\n"),
+    fprintf(fa, "        jr      nc, exgbmc\n"),
+    fprintf(fa, "        jp      exlit\n"),
+    fprintf(fa, "exgbi:  ld      a, (hl)\n"),
+    fprintf(fa, "        %sc     hl\n", back ? "de" : "in"),
+    fprintf(fa, "        adc     a, a\n"),
+    fprintf(fa, "        jp      exgbic\n");
+  if( speed==3 )
+    fprintf(fa, "exgbts: jp      p, exlee8\n"),
+    fprintf(fa, "        ld      e, (hl)\n"),
+    fprintf(fa, "        %sc     hl\n", back ? "de" : "in"),
+    fprintf(fa, "        rl      b\n"),
+    fprintf(fa, "        ret     z\n"),
+    fprintf(fa, "        srl     b\n"),
+    fprintf(fa, "        defb    250\n"),
+    fprintf(fa, "exxopy: ld      a, (hl)\n"),
+    fprintf(fa, "        %sc     hl\n", back ? "de" : "in"),
+    fprintf(fa, "exl16:  adc     a, a\n"),
+    fprintf(fa, "        jr      z, exxopy\n"),
+    fprintf(fa, "        rl      d\n"),
+    fprintf(fa, "        djnz    exl16\n"),
+    fprintf(fa, "        ret\n"),
+    fprintf(fa, "excopy: ld      a, (hl)\n"),
+    fprintf(fa, "        %sc     hl\n", back ? "de" : "in"),
+    fprintf(fa, "exlee8: adc     a, a\n"),
+    fprintf(fa, "        jr      z, excopy\n"),
+    fprintf(fa, "        rl      e\n"),
+    fprintf(fa, "        djnz    exlee8\n"),
+    fprintf(fa, "        ret\n");
+  else{
+    fprintf(fa, "expair: ld      b, (iy%s)\n", tmpstr1);
+    if( speed==2 )
+      fprintf(fa, "        dec     b\n"),
+      fprintf(fa, "        call    nz, exgbts\n");
+    else
+      fprintf(fa, "        call    exgbts\n");
+    fprintf(fa, "        ex      de, hl\n");
+    fprintf(fa, "        ld      c, (iy%s)\n", tmpstr2);
+    fprintf(fa, "        ld      b, (iy%s)\n", tmpstr3);
+    fprintf(fa, "        add     hl, bc\n");
+    fprintf(fa, "        ex      de, hl\n");
+    fprintf(fa, "        ret\n");
+  }
+  if( speed<2 ){
+    fprintf(fa, "exgbts: ld      de, 0\n");
+    fprintf(fa, "excont: dec     b\n");
+    fprintf(fa, "        ret     m\n");
+    if( speed==0 )
+      fprintf(fa, "        call    exgetb\n");
+    else
+      fprintf(fa, "        add     a, a\n"),
+      fprintf(fa, "        call    z, exgetb\n");
+    fprintf(fa, "        rl      e\n");
+    fprintf(fa, "        rl      d\n");
+    fprintf(fa, "        jr      excont\n");
+    if( speed==0 )
+      fprintf(fa, "exgetb: add     a, a\n"),
+      fprintf(fa, "        ret     nz\n"),
+      fprintf(fa, "        ld      a, (hl)\n"),
+      fprintf(fa, "        %sc     hl\n", back ? "de" : "in"),
+      fprintf(fa, "        adc     a, a\n"),
+      fprintf(fa, "        ret\n");
+    else
+      fprintf(fa, "exgetb: ld      a, (hl)\n"),
+      fprintf(fa, "        %sc     hl\n", back ? "de" : "in"),
+      fprintf(fa, "        adc     a, a\n"),
+      fprintf(fa, "        ret\n");
+  }
+  if( speed==2 )
+    fprintf(fa, "exgbg:  ld      a, (hl)\n"),
+    fprintf(fa, "        %sc     hl\n", back ? "de" : "in"),
+    fprintf(fa, "exgbts: adc     a, a\n"),
+    fprintf(fa, "        jr      z, exgbg\n"),
+    fprintf(fa, "        rl      e\n"),
+    fprintf(fa, "        rl      d\n"),
+    fprintf(fa, "        djnz    exgbts\n"),
+    fprintf(fa, "        ret\n");
   input= (unsigned char *) malloc (0x10000);
   output= (unsigned char *) malloc (0x10000);
   mem= (unsigned char *) malloc (0x10000);
@@ -201,7 +473,5 @@ int main(int argc, char* argv[]){
       output[b1]= output[outnex-1-b1],
       output[outnex-1-b1]= b2;
   fwrite(output, 1, outnex, fo);
-//    FILE *fm= fopen("memp.bin", "wb+");
-//    fwrite(mem, 1, mempos, fm);
   printf("\n%d bytes processed from %s\n", outnex, argv[1]);
 }
