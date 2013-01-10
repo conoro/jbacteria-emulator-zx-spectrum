@@ -382,9 +382,8 @@ unsigned char * tapbuf;
 int     v
       , wavpos= 0
       , wavlen= 0
+      , mues
       ;
-
-float   mues;
 
 unsigned short
         pc= 0
@@ -447,11 +446,11 @@ long tapcycles(void){
     wavpos= 0,
     fread(tapbuf, 1, 0x20000, ft);
   while( (tapbuf[++wavpos]^ear<<1)&0x80 && wavpos<0x20000 )
-    mues+= 79.365;
+    mues+= 81;  // correct value must be 79.365, adjusted to simulate contention in Alkatraz
   if( wavlen<=wavpos )
     return 0;
   else
-    return (int) mues;
+    return mues;
 }
 
 int in(int port){
@@ -486,7 +485,7 @@ int main (int argc, char **argv){
   FILE * fh;
   tapbuf= (unsigned char *) malloc (0x20000);
   if( argc==1 )
-    printf("Ticks v0.14b beta, a silent Z80 emulator by Antonio Villena, 4 Jan 2012\n\n"),
+    printf("Ticks v0.14c beta, a silent Z80 emulator by Antonio Villena, 10 Jan 2013\n\n"),
     printf("  ticks <input_file> [-pc X] [-start X] [-end X] [-counter X] [-output <file>]\n\n"),
     printf("  <input_file>   File between 1 and 65536 bytes with Z80 machine code\n"),
     printf("  -tape <file>   emulates ZX tape in port $FE from a .WAV file\n"),
@@ -674,7 +673,7 @@ int main (int argc, char **argv){
       st= 0,
       stint= intr,
       sttap= tap;
-    if( intr && st>stint ){
+    if( intr && st>stint && ih ){
       stint= st+intr;
       if( iff ){
         halted && (pc++, halted= 0);
@@ -2918,6 +2917,8 @@ int main (int argc, char **argv){
         ih=1;//break;
     }
   } while ( pc != end && st < counter );
+  if( tap && st>sttap )
+    sttap= st+( tap= tapcycles() );
   printf("%llu\n", st);
   if( output ){
     fh= fopen(output, "wb+");

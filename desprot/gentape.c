@@ -1,9 +1,16 @@
 #include <stdio.h>
-unsigned char *mem;
-unsigned char checksum, tzx= 0;
+unsigned char *mem, *precalc;
+short pos[0x100], len[0x100];
+unsigned char checksum, inibit= 0, tzx= 0;
 FILE *fi, *fo;
-int i, lpause;
+int i, j, ind, lpause;
 unsigned short length, param;
+
+void outbits( val ){
+  for ( i= 0; i<val; i++ )
+    precalc[ind++]= inibit ? 0x40 : 0xc0;
+  inibit^= 1;
+}
 
 char char2hex(char value){
   if( value<'0' || value>'f' || value<'A' && value>'9' || value<'a' && value>'F' )
@@ -31,16 +38,21 @@ int parseHex(char * name, int index){
 
 int main(int argc, char* argv[]){
   mem= (unsigned char *) malloc (0x20000);
+  precalc= (unsigned char *) malloc (0x20000);
   if( argc==1 )
-    printf("\ngentape v0.02, a Tape File Generator by Antonio Villena, 5 Jan 2012\n\n"),
-    printf("  gentape <output_file> [ basic <name> <startline> <input_file>\n"),
-    printf("                        | hdata <name> <address>   <input_file>\n"),
-    printf("                        |  data                    <input_file> ]\n\n"),
-    printf("  <output_file>  Target file, at the moment .TAP or TZX file (WAV in near future)\n"),
+    printf("\ngentape v0.03, a Tape File Generator by Antonio Villena, 8 Jan 2012\n\n"),
+    printf("  gentape <output_file> [<frequency>] [<channel_type>]\n"),
+    printf("          [ basic <name> <startline> <input_file>\n"),
+    printf("          | hdata <name> <address>   <input_file>\n"),
+    printf("          |  data                    <input_file> ]\n\n"),
+    printf("  <output_file>  Target file, between TAP, TZX or WAV file\n"),
     printf("  <name>         Up to 10 chars name between single quotes or in hexadecimal\n"),
     printf("  <startline>    In decimal, first BASIC line to execute\n"),
     printf("  <address>      In hexadecimal, address of the binary block\n"),
-    printf("  <input_file>   Hexadecimal string or filename as data origin of that block\n\n"),
+    printf("  <input_file>   Hexadecimal string or filename as data origin of that block\n"),
+    printf("  WAV options:\n"),
+    printf("      <frecuency>    Sample frequency, 44100 or 48000. Default is 44100\n"),
+    printf("      <channel_type> Possible values are: mono (default), stereo or stereoinv\n\n"),
     exit(0);
   fo= fopen(argv[1], "wb+");
   if( !fo )
@@ -51,6 +63,24 @@ int main(int argc, char* argv[]){
     *(int*)mem= 0xa011a,
     fwrite(mem, ++tzx, 3, fo),
     mem[0]= 0x10;
+  else if( !stricmp((char *)strchr(argv[1], '.'), ".wav" ) ){
+    ind= 0;
+    for( i= 0; i<0x100; i++ ){
+      pos[i]= ind;
+//      if( mlow )
+        for( j= 0; j<8; j++ ){
+          outbits( i<<j & 0x80 ? 24 : 12 );
+          outbits( i<<j & 0x80 ? 23 : 11 );
+        }
+/*      else
+        for( $j= 0; $j<8; $j++ ){
+           outbits( $i<<$j & 0x80 ? 11 << $mhigh: 6 << $mhigh );
+           outbits( $i<<$j & 0x80 ? 11 << $mhigh: 5 << $mhigh );
+        }*/
+      len[i]= ind-pos[i];
+    }
+  }
+
   while ( argc-- > 2 ){
     lpause= ftell(fo);
     *(short*)(mem+1)= 1000;
