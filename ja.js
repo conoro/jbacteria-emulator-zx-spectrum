@@ -1,6 +1,5 @@
 /*function showr(){
   console.log('PC='+pc.toString(16)
-             ,'AFp='+(f_()|a_<<8).toString(16)
              ,'AF='+(f()|a<<8).toString(16)
              ,'BC='+(c|b<<8).toString(16)
              ,'DE='+(e|d<<8).toString(16)
@@ -10,18 +9,15 @@
 }*/
 
 function loadblock() {
-  if( !game )
-    return;
   o= game.charCodeAt(tapep++) | game.charCodeAt(tapep++)<<8;
-// console.log(o);
   tapei++;
   for ( j= 0
       ; j < o
       ; j++ )
     wb(yl | yh << 8, game.charCodeAt(tapep++)),
     g[0x223]();
-//  setf_(0xa9);
-//  a_= 0xff;
+  setf(0xa9);
+  o08();
   a= h= d= e= 0;
   pc= 0x18f9;
   o=  game.charCodeAt(tapep) | game.charCodeAt(tapep+1)<<8;

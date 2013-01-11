@@ -1,4 +1,5 @@
 <?
+header("Content-type:application/javascript");
 $mp= isset($m)?$m:$_GET['m'];
 $pag= isset($p)?$p:$_GET['p'];
 $cpc= isset($c)?$c:$_GET['c'];

@@ -265,7 +265,9 @@ function rm(o) {
   l_= o.charCodeAt(j++);
   h_= o.charCodeAt(j++);
   a_= o.charCodeAt(j++);
-  setf_(o.charCodeAt(j++));
+  o08();
+  setf(o.charCodeAt(j++));
+  o08();
   yl= o.charCodeAt(j++);
   yh= o.charCodeAt(j++);
   xl= o.charCodeAt(j++);
@@ -309,20 +311,22 @@ function rm(o) {
 }
 
 function wm() {
-  t= String.fromCharCode(a,f(),c,b,l,h,0,0,sp&255,sp>>8,i,r,r7>>7|bor<<1,e,d,
-                         c_,b_,e_,d_,l_,h_,a_,f_(),yl,yh,xl,xh,iff,iff,im,55,0,
-                         pc&255,pc>>8,13,p0,0,0,ayr);
+  v= String.fromCharCode(a,f(),c,b,l,h,0,0,sp&255,sp>>8,i,r,r7>>7|bor<<1,e,d,
+                         c_,b_,e_,d_,l_,h_,a_);
+  o08();
+  v+= String.fromCharCode(f(),yl,yh,xl,xh,iff,iff,im,55,0,pc&255,pc>>8,13,p0,0,0,ayr);
+  o08();
   for (u= 0; u< 16; u++)
-    t+= String.fromCharCode(ayr[u]);
+    v+= String.fromCharCode(ayr[u]);
   for (j= 0; j < 20; j++)
-    t+= String.fromCharCode(0);
+    v+= String.fromCharCode(0);
   for (j= 0; j < 10; j++ )
-    t+= String.fromCharCode(ks[j]);
-  t+= String.fromCharCode(frc, p1);
+    v+= String.fromCharCode(ks[j]);
+  v+= String.fromCharCode(frc, p1);
   for (u= 0; u< 8; u++)
-    for (j= 0, t+= String.fromCharCode(255,255,u+3); j < 0x4000; j++)
-      t+= String.fromCharCode(ram[u][j]);
-  return t;
+    for (j= 0, v+= String.fromCharCode(255,255,u+3); j < 0x4000; j++)
+      v+= String.fromCharCode(ram[u][j]);
+  return v;
 }
 
 function handleFileSelect(evt) {

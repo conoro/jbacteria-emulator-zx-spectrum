@@ -473,7 +473,6 @@ function tp(){
 
 function loadblock() {
   o=  game.charCodeAt(tapep++) | game.charCodeAt(tapep++)<<8;
-//console.log(o);
   tapei++;
   tapep++;
   for ( j= 0
@@ -481,8 +480,8 @@ function loadblock() {
       ; j++ )
     mw[xh>>6][xl | xh<<8 & 0x3fff]= game.charCodeAt(tapep++),
     g[0x123]();
-  setf_(0x6d);  //abcd
-//  f_=0x6d;
+  setf(0x6d);
+  o08();
   a= d= e= 0;
   pc= 0x5e0;                           // exit address
   tapep++;

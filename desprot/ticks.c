@@ -428,8 +428,7 @@ unsigned char
       , i= 0
       , r= 0
       , r7= 0
-      , ih= 1
-      , iy= 0
+      , prefix= 0
       , iff= 0
       , im= 0
       , w= 0
@@ -673,7 +672,7 @@ int main (int argc, char **argv){
       st= 0,
       stint= intr,
       sttap= tap;
-    if( intr && st>stint && ih ){
+    if( intr && st>stint && !prefix ){
       stint= st+intr;
       if( iff ){
         halted && (pc++, halted= 0);
@@ -710,234 +709,248 @@ int main (int argc, char **argv){
       case 0x6d: // LD L,L
       case 0x7f: // LD A,A
         st+= 4;
-        ih=1;break;
+        prefix=0;break;
       case 0x76: // HALT
         st+= 4;
         halted= 1;
         pc--;
-        ih=1;break;
+        prefix=0;break;
       case 0x01: // LD BC,nn
         LDRRIM(b, c);
-        ih=1;break;
+        prefix=0;break;
       case 0x11: // LD DE,nn
         LDRRIM(d, e);
-        ih=1;break;
+        prefix=0;break;
       case 0x21: // LD HL,nn // LD IX,nn // LD IY,nn
-        if( ih )
+        if( !prefix )
           LDRRIM(h, l);
-        else if( iy )
-          LDRRIM(yh, yl);
-        else
+        else if( !--prefix )
           LDRRIM(xh, xl);
-        ih=1;break;
+        else
+          --prefix,
+          LDRRIM(yh, yl);
+        break;
       case 0x31: // LD SP,nn
         st+= 10;
         sp= mem[pc++];
         sp|= mem[pc++]<<8;
-        ih=1;break;
+        prefix=0;break;
       case 0x02: // LD (BC),A
         LDPR(b, c, a);
-        ih=1;break;
+        prefix=0;break;
       case 0x12: // LD (DE),A
         LDPR(d, e, a);
-        ih=1;break;
+        prefix=0;break;
       case 0x0a: // LD A,(BC)
         LDRP(b, c, a);
-        ih=1;break;
+        prefix=0;break;
       case 0x1a: // LD A,(DE)
         LDRP(d, e, a);
-        ih=1;break;
+        prefix=0;break;
       case 0x22: // LD (nn),HL // LD (nn),IX // LD (nn),IY
-        if( ih )
+        if( !prefix )
           LDPNNRR(h, l, 16);
-        else if( iy )
-          LDPNNRR(yh, yl, 16);
-        else
+        else if( !--prefix )
           LDPNNRR(xh, xl, 16);
-        ih=1;break;
+        else
+          --prefix,
+          LDPNNRR(yh, yl, 16);
+        break;
       case 0x32: // LD (nn),A
         st+= 13;
         t= mem[pc++];
         mem[t|= mem[pc++]<<8]= a;
         mp= t+1 & 255
           | a<<8;
-        ih=1;break;
+        prefix=0;break;
       case 0x2a: // LD HL,(nn) // LD IX,(nn) // LD IY,(nn)
-        if( ih )
+        if( !prefix )
           LDRRPNN(h, l, 16);
-        else if( iy )
-          LDRRPNN(yh, yl, 16);
-        else
+        else if( !--prefix )
           LDRRPNN(xh, xl, 16);
-        ih=1;break;
+        else
+          --prefix,
+          LDRRPNN(yh, yl, 16);
+        break;
       case 0x3a: // LD A,(nn)
         st+= 13;
         mp= mem[pc++];
         a= mem[mp|= mem[pc++]<<8];
         ++mp;
-        ih=1;break;
+        prefix=0;break;
       case 0x03: // INC BC
         INCW(b, c);
-        ih=1;break;
+        prefix=0;break;
         break;
       case 0x13: // INC DE
         INCW(d, e);
-        ih=1;break;
+        prefix=0;break;
       case 0x23: // INC HL // INC IX // INC IY
-        if( ih )
+        if( !prefix )
           INCW(h, l);
-        else if( iy )
-          INCW(yh, yl);
-        else
+        else if( !--prefix )
           INCW(xh, xl);
-        ih=1;break;
+        else
+          --prefix,
+          INCW(yh, yl);
+        break;
       case 0x33: // INC SP
         st+= 6;
         sp++;
-        ih=1;break;
+        prefix=0;break;
       case 0x0b: // DEC BC
         DECW(b, c);
-        ih=1;break;
+        prefix=0;break;
       case 0x1b: // DEC DE
         DECW(d, e);
-        ih=1;break;
+        prefix=0;break;
       case 0x2b: // DEC HL // DEC IX // DEC IY
-        if( ih )
+        if( !prefix )
           DECW(h, l);
-        else if( iy )
-          DECW(yh, yl);
-        else
+        else if( !--prefix )
           DECW(xh, xl);
-        ih=1;break;
+        else
+          --prefix,
+          DECW(yh, yl);
+        break;
       case 0x3b: // DEC SP
         st+= 6;
         sp--;
-        ih=1;break;
+        prefix=0;break;
       case 0x04: // INC B
         INC(b);
-        ih=1;break;
+        prefix=0;break;
         break;
       case 0x0c: // INC C
         INC(c);
-        ih=1;break;
+        prefix=0;break;
       case 0x14: // INC D
         INC(d);
-        ih=1;break;
+        prefix=0;break;
       case 0x1c: // INC E
         INC(e);
-        ih=1;break;
+        prefix=0;break;
       case 0x24: // INC H // INC IXh // INC IYh
-        if( ih )
+        if( !prefix )
           INC(h);
-        else if( iy )
-          INC(yh);
-        else
+        else if( !--prefix )
           INC(xh);
-        ih=1;break;
-      case 0x2c: // INC L // INC IXl // INC IYl
-        if( ih )
-          INC(l);
-        else if( iy )
-          INC(yl);
         else
+          --prefix,
+          INC(yh);
+        break;
+      case 0x2c: // INC L // INC IXl // INC IYl
+        if( !prefix )
+          INC(l);
+        else if( !--prefix )
           INC(xl);
-        ih=1;break;
+        else
+          --prefix,
+          INC(yl);
+        break;
       case 0x34: // INC (HL) // INC (IX+d) // INC (IY+d)
-        if( ih )
+        if( !prefix )
           st+= 11,
           fa= mem[t= l | h<<8],
           ff= ff&256
             | (fr= mem[t]= fa+(fb=+1));
-        else if( iy )
-          INCPI(yh, yl);
-        else
+        else if( !--prefix )
           INCPI(xh, xl);
-        ih=1;break;
+        else
+          --prefix,
+          INCPI(yh, yl);
+        break;
       case 0x3c: // INC A
         INC(a);
-        ih=1;break;
+        prefix=0;break;
       case 0x05: // DEC B
         DEC(b);
-        ih=1;break;
+        prefix=0;break;
       case 0x0d: // DEC C
         DEC(c);
-        ih=1;break;
+        prefix=0;break;
       case 0x15: // DEC D
         DEC(d);
-        ih=1;break;
+        prefix=0;break;
       case 0x1d: // DEC E
         DEC(e);
-        ih=1;break;
+        prefix=0;break;
       case 0x25: // DEC H // DEC IXh // DEC IYh
-        if( ih )
+        if( !prefix )
           DEC(h);
-        else if( iy )
-          DEC(yh);
-        else
+        else if( !--prefix )
           DEC(xh);
-        ih=1;break;
-      case 0x2d: // DEC L // DEC IXl // DEC IYl
-        if( ih )
-          DEC(l);
-        else if( iy )
-          DEC(yl);
         else
+          --prefix,
+          DEC(yh);
+        break;
+      case 0x2d: // DEC L // DEC IXl // DEC IYl
+        if( !prefix )
+          DEC(l);
+        else if( !--prefix )
           DEC(xl);
-        ih=1;break;
+        else
+          --prefix,
+          DEC(yl);
+        break;
       case 0x35: // DEC (HL) // DEC (IX+d) // DEC (IY+d)
-        if( ih )
+        if( !prefix )
           st+= 11,
           fa= mem[t= l | h<<8],
           ff= ff&256
             | (fr= mem[t]= fa+(fb=-1));
-        else if( iy )
-          DECPI(yh, yl);
-        else
+        else if( !--prefix )
           DECPI(xh, xl);
-        ih=1;break;
+        else
+          --prefix,
+          DECPI(yh, yl);
+        break;
       case 0x3d: // DEC A
         DEC(a);
-        ih=1;break;
+        prefix=0;break;
       case 0x06: // LD B,n
         LDRIM(b);
-        ih=1;break;
+        prefix=0;break;
       case 0x0e: // LD C,n
         LDRIM(c);
-        ih=1;break;
+        prefix=0;break;
       case 0x16: // LD D,n
         LDRIM(d);
-        ih=1;break;
+        prefix=0;break;
       case 0x1e: // LD E,n
         LDRIM(e);
-        ih=1;break;
+        prefix=0;break;
       case 0x26: // LD H,n // LD IXh,n // LD IYh,n
-        if( ih )
+        if( !prefix )
           LDRIM(h);
-        else if( iy )
-          LDRIM(yh);
-        else
+        else if( !--prefix )
           LDRIM(xh);
-        ih=1;break;
-      case 0x2e: // LD L,n // LD IXl,n // LD IYl,n
-        if( ih )
-          LDRIM(l);
-        else if( iy )
-          LDRIM(yl);
         else
+          --prefix,
+          LDRIM(yh);
+        break;
+      case 0x2e: // LD L,n // LD IXl,n // LD IYl,n
+        if( !prefix )
+          LDRIM(l);
+        else if( !--prefix )
           LDRIM(xl);
-        ih=1;break;
+        else
+          --prefix,
+          LDRIM(yl);
+        break;
       case 0x36: // LD (HL),n // LD (IX+d),n // LD (IY+d),n
-        if( ih )
+        if( !prefix )
           st+= 10,
           mem[l|h<<8]= mem[pc++];
-        else if( iy )
-          LDPIN(yh, yl);
-        else
+        else if( !--prefix )
           LDPIN(xh, xl);
-        ih=1;break;
+        else
+          --prefix,
+          LDPIN(yh, yl);
+        break;
       case 0x3e: // LD A,n
         LDRIM(a);
-        ih=1;break;
+        prefix=0;break;
       case 0x07: // RLCA
         st+= 4;
         a= t= a*257>>7;
@@ -945,7 +958,7 @@ int main (int argc, char **argv){
           | t &296;
         fb= fb      &128
           | (fa^fr) & 16;
-        ih=1;break;
+        prefix=0;break;
       case 0x0f: // RRCA
         st+= 4;
         a= t= a>>1
@@ -954,7 +967,7 @@ int main (int argc, char **argv){
           | t &296;
         fb= fb      &128
           | (fa^fr) & 16;
-        ih=1;break;
+        prefix=0;break;
       case 0x17: // RLA
         st+= 4;
         a= t= a<<1
@@ -963,7 +976,7 @@ int main (int argc, char **argv){
           | t &296;
         fb= fb      & 128
           | (fa^fr) &  16;
-        ih=1;break;
+        prefix=0;break;
       case 0x1f: // RRA
         st+= 4;
         a= t= (a*513 | ff&256)>>1;
@@ -971,55 +984,59 @@ int main (int argc, char **argv){
           | t &296;
         fb= fb      &128
           | (fa^fr) & 16;
-        ih=1;break;
+        prefix=0;break;
       case 0x09: // ADD HL,BC // ADD IX,BC // ADD IY,BC
-        if( ih )
+        if( !prefix )
           ADDRRRR(h, l, b, c);
-        else if( iy )
-          ADDRRRR(yh, yl, b, c);
-        else
+        else if( !--prefix )
           ADDRRRR(xh, xl, b, c);
-        ih=1;break;
+        else
+          --prefix,
+          ADDRRRR(yh, yl, b, c);
+        break;
       case 0x19: // ADD HL,DE // ADD IX,DE // ADD IY,DE
-        if( ih )
+        if( !prefix )
           ADDRRRR(h, l, d, e);
-        else if( iy )
-          ADDRRRR(yh, yl, d, e);
-        else
+        else if( !--prefix )
           ADDRRRR(xh, xl, d, e);
-        ih=1;break;
+        else
+          --prefix,
+          ADDRRRR(yh, yl, d, e);
+        break;
       case 0x29: // ADD HL,HL // ADD IX,IX // ADD IY,IY
-        if( ih )
+        if( !prefix )
           ADDRRRR(h, l, h, l);
-        else if( iy )
-          ADDRRRR(yh, yl, yh, yl);
-        else
+        else if( !--prefix )
           ADDRRRR(xh, xl, xh, xl);
-        ih=1;break;
-      case 0x39: // ADD HL,SP // ADD IX,SP // ADD IY,SP
-        if( ih )
-          ADDISP(h, l);
-        else if( iy )
-          ADDISP(yh, yl);
         else
+          --prefix,
+          ADDRRRR(yh, yl, yh, yl);
+        break;
+      case 0x39: // ADD HL,SP // ADD IX,SP // ADD IY,SP
+        if( !prefix )
+          ADDISP(h, l);
+        else if( !--prefix )
           ADDISP(xh, xl);
-        ih=1;break;
+        else
+          --prefix,
+          ADDISP(yh, yl);
+        break;
       case 0x18: // JR
         st+= 12;
         mp= pc+= (mem[pc]^128)-127;
-        ih=1;break;
+        prefix=0;break;
       case 0x20: // JR NZ,s8
         JRCI(fr);
-        ih=1;break;
+        prefix=0;break;
       case 0x28: // JR Z,s8
         JRC(fr);
-        ih=1;break;
+        prefix=0;break;
       case 0x30: // JR NC,s8
         JRC(ff&256);
-        ih=1;break;
+        prefix=0;break;
       case 0x38: // JR C,s8
         JRCI(ff&256);
-        ih=1;break;
+        prefix=0;break;
       case 0x08: // EX AF,AF'
         st+= 4;
         t  =  a_;
@@ -1037,7 +1054,7 @@ int main (int argc, char **argv){
         t  =  fb_;
         fb_=  fb;
         fb =  t;
-        ih=1;break;
+        prefix=0;break;
       case 0x10: // DJNZ
         if( --b )
           st+= 13,
@@ -1045,7 +1062,7 @@ int main (int argc, char **argv){
         else
           st+= 8,
           pc++;
-        ih=1;break;
+        prefix=0;break;
       case 0x27: // DAA
         st+= 4;
         t= (fr^fa^fb^fb>>8) & 16;
@@ -1060,7 +1077,7 @@ int main (int argc, char **argv){
           a+= fb= u;
         ff= (fr= a)
           | u&256;
-        ih=1;break;
+        prefix=0;break;
       case 0x2f: // CPL
         st+= 4;
         ff= ff      &-41
@@ -1068,7 +1085,7 @@ int main (int argc, char **argv){
         fb|= -129;
         fa=  fa & -17
           | ~fr &  16; 
-        ih=1;break;
+        prefix=0;break;
       case 0x37: // SCF
         st+= 4;
         fb= fb      &128
@@ -1076,7 +1093,7 @@ int main (int argc, char **argv){
         ff= 256
           | ff  &128
           | a   & 40;
-        ih=1;break;
+        prefix=0;break;
       case 0x3f: // CCF
         st+= 4;
         fb= fb            &128
@@ -1084,876 +1101,938 @@ int main (int argc, char **argv){
         ff= ~ff & 256
           | ff  & 128
           | a   &  40;
-        ih=1;break;
+        prefix=0;break;
       case 0x41: // LD B,C
         LDRR(b, c, 4);
-        ih=1;break;
+        prefix=0;break;
       case 0x42: // LD B,D
         LDRR(b, d, 4);
-        ih=1;break;
+        prefix=0;break;
       case 0x43: // LD B,E
         LDRR(b, e, 4);
-        ih=1;break;
+        prefix=0;break;
       case 0x44: // LD B,H // LD B,IXh // LD B,IYh
-        if( ih )
+        if( !prefix )
           LDRR(b, h, 4);
-        else if( iy )
-          LDRR(b, yh, 4);
-        else
+        else if( !--prefix )
           LDRR(b, xh, 4);
-        ih=1;break;
+        else
+          --prefix,
+          LDRR(b, yh, 4);
+        break;
       case 0x45: // LD B,L // LD B,IXl // LD B,IYl
-        if( ih )
+        if( !prefix )
           LDRR(b, l, 4);
-        else if( iy )
-          LDRR(b, yl, 4);
-        else
+        else if( !--prefix )
           LDRR(b, xl, 4);
-        ih=1;break;
-      case 0x46: // LD B,(HL) // LD B,(IX+d) // LD B,(IY+d)
-        if( ih )
-          LDRP(h, l, b);
-        else if( iy )
-          LDRPI(yh, yl, b);
         else
+          --prefix,
+          LDRR(b, yl, 4);
+        break;
+      case 0x46: // LD B,(HL) // LD B,(IX+d) // LD B,(IY+d)
+        if( !prefix )
+          LDRP(h, l, b);
+        else if( !--prefix )
           LDRPI(xh, xl, b);
-        ih=1;break;
+        else
+          --prefix,
+          LDRPI(yh, yl, b);
+        break;
       case 0x47: // LD B,A
         LDRR(b, a, 4);
-        ih=1;break;
+        prefix=0;break;
       case 0x48: // LD C,B
         LDRR(c, b, 4);
-        ih=1;break;
+        prefix=0;break;
       case 0x4a: // LD C,D
         LDRR(c, d, 4);
-        ih=1;break;
+        prefix=0;break;
       case 0x4b: // LD C,E
         LDRR(c, e, 4);
-        ih=1;break;
+        prefix=0;break;
       case 0x4c: // LD C,H // LD C,IXh // LD C,IYh
-        if( ih )
+        if( !prefix )
           LDRR(c, h, 4);
-        else if( iy )
-          LDRR(c, yh, 4);
-        else
+        else if( !--prefix )
           LDRR(c, xh, 4);
-        ih=1;break;
+        else
+          --prefix,
+          LDRR(c, yh, 4);
+        break;
       case 0x4d: // LD C,L // LD C,IXl // LD C,IYl
-        if( ih )
+        if( !prefix )
           LDRR(c, l, 4);
-        else if( iy )
-          LDRR(c, yl, 4);
-        else
+        else if( !--prefix )
           LDRR(c, xl, 4);
-        ih=1;break;
-      case 0x4e: // LD C,(HL) // LD C,(IX+d) // LD C,(IY+d)
-        if( ih )
-          LDRP(h, l, c);
-        else if( iy )
-          LDRPI(yh, yl, c);
         else
+          --prefix,
+          LDRR(c, yl, 4);
+        break;
+      case 0x4e: // LD C,(HL) // LD C,(IX+d) // LD C,(IY+d)
+        if( !prefix )
+          LDRP(h, l, c);
+        else if( !--prefix )
           LDRPI(xh, xl, c);
-        ih=1;break;
+        else
+          --prefix,
+          LDRPI(yh, yl, c);
+        break;
       case 0x4f: // LD C,A
         LDRR(c, a, 4);
-        ih=1;break;
+        prefix=0;break;
       case 0x50: // LD D,B
         LDRR(d, b, 4);
-        ih=1;break;
+        prefix=0;break;
       case 0x51: // LD D,C
         LDRR(d, c, 4);
-        ih=1;break;
+        prefix=0;break;
       case 0x53: // LD D,E
         LDRR(d, e, 4);
-        ih=1;break;
+        prefix=0;break;
       case 0x54: // LD D,H // LD D,IXh // LD D,IYh
-        if( ih )
+        if( !prefix )
           LDRR(d, h, 4);
-        else if( iy )
-          LDRR(d, yh, 4);
-        else
+        else if( !--prefix )
           LDRR(d, xh, 4);
-        ih=1;break;
+        else
+          --prefix,
+          LDRR(d, yh, 4);
+        break;
       case 0x55: // LD D,L // LD D,IXl // LD D,IYl
-        if( ih )
+        if( !prefix )
           LDRR(d, l, 4);
-        else if( iy )
-          LDRR(d, yl, 4);
-        else
+        else if( !--prefix )
           LDRR(d, xl, 4);
-        ih=1;break;
-      case 0x56: // LD D,(HL) // LD D,(IX+d) // LD D,(IY+d)
-        if( ih )
-          LDRP(h, l, d);
-        else if( iy )
-          LDRPI(yh, yl, d);
         else
+          --prefix,
+          LDRR(d, yl, 4);
+        break;
+      case 0x56: // LD D,(HL) // LD D,(IX+d) // LD D,(IY+d)
+        if( !prefix )
+          LDRP(h, l, d);
+        else if( !--prefix )
           LDRPI(xh, xl, d);
-        ih=1;break;
+        else
+          --prefix,
+          LDRPI(yh, yl, d);
+        break;
       case 0x57: // LD D,A
         LDRR(d, a, 4);
-        ih=1;break;
+        prefix=0;break;
       case 0x58: // LD E,B
         LDRR(e, b, 4);
-        ih=1;break;
+        prefix=0;break;
       case 0x59: // LD E,C
         LDRR(e, c, 4);
-        ih=1;break;
+        prefix=0;break;
       case 0x5a: // LD E,D
         LDRR(e, d, 4);
-        ih=1;break;
+        prefix=0;break;
       case 0x5c: // LD E,H // LD E,IXh // LD E,IYh
-        if( ih )
+        if( !prefix )
           LDRR(e, h, 4);
-        else if( iy )
-          LDRR(e, yh, 4);
-        else
+        else if( !--prefix )
           LDRR(e, xh, 4);
-        ih=1;break;
+        else
+          --prefix,
+          LDRR(e, yh, 4);
+        break;
       case 0x5d: // LD E,L // LD E,IXl // LD E,IYl
-        if( ih )
+        if( !prefix )
           LDRR(e, l, 4);
-        else if( iy )
-          LDRR(e, yl, 4);
-        else
+        else if( !--prefix )
           LDRR(e, xl, 4);
-        ih=1;break;
-      case 0x5e: // LD E,(HL) // LD E,(IX+d) // LD E,(IY+d)
-        if( ih )
-          LDRP(h, l, e);
-        else if( iy )
-          LDRPI(yh, yl, e);
         else
+          --prefix,
+          LDRR(e, yl, 4);
+        break;
+      case 0x5e: // LD E,(HL) // LD E,(IX+d) // LD E,(IY+d)
+        if( !prefix )
+          LDRP(h, l, e);
+        else if( !--prefix )
           LDRPI(xh, xl, e);
-        ih=1;break;
+        else
+          --prefix,
+          LDRPI(yh, yl, e);
+        break;
       case 0x5f: // LD E,A
         LDRR(e, a, 4);
-        ih=1;break;
+        prefix=0;break;
       case 0x60: // LD H,B // LD IXh,B // LD IYh,B
-        if( ih )
+        if( !prefix )
           LDRR(h, b, 4);
-        else if( iy )
-          LDRR(yh, b, 4);
-        else
+        else if( !--prefix )
           LDRR(xh, b, 4);
-        ih=1;break;
+        else
+          --prefix,
+          LDRR(yh, b, 4);
+        break;
       case 0x61: // LD H,C // LD IXh,C // LD IYh,C
-        if( ih )
+        if( !prefix )
           LDRR(h, c, 4);
-        else if( iy )
-          LDRR(yh, c, 4);
-        else
+        else if( !--prefix )
           LDRR(xh, c, 4);
-        ih=1;break;
+        else
+          --prefix,
+          LDRR(yh, c, 4);
+        break;
       case 0x62: // LD H,D // LD IXh,D // LD IYh,D
-        if( ih )
+        if( !prefix )
           LDRR(h, d, 4);
-        else if( iy )
-          LDRR(yh, d, 4);
-        else
+        else if( !--prefix )
           LDRR(xh, d, 4);
-        ih=1;break;
+        else
+          --prefix,
+          LDRR(yh, d, 4);
+        break;
       case 0x63: // LD H,E // LD IXh,E // LD IYh,E
-        if( ih )
+        if( !prefix )
           LDRR(h, e, 4);
-        else if( iy )
-          LDRR(yh, e, 4);
-        else
+        else if( !--prefix )
           LDRR(xh, e, 4);
-        ih=1;break;
+        else
+          --prefix,
+          LDRR(yh, e, 4);
+        break;
       case 0x65: // LD H,L // LD IXh,IXl // LD IYh,IYl
-        if( ih )
+        if( !prefix )
           LDRR(h, l, 4);
-        else if( iy )
-          LDRR(yh, yl, 4);
-        else
+        else if( !--prefix )
           LDRR(xh, xl, 4);
-        ih=1;break;
+        else
+          --prefix,
+          LDRR(yh, yl, 4);
+        break;
       case 0x66: // LD H,(HL) // LD H,(IX+d) // LD H,(IY+d)
-        if( ih )
+        if( !prefix )
           LDRP(h, l, h);
-        else if( iy )
-          LDRPI(yh, yl, h);
-        else
+        else if( !--prefix )
           LDRPI(xh, xl, h);
-        ih=1;break;
+        else
+          --prefix,
+          LDRPI(yh, yl, h);
+        break;
       case 0x67: // LD H,A // LD IXh,A // LD IYh,A
-        if( ih )
+        if( !prefix )
           LDRR(h, a, 4);
-        else if( iy )
-          LDRR(yh, a, 4);
-        else
+        else if( !--prefix )
           LDRR(xh, a, 4);
-        ih=1;break;
+        else
+          --prefix,
+          LDRR(yh, a, 4);
+        break;
       case 0x68: // LD L,B // LD IXl,B // LD IYl,B
-        if( ih )
+        if( !prefix )
           LDRR(l, b, 4);
-        else if( iy )
-          LDRR(yl, b, 4);
-        else
+        else if( !--prefix )
           LDRR(xl, b, 4);
-        ih=1;break;
+        else
+          --prefix,
+          LDRR(yl, b, 4);
+        break;
       case 0x69: // LD L,C // LD IXl,C // LD IYl,C
-        if( ih )
+        if( !prefix )
           LDRR(l, c, 4);
-        else if( iy )
-          LDRR(yl, c, 4);
-        else
+        else if( !--prefix )
           LDRR(xl, c, 4);
-        ih=1;break;
+        else
+          --prefix,
+          LDRR(yl, c, 4);
+        break;
       case 0x6a: // LD L,D // LD IXl,D // LD IYl,D
-        if( ih )
+        if( !prefix )
           LDRR(l, d, 4);
-        else if( iy )
-          LDRR(yl, d, 4);
-        else
+        else if( !--prefix )
           LDRR(xl, d, 4);
-        ih=1;break;
+        else
+          --prefix,
+          LDRR(yl, d, 4);
+        break;
       case 0x6b: // LD L,E // LD IXl,E // LD IYl,E
-        if( ih )
+        if( !prefix )
           LDRR(l, e, 4);
-        else if( iy )
-          LDRR(yl, e, 4);
-        else
+        else if( !--prefix )
           LDRR(xl, e, 4);
-        ih=1;break;
+        else
+          --prefix,
+          LDRR(yl, e, 4);
+        break;
       case 0x6c: // LD L,H // LD IXl,IXh // LD IYl,IYh
-        if( ih )
+        if( !prefix )
           LDRR(l, h, 4);
-        else if( iy )
-          LDRR(yl, yh, 4);
-        else
+        else if( !--prefix )
           LDRR(xl, xh, 4);
-        ih=1;break;
+        else
+          --prefix,
+          LDRR(yl, yh, 4);
+        break;
       case 0x6e: // LD L,(HL) // LD L,(IX+d) // LD L,(IY+d)
-        if( ih )
+        if( !prefix )
           LDRP(h, l, l);
-        else if( iy )
-          LDRPI(yh, yl, l);
-        else
+        else if( !--prefix )
           LDRPI(xh, xl, l);
-        ih=1;break;
+        else
+          --prefix,
+          LDRPI(yh, yl, l);
+        break;
       case 0x6f: // LD L,A // LD IXl,A // LD IYl,A
-        if( ih )
+        if( !prefix )
           LDRR(l, a, 4);
-        else if( iy )
-          LDRR(yl, a, 4);
-        else
+        else if( !--prefix )
           LDRR(xl, a, 4);
-        ih=1;break;
+        else
+          --prefix,
+          LDRR(yl, a, 4);
+        break;
       case 0x70: // LD (HL),B // LD (IX+d),B // LD (IY+d),B
-        if( ih )
+        if( !prefix )
           LDPR(h, l, b);
-        else if( iy )
-          LDPRI(yh, yl, b);
-        else
+        else if( !--prefix )
           LDPRI(xh, xl, b);
-        ih=1;break;
+        else
+          --prefix,
+          LDPRI(yh, yl, b);
+        break;
       case 0x71: // LD (HL),C // LD (IX+d),C // LD (IY+d),C
-        if( ih )
+        if( !prefix )
           LDPR(h, l, c);
-        else if( iy )
-          LDPRI(yh, yl, c);
-        else
+        else if( !--prefix )
           LDPRI(xh, xl, c);
-        ih=1;break;
+        else
+          --prefix,
+          LDPRI(yh, yl, c);
+        break;
       case 0x72: // LD (HL),D // LD (IX+d),D // LD (IY+d),D
-        if( ih )
+        if( !prefix )
           LDPR(h, l, d);
-        else if( iy )
-          LDPRI(yh, yl, d);
-        else
+        else if( !--prefix )
           LDPRI(xh, xl, d);
-        ih=1;break;
+        else
+          --prefix,
+          LDPRI(yh, yl, d);
+        break;
       case 0x73: // LD (HL),E // LD (IX+d),E // LD (IY+d),E
-        if( ih )
+        if( !prefix )
           LDPR(h, l, e);
-        else if( iy )
-          LDPRI(yh, yl, e);
-        else
+        else if( !--prefix )
           LDPRI(xh, xl, e);
-        ih=1;break;
+        else
+          --prefix,
+          LDPRI(yh, yl, e);
+        break;
       case 0x74: // LD (HL),H // LD (IX+d),H // LD (IY+d),H
-        if( ih )
+        if( !prefix )
           LDPR(h, l, h);
-        else if( iy )
-          LDPRI(yh, yl, h);
-        else
+        else if( !--prefix )
           LDPRI(xh, xl, h);
-        ih=1;break;
+        else
+          --prefix,
+          LDPRI(yh, yl, h);
+        break;
       case 0x75: // LD (HL),L // LD (IX+d),L // LD (IY+d),L
-        if( ih )
+        if( !prefix )
           LDPR(h, l, l);
-        else if( iy )
-          LDPRI(yh, yl, l);
-        else
+        else if( !--prefix )
           LDPRI(xh, xl, l);
-        ih=1;break;
-      case 0x77: // LD (HL),A // LD (IX+d),A // LD (IY+d),A
-        if( ih )
-          LDPR(h, l, a);
-        else if( iy )
-          LDPRI(yh, yl, a);
         else
+          --prefix,
+          LDPRI(yh, yl, l);
+        break;
+      case 0x77: // LD (HL),A // LD (IX+d),A // LD (IY+d),A
+        if( !prefix )
+          LDPR(h, l, a);
+        else if( !--prefix )
           LDPRI(xh, xl, a);
-        ih=1;break;
+        else
+          --prefix,
+          LDPRI(yh, yl, a);
+        break;
       case 0x78: // LD A,B
         LDRR(a, b, 4);
-        ih=1;break;
+        prefix=0;break;
       case 0x79: // LD A,C
         LDRR(a, c, 4);
-        ih=1;break;
+        prefix=0;break;
       case 0x7a: // LD A,D
         LDRR(a, d, 4);
-        ih=1;break;
+        prefix=0;break;
       case 0x7b: // LD A,E
         LDRR(a, e, 4);
-        ih=1;break;
+        prefix=0;break;
       case 0x7c: // LD A,H // LD A,IXh // LD A,IYh
-        if( ih )
+        if( !prefix )
           LDRR(a, h, 4);
-        else if( iy )
-          LDRR(a, yh, 4);
-        else
+        else if( !--prefix )
           LDRR(a, xh, 4);
-        ih=1;break;
+        else
+          --prefix,
+          LDRR(a, yh, 4);
+        break;
       case 0x7d: // LD A,L // LD A,IXl // LD A,IYl
-        if( ih )
+        if( !prefix )
           LDRR(a, l, 4);
-        else if( iy )
-          LDRR(a, yl, 4);
-        else
+        else if( !--prefix )
           LDRR(a, xl, 4);
-        ih=1;break;
-      case 0x7e: // LD A,(HL) // LD A,(IX+d) // LD A,(IY+d)
-        if( ih )
-          LDRP(h, l, a);
-        else if( iy )
-          LDRPI(yh, yl, a);
         else
+          --prefix,
+          LDRR(a, yl, 4);
+        break;
+      case 0x7e: // LD A,(HL) // LD A,(IX+d) // LD A,(IY+d)
+        if( !prefix )
+          LDRP(h, l, a);
+        else if( !--prefix )
           LDRPI(xh, xl, a);
-        ih=1;break;
+        else
+          --prefix,
+          LDRPI(yh, yl, a);
+        break;
       case 0x80: // ADD A,B
         ADD(b, 4);
-        ih=1;break;
+        prefix=0;break;
       case 0x81: // ADD A,C
         ADD(c, 4);
-        ih=1;break;
+        prefix=0;break;
       case 0x82: // ADD A,D
         ADD(d, 4);
-        ih=1;break;
+        prefix=0;break;
       case 0x83: // ADD A,E
         ADD(e, 4);
-        ih=1;break;
+        prefix=0;break;
       case 0x84: // ADD A,H // ADD A,IXh // ADD A,IYh
-        if( ih )
+        if( !prefix )
           ADD(h, 4);
-        else if( iy )
-          ADD(yh, 4);
-        else
+        else if( !--prefix )
           ADD(xh, 4);
-        ih=1;break;
+        else
+          --prefix,
+          ADD(yh, 4);
+        break;
       case 0x85: // ADD A,L // ADD A,IXl // ADD A,IYl
-        if( ih )
+        if( !prefix )
           ADD(l, 4);
-        else if( iy )
-          ADD(yl, 4);
-        else
+        else if( !--prefix )
           ADD(xl, 4);
-        ih=1;break;
-      case 0x86: // ADD A,(HL) // ADD A,(IX+d) // ADD A,(IY+d)
-        if( ih )
-          ADD(mem[l|h<<8], 7);
-        else if( iy )
-          ADD(mem[((mem[pc++]^128)-128+(yl|yh<<8))&65535], 7);
         else
+          --prefix,
+          ADD(yl, 4);
+        break;
+      case 0x86: // ADD A,(HL) // ADD A,(IX+d) // ADD A,(IY+d)
+        if( !prefix )
+          ADD(mem[l|h<<8], 7);
+        else if( !--prefix )
           ADD(mem[((mem[pc++]^128)-128+(xl|xh<<8))&65535], 7);
-        ih=1;break;
+        else
+          --prefix,
+          ADD(mem[((mem[pc++]^128)-128+(yl|yh<<8))&65535], 7);
+        break;
       case 0x87: // ADD A,A
         st+= 4;
         fr= a= (ff= 2*(fa= fb= a));
-        ih=1;break;
+        prefix=0;break;
       case 0x88: // ADC A,B
         ADC(b, 4);
-        ih=1;break;
+        prefix=0;break;
       case 0x89: // ADC A,C
         ADC(c, 4);
-        ih=1;break;
+        prefix=0;break;
       case 0x8a: // ADC A,D
         ADC(d, 4);
-        ih=1;break;
+        prefix=0;break;
       case 0x8b: // ADC A,E
         ADC(e, 4);
-        ih=1;break;
+        prefix=0;break;
       case 0x8c: // ADC A,H // ADC A,IXh // ADC A,IYh
-        if( ih )
+        if( !prefix )
           ADC(h, 4);
-        else if( iy )
-          ADC(yh, 4);
-        else
+        else if( !--prefix )
           ADC(xh, 4);
-        ih=1;break;
+        else
+          --prefix,
+          ADC(yh, 4);
+        break;
       case 0x8d: // ADC A,L // ADC A,IXl // ADC A,IYl
-        if( ih )
+        if( !prefix )
           ADC(l, 4);
-        else if( iy )
-          ADC(yl, 4);
-        else
+        else if( !--prefix )
           ADC(xl, 4);
-        ih=1;break;
-      case 0x8e: // ADC A,(HL) // ADC A,(IX+d) // ADC A,(IY+d)
-        if( ih )
-          ADC(mem[l|h<<8], 7);
-        else if( iy )
-          ADC(mem[((mem[pc++]^128)-128+(yl|yh<<8))&65535], 7);
         else
+          --prefix,
+          ADC(yl, 4);
+        break;
+      case 0x8e: // ADC A,(HL) // ADC A,(IX+d) // ADC A,(IY+d)
+        if( !prefix )
+          ADC(mem[l|h<<8], 7);
+        else if( !--prefix )
           ADC(mem[((mem[pc++]^128)-128+(xl|xh<<8))&65535], 7);
-        ih=1;break;
+        else
+          --prefix,
+          ADC(mem[((mem[pc++]^128)-128+(yl|yh<<8))&65535], 7);
+        break;
       case 0x8f: // ADC A,A
         st+= 4;
         fr= a= (ff= 2*(fa= fb= a)+(ff>>8&1));
-        ih=1;break;
+        prefix=0;break;
       case 0x90: // SUB B
         SUB(b, 4);
-        ih=1;break;
+        prefix=0;break;
       case 0x91: // SUB C
         SUB(c, 4);
-        ih=1;break;
+        prefix=0;break;
       case 0x92: // SUB D
         SUB(d, 4);
-        ih=1;break;
+        prefix=0;break;
       case 0x93: // SUB E
         SUB(e, 4);
-        ih=1;break;
+        prefix=0;break;
       case 0x94: // SUB H // SUB IXh // SUB IYh
-        if( ih )
+        if( !prefix )
           SUB(h, 4);
-        else if( iy )
-          SUB(yh, 4);
-        else
+        else if( !--prefix )
           SUB(xh, 4);
-        ih=1;break;
+        else
+          --prefix,
+          SUB(yh, 4);
+        break;
       case 0x95: // SUB L // SUB IXl // SUB IYl
-        if( ih )
+        if( !prefix )
           SUB(l, 4);
-        else if( iy )
-          SUB(yl, 4);
-        else
+        else if( !--prefix )
           SUB(xl, 4);
-        ih=1;break;
-      case 0x96: // SUB (HL) // SUB (IX+d) // SUB (IY+d)
-        if( ih )
-          SUB(mem[l|h<<8], 7);
-        else if( iy )
-          SUB(mem[((mem[pc++]^128)-128+(yl|yh<<8))&65535], 7);
         else
+          --prefix,
+          SUB(yl, 4);
+        break;
+      case 0x96: // SUB (HL) // SUB (IX+d) // SUB (IY+d)
+        if( !prefix )
+          SUB(mem[l|h<<8], 7);
+        else if( !--prefix )
           SUB(mem[((mem[pc++]^128)-128+(xl|xh<<8))&65535], 7);
-        ih=1;break;
+        else
+          --prefix,
+          SUB(mem[((mem[pc++]^128)-128+(yl|yh<<8))&65535], 7);
+        break;
       case 0x97: // SUB A
         st+= 4;
         fb= ~(fa= a);
         fr= a= ff= 0;
-        ih=1;break;
+        prefix=0;break;
       case 0x98: // SBC A,B
         SBC(b, 4);
-        ih=1;break;
+        prefix=0;break;
       case 0x99: // SBC A,C
         SBC(c, 4);
-        ih=1;break;
+        prefix=0;break;
       case 0x9a: // SBC A,D
         SBC(d, 4);
-        ih=1;break;
+        prefix=0;break;
       case 0x9b: // SBC A,E
         SBC(e, 4);
-        ih=1;break;
+        prefix=0;break;
       case 0x9c: // SBC A,H // SBC A,IXh // SBC A,IYh
-        if( ih )
+        if( !prefix )
           SBC(h, 4);
-        else if( iy )
-          SBC(yh, 4);
-        else
+        else if( !--prefix )
           SBC(xh, 4);
-        ih=1;break;
+        else
+          --prefix,
+          SBC(yh, 4);
+        break;
       case 0x9d: // SBC A,L // SBC A,IXl // SBC A,IYl
-        if( ih )
+        if( !prefix )
           SBC(l, 4);
-        else if( iy )
-          SBC(yl, 4);
-        else
+        else if( !--prefix )
           SBC(xl, 4);
-        ih=1;break;
-      case 0x9e: // SBC A,(HL) // SBC A,(IX+d) // SBC A,(IY+d)
-        if( ih )
-          SBC(mem[l|h<<8], 7);
-        else if( iy )
-          SBC(mem[((mem[pc++]^128)-128+(yl|yh<<8))&65535], 7);
         else
+          --prefix,
+          SBC(yl, 4);
+        break;
+      case 0x9e: // SBC A,(HL) // SBC A,(IX+d) // SBC A,(IY+d)
+        if( !prefix )
+          SBC(mem[l|h<<8], 7);
+        else if( !--prefix )
           SBC(mem[((mem[pc++]^128)-128+(xl|xh<<8))&65535], 7);
-        ih=1;break;
+        else
+          --prefix,
+          SBC(mem[((mem[pc++]^128)-128+(yl|yh<<8))&65535], 7);
+        break;
       case 0x9f: // SBC A,A
         st+= 4;
         fb= ~(fa= a);
         fr= a= (ff= (ff&256)/-256);
-        ih=1;break;
+        prefix=0;break;
       case 0xa0: // AND B
         AND(b, 4);
-        ih=1;break;
+        prefix=0;break;
       case 0xa1: // AND C
         AND(c, 4);
-        ih=1;break;
+        prefix=0;break;
       case 0xa2: // AND D
         AND(d, 4);
-        ih=1;break;
+        prefix=0;break;
       case 0xa3: // AND E
         AND(e, 4);
-        ih=1;break;
+        prefix=0;break;
       case 0xa4: // AND H // AND IXh // AND IYh
-        if( ih )
+        if( !prefix )
           AND(h, 4);
-        else if( iy )
-          AND(yh, 4);
-        else
+        else if( !--prefix )
           AND(xh, 4);
-        ih=1;break;
+        else
+          --prefix,
+          AND(yh, 4);
+        break;
       case 0xa5: // AND L // AND IXl // AND IYl
-        if( ih )
+        if( !prefix )
           AND(l, 4);
-        else if( iy )
-          AND(yl, 4);
-        else
+        else if( !--prefix )
           AND(xl, 4);
-        ih=1;break;
-      case 0xa6: // AND (HL) // AND (IX+d) // AND (IY+d)
-        if( ih )
-          AND(mem[l|h<<8], 7);
-        else if( iy )
-          AND(mem[((mem[pc++]^128)-128+(yl|yh<<8))&65535], 7);
         else
+          --prefix,
+          AND(yl, 4);
+        break;
+      case 0xa6: // AND (HL) // AND (IX+d) // AND (IY+d)
+        if( !prefix )
+          AND(mem[l|h<<8], 7);
+        else if( !--prefix )
           AND(mem[((mem[pc++]^128)-128+(xl|xh<<8))&65535], 7);
-        ih=1;break;
+        else
+          --prefix,
+          AND(mem[((mem[pc++]^128)-128+(yl|yh<<8))&65535], 7);
+        break;
       case 0xa7: // AND A
         st+= 4;
         fa= ~(ff= fr= a);
         fb= 0;
-        ih=1;break;
+        prefix=0;break;
       case 0xa8: // XOR B
         XOR(b, 4);
-        ih=1;break;
+        prefix=0;break;
       case 0xa9: // XOR C
         XOR(c, 4);
-        ih=1;break;
+        prefix=0;break;
       case 0xaa: // XOR D
         XOR(d, 4);
-        ih=1;break;
+        prefix=0;break;
       case 0xab: // XOR E
         XOR(e, 4);
-        ih=1;break;
+        prefix=0;break;
       case 0xac: // XOR H // XOR IXh // XOR IYh
-        if( ih )
+        if( !prefix )
           XOR(h, 4);
-        else if( iy )
-          XOR(yh, 4);
-        else
+        else if( !--prefix )
           XOR(xh, 4);
-        ih=1;break;
+        else
+          --prefix,
+          XOR(yh, 4);
+        break;
       case 0xad: // XOR L // XOR IXl // XOR IYl
-        if( ih )
+        if( !prefix )
           XOR(l, 4);
-        else if( iy )
-          XOR(yl, 4);
-        else
+        else if( !--prefix )
           XOR(xl, 4);
-        ih=1;break;
-      case 0xae: // XOR (HL) // XOR (IX+d) // XOR (IY+d)
-        if( ih )
-          XOR(mem[l|h<<8], 7);
-        else if( iy )
-          XOR(mem[((mem[pc++]^128)-128+(yl|yh<<8))&65535], 7);
         else
+          --prefix,
+          XOR(yl, 4);
+        break;
+      case 0xae: // XOR (HL) // XOR (IX+d) // XOR (IY+d)
+        if( !prefix )
+          XOR(mem[l|h<<8], 7);
+        else if( !--prefix )
           XOR(mem[((mem[pc++]^128)-128+(xl|xh<<8))&65535], 7);
-        ih=1;break;
+        else
+          --prefix,
+          XOR(mem[((mem[pc++]^128)-128+(yl|yh<<8))&65535], 7);
+        break;
       case 0xaf: // XOR A
         st+= 4;
         a= ff= fr= fb= 0;
         fa= 256;
-        ih=1;break;
+        prefix=0;break;
       case 0xb0: // OR B
         OR(b, 4);
-        ih=1;break;
+        prefix=0;break;
       case 0xb1: // OR C
         OR(c, 4);
-        ih=1;break;
+        prefix=0;break;
       case 0xb2: // OR D
         OR(d, 4);
-        ih=1;break;
+        prefix=0;break;
       case 0xb3: // OR E
         OR(e, 4);
-        ih=1;break;
+        prefix=0;break;
       case 0xb4: // OR H // OR IXh // OR IYh
-        if( ih )
+        if( !prefix )
           OR(h, 4);
-        else if( iy )
-          OR(yh, 4);
-        else
+        else if( !--prefix )
           OR(xh, 4);
-        ih=1;break;
+        else
+          --prefix,
+          OR(yh, 4);
+        break;
       case 0xb5: // OR L // OR IXl // OR IYl
-        if( ih )
+        if( !prefix )
           OR(l, 4);
-        else if( iy )
-          OR(yl, 4);
-        else
+        else if( !--prefix )
           OR(xl, 4);
-        ih=1;break;
-      case 0xb6: // OR (HL) // OR (IX+d) // OR (IY+d)
-        if( ih )
-          OR(mem[l|h<<8], 7);
-        else if( iy )
-          OR(mem[((mem[pc++]^128)-128+(yl|yh<<8))&65535], 7);
         else
+          --prefix,
+          OR(yl, 4);
+        break;
+      case 0xb6: // OR (HL) // OR (IX+d) // OR (IY+d)
+        if( !prefix )
+          OR(mem[l|h<<8], 7);
+        else if( !--prefix )
           OR(mem[((mem[pc++]^128)-128+(xl|xh<<8))&65535], 7);
-        ih=1;break;
+        else
+          --prefix,
+          OR(mem[((mem[pc++]^128)-128+(yl|yh<<8))&65535], 7);
+        break;
       case 0xb7: // OR A
         st+= 4;
         fa= 256
           | (ff= fr= a);
         fb= 0;
-        ih=1;break;
+        prefix=0;break;
       case 0xb8: // CP B
         CP(b, 4);
-        ih=1;break;
+        prefix=0;break;
       case 0xb9: // CP C
         CP(c, 4);
-        ih=1;break;
+        prefix=0;break;
       case 0xba: // CP D
         CP(d, 4);
-        ih=1;break;
+        prefix=0;break;
       case 0xbb: // CP E
         CP(e, 4);
-        ih=1;break;
+        prefix=0;break;
       case 0xbc: // CP H // CP IXh // CP IYh
-        if( ih )
+        if( !prefix )
           CP(h, 4);
-        else if( iy )
-          CP(yh, 4);
-        else
+        else if( !--prefix )
           CP(xh, 4);
-        ih=1;break;
-      case 0xbd: // CP L // CP IXl // CP IYl
-        if( ih )
-          CP(l, 4);
-        else if( iy )
-          CP(yl, 4);
         else
+          --prefix,
+          CP(yh, 4);
+        break;
+      case 0xbd: // CP L // CP IXl // CP IYl
+        if( !prefix )
+          CP(l, 4);
+        else if( !--prefix )
           CP(xl, 4);
-        ih=1;break;
+        else
+          --prefix,
+          CP(yl, 4);
+        break;
       case 0xbe: // CP (HL) // CP (IX+d) // CP (IY+d)
-        if( ih )
+        if( !prefix )
           w= mem[l|h<<8],
           CP(w, 7);
-        else if( iy )
-          w= mem[((mem[pc++]^128)-128+(yl|yh<<8))&65535],
-          CP(w, 7);
-        else
+        else if( !--prefix )
           w= mem[((mem[pc++]^128)-128+(xl|xh<<8))&65535],
           CP(w, 7);
-        ih=1;break;
+        else
+          --prefix,
+          w= mem[((mem[pc++]^128)-128+(yl|yh<<8))&65535],
+          CP(w, 7);
+        break;
       case 0xbf: // CP A
         st+= 4;
         fr= 0;
         fb= ~(fa= a);
         ff= a&40;
-        ih=1;break;
+        prefix=0;break;
       case 0xc9: // RET
         RET(10);
-        ih=1;break;
+        prefix=0;break;
       case 0xc0: // RET NZ
         RETCI(fr);
-        ih=1;break;
+        prefix=0;break;
       case 0xc8: // RET Z
         RETC(fr);
-        ih=1;break;
+        prefix=0;break;
       case 0xd0: // RET NC
         RETC(ff&256);
-        ih=1;break;
+        prefix=0;break;
       case 0xd8: // RET C
         RETCI(ff&256);
-        ih=1;break;
+        prefix=0;break;
       case 0xe0: // RET PO
         RETC(fa&256?38505>>((fr^fr>>4)&15)&1:(fr^fa)&(fr^fb)&128);
-        ih=1;break;
+        prefix=0;break;
       case 0xe8: // RET PE
         RETCI(fa&256?38505>>((fr^fr>>4)&15)&1:(fr^fa)&(fr^fb)&128);
-        ih=1;break;
+        prefix=0;break;
       case 0xf0: // RET P
         RETC(ff&128);
-        ih=1;break;
+        prefix=0;break;
       case 0xf8: // RET M
         RETCI(ff&128);
-        ih=1;break;
+        prefix=0;break;
       case 0xc1: // POP BC
         POP(b, c);
-        ih=1;break;
+        prefix=0;break;
       case 0xd1: // POP DE
         POP(d, e);
-        ih=1;break;
+        prefix=0;break;
       case 0xe1: // POP HL // POP IX // POP IY
-        if( ih )
+        if( !prefix )
           POP(h, l);
-        else if( iy )
-          POP(yh, yl);
-        else
+        else if( !--prefix )
           POP(xh, xl);
-        ih=1;break;
+        else
+          --prefix,
+          POP(yh, yl);
+        break;
       case 0xf1: // POP AF
         st+= 10;
         setf(mem[sp++]);
         a= mem[sp++];
-        ih=1;break;
+        prefix=0;break;
       case 0xc5: // PUSH BC
         PUSH(b, c);
-        ih=1;break;
+        prefix=0;break;
       case 0xd5: // PUSH DE
         PUSH(d, e);
-        ih=1;break;
+        prefix=0;break;
       case 0xe5: // PUSH HL // PUSH IX // PUSH IY
-        if( ih )
+        if( !prefix )
           PUSH(h, l);
-        else if( iy )
-          PUSH(yh, yl);
-        else
+        else if( !--prefix )
           PUSH(xh, xl);
-        ih=1;break;
+        else
+          --prefix,
+          PUSH(yh, yl);
+        break;
       case 0xf5: // PUSH AF
         PUSH(a, f());
-        ih=1;break;
+        prefix=0;break;
       case 0xc3: // JP nn
         st+= 10;
         mp= pc= mem[pc] | mem[pc+1]<<8;
-        ih=1;break;
+        prefix=0;break;
       case 0xc2: // JP NZ
         JPCI(fr);
-        ih=1;break;
+        prefix=0;break;
       case 0xca: // JP Z
         JPC(fr);
-        ih=1;break;
+        prefix=0;break;
       case 0xd2: // JP NC
         JPC(ff&256);
-        ih=1;break;
+        prefix=0;break;
       case 0xda: // JP C
         JPCI(ff&256);
-        ih=1;break;
+        prefix=0;break;
       case 0xe2: // JP PO
         JPC(fa&256?38505>>((fr^fr>>4)&15)&1:(fr^fa)&(fr^fb)&128);
-        ih=1;break;
+        prefix=0;break;
       case 0xea: // JP PE
         JPCI(fa&256?38505>>((fr^fr>>4)&15)&1:(fr^fa)&(fr^fb)&128);
-        ih=1;break;
+        prefix=0;break;
       case 0xf2: // JP P
         JPC(ff&128);
-        ih=1;break;
+        prefix=0;break;
       case 0xfa: // JP M
         JPCI(ff&128);
-        ih=1;break;
+        prefix=0;break;
       case 0xcd: // CALL nn
         st+= 17;
         t= pc+2;
         mp= pc= mem[pc] | mem[pc+1]<<8;
         mem[--sp]= t>>8;
         mem[--sp]= t;
-        ih=1;break;
+        prefix=0;break;
       case 0xc4: // CALL NZ
         CALLCI(fr);
-        ih=1;break;
+        prefix=0;break;
       case 0xcc: // CALL Z
         CALLC(fr);
-        ih=1;break;
+        prefix=0;break;
       case 0xd4: // CALL NC
         CALLC(ff&256);
-        ih=1;break;
+        prefix=0;break;
       case 0xdc: // CALL C
         CALLCI(ff&256);
-        ih=1;break;
+        prefix=0;break;
       case 0xe4: // CALL PO
         CALLC(fa&256?38505>>((fr^fr>>4)&15)&1:(fr^fa)&(fr^fb)&128);
-        ih=1;break;
+        prefix=0;break;
       case 0xec: // CALL PE
         CALLCI(fa&256?38505>>((fr^fr>>4)&15)&1:(fr^fa)&(fr^fb)&128);
-        ih=1;break;
+        prefix=0;break;
       case 0xf4: // CALL P
         CALLC(ff&128);
-        ih=1;break;
+        prefix=0;break;
       case 0xfc: // CALL M
         CALLCI(ff&128);
-        ih=1;break;
+        prefix=0;break;
       case 0xc6: // ADD A,n
         ADD(mem[pc++], 7);
-        ih=1;break;
+        prefix=0;break;
       case 0xce: // ADC A,n
         ADC(mem[pc++], 7);
-        ih=1;break;
+        prefix=0;break;
       case 0xd6: // SUB n
         SUB(mem[pc++], 7);
-        ih=1;break;
+        prefix=0;break;
       case 0xde: // SBC A,n
         SBC(mem[pc++], 7);
-        ih=1;break;
+        prefix=0;break;
       case 0xe6: // AND n
         AND(mem[pc++], 7);
-        ih=1;break;
+        prefix=0;break;
       case 0xee: // XOR A,n
         XOR(mem[pc++], 7);
-        ih=1;break;
+        prefix=0;break;
       case 0xf6: // OR n
         OR(mem[pc++], 7);
-        ih=1;break;
+        prefix=0;break;
       case 0xfe: // CP A,n
         w= mem[pc++];
         CP(w, 7);
-        ih=1;break;
+        prefix=0;break;
       case 0xc7: // RST 0x00
         RST(0);
-        ih=1;break;
+        prefix=0;break;
       case 0xcf: // RST 0x08
         RST(8);
-        ih=1;break;
+        prefix=0;break;
       case 0xd7: // RST 0x10
         RST(0x10);
-        ih=1;break;
+        prefix=0;break;
       case 0xdf: // RST 0x18
         RST(0x18);
-        ih=1;break;
+        prefix=0;break;
       case 0xe7: // RST 0x20
         RST(0x20);
-        ih=1;break;
+        prefix=0;break;
       case 0xef: // RST 0x28
         RST(0x28);
-        ih=1;break;
+        prefix=0;break;
       case 0xf7: // RST 0x30
         RST(0x30);
-        ih=1;break;
+        prefix=0;break;
       case 0xff: // RST 0x38
         RST(0x38);
-        ih=1;break;
+        prefix=0;break;
       case 0xd3: // OUT (n),A
         st+= 11;
         out(mp= mem[pc++] | a<<8, a);
         mp= mp&65280
           | ++mp;
-        ih=1;break;
+        prefix=0;break;
       case 0xdb: // IN A,(n)
         st+= 11;
         a= in(mp= mem[pc++] | a<<8);
         ++mp;
-        ih=1;break;
+        prefix=0;break;
       case 0xf3: // DI
         st+= 4;
         iff= 0;
-        ih=1;break;
+        prefix=0;break;
       case 0xfb: // EI
         st+= 4;
         iff= 1;
-        ih=1;break;
+        prefix=0;break;
       case 0xeb: // EX DE,HL
         st+= 4;
         t= d;
@@ -1962,7 +2041,7 @@ int main (int argc, char **argv){
         t= e;
         e= l;
         l= t;
-        ih=1;break;
+        prefix=0;break;
       case 0xd9: // EXX
         st+= 4;
         t = b;
@@ -1983,45 +2062,45 @@ int main (int argc, char **argv){
         t = l;
         l = l_;
         l_= t;
-        ih=1;break;
+        prefix=0;break;
       case 0xe3: // EX (SP),HL // EX (SP),IX // EX (SP),IY
-        if( ih )
+        if( !prefix )
           EXSPI(h, l);
-        else if( iy )
-          EXSPI(yh, yl);
-        else
+        else if( !--prefix )
           EXSPI(xh, xl);
-        ih=1;break;
+        else
+          --prefix,
+          EXSPI(yh, yl);
+        break;
       case 0xe9: // JP (HL)
         st+= 4;
-        if( ih )
+        if( !prefix )
           pc= l | h<<8;
-        else if( iy )
-          pc= yl | yh<<8;
-        else
+        else if( !--prefix )
           pc= xl | xh<<8;
-        ih=1;break;
+        else
+          --prefix,
+          pc= yl | yh<<8;
+        break;
       case 0xf9: // LD SP,HL
         st+= 4;
-        if( ih )
+        if( !prefix )
           sp= l | h<<8;
-        else if( iy )
-          sp= yl | yh<<8;
-        else
+        else if( !--prefix )
           sp= xl | xh<<8;
-        ih=1;break;
+        else
+          --prefix,
+          sp= yl | yh<<8;
+        break;
       case 0xdd: // OP DD
         st+= 4;
-        ih= iy= 0;
-        ih=0;break;
+        prefix=1;break;
       case 0xfd: // OP FD
         st+= 4;
-        ih= 0;
-        iy= 1;
-        ih=0;break;
+        prefix=2;break;
       case 0xcb: // OP CB
         r++;
-        if( ih )
+        if( !prefix )
           switch( mem[pc++] ){
             case 0x00:  RLC(b); break;                       // RLC B
             case 0x01:  RLC(c); break;                       // RLC C
@@ -2314,10 +2393,11 @@ int main (int argc, char **argv){
           }
         else{
           st+= 11;
-          if( iy )
-            t= mem[mp= ((mem[pc++]^128)-128+(yl|yh<<8))];
-          else
+          if( !--prefix )
             t= mem[mp= ((mem[pc++]^128)-128+(xl|xh<<8))];
+          else
+            --prefix,
+            t= mem[mp= ((mem[pc++]^128)-128+(yl|yh<<8))];
           switch( mem[pc++] ){
             case 0x00: RLC(t); mem[mp]= b= t; break;         // LD B,RLC (IX+d) // LD B,RLC (IY+d)
             case 0x01: RLC(t); mem[mp]= c= t; break;         // LD C,RLC (IX+d) // LD C,RLC (IY+d)
@@ -2537,7 +2617,7 @@ int main (int argc, char **argv){
             case 0xff: SET(128, t); mem[mp]= a= t; break;    // LD A,SET 7,(IX+d) // LD A,SET 7,(IY+d)
           }
         }
-        ih=1;break;
+        break;
       case 0xed: // OP ED
         r++;
         switch( mem[pc++] ){
@@ -2914,7 +2994,7 @@ int main (int argc, char **argv){
                         | u>>4
                         | (t&128)<<2; break;
         }
-        ih=1;//break;
+        prefix=0;//break;
     }
   } while ( pc != end && st < counter );
   if( tap && st>sttap )

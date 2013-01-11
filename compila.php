@@ -85,7 +85,7 @@
   file_put_contents('aa.rom', ob_get_contents());
   exec('kzip -y temp.zip aa.rom');
   file_put_contents('noframess.html.deflate', substr(file_get_contents('temp.zip'), 36, -75));
-///*/
+///*
   error_log("48");
   exec("java yui 48");
   $rom= file_get_contents('rom/48.rom');
@@ -313,8 +313,7 @@
   unlink('SEs.js');
   exec('kzip -y temp.zip aa.rom');
   file_put_contents('_SEs.rom.deflate', substr(file_get_contents('temp.zip'), 36, -75));
-//
-/*
+///*
   error_log("464");
   exec("java yui 464");
   file_put_contents('aa.rom', file_get_contents('rom/k-cpc.pal').
@@ -380,7 +379,7 @@
   unlink('6128s.js');
   exec('kzip -y temp.zip aa.rom');
   file_put_contents('_6128s.rom.deflate', substr(file_get_contents('temp.zip'), 36, -75));
-///*
+///*/
   error_log("3");
   exec("java yui 3");
   file_put_contents('aa.rom', file_get_contents('rom/k-trs.pal').
@@ -442,7 +441,8 @@
   unlink('jupaces.js');
   exec('kzip -y temp.zip aa.rom');
   file_put_contents('_JAs.rom.deflate', substr(file_get_contents('temp.zip'), 36, -75));
-///*
+//
+/*
   error_log("48.html");
   ob_start();$x=48;$y=0x10000;
   require'emu.php';
@@ -610,7 +610,7 @@
   file_put_contents('aa.rom', ob_get_contents());
   exec('kzip -y temp.zip aa.rom');
   file_put_contents('6128s.html.deflate', substr(file_get_contents('temp.zip'), 36, -75));
-///*
+///*/
   error_log("3.html");
   ob_start();$x=3;$y=0x3800+0xf00;$title='jTandyIII';
   require'emu_trs.php';
@@ -624,7 +624,7 @@
   file_put_contents('aa.rom', ob_get_contents());
   exec('kzip -y temp.zip aa.rom');
   file_put_contents('ace.html.deflate', substr(file_get_contents('temp.zip'), 36, -75));
-///*/
+///*
   error_log("JA.html");
   ob_start();$x='JA';$y=0x2000;$title='jupiler';
   require'emu_ace.php';
@@ -638,7 +638,8 @@
   file_put_contents('aa.rom', ob_get_contents());
   exec('kzip -y temp.zip aa.rom');
   file_put_contents('JAs.html.deflate', substr(file_get_contents('temp.zip'), 36, -75));
-///*
+//
+/*
   unlink('z80elite.js');
   unlink('z80.js');
   unlink('z80m.js');

@@ -419,7 +419,9 @@ function rm(o) {
   j+= 2;
   pc= m[j++] | m[j++]<<8;
   j+= 2;
-  setf_(m[j++]);
+  o08();
+  setf(m[j++]);
+  o08();
   a_= m[j++];
   j+= 2;
   c_= m[j++];
@@ -446,48 +448,51 @@ function rm(o) {
 }
 
 function wm() {
-  t= String.fromCharCode( 1, 128 );
+  u= String.fromCharCode( 1, 128 );
   for ( j= 0; j < 127; j++ )
-    t+= String.fromCharCode(0);
-  t+= String.fromCharCode(128,0,0,0,0,0,0,0,0,0,0,3,0,0,0,3,0,0,0,0xf7,0xfd);
+    u+= String.fromCharCode(0);
+  u+= String.fromCharCode(128,0,0,0,0,0,0,0,0,0,0,3,0,0,0,3,0,0,0,0xf7,0xfd);
   for ( j= 0; j < 106; j++ )
-    t+= String.fromCharCode(0);
-  t+= String.fromCharCode(f(),a,0,0,c,b,0,0,e,d,0,0,l,h,0,0,xl,xh,0,0,yl,yh,0,0,sp&255,sp>>8,
-                          0,0,pc&255,pc>>8,0,0,f_(),a_,0,0,c_,b_,0,0,e_,d_,0,0,l_,h_,0,0,im,
+    u+= String.fromCharCode(0);
+  u+= String.fromCharCode(f(),a,0,0,c,b,0,0,e,d,0,0,l,h,0,0,xl,xh,0,0,yl,yh,0,0,
+                          sp&255,sp>>8,0,0,pc&255,pc>>8,0,0);
+  o08();
+  u+= String.fromCharCode(f(),a,0,0,c_,b_,0,0,e_,d_,0,0,l_,h_,0,0,im,
                           0,0,0,iff,0,0,0,0,0,0,0,i,0,0,0,r&128|r7&127,0,0,0,128);
+  o08();
   for ( j= 0; j < 699; j++ )
-    t+= String.fromCharCode(0);
+    u+= String.fromCharCode(0);
   for ( j= 0x2400; j < 0x2800; j++ )
-    t+= String.fromCharCode(m[j]);
+    u+= String.fromCharCode(m[j]);
   for ( j= 0; j < 0x400; j++)
-    t+= String.fromCharCode(0);
+    u+= String.fromCharCode(0);
   for ( j= 0x2c00; j < 0x3000; j++ )
-    t+= String.fromCharCode(m[j]);
+    u+= String.fromCharCode(m[j]);
   for ( j= 0; j < 0xc00; j++)
-    t+= String.fromCharCode(0);
+    u+= String.fromCharCode(0);
   for ( j= 0x3c00; j < 0x10000; j++ )
-    t+= String.fromCharCode(m[j]);
-  u= v= '';
+    u+= String.fromCharCode(m[j]);
+  t= v= '';
   w= -1;
-  for ( j= 0; j<=t.length; j++ ){
-    if( j<t.length && v==t[j] ){
+  for ( j= 0; j<=u.length; j++ ){
+    if( j<u.length && v==u[j] ){
       if( ++w==240 )
-        u+= String.fromCharCode(0xed, 240)+v,
+        t+= String.fromCharCode(0xed, 240)+v,
         w= 0;
     }
     else{
       if( w>3 )
-        u+= String.fromCharCode(0xed, w+1)+v;
+        t+= String.fromCharCode(0xed, w+1)+v;
       else if( v.charCodeAt(0)==0xed )
-        u+= String.fromCharCode(0xed, w+1, 0xed);
+        t+= String.fromCharCode(0xed, w+1, 0xed);
       else
         while ( w-- > -1 )
-          u+= v;
+          t+= v;
       w= 0;
     }
-    v= t[j];
+    v= u[j];
   }
-  return u;
+  return t;
 }
 
 function tp(){

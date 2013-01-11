@@ -193,14 +193,14 @@ function words(a) {
   }
 }
 
-function cond() {
+/*function cond() {
   if( pc==0x9cd4 )
     console.log( 'aaa', (c|b<<8).toString(16), (l|h<<8).toString(16), (e|d<<8).toString(16), (xl|xh<<8).toString(16) );
-}
+}*/
 
 function run() {
   while( st < 69888 )                       // execute z80 instructions during a frame
-cond(),
+//cond(),
     r++,
     g[m[pc++&0xffff]]();
   if( pbt ){
@@ -511,7 +511,7 @@ function kdown(ev) {
         t= wm()+String.fromCharCode(f3)+String.fromCharCode(f4)+param+String.fromCharCode(255);
         while( pbc )
           t+= String.fromCharCode(pb[--pbc]);
-        ajax('rec.php', t);
+        ajax('rec.php', t, 3);
         document.documentElement.innerHTML= 'Please wait...';
       }
       break;
@@ -665,7 +665,9 @@ function rm(o) {
   l_= o.charCodeAt(j++);
   h_= o.charCodeAt(j++);
   a_= o.charCodeAt(j++);
-  setf_(o.charCodeAt(j++));
+  o08();
+  setf(o.charCodeAt(j++));
+  o08();
   yl= o.charCodeAt(j++);
   yh= o.charCodeAt(j++);
   xl= o.charCodeAt(j++);
@@ -709,18 +711,20 @@ function rm(o) {
 }
 
 function wm() {
-  t= String.fromCharCode(a,f(),c,b,l,h,0,0,sp&255,sp>>8,i,r,r7>>7|bor<<1,e,d,
-                         c_,b_,e_,d_,l_,h_,a_,f_(),yl,yh,xl,xh,iff,iff,im,55,0,
-                         pc&255,pc>>8);
+  u= String.fromCharCode(a,f(),c,b,l,h,0,0,sp&255,sp>>8,i,r,r7>>7|bor<<1,e,d,
+                         c_,b_,e_,d_,l_,h_,a_);
+  o08();
+  u+= String.fromCharCode(f(),yl,yh,xl,xh,iff,iff,im,55,0,pc&255,pc>>8);
+  o08();
   for (j= 0; j < 41; j++)
-    t+= String.fromCharCode(0);
+    u+= String.fromCharCode(0);
   for (j= 0; j < 10; j++ )
-    t+= String.fromCharCode(ks[j]);
-  t+= String.fromCharCode(frc, 0);
-  for (u= 1; u< 4; u++)
-    for (j= 0, t+= String.fromCharCode(255,255,'845'[u-1]); j < 0x4000; j++)
-      t+= String.fromCharCode(m[j|u<<14]);
-  return t;
+    u+= String.fromCharCode(ks[j]);
+  u+= String.fromCharCode(frc, 0);
+  for (t= 1; t< 4; t++)
+    for (j= 0, u+= String.fromCharCode(255,255,'845'[t-1]); j < 0x4000; j++)
+      u+= String.fromCharCode(m[j|t<<14]);
+  return u;
 }
 
 function tp(){
@@ -744,7 +748,7 @@ function tp(){
 }
 
 function loadblock() {
-  o=  game.charCodeAt(tapep++) | game.charCodeAt(tapep++)<<8;
+  o= game.charCodeAt(tapep++) | game.charCodeAt(tapep++)<<8;
   tapei++;
   tapep++;
   for ( j= 0

@@ -23,7 +23,9 @@ function rm(o) {
   sp= o.charCodeAt(j++)|o.charCodeAt(j++)<<8;
   pc= o.charCodeAt(j++)|o.charCodeAt(j++)<<8;
   im= o.charCodeAt(j++);
-  setf_(o.charCodeAt(j++));
+  o08();
+  setf(o.charCodeAt(j++));
+  o08();
   a_= o.charCodeAt(j++);
   c_= o.charCodeAt(j++);
   b_= o.charCodeAt(j++);
@@ -74,25 +76,28 @@ function rm(o) {
 }
 
 function wm() {
-  t= 'MV - SNA'+String.fromCharCode(0,0,0,0,0,0,0,0,2,f(),a,c,b,e,d,l,h,r,i,iff,0,xl,xh,yl,yh,
-     sp&255,sp>>8,pc&255,pc>>8,im,f_(),a_,c_,b_,e_,d_,l_,h_,ga);
+  u= 'MV - SNA'+String.fromCharCode(0,0,0,0,0,0,0,0,2,f(),a,c,b,e,d,l,h,r,i,iff,
+                                    0,xl,xh,yl,yh,sp&255,sp>>8,pc&255,pc>>8,im);
+  o08();
+  u+= String.fromCharCode(f(),a_,c_,b_,e_,d_,l_,h_,ga);
+  o08();
   for (j= 0; j < 17; j++)
-    t+= String.fromCharCode(gc[j]);
-  t+= String.fromCharCode(gm+(m[0]==mw[0]?4:0)+(m[3]==mw[3]?8:0),rb,ci);
+    u+= String.fromCharCode(gc[j]);
+  u+= String.fromCharCode(gm+(m[0]==mw[0]?4:0)+(m[3]==mw[3]?8:0),rb,ci);
   for (j= 0; j < 18; j++)
-    t+= String.fromCharCode(cr[j]);
-  t+= String.fromCharCode((rs==2?7:0),ap,bp,cp,io,ay);
+    u+= String.fromCharCode(cr[j]);
+  u+= String.fromCharCode((rs==2?7:0),ap,bp,cp,io,ay);
   for (j= 0; j < 16; j++)
-    t+= String.fromCharCode(ayr[j]);
-  t+= String.fromCharCode(128,0, 0,0, 1,1,1,1,1,1);
+    u+= String.fromCharCode(ayr[j]);
+  u+= String.fromCharCode(128,0, 0,0, 1,1,1,1,1,1);
   for (j= 0; j < 128; j++)
-    t+= String.fromCharCode(0);
+    u+= String.fromCharCode(0);
   for (j= 0; j < 10; j++ )
-    t+= String.fromCharCode(ks[j]);
-  t+= String.fromCharCode(frc);
+    u+= String.fromCharCode(ks[j]);
+  u+= String.fromCharCode(frc);
   for (j= 0; j < 131072; j++)
-    t+= String.fromCharCode(ram[j>>14][j&16383]);
-  return t;
+    u+= String.fromCharCode(ram[j>>14][j&16383]);
+  return u;
 }
 
 function loadblock() {

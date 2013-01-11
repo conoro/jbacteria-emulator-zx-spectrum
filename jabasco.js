@@ -1,6 +1,4 @@
 function loadblock() {
-  if( !game )
-    return;
   o= game.charCodeAt(tapep++) | game.charCodeAt(tapep++)<<8;
   tapei++;
   tapep++;
@@ -9,7 +7,8 @@ function loadblock() {
       ; j++ )
     wb(xl | xh << 8, game.charCodeAt(tapep++)),
     g[0x123]();
-  setf_(0x6d);
+  setf(0x6d);
+  o08();
   a= d= e= 0;
   pc= 0x590;
   tapep++;

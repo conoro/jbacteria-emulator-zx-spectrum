@@ -351,13 +351,16 @@ function wb(addr, val) {
 }
 
 function wm() {
-  t= 'TRS80m3 - SNA'+String.fromCharCode(0,0,0,1,f(),a,c,b,e,d,l,h,r,i,iff,0,xl,xh,yl,yh,
-     sp&255,sp>>8,pc&255,pc>>8,im,f_(),a_,c_,b_,e_,d_,l_,h_,bIRQ, bIRQe, p236);
+  u= 'TRS80m3 - SNA'+String.fromCharCode( 0,0,0,1,f(),a,c,b,e,d,l,h,r,i,iff,0,xl,xh,yl,yh,
+                                          sp&255,sp>>8,pc&255,pc>>8,im);
+  o08();
+  u+= String.fromCharCode(f(),a,c_,b_,e_,d_,l_,h_,bIRQ, bIRQe, p236);
+  o08();
   for (j= 0; j < 207; j++)
-    t+= String.fromCharCode(0);
+    u+= String.fromCharCode(0);
   for (j= 0x3c00; j < 0x10000; j++)
-    t+= String.fromCharCode(m[j]);
-  return t;
+    u+= String.fromCharCode(m[j]);
+  return u;
 }
 
 function rm(o) {
@@ -381,7 +384,9 @@ function rm(o) {
   sp= o.charCodeAt(j++) | o.charCodeAt(j++)<<8;
   pc= o.charCodeAt(j++) | o.charCodeAt(j++)<<8;
   im= o.charCodeAt(j++);
-  setf_(o.charCodeAt(j++));
+  o08();
+  setf(o.charCodeAt(j++));
+  o08();
   a_= o.charCodeAt(j++);
   c_= o.charCodeAt(j++);
   b_= o.charCodeAt(j++);
