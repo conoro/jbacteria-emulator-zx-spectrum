@@ -2758,6 +2758,7 @@ bool CheckSyntax (int BasicLineNo, byte *Line)
             case  9 : AllOk = HandleClass09 (BasicLineNo, StatementNo, Keyword, &StrippedIndex); break;
             case 10 : AllOk = HandleClass10 (BasicLineNo, StatementNo, Keyword, &StrippedIndex); break;
             case 11 : AllOk = HandleClass11 (BasicLineNo, StatementNo, Keyword, &StrippedIndex); break;
+            case 12 : AllOk = HandleClass12 (BasicLineNo, StatementNo, Keyword, &StrippedIndex); break;
             case 13 : AllOk = HandleClass13 (BasicLineNo, StatementNo, Keyword, &StrippedIndex); break;
             case 14 : AllOk = HandleClass14 (BasicLineNo, StatementNo, Keyword, &StrippedIndex); break;
             case 15 : AllOk = HandleClass15 (BasicLineNo, StatementNo, Keyword, &StrippedIndex); break;

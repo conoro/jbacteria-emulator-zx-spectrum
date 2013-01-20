@@ -134,7 +134,7 @@ int main(int argc, char* argv[]){
       for ( checksum= 0, i= 5; i<23; ++i )
         checksum^= mem[i];
       mem[23]= checksum;
-      for ( checksum= 0, i= 26; i<26+length; ++i )
+      for ( checksum= 0, i= 26; i<26+length-1; ++i )
         checksum^= mem[i];
       mem[length+25]= checksum;
       fwrite(mem+3, 1, 21, fo);
