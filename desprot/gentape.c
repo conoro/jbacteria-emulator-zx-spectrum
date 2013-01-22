@@ -1,20 +1,26 @@
 #include <stdio.h>
 unsigned char *mem, *precalc;
 int pos[0x103], len[0x103];
-unsigned char checksum, inibit= 0, tzx= 0, wav= 0;
+unsigned char checksum, inibit= 0, tzx= 0, wav= 0, channel_type= 1,
+              pilot1, pilot2, sync1, sync2, one1, one2, zero1, zero2;
 FILE *fi, *fo;
 int i, j, k, ind= 0, lpause, nextsilence= 0;
-unsigned short length, param;
+unsigned short length, param, frecuency= 44100;
 
 void outbits( val ){
-  for ( i= 0; i<val; i++ )
+  for ( i= 0; i<val; i++ ){
     precalc[ind++]= inibit ? 0x40 : 0xc0;
+    if( channel_type==2 )
+      precalc[ind++]= inibit ? 0x40 : 0xc0;
+    else if( channel_type==6 )
+      precalc[ind++]= inibit ? 0xc0 : 0x40;
+  }
   inibit^= 1;
 }
 
-char char2hex(char value){
+char char2hex(char value, char * name){
   if( value<'0' || value>'f' || value<'A' && value>'9' || value<'a' && value>'F' )
-    printf("\nInvalid character %c\n", value),
+    printf("\nInvalid character %c or '%s' not exists\n", value, name),
     exit(-1);
   return value>'9' ? 9+(value&7) : value-'0';
 }
@@ -28,7 +34,7 @@ int parseHex(char * name, int index){
     flen>>= 1;
     flen>10 && index==7 && (flen= 10);
     for ( i= 0; i < flen; i++ )
-      mem[i+index]= char2hex(name[i<<1|1]) | char2hex(name[i<<1]) << 4;
+      mem[i+index]= char2hex(name[i<<1|1], name) | char2hex(name[i<<1], name) << 4;
     ++i;
   }
   while( ++i<12 )
@@ -37,8 +43,7 @@ int parseHex(char * name, int index){
 }
 
 void wavsilence( int msecs ){
- printf("silencio %d \n", msecs);
-  fwrite( precalc+pos[0x102], 1, 48*msecs, fo);
+  fwrite( precalc+pos[0x102], 1, frecuency*(channel_type&3)*msecs/1000, fo);
 }
 
 void tapewrite( unsigned char *buff, int length ){
@@ -46,7 +51,6 @@ void tapewrite( unsigned char *buff, int length ){
     buff+= 2;
     length-= 2;
     i= 0x100 | *buff>>7&1;
-// printf("%d \n", i);
     fwrite( precalc+pos[i], 1, len[i], fo);
     while ( length-- )
       fwrite( precalc+pos[*buff], 1, len[*buff], fo ),
@@ -59,8 +63,8 @@ void tapewrite( unsigned char *buff, int length ){
 int main(int argc, char* argv[]){
   mem= (unsigned char *) malloc (0x20000);
   if( argc==1 )
-    printf("\ngentape v0.03, a Tape File Generator by Antonio Villena, 8 Jan 2012\n\n"),
-    printf("  gentape <output_file> [<frequency>] [<channel_type>]\n"),
+    printf("\ngentape v0.10, a Tape File Generator by Antonio Villena, 22 Jan 2012\n\n"),
+    printf("  gentape [<frequency>] [<channel_type>] <output_file>\n"),
     printf("          [ basic <name> <startline> <input_file>\n"),
     printf("          | hdata <name> <address>   <input_file>\n"),
     printf("          |  data                    <input_file> ]\n\n"),
@@ -73,10 +77,37 @@ int main(int argc, char* argv[]){
     printf("      <frecuency>    Sample frequency, 44100 or 48000. Default is 44100\n"),
     printf("      <channel_type> Possible values are: mono (default), stereo or stereoinv\n\n"),
     exit(0);
+  while(1)
+    if( !stricmp(argv[1], "mono") )
+      channel_type= 1, ++argv, --argc;
+    else if( !stricmp(argv[1], "stereo") )
+      channel_type= 2, ++argv, --argc;
+    else if( !stricmp(argv[1], "stereoinv") )
+      channel_type= 6, ++argv, --argc;
+    else if( !stricmp(argv[1], "44100") )
+      frecuency= 44100, ++argv, --argc;
+    else if( !stricmp(argv[1], "48000") )
+      frecuency= 48000, ++argv, --argc;
+    else
+      break;
+  if( !strchr(argv[1], '.') )
+    printf("\nInvalid argument name: %s\n", argv[1]),
+    exit(-1);
   fo= fopen(argv[1], "wb+");
   if( !fo )
     printf("\nCannot create output file: %s\n", argv[1]),
     exit(-1);
+  pilot1= 4336*frecuency/35e5+0.5;
+  pilot2= pilot1>>1;
+  pilot1-= pilot2;
+  sync1= 667*frecuency/35e5+0.5;
+  sync2= 735*frecuency/35e5+0.5;
+  one1= 3420*frecuency/35e5+0.5;
+  one2= one1>>1;
+  one1-= one2;
+  zero1= 1710*frecuency/35e5+0.5;
+  zero2= zero1>>1;
+  zero1-= zero2;
   if( !stricmp((char *)strchr(argv[1], '.'), ".tzx" ) )
     fprintf( fo, "ZXTape!" ),
     *(int*)mem= 0xa011a,
@@ -89,15 +120,15 @@ int main(int argc, char* argv[]){
     for( j= wav++; j<0x100; j++ ){
       pos[j]= ind;
       for( k= 0; k<8; k++ )
-        outbits( j<<k & 0x80 ? 24 : 12 ),
-        outbits( j<<k & 0x80 ? 23 : 11 );
+        outbits( j<<k & 0x80 ? one1 : zero1 ),
+        outbits( j<<k & 0x80 ? one2 : zero2 );
       len[j]= ind-pos[j];
     }
     j= 2420; //(8063-3223)/2
     pos[0x100]= ind;
     while( j-- )
-      outbits( 30 ),
-      outbits( 29 );
+      outbits( pilot1 ),
+      outbits( pilot2 );
     j= 1611; //3223/2
     pos[0x101]= ind;
     while( j-- )
@@ -108,20 +139,18 @@ int main(int argc, char* argv[]){
     pos[0x102]= ind;
     len[0x100]= ind-pos[0x100];
     len[0x101]= ind-pos[0x101];
- // codificar los silencios
     *(int*)mem= 0x46464952;
     *(int*)(mem+8)= 0x45564157;
     *(int*)(mem+12)= 0x20746d66;
     *(char*)(mem+16)= 0x10;
     *(char*)(mem+20)= 0x01;
-    *(char*)(mem+22)= *(char*)(mem+32)= 0x01;   // channels
-    *(short*)(mem+24)= 48000;                   // srate
-    *(int*)(mem+28)= 48000;                     // srate*channels
+    *(char*)(mem+22)= *(char*)(mem+32)= channel_type&3;
+    *(short*)(mem+24)= frecuency;
+    *(int*)(mem+28)= frecuency*(channel_type&3);
     *(char*)(mem+34)= 8;
     *(int*)(mem+36)= 0x61746164;
     fwrite(mem, 1, 44, fo);
   }
-
   while ( argc-- > 2 ){
     lpause= ftell(fo);
     *(short*)(mem+1)= 1000;
@@ -225,8 +254,7 @@ int main(int argc, char* argv[]){
     fwrite(&i, 4, 1, fo),
     i-= 36,
     fseek(fo, 40, SEEK_SET),
-    fwrite(&i, 4, 1, fo),
-    printf(" %d ", i);
+    fwrite(&i, 4, 1, fo);
   fclose(fo);
   printf("\nFile generated successfully\n");
 }
