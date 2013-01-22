@@ -1,0 +1,3 @@
+  Estas versiones son entre un 20% y un 25% más rápidas que las oficiales,
+aunque también ocupan más: 180/169 frente a 169/154 bytes. Además, en
+este caso la versión simple no tiene ninguna limitación en exo_mapbasebits.
