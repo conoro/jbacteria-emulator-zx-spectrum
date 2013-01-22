@@ -1,9 +1,9 @@
 #include <stdio.h>
 unsigned char *mem, *precalc;
-short pos[0x100], len[0x100];
-unsigned char checksum, inibit= 0, tzx= 0;
+int pos[0x103], len[0x103];
+unsigned char checksum, inibit= 0, tzx= 0, wav= 0;
 FILE *fi, *fo;
-int i, j, ind, lpause;
+int i, j, k, ind= 0, lpause, nextsilence= 0;
 unsigned short length, param;
 
 void outbits( val ){
@@ -36,9 +36,28 @@ int parseHex(char * name, int index){
   return flen;
 }
 
+void wavsilence( int msecs ){
+ printf("silencio %d \n", msecs);
+  fwrite( precalc+pos[0x102], 1, 48*msecs, fo);
+}
+
+void tapewrite( unsigned char *buff, int length ){
+  if( wav ){
+    buff+= 2;
+    length-= 2;
+    i= 0x100 | *buff>>7&1;
+// printf("%d \n", i);
+    fwrite( precalc+pos[i], 1, len[i], fo);
+    while ( length-- )
+      fwrite( precalc+pos[*buff], 1, len[*buff], fo ),
+      buff++;
+  }
+  else
+    fwrite(buff, 1, length, fo);
+}
+
 int main(int argc, char* argv[]){
   mem= (unsigned char *) malloc (0x20000);
-  precalc= (unsigned char *) malloc (0x20000);
   if( argc==1 )
     printf("\ngentape v0.03, a Tape File Generator by Antonio Villena, 8 Jan 2012\n\n"),
     printf("  gentape <output_file> [<frequency>] [<channel_type>]\n"),
@@ -64,27 +83,50 @@ int main(int argc, char* argv[]){
     fwrite(mem, ++tzx, 3, fo),
     mem[0]= 0x10;
   else if( !stricmp((char *)strchr(argv[1], '.'), ".wav" ) ){
-    ind= 0;
-    for( i= 0; i<0x100; i++ ){
-      pos[i]= ind;
-//      if( mlow )
-        for( j= 0; j<8; j++ ){
-          outbits( i<<j & 0x80 ? 24 : 12 );
-          outbits( i<<j & 0x80 ? 23 : 11 );
-        }
-/*      else
-        for( $j= 0; $j<8; $j++ ){
-           outbits( $i<<$j & 0x80 ? 11 << $mhigh: 6 << $mhigh );
-           outbits( $i<<$j & 0x80 ? 11 << $mhigh: 5 << $mhigh );
-        }*/
-      len[i]= ind-pos[i];
+    precalc= (unsigned char *) malloc (0x200000);
+    memset(mem, 0, 44);
+    memset(precalc, 128, 0x200000);
+    for( j= wav++; j<0x100; j++ ){
+      pos[j]= ind;
+      for( k= 0; k<8; k++ )
+        outbits( j<<k & 0x80 ? 24 : 12 ),
+        outbits( j<<k & 0x80 ? 23 : 11 );
+      len[j]= ind-pos[j];
     }
+    j= 2420; //(8063-3223)/2
+    pos[0x100]= ind;
+    while( j-- )
+      outbits( 30 ),
+      outbits( 29 );
+    j= 1611; //3223/2
+    pos[0x101]= ind;
+    while( j-- )
+      outbits( 30 ),
+      outbits( 29 );
+    outbits( 9 );
+    outbits( 10 );
+    pos[0x102]= ind;
+    len[0x100]= ind-pos[0x100];
+    len[0x101]= ind-pos[0x101];
+ // codificar los silencios
+    *(int*)mem= 0x46464952;
+    *(int*)(mem+8)= 0x45564157;
+    *(int*)(mem+12)= 0x20746d66;
+    *(char*)(mem+16)= 0x10;
+    *(char*)(mem+20)= 0x01;
+    *(char*)(mem+22)= *(char*)(mem+32)= 0x01;   // channels
+    *(short*)(mem+24)= 48000;                   // srate
+    *(int*)(mem+28)= 48000;                     // srate*channels
+    *(char*)(mem+34)= 8;
+    *(int*)(mem+36)= 0x61746164;
+    fwrite(mem, 1, 44, fo);
   }
 
   while ( argc-- > 2 ){
     lpause= ftell(fo);
     *(short*)(mem+1)= 1000;
     tzx && fwrite(mem, 1, 3, fo);
+    wav && nextsilence && wavsilence( nextsilence );
     if( !stricmp(argv++[2], "basic")){
       param= strtol(argv[3], NULL, 10);
       fi= fopen(argv[4], "rb");
@@ -105,11 +147,13 @@ int main(int argc, char* argv[]){
       for ( checksum= 0, i= 26; i<26+length; ++i )
         checksum^= mem[i];
       mem[length+25]= checksum;
-      fwrite(mem+3, 1, 21, fo);
+      tapewrite(mem+3, 21);
+      wav && wavsilence( 1000 );
       lpause= ftell(fo);
       *(short*)(mem+1)= 2000;
       tzx && fwrite(mem, 1, 3, fo);
-      fwrite(mem+24, 1, length+2, fo);
+      tapewrite(mem+24, length+2);
+      nextsilence= 2000;
       fclose(fi);
       argc-= 3;
       argv+= 3;
@@ -137,11 +181,13 @@ int main(int argc, char* argv[]){
       for ( checksum= 0, i= 26; i<26+length-1; ++i )
         checksum^= mem[i];
       mem[length+25]= checksum;
-      fwrite(mem+3, 1, 21, fo);
+      tapewrite(mem+3, 21);
+      wav && wavsilence( 1000 );
       lpause= ftell(fo);
       *(short*)(mem+1)= 2000;
       tzx && fwrite(mem, 1, 3, fo);
-      fwrite(mem+24, 1, length+2, fo);
+      tapewrite(mem+24, length+2);
+      nextsilence= 2000;
       fclose(fi);
       argc-= 3;
       argv+= 3;
@@ -158,7 +204,8 @@ int main(int argc, char* argv[]){
       for ( checksum= 0, i= 5; i<5+length; ++i )
         checksum^= mem[i];
       mem[length+4]= checksum;
-      fwrite(mem+3, 1, length+2, fo);
+      tapewrite(mem+3, length+2);
+      nextsilence= 2000;
       fclose(fi);
       --argc;
       ++argv;
@@ -171,6 +218,15 @@ int main(int argc, char* argv[]){
     fseek(fo, ++lpause, SEEK_SET),
     *(short*)mem= 0,
     fwrite(mem, 2, 1, fo);
+  else if( wav )
+    wavsilence( 100 );
+    i= ftell(fo),
+    fseek(fo, 4, SEEK_SET),
+    fwrite(&i, 4, 1, fo),
+    i-= 36,
+    fseek(fo, 40, SEEK_SET),
+    fwrite(&i, 4, 1, fo),
+    printf(" %d ", i);
   fclose(fo);
   printf("\nFile generated successfully\n");
 }

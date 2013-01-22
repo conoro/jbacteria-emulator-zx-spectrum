@@ -320,8 +320,8 @@
           st+= 5,               \
           ff= ff    & -256      \
             | mp>>8 &   40      \
-            | -41   & (t&= n),  \
-          fa= ~(fr= t),         \
+            | -41   & (w&= n),  \
+          fa= ~(fr= w),         \
           fb= 0
 
 #define RES(n, r)               \
@@ -667,9 +667,7 @@ int main (int argc, char **argv){
   if( !size )
     printf("File not specified or zero length\n");
   stint= intr;
-  while(1){
-    if( (pc == end || st > counter) && !prefix )
-      break;
+  do{
     if( pc==start )
       st= 0,
       stint= intr,
@@ -2998,7 +2996,7 @@ int main (int argc, char **argv){
         }
         prefix=0;//break;
     }
-  }
+  } while ( pc != end && st < counter || prefix );
   if( tap && st>sttap )
     sttap= st+( tap= tapcycles() );
   printf("%llu\n", st);
