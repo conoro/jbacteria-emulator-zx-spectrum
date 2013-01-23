@@ -1,4 +1,9 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#ifdef __DMC__
+  #define strcasecmp stricmp
+#endif
 unsigned char *mem, *precalc;
 int pos[0x103], len[0x103];
 unsigned char checksum, inibit= 0, tzx= 0, wav= 0, channel_type= 1,
@@ -42,7 +47,7 @@ int parseHex(char * name, int index){
   return flen;
 }
 
-void wavsilence( int msecs ){
+int wavsilence( int msecs ){
   fwrite( precalc+pos[0x102], 1, frecuency*(channel_type&3)*msecs/1000, fo);
 }
 
@@ -63,7 +68,7 @@ void tapewrite( unsigned char *buff, int length ){
 int main(int argc, char* argv[]){
   mem= (unsigned char *) malloc (0x20000);
   if( argc==1 )
-    printf("\ngentape v0.10, a Tape File Generator by Antonio Villena, 22 Jan 2012\n\n"),
+    printf("\ngentape v0.10b, a Tape File Generator by Antonio Villena, 23 Jan 2012\n\n"),
     printf("  gentape [<frequency>] [<channel_type>] <output_file>\n"),
     printf("          [ basic <name> <startline> <input_file>\n"),
     printf("          | hdata <name> <address>   <input_file>\n"),
@@ -78,15 +83,15 @@ int main(int argc, char* argv[]){
     printf("      <channel_type> Possible values are: mono (default), stereo or stereoinv\n\n"),
     exit(0);
   while(1)
-    if( !stricmp(argv[1], "mono") )
+    if( !strcasecmp(argv[1], "mono") )
       channel_type= 1, ++argv, --argc;
-    else if( !stricmp(argv[1], "stereo") )
+    else if( !strcasecmp(argv[1], "stereo") )
       channel_type= 2, ++argv, --argc;
-    else if( !stricmp(argv[1], "stereoinv") )
+    else if( !strcasecmp(argv[1], "stereoinv") )
       channel_type= 6, ++argv, --argc;
-    else if( !stricmp(argv[1], "44100") )
+    else if( !strcasecmp(argv[1], "44100") )
       frecuency= 44100, ++argv, --argc;
-    else if( !stricmp(argv[1], "48000") )
+    else if( !strcasecmp(argv[1], "48000") )
       frecuency= 48000, ++argv, --argc;
     else
       break;
@@ -108,12 +113,12 @@ int main(int argc, char* argv[]){
   zero1= 1710*frecuency/35e5+0.5;
   zero2= zero1>>1;
   zero1-= zero2;
-  if( !stricmp((char *)strchr(argv[1], '.'), ".tzx" ) )
+  if( !strcasecmp((char *)strchr(argv[1], '.'), ".tzx" ) )
     fprintf( fo, "ZXTape!" ),
     *(int*)mem= 0xa011a,
     fwrite(mem, ++tzx, 3, fo),
     mem[0]= 0x10;
-  else if( !stricmp((char *)strchr(argv[1], '.'), ".wav" ) ){
+  else if( !strcasecmp((char *)strchr(argv[1], '.'), ".wav" ) ){
     precalc= (unsigned char *) malloc (0x200000);
     memset(mem, 0, 44);
     memset(precalc, 128, 0x200000);
@@ -156,7 +161,7 @@ int main(int argc, char* argv[]){
     *(short*)(mem+1)= 1000;
     tzx && fwrite(mem, 1, 3, fo);
     wav && nextsilence && wavsilence( nextsilence );
-    if( !stricmp(argv++[2], "basic")){
+    if( !strcasecmp(argv++[2], "basic")){
       param= strtol(argv[3], NULL, 10);
       fi= fopen(argv[4], "rb");
       if( fi )
@@ -187,7 +192,7 @@ int main(int argc, char* argv[]){
       argc-= 3;
       argv+= 3;
     }
-    else if( !stricmp(argv[1], "hdata")){
+    else if( !strcasecmp(argv[1], "hdata")){
       param= strtol(argv[3], NULL, 16);
       fi= fopen(argv[4], "rb");
       if( fi )
@@ -221,7 +226,7 @@ int main(int argc, char* argv[]){
       argc-= 3;
       argv+= 3;
     }
-    else if( !stricmp(argv[1], "data")){
+    else if( !strcasecmp(argv[1], "data")){
       fi= fopen(argv[2], "rb");
       if( fi )
         length= 2+fread(mem+6, 1, 0x20000-6, fi);
@@ -248,7 +253,7 @@ int main(int argc, char* argv[]){
     *(short*)mem= 0,
     fwrite(mem, 2, 1, fo);
   else if( wav )
-    wavsilence( 100 );
+    wavsilence( 100 ),
     i= ftell(fo),
     fseek(fo, 4, SEEK_SET),
     fwrite(&i, 4, 1, fo),
