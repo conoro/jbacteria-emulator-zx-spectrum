@@ -2,33 +2,14 @@
 
 FILE *fi, *fo, *fa;
 unsigned char *input, *output, *mem;
+char *output_name;
 unsigned short base[52];
 unsigned char bits[52];
 unsigned char sizes[]= {148, 150, 166, 203};
-char  tmpstr1[100]
-    , tmpstr2[100]
-    , tmpstr3[100]
-    ;
-unsigned short
-    index
-  , indoff
-  , length
-  , offset
-  , inbyte= 1
-  , inpos= 0
-  , outbyte= 1
-  , outpos= 0
-  , outnex= 1
-  , mempos= 0
-  , b1
-  , b2
-  , mapb= 0
-  , mapbase
-  , speed
-  , s34= 0
-  , back= 0
-  , litf= 0
-  ;
+char  tmpstr1[100], tmpstr2[100], tmpstr3[100];
+unsigned short  index, indoff, length, offset, inbyte, inpos, outbyte,
+                outpos, outnex, mempos, b1, b2, mapbase, speed,
+                mapb= 0, s34= 0, back= 0, litf= 0;
 
 char getbit(){
   if( inbyte==1 )
@@ -92,7 +73,7 @@ unsigned short encodebits(unsigned short value, char nbits, char offs){
 
 int main(int argc, char* argv[]){
   if( argc==1 )
-    printf("\nexoopt v1.02, Metalbrain/Antonio Villena, 23 Jan 2013\n\n"),
+    printf("\nexoopt v1.02, Metalbrain/Antonio Villena, 24 Jan 2013\n\n"),
     printf("  exoopt <file1> <file2> .. <fileN> <output_file> <table_address> [<type>]\n\n"),
     printf("  <file1..N>       Origin files\n"),
     printf("  <table_address>  Hexadecimal address for the temporal 156 bytes table\n"),
@@ -102,31 +83,62 @@ int main(int argc, char* argv[]){
     printf("Every input file will be compressed in a .opt output file\n"),
     printf("It will generate the decruncher into the file d.asm\n"),
     exit(0);
-  if( argc<4 || argc>5 )
+  if( strlen(argv[argc-1])==2 )
+    back= (~argv[--argc][0] & 4)>>2,
+    speed= argv[argc][1] - '0',
+    s34= speed>2;
+  if( argc<3 )
     printf("\nInvalid number of parameters\n"),
     exit(-1);
-  if( argc==5 )
-    back= (~argv[4][0] & 4)>>2,
-    speed= argv[4][1] - '0',
-    s34= speed>2;
-  mapbase= strtol(argv[3], NULL, 16);
+  mapbase= strtol(argv[--argc], NULL, 16);
   if( (mapbase&0xff)>0x87 && (mapbase&0xff)<0xf0 )
     mapb++;
-  fi= fopen(argv[1], "rb");
-  if( !fi )
-    printf("\nInput file not found: %s\n", argv[1]),
-    exit(-1);
-  fo= fopen(argv[2], "wb+");
-  if( !fo )
-    printf("\nCannot create output file: %s\n", argv[2]),
-    exit(-1);
+  input= (unsigned char *) malloc (0x10000);
+  for( int fil= 1; fil<argc; fil++ ){
+    fi= fopen(argv[fil], "rb");
+    if( !fi )
+      printf("\nInput file not found: %s\n", argv[fil]),
+      exit(-1);
+    fread(input, 1, 0x10000, fi);
+    fclose(fi);
+    inpos= 0;
+    inbyte= input[inpos++];
+    for( int i= 0; i<52; ++i )
+      i & 15 || (b2= 1),
+      base[i]= b2,
+      bits[i]= b1= getbits(4),
+      b2+= 1 << b1;
+    while( 1 )
+      if( getbit() )
+        ++inpos;
+      else{
+        for ( index= 0; !getbit(); index++ );
+        if ( index==17 )
+          goto exit;
+        else if( index==16 )
+          break;
+        else{
+          length= base[index] + getbits(bits[index]);
+          if( length==1 )
+            getbits(bits[48+getbits(2)]);
+          else if( length==2 )
+            getbits(bits[32+getbits(4)]);
+          else
+            getbits(bits[16+getbits(4)]);
+        }
+      }
+  }
+exit: 
+  index==17 && (litf= 1);
   fa= fopen("d.asm", "wb+");
   if( !fa )
     printf("\nCannot create d.asm file"),
     exit(-1);
-  fprintf(fa, "; %s [%s] %d bytes\n", argv[4]
-                                    , mapb ? "88..ef" : "f0..87"
-                                    , sizes[speed]-back*2+mapb);
+  fprintf(fa, "; %c%d [%s] %s= %d bytes\n", back ? 'b' : 'f'
+                                          , speed
+                                          , mapb ? "88..ef" : "f0..87"
+                                          , litf ? "liter" : "nolit"
+                                          , sizes[speed]-back*2+mapb*(2+litf)+10*litf);
   fprintf(fa, "        ld      iy, %d\n", mapb
                                             ? mapbase+0x100 & 0xff00
                                             : mapbase+0x10  & 0xff00 | 0x70);
@@ -201,7 +213,11 @@ int main(int argc, char* argv[]){
   fprintf(fa, "        dec     ixl\n");
   fprintf(fa, "        djnz    exinit\n");
   fprintf(fa, "        pop     de\n");
-  fprintf(fa, "exlit:  ld%c\n", back ? 'd' : 'i');
+  if( litf )
+    fprintf(fa, "exlit:  inc    c\n"),
+    fprintf(fa, "exseq:  ld%cr\n", back ? 'd' : 'i');
+  else
+    fprintf(fa, "exlit:  ld%c\n", back ? 'd' : 'i');
   if( speed==0 )
     fprintf(fa, "exloop: call    exgetb\n"),
     fprintf(fa, "        jr      c, exlit\n"),
@@ -223,11 +239,19 @@ int main(int argc, char* argv[]){
     fprintf(fa, "        jr      z, exgbi\n");
   fprintf(fa, "exgbic: inc     c\n");
   fprintf(fa, "        jr      c, exgeti\n");
-  if( mapb )
-    fprintf(fa, "        bit     4, c\n"),
-    fprintf(fa, "        ret     nz\n");
-  else
-    fprintf(fa, "        ret     m\n");
+  if( mapb ){
+    fprintf(fa, "        bit     4, c\n");
+    if( litf )
+      fprintf(fa, "        jr      nz, excat\n");
+    else
+      fprintf(fa, "        ret     nz\n");
+  }
+  else{
+    if( litf )
+      fprintf(fa, "        jp      m, excat\n");
+    else
+      fprintf(fa, "        ret     m\n");
+  }
   fprintf(fa, "        push    de\n");
   fprintf(fa, "        ld      iyl, c\n");
   if( speed>1 )
@@ -298,6 +322,18 @@ int main(int argc, char* argv[]){
     fprintf(fa, "        ldir\n");
   fprintf(fa, "        pop     hl\n");
   fprintf(fa, "        jr      exloop\n");
+  if( litf ){
+    if( mapb )
+      fprintf(fa, "excat   rl      c\n"),
+      fprintf(fa, "        ret     pe\n");
+    else
+      fprintf(fa, "excat   ret     po\n");
+    fprintf(fa, "        ld      b, (hl)\n");
+    fprintf(fa, "        %sc     hl\n", back ? "de" : "in");
+    fprintf(fa, "        ld      c, (hl)\n");
+    fprintf(fa, "        %sc     hl\n", back ? "de" : "in");
+    fprintf(fa, "        jr      exseq\n");
+  }
   if( speed>1 )
     fprintf(fa, "exgbm:  ld      a, (hl)\n"),
     fprintf(fa, "        %sc     hl\n", back ? "de" : "in"),
@@ -378,114 +414,128 @@ int main(int argc, char* argv[]){
     fprintf(fa, "        rl      d\n"),
     fprintf(fa, "        djnz    exgbts\n"),
     fprintf(fa, "        ret\n");
-  input= (unsigned char *) malloc (0x10000);
   output= (unsigned char *) malloc (0x10000);
   mem= (unsigned char *) malloc (0x10000);
-  fread(input, 1, 0x10000, fi);
-  inbyte= input[inpos++];
-  for( int i= 0; i<52; ++i )
-    i & 15 || (b2= 1),
-    base[i]= b2,
-    bits[i]= b1= getbits(4),
-    putbits(b1, 4),
-    b2+= 1 << b1;
-  while( 1 )
-    if( getbit() )
-      mempos && putbit(1),
-      mem[mempos++]= output[outnex++]= input[inpos++];
-    else{
-      for ( index= 0; !getbit(); index++ );
-      if ( index==17 ){
-        litf= 1,
-        length= getbits(16);
-        if( !mempos )
-          --length,
-          mem[mempos++]= output[outnex++]= input[inpos++];
-        putbit(0);
-        putbits( -2, 17 );
- printf("litseq %X\n", length-1);
-//        putbit(1);
-        output[outnex++]= length>>8;
-        output[outnex++]= length&255;
-        while ( length-- )
-          mem[mempos++]= output[outnex++]= input[inpos++];
-      }
+  for( int fil= 1; fil<argc; fil++ ){
+    fi= fopen(argv[fil], "rb");
+    if( !fi )
+      printf("\nInput file not found: %s\n", argv[fil]),
+      exit(-1);
+    fread(input, 1, 0x10000, fi);
+    fclose(fi);
+    output_name= (char *)malloc(strlen(argv[fil])+5);
+    strcpy(output_name, argv[fil]);
+    strcat(output_name, ".opt");
+    fo= fopen(output_name, "wb+");
+    if( !fo )
+      printf("\nCannot create output file: %s\n", output_name),
+      exit(-1);
+    inpos= outpos= mempos= 0;
+    outbyte= outnex= 1;
+    inbyte= input[inpos++];
+    for( int i= 0; i<52; ++i )
+      i & 15 || (b2= 1),
+      base[i]= b2,
+      bits[i]= b1= getbits(4),
+      putbits(b1, 4),
+      b2+= 1 << b1;
+    while( 1 )
+      if( getbit() )
+        mempos && putbit(1),
+        mem[mempos++]= output[outnex++]= input[inpos++];
       else{
-        length= base[index] + getbits(bits[index]);
-        if( length==1 )
-          indoff= 48+getbits(2);
-        else if( length==2 )
-          indoff= 32+getbits(4);
-        else
-          indoff= 16+getbits(4);
-        offset= base[indoff] + getbits(bits[indoff]);
-        putbit(0);
-        if( index==16 ){
-          putbits( -2, 18 );
-          break;
+        for ( index= 0; !getbit(); index++ );
+        if ( index==17 ){
+          litf= 1,
+          length= getbits(16);
+          if( !mempos )
+            --length,
+            mem[mempos++]= output[outnex++]= input[inpos++];
+          putbit(0);
+          putbits( -2, 17 );
+          output[outnex++]= length>>8;
+          output[outnex++]= length&255;
+          while ( length-- )
+            mem[mempos++]= output[outnex++]= input[inpos++];
         }
-        if( (length&255)==1 )
-          if( length == 1
-           || offset < base[51]+(1<<bits[51]) )
-            encode(length, 4, 0),
-            encode(offset, 2, 48);
+        else{
+          length= base[index] + getbits(bits[index]);
+          if( length==1 )
+            indoff= 48+getbits(2);
+          else if( length==2 )
+            indoff= 32+getbits(4);
           else
-            if( encodebits(length-3, 4, 0)
-              + encodebits(3, 4, 0)
-              - encodebits(length, 4, 0)
-              + encodebits(offset, 4, 16) + 1
-              < encodebits(length-1, 4, 0)
-              - encodebits(length, 4, 0) + 9 )
-              encode(length-3, 4, 0),
-              encode(offset, 4, 16),
-              putbit(0),
-              encode(3, 4, 0),
-              encode(offset, 4, 16);
+            indoff= 16+getbits(4);
+          offset= base[indoff] + getbits(bits[indoff]);
+          putbit(0);
+          if( index==16 ){
+            putbits( -2, 17 | litf );
+            break;
+          }
+          if( (length&255)==1 )
+            if( length == 1
+             || offset < base[51]+(1<<bits[51]) )
+              encode(length, 4, 0),
+              encode(offset, 2, 48);
             else
-              encode(length-1, 4, 0),
-              encode(offset, 4, 16),
-              putbit(1),
-              output[outnex++]= mem[mempos-offset+length-1];
-        else if( (length&255)==2 )
-          if( length == 2
-           || offset < base[47]+(1<<bits[47]) )
-            encode(length, 4, 0),
-            encode(offset, 4, 32);
+              if( encodebits(length-3, 4, 0)
+                + encodebits(3, 4, 0)
+                - encodebits(length, 4, 0)
+                + encodebits(offset, 4, 16) + 1
+                < encodebits(length-1, 4, 0)
+                - encodebits(length, 4, 0) + 9 )
+                encode(length-3, 4, 0),
+                encode(offset, 4, 16),
+                putbit(0),
+                encode(3, 4, 0),
+                encode(offset, 4, 16);
+              else
+                encode(length-1, 4, 0),
+                encode(offset, 4, 16),
+                putbit(1),
+                output[outnex++]= mem[mempos-offset+length-1];
+          else if( (length&255)==2 )
+            if( length == 2
+             || offset < base[47]+(1<<bits[47]) )
+              encode(length, 4, 0),
+              encode(offset, 4, 32);
+            else
+              if( encodebits(length-3, 4, 0)
+                + encodebits(3, 4, 0)
+                - encodebits(length, 4, 0)
+                + encodebits(offset, 4, 16) + 1
+                < encodebits(length-2, 4, 0)
+                - encodebits(length, 4, 0) + 18 )
+                encode(length-3, 4, 0),
+                encode(offset, 4, 16),
+                putbit(0),
+                encode(3, 4, 0),
+                encode(offset, 4, 16);
+              else
+                encode(length-2, 4, 0),
+                encode(offset, 4, 16),
+                putbit(1),
+                output[outnex++]= mem[mempos-offset+length-2],
+                putbit(1),
+                output[outnex++]= mem[mempos-offset+length-1];
           else
-            if( encodebits(length-3, 4, 0)
-              + encodebits(3, 4, 0)
-              - encodebits(length, 4, 0)
-              + encodebits(offset, 4, 16) + 1
-              < encodebits(length-2, 4, 0)
-              - encodebits(length, 4, 0) + 18 )
-              encode(length-3, 4, 0),
-              encode(offset, 4, 16),
-              putbit(0),
-              encode(3, 4, 0),
-              encode(offset, 4, 16);
-            else
-              encode(length-2, 4, 0),
-              encode(offset, 4, 16),
-              putbit(1),
-              output[outnex++]= mem[mempos-offset+length-2],
-              putbit(1),
-              output[outnex++]= mem[mempos-offset+length-1];
-        else
-          encode(length, 4, 0),
-          encode(offset, 4, 16);
-        while ( length-- )
-          mem[mempos++]= mem[mempos-offset];
+            encode(length, 4, 0),
+            encode(offset, 4, 16);
+          while ( length-- )
+            mem[mempos++]= mem[mempos-offset];
+        }
       }
-    }
-  while( outbyte<256 )
-    outbyte<<= 1;
-  output[outpos]= outbyte;
-  if( back )
-    for ( int b1= 0; b1<outnex>>1; b1++ )
-      b2= output[b1],
-      output[b1]= output[outnex-1-b1],
-      output[outnex-1-b1]= b2;
-  fwrite(output, 1, outnex, fo);
-  litf && printf("\nLiterals found, for a shorter decruncher avoid them with -c in exomizer\n");
-  printf("\n%d bytes processed from %s\n", outnex, argv[1]);
+    while( outbyte<256 )
+      outbyte<<= 1;
+    output[outpos]= outbyte;
+    if( back )
+      for ( int b1= 0; b1<outnex>>1; b1++ )
+        b2= output[b1],
+        output[b1]= output[outnex-1-b1],
+        output[outnex-1-b1]= b2;
+    fwrite(output, 1, outnex, fo);
+    printf("\n  %d bytes processed from %s", outnex, argv[fil]);
+  }
+  litf && printf("\n\nLiterals found, for a shorter decruncher avoid them with -c in exomizer");
+  printf("\n");
 }
