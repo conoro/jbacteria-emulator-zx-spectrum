@@ -324,10 +324,10 @@ exit:
   fprintf(fa, "        jr      exloop\n");
   if( litf ){
     if( mapb )
-      fprintf(fa, "excat   rl      c\n"),
+      fprintf(fa, "excat:  rl      c\n"),
       fprintf(fa, "        ret     pe\n");
     else
-      fprintf(fa, "excat   ret     po\n");
+      fprintf(fa, "excat:  ret     po\n");
     fprintf(fa, "        ld      b, (hl)\n");
     fprintf(fa, "        %sc     hl\n", back ? "de" : "in");
     fprintf(fa, "        ld      c, (hl)\n");
