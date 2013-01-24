@@ -1,16 +1,19 @@
 ; Original code by Metalbrain
 ; Optimizations by Antonio Villena and Urusergi
-; normal:   exomizer raw <input_file> -c -o <intermediate_file>
+; forward:  exomizer raw <input_file> [-c] -o <intermediate_file>
 ;           exoopt <intermediate_file> <output_file>
-; reverse:  exomizer raw <input_file> -b -r -c -o <intermediate_file>
+; backward: exomizer raw <input_file> -b -r [-c] -o <intermediate_file>
 ;           exoopt <intermediate_file> <output_file> -r
-; SIZE  speed 0   speed 1   speed 2   speed 3
-; forw      148       150       166       203
-; back      146       148       164       201
+; SIZE        speed 0   speed 1   speed 2   speed 3   range88-ef
+; forw nolit      148       150       166       203       +2
+; back nolit      146       148       164       201       +2
+; forw liter      158       160       176       213       +3
+; back liter      156       158       174       211       +3
 ;        output  deexoopt.bin
 ;        define  mapbase  $5b00
 ;        define  speed    3
 ;        define  back     0
+;        define  literals 0
       IF  mapbase-mapbase/256*256<240 AND mapbase-mapbase/256*256>135
         ld      iy, 256+mapbase/256*256
       ELSE
@@ -25,21 +28,21 @@ exinit  ld      c, 16
         ld      de, 1
         ld      ixl, c
       IF  speed=0
-exget4: call    exgetb
+exget4  call    exgetb
       ENDIF
       IF  speed=1
-exget4: add     a, a
+exget4  add     a, a
         call    z, exgetb
       ENDIF
       IF  speed=2 OR speed=3
         defb    218
-exgb4:  ld      a, (hl)
+exgb4   ld      a, (hl)
         IF  back=1
         dec     hl
         ELSE
         inc     hl
         ENDIF
-exget4: adc     a, a
+exget4  adc     a, a
         jr      z, exgb4
       ENDIF
         rl      c
@@ -71,7 +74,7 @@ exget4: adc     a, a
         cp      8
         jr      c, exget5
         xor     136
-exget5: inc     a
+exget5  inc     a
       IF  mapbase-mapbase/256*256<240 AND mapbase-mapbase/256*256>135
         ld      (iy-256+mapbase-mapbase/256*256), a
       ELSE
@@ -82,7 +85,7 @@ exget5: inc     a
         ex      af, af'
         defb    210
     ENDIF
-exsetb: add     hl, hl
+exsetb  add     hl, hl
         dec     c
         jr      nz, exsetb
       IF  mapbase-mapbase/256*256<240 AND mapbase-mapbase/256*256>135
@@ -100,23 +103,33 @@ exsetb: add     hl, hl
         djnz    exinit
         pop     de
   
-      IF  back=1
-exlit:  ldd
+    IF  back=1
+      IF  literals=1
+exlit   inc     c
+exseq   lddr
       ELSE
-exlit:  ldi
+exlit   ldd
       ENDIF
+    ELSE
+      IF  literals=1
+exlit   inc     c
+exseq   ldir
+      ELSE
+exlit   ldi
+      ENDIF
+    ENDIF
     IF  speed=0
-exloop: call    exgetb
+exloop  call    exgetb
         jr      c, exlit
       IF  mapbase-mapbase/256*256<240 AND mapbase-mapbase/256*256>135
         ld      c, 256-1
       ELSE
         ld      c, 112-1
       ENDIF
-exgeti: call    exgetb
+exgeti  call    exgetb
     ENDIF
     IF  speed=1
-exloop: add     a, a
+exloop  add     a, a
         call    z, exgetb
         jr      c, exlit
       IF  mapbase-mapbase/256*256<240 AND mapbase-mapbase/256*256>135
@@ -124,29 +137,37 @@ exloop: add     a, a
       ELSE
         ld      c, 112-1
       ENDIF
-exgeti: add     a, a
+exgeti  add     a, a
         call    z, exgetb
     ENDIF
     IF  speed=2 OR speed=3
-exloop: add     a, a
+exloop  add     a, a
         jr      z, exgbm
         jr      c, exlit
       IF  mapbase-mapbase/256*256<240 AND mapbase-mapbase/256*256>135
-exgbmc: ld      c, 256-1
+exgbmc  ld      c, 256-1
       ELSE
-exgbmc: ld      c, 112-1
+exgbmc  ld      c, 112-1
       ENDIF
-exgeti: add     a, a
+exgeti  add     a, a
         jr      z, exgbi
     ENDIF
-exgbic: inc     c
+exgbic  inc     c
         jr      c, exgeti
-      IF  mapbase-mapbase/256*256<240 AND mapbase-mapbase/256*256>135
+    IF  mapbase-mapbase/256*256<240 AND mapbase-mapbase/256*256>135
         bit     4, c
+      IF  literals=1
+        jr      nz, excat
+      ELSE
         ret     nz
+      ENDIF
+    ELSE
+      IF  literals=1
+        jp      m, excat
       ELSE
         ret     m
       ENDIF
+    ENDIF
         push    de
         ld      iyl, c
     IF  speed=2 OR speed=3
@@ -192,16 +213,16 @@ exgbic: inc     c
         ld      c, 128
       ENDIF
     IF  speed=0 OR speed=1
-exgoit: call    exgbts
+exgoit  call    exgbts
     ENDIF
     IF  speed=2
         ld      e, 0
-exgoit: ld      d, e
+exgoit  ld      d, e
         call    exgbts
     ENDIF
     IF  speed=3
         ld      e, 0
-exgoit: ld      d, e
+exgoit  ld      d, e
         call    exlee8
     ENDIF
         ld      iyl, c
@@ -244,8 +265,23 @@ exgoit: ld      d, e
       ENDIF
         pop     hl
         jr      exloop
+
+    IF  literals=1
+      IF  mapbase-mapbase/256*256<240 AND mapbase-mapbase/256*256>135
+excat   rl      c
+        ret     pe
+      ELSE
+excat   ret     po
+      ENDIF
+        ld      b, (hl)
+        dec     hl
+        ld      c, (hl)
+        dec     hl
+        jr      exseq
+    ENDIF
+
     IF  speed=2 OR speed=3
-exgbm:  ld      a, (hl)
+exgbm   ld      a, (hl)
         IF  back=1
         dec     hl
         ELSE
@@ -254,7 +290,7 @@ exgbm:  ld      a, (hl)
         adc     a, a
         jr      nc, exgbmc
         jp      exlit
-exgbi:  ld      a, (hl)
+exgbi   ld      a, (hl)
         IF  back=1
         dec     hl
         ELSE
@@ -264,7 +300,7 @@ exgbi:  ld      a, (hl)
         jp      exgbic
     ENDIF
     IF  speed=3
-exgbts: jp      p, exlee8
+exgbts  jp      p, exlee8
         ld      e, (hl)
         IF  back=1
         dec     hl
@@ -275,33 +311,33 @@ exgbts: jp      p, exlee8
         ret     z
         srl     b
         defb    250
-exxopy: ld      a, (hl)
+exxopy  ld      a, (hl)
         IF  back=1
         dec     hl
         ELSE
         inc     hl
         ENDIF
-exl16:  adc     a, a
+exl16   adc     a, a
         jr      z, exxopy
         rl      d
         djnz    exl16
         ret
-excopy: ld      a, (hl)
+excopy  ld      a, (hl)
         IF  back=1
         dec     hl
         ELSE
         inc     hl
         ENDIF
-exlee8: adc     a, a
+exlee8  adc     a, a
         jr      z, excopy
         rl      e
         djnz    exlee8
         ret
     ELSE
       IF  mapbase-mapbase/256*256<240 AND mapbase-mapbase/256*256>135
-expair: ld      b, (iy-256+mapbase-mapbase/256*256)
+expair  ld      b, (iy-256+mapbase-mapbase/256*256)
       ELSE
-expair: ld      b, (iy-112+mapbase-(mapbase+16)/256*256)
+expair  ld      b, (iy-112+mapbase-(mapbase+16)/256*256)
       ENDIF
       IF speed=2
         dec     b
@@ -322,8 +358,8 @@ expair: ld      b, (iy-112+mapbase-(mapbase+16)/256*256)
         ret
     ENDIF
     IF  speed=0 OR speed=1
-exgbts: ld      de, 0
-excont: dec     b
+exgbts  ld      de, 0
+excont  dec     b
         ret     m
       IF  speed=0
         call    exgetb
@@ -335,7 +371,7 @@ excont: dec     b
         rl      d
         jr      excont
       IF  speed=0
-exgetb: add     a, a
+exgetb  add     a, a
         ret     nz
         ld      a, (hl)
         IF  back=1
@@ -346,7 +382,7 @@ exgetb: add     a, a
         adc     a, a
         ret
       ELSE
-exgetb: ld      a, (hl)
+exgetb  ld      a, (hl)
         IF  back=1
         dec     hl
         ELSE
@@ -357,13 +393,13 @@ exgetb: ld      a, (hl)
       ENDIF
     ENDIF
     IF  speed=2
-exgbg:  ld      a, (hl)
+exgbg   ld      a, (hl)
         IF  back=1
         dec     hl
         ELSE
         inc     hl
         ENDIF
-exgbts: adc     a, a
+exgbts  adc     a, a
         jr      z, exgbg
         rl      e
         rl      d

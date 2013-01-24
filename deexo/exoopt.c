@@ -27,6 +27,7 @@ unsigned short
   , speed
   , s34= 0
   , back= 0
+  , litf= 0
   ;
 
 char getbit(){
@@ -56,9 +57,9 @@ putbit(char bit){
 }
 
 unsigned short putbits(int bits, char nbits){
-  bits<<= 17-nbits;
+  bits<<= 18-nbits;
   while ( nbits-- > 0)
-    putbit( bits&0x10000 ? 1 : 0 ),
+    putbit( bits&0x20000 ? 1 : 0 ),
     bits<<= 1;
 }
 
@@ -91,14 +92,14 @@ unsigned short encodebits(unsigned short value, char nbits, char offs){
 
 int main(int argc, char* argv[]){
   if( argc==1 )
-    printf("\nexoopt v1.01, Metalbrain/Antonio Villena, 4 Jan 2013\n\n"),
-    printf("  exoopt <input_file> <output_file> <table_address> [<type>]\n\n"),
-    printf("  <input_file>     Origin file\n"),
-    printf("  <output_file>    Genetated output file\n"),
+    printf("\nexoopt v1.02, Metalbrain/Antonio Villena, 23 Jan 2013\n\n"),
+    printf("  exoopt <file1> <file2> .. <fileN> <output_file> <table_address> [<type>]\n\n"),
+    printf("  <file1..N>       Origin files\n"),
     printf("  <table_address>  Hexadecimal address for the temporal 156 bytes table\n"),
     printf("  <type>           Target decruncher\n\n"),
     printf("All params except <type> are mandatory, <type> param is optional.\n"),
     printf("<type> values are: f0, f1, f2, f3, b0, b1, b2 and b3. Default is f0.\n"),
+    printf("Every input file will be compressed in a .opt output file\n"),
     printf("It will generate the decruncher into the file d.asm\n"),
     exit(0);
   if( argc<4 || argc>5 )
@@ -388,81 +389,93 @@ int main(int argc, char* argv[]){
     bits[i]= b1= getbits(4),
     putbits(b1, 4),
     b2+= 1 << b1;
-  getbit();
-  mem[mempos++]= output[outnex++]= input[inpos++];
   while( 1 )
     if( getbit() )
-      putbit(1),
+      mempos && putbit(1),
       mem[mempos++]= output[outnex++]= input[inpos++];
     else{
       for ( index= 0; !getbit(); index++ );
-      length= base[index] + getbits(bits[index]);
-      if( length==1 )
-        indoff= 48+getbits(2);
-      else if( length==2 )
-        indoff= 32+getbits(4);
-      else
-        indoff= 16+getbits(4);
-      offset= base[indoff] + getbits(bits[indoff]);
-      putbit(0);
-      if( index==16 ){
+      if ( index==17 ){
+        litf= 1,
+        length= getbits(16);
+        if( !mempos )
+          --length,
+          mem[mempos++]= output[outnex++]= input[inpos++];
+        putbit(0);
         putbits( -2, 17 );
-        break;
+ printf("litseq %X\n", length-1);
+//        putbit(1);
+        output[outnex++]= length>>8;
+        output[outnex++]= length&255;
+        while ( length-- )
+          mem[mempos++]= output[outnex++]= input[inpos++];
       }
-      else if ( index==17 )
-        printf("Error. Literals not allowed, compress with -c"),
-        exit(-1);
-      if( (length&255)==1 )
-        if( length == 1
-         || offset < base[51]+(1<<bits[51]) )
-          encode(length, 4, 0),
-          encode(offset, 2, 48);
+      else{
+        length= base[index] + getbits(bits[index]);
+        if( length==1 )
+          indoff= 48+getbits(2);
+        else if( length==2 )
+          indoff= 32+getbits(4);
         else
-          if( encodebits(length-3, 4, 0)
-            + encodebits(3, 4, 0)
-            - encodebits(length, 4, 0)
-            + encodebits(offset, 4, 16) + 1
-            < encodebits(length-1, 4, 0)
-            - encodebits(length, 4, 0) + 9 )
-            encode(length-3, 4, 0),
-            encode(offset, 4, 16),
-            putbit(0),
-            encode(3, 4, 0),
-            encode(offset, 4, 16);
+          indoff= 16+getbits(4);
+        offset= base[indoff] + getbits(bits[indoff]);
+        putbit(0);
+        if( index==16 ){
+          putbits( -2, 18 );
+          break;
+        }
+        if( (length&255)==1 )
+          if( length == 1
+           || offset < base[51]+(1<<bits[51]) )
+            encode(length, 4, 0),
+            encode(offset, 2, 48);
           else
-            encode(length-1, 4, 0),
-            encode(offset, 4, 16),
-            putbit(1),
-            output[outnex++]= mem[mempos-offset+length-1];
-      else if( (length&255)==2 )
-        if( length == 2
-         || offset < base[47]+(1<<bits[47]) )
-          encode(length, 4, 0),
-          encode(offset, 4, 32);
+            if( encodebits(length-3, 4, 0)
+              + encodebits(3, 4, 0)
+              - encodebits(length, 4, 0)
+              + encodebits(offset, 4, 16) + 1
+              < encodebits(length-1, 4, 0)
+              - encodebits(length, 4, 0) + 9 )
+              encode(length-3, 4, 0),
+              encode(offset, 4, 16),
+              putbit(0),
+              encode(3, 4, 0),
+              encode(offset, 4, 16);
+            else
+              encode(length-1, 4, 0),
+              encode(offset, 4, 16),
+              putbit(1),
+              output[outnex++]= mem[mempos-offset+length-1];
+        else if( (length&255)==2 )
+          if( length == 2
+           || offset < base[47]+(1<<bits[47]) )
+            encode(length, 4, 0),
+            encode(offset, 4, 32);
+          else
+            if( encodebits(length-3, 4, 0)
+              + encodebits(3, 4, 0)
+              - encodebits(length, 4, 0)
+              + encodebits(offset, 4, 16) + 1
+              < encodebits(length-2, 4, 0)
+              - encodebits(length, 4, 0) + 18 )
+              encode(length-3, 4, 0),
+              encode(offset, 4, 16),
+              putbit(0),
+              encode(3, 4, 0),
+              encode(offset, 4, 16);
+            else
+              encode(length-2, 4, 0),
+              encode(offset, 4, 16),
+              putbit(1),
+              output[outnex++]= mem[mempos-offset+length-2],
+              putbit(1),
+              output[outnex++]= mem[mempos-offset+length-1];
         else
-          if( encodebits(length-3, 4, 0)
-            + encodebits(3, 4, 0)
-            - encodebits(length, 4, 0)
-            + encodebits(offset, 4, 16) + 1
-            < encodebits(length-2, 4, 0)
-            - encodebits(length, 4, 0) + 18 )
-            encode(length-3, 4, 0),
-            encode(offset, 4, 16),
-            putbit(0),
-            encode(3, 4, 0),
-            encode(offset, 4, 16);
-          else
-            encode(length-2, 4, 0),
-            encode(offset, 4, 16),
-            putbit(1),
-            output[outnex++]= mem[mempos-offset+length-2],
-            putbit(1),
-            output[outnex++]= mem[mempos-offset+length-1];
-      else
-        encode(length, 4, 0),
-        encode(offset, 4, 16);
-      while ( length-- )
-        mem[mempos++]= mem[mempos-offset];
+          encode(length, 4, 0),
+          encode(offset, 4, 16);
+        while ( length-- )
+          mem[mempos++]= mem[mempos-offset];
+      }
     }
   while( outbyte<256 )
     outbyte<<= 1;
@@ -473,5 +486,6 @@ int main(int argc, char* argv[]){
       output[b1]= output[outnex-1-b1],
       output[outnex-1-b1]= b2;
   fwrite(output, 1, outnex, fo);
+  litf && printf("\nLiterals found, for a shorter decruncher avoid them with -c in exomizer\n");
   printf("\n%d bytes processed from %s\n", outnex, argv[1]);
 }

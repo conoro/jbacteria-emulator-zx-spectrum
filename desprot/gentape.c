@@ -68,8 +68,8 @@ void tapewrite( unsigned char *buff, int length ){
 int main(int argc, char* argv[]){
   mem= (unsigned char *) malloc (0x20000);
   if( argc==1 )
-    printf("\ngentape v0.10b, a Tape File Generator by Antonio Villena, 23 Jan 2012\n\n"),
-    printf("  gentape [<frequency>] [<channel_type>] <output_file>\n"),
+    printf("\nGenTape v0.10c, a Tape File Generator by Antonio Villena, 23 Jan 2012\n\n"),
+    printf("  GenTape [<frequency>] [<channel_type>] <output_file>\n"),
     printf("          [ basic <name> <startline> <input_file>\n"),
     printf("          | hdata <name> <address>   <input_file>\n"),
     printf("          |  data                    <input_file> ]\n\n"),
@@ -254,7 +254,7 @@ int main(int argc, char* argv[]){
     fwrite(mem, 2, 1, fo);
   else if( wav )
     wavsilence( 100 ),
-    i= ftell(fo),
+    i= ftell(fo)-8,
     fseek(fo, 4, SEEK_SET),
     fwrite(&i, 4, 1, fo),
     i-= 36,
