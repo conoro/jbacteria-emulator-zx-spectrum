@@ -7,9 +7,10 @@ unsigned short base[52];
 unsigned char bits[52];
 unsigned char sizes[]= {148, 150, 166, 203};
 char  tmpstr1[100], tmpstr2[100], tmpstr3[100];
-unsigned short  index, indoff, length, offset, inbyte, inpos, outbyte,
-                outpos, outnex, mempos, b1, b2, mapbase, speed,
+unsigned short  index, indoff, length, offset, inbyte, outbyte,
+                outnex, mempos, b1, b2, mapbase, speed, i, fil,
                 mapb= 0, s34= 0, back= 0, litf= 0;
+int inpos, outpos;
 
 char getbit(){
   if( inbyte==1 )
@@ -73,8 +74,8 @@ unsigned short encodebits(unsigned short value, char nbits, char offs){
 
 int main(int argc, char* argv[]){
   if( argc==1 )
-    printf("\nexoopt v1.02, Metalbrain/Antonio Villena, 24 Jan 2013\n\n"),
-    printf("  exoopt <file1> <file2> .. <fileN> <output_file> <table_address> [<type>]\n\n"),
+    printf("\nexoopt v1.03, Metalbrain/Antonio Villena, 27 Jan 2013\n\n"),
+    printf("  exoopt <file1> <file2> .. <fileN> <table_address> [<type>]\n\n"),
     printf("  <file1..N>       Origin files\n"),
     printf("  <table_address>  Hexadecimal address for the temporal 156 bytes table\n"),
     printf("  <type>           Target decruncher\n\n"),
@@ -94,31 +95,32 @@ int main(int argc, char* argv[]){
   if( (mapbase&0xff)>0x87 && (mapbase&0xff)<0xf0 )
     mapb++;
   input= (unsigned char *) malloc (0x10000);
-  for( int fil= 1; fil<argc; fil++ ){
+  for( fil= 1; fil<argc; fil++ ){
     fi= fopen(argv[fil], "rb");
     if( !fi )
       printf("\nInput file not found: %s\n", argv[fil]),
       exit(-1);
     fread(input, 1, 0x10000, fi);
     fclose(fi);
-    inpos= 0;
+    inpos= outpos= 0;
     inbyte= input[inpos++];
-    for( int i= 0; i<52; ++i )
+    for( i= 0; i<52; ++i )
       i & 15 || (b2= 1),
       base[i]= b2,
       bits[i]= b1= getbits(4),
       b2+= 1 << b1;
     while( 1 )
       if( getbit() )
+        ++outpos,
         ++inpos;
       else{
         for ( index= 0; !getbit(); index++ );
-        if ( index==17 )
+        if ( index==17 || outpos>0x10000 )
           goto exit;
         else if( index==16 )
           break;
         else{
-          length= base[index] + getbits(bits[index]);
+          outpos+= length= base[index] + getbits(bits[index]);
           if( length==1 )
             getbits(bits[48+getbits(2)]);
           else if( length==2 )
@@ -128,7 +130,10 @@ int main(int argc, char* argv[]){
         }
       }
   }
-exit: 
+exit:
+  if( outpos>0x10000 )
+    printf("\nInvalid input file: %s\n", argv[fil]),
+    exit(-1);
   index==17 && (litf= 1);
   fa= fopen("d.asm", "wb+");
   if( !fa )
@@ -416,7 +421,7 @@ exit:
     fprintf(fa, "        ret\n");
   output= (unsigned char *) malloc (0x10000);
   mem= (unsigned char *) malloc (0x10000);
-  for( int fil= 1; fil<argc; fil++ ){
+  for( fil= 1; fil<argc; fil++ ){
     fi= fopen(argv[fil], "rb");
     if( !fi )
       printf("\nInput file not found: %s\n", argv[fil]),
@@ -433,7 +438,7 @@ exit:
     inpos= outpos= mempos= 0;
     outbyte= outnex= 1;
     inbyte= input[inpos++];
-    for( int i= 0; i<52; ++i )
+    for( i= 0; i<52; ++i )
       i & 15 || (b2= 1),
       base[i]= b2,
       bits[i]= b1= getbits(4),
@@ -529,7 +534,7 @@ exit:
       outbyte<<= 1;
     output[outpos]= outbyte;
     if( back )
-      for ( int b1= 0; b1<outnex>>1; b1++ )
+      for ( b1= 0; b1<outnex>>1; b1++ )
         b2= output[b1],
         output[b1]= output[outnex-1-b1],
         output[outnex-1-b1]= b2;
