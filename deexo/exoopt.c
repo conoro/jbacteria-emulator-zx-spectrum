@@ -74,7 +74,7 @@ unsigned short encodebits(unsigned short value, char nbits, char offs){
 
 int main(int argc, char* argv[]){
   if( argc==1 )
-    printf("\nexoopt v1.04, Metalbrain/Antonio Villena, 28 Jan 2013\n\n"),
+    printf("\nexoopt v1.05, Metalbrain/Antonio Villena, 28 Jan 2013\n\n"),
     printf("  exoopt <type> <table_address> <file1> <file2> .. <fileN>\n\n"),
     printf("  <type>           Target decruncher\n"),
     printf("  <table_address>  Hexadecimal address for the temporal 156 bytes table\n"),
@@ -455,7 +455,6 @@ exit:
       else{
         for ( index= 0; !getbit(); index++ );
         if ( index==17 ){
-          litf= 1,
           length= getbits(16);
           if( !mempos )
             --length,
@@ -478,7 +477,7 @@ exit:
           offset= base[indoff] + getbits(bits[indoff]);
           putbit(0);
           if( index==16 ){
-            putbits( -2, 17 | litf );
+            putbits( -2, 17 + litf );
             break;
           }
           if( (length&255)==1 )
