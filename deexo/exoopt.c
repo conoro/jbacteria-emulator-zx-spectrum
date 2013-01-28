@@ -8,7 +8,7 @@ unsigned char bits[52];
 unsigned char sizes[]= {148, 150, 166, 203};
 char  tmpstr1[100], tmpstr2[100], tmpstr3[100];
 unsigned short  index, indoff, length, offset, inbyte, outbyte, inpos,
-                outnex, mempos, b1, b2, mapbase, speed, i, fil, s34, back,
+                outnex, mempos, b1, b2, mapbase, speed, fil, back,
                 mapb= 0, litf= 0;
 int outpos;
 
@@ -29,8 +29,8 @@ unsigned short getbits(char nbits){
 }
 
 putbit(char bit){
-  if( outbyte>255 )
-    output[outpos]= outbyte&255,
+  if( outbyte>0xff )
+    output[outpos]= outbyte&0xff,
     outpos= outnex++,
     outbyte= 2 | bit;
   else
@@ -54,7 +54,7 @@ encode(unsigned short value, char nbits, char offs){
     putbits( offs2-offs, nbits );
   else
     putbits( -2, offs2-offs+1 );
-  if( bits[offs2]>7 && s34 )
+  if( bits[offs2]>7 && speed>2 )
     output[outnex++]= value-base[offs2],
     putbits( value-base[offs2]>>8, bits[offs2]-8 );
   else
@@ -91,7 +91,6 @@ int main(int argc, char* argv[]){
     exit(0);
   back= (~argv[1][0] & 4)>>2;
   speed= argv[1][1] - '0';
-  s34= speed>2;
   if( argc<4 )
     printf("\nInvalid number of parameters\n"),
     exit(-1);
@@ -108,10 +107,10 @@ int main(int argc, char* argv[]){
     fclose(fi);
     inpos= outpos= 0;
     inbyte= input[inpos++];
-    for( i= 0; i<52; ++i )
-      i & 15 || (b2= 1),
-      base[i]= b2,
-      bits[i]= b1= getbits(4),
+    for( index= 0; index<52; ++index )
+      index & 15 || (b2= 1),
+      base[index]= b2,
+      bits[index]= b1= getbits(4),
       b2+= 1 << b1;
     while( 1 )
       if( getbit() )
@@ -126,11 +125,11 @@ int main(int argc, char* argv[]){
         else{
           outpos+= length= base[index] + getbits(bits[index]);
           if( length==1 )
-            getbits(bits[48+getbits(2)]);
+            getbits(bits[0x30+getbits(2)]);
           else if( length==2 )
-            getbits(bits[32+getbits(4)]);
+            getbits(bits[0x20+getbits(4)]);
           else
-            getbits(bits[16+getbits(4)]);
+            getbits(bits[0x10+getbits(4)]);
         }
       }
   }
@@ -173,10 +172,10 @@ exit:
   fprintf(fa, "        rl      c\n");
   fprintf(fa, "        jr      nc, exget4\n");
   if( mapb )
-    sprintf(tmpstr1, "-%d", 256-(mapbase&0xff));
+    sprintf(tmpstr1, "-%d", 0x100-(mapbase&0xff));
   else
-    sprintf(tmpstr1, "%c%d", mapbase-(mapbase+16)/256*256>111 ? '+' : '-'
-                           , abs(mapbase-(mapbase+16)/256*256-112));
+    sprintf(tmpstr1, "%c%d", mapbase-(mapbase+0x10 & 0xff00)>0x6f ? '+' : '-'
+                           , abs(mapbase-(mapbase+0x10 & 0xff00)-0x70));
   if( speed<2 )
     fprintf(fa, "        ld      (iy%s), c\n", tmpstr1),
     fprintf(fa, "        push    hl\n"),
@@ -204,15 +203,15 @@ exit:
   fprintf(fa, "        dec     c\n");
   fprintf(fa, "        jr      nz, exsetb\n");
   if( mapb )
-    sprintf(tmpstr2, "%c%d", (mapbase&0xff)>203 ? '+' : '-'
-                           , abs((mapbase&0xff)-204)),
-    sprintf(tmpstr3, "%c%d", (mapbase&0xff)>151 ? '+' : '-'
-                           , abs((mapbase&0xff)-152));
+    sprintf(tmpstr2, "%c%d", (mapbase&0xff)>0xcb ? '+' : '-'
+                           , abs((mapbase&0xff)-0xcc)),
+    sprintf(tmpstr3, "%c%d", (mapbase&0xff)>0x97 ? '+' : '-'
+                           , abs((mapbase&0xff)-0x98));
   else
-    sprintf(tmpstr2, "%c%d", mapbase-(mapbase+16)/256*256>59 ? '+' : '-'
-                           , abs(mapbase-(mapbase+16)/256*256-60)),
-    sprintf(tmpstr3, "%c%d", mapbase-(mapbase+16)/256*256>7 ? '+' : '-'
-                           , abs(mapbase-(mapbase+16)/256*256-8));
+    sprintf(tmpstr2, "%c%d", mapbase-(mapbase+0x10 & 0xff00)>0x3b ? '+' : '-'
+                           , abs(mapbase-(mapbase+0x10 & 0xff00)-0x3c)),
+    sprintf(tmpstr3, "%c%d", mapbase-(mapbase+0x10 & 0xff00)>0x07 ? '+' : '-'
+                           , abs(mapbase-(mapbase+0x10 & 0xff00)-0x08));
   fprintf(fa, "        ld      (iy%s), e\n", tmpstr2);
   fprintf(fa, "        ld      (iy%s), d\n", tmpstr3);
   fprintf(fa, "        add     hl, de\n");
@@ -230,20 +229,20 @@ exit:
   if( speed==0 )
     fprintf(fa, "exloop: call    exgetb\n"),
     fprintf(fa, "        jr      c, exlit\n"),
-    fprintf(fa, "        ld      c, %d\n", mapb ? 255 : 111),
+    fprintf(fa, "        ld      c, %d\n", mapb ? 0xff : 0x6f),
     fprintf(fa, "exgeti: call    exgetb\n");
   else if ( speed==1 )
     fprintf(fa, "exloop: add     a, a\n"),
     fprintf(fa, "        call    z, exgetb\n"),
     fprintf(fa, "        jr      c, exlit\n"),
-    fprintf(fa, "        ld      c, %d\n", mapb ? 255 : 111),
+    fprintf(fa, "        ld      c, %d\n", mapb ? 0xff : 0x6f),
     fprintf(fa, "exgeti: add     a, a\n"),
     fprintf(fa, "        call    z, exgetb\n");
   else
     fprintf(fa, "exloop: add     a, a\n"),
     fprintf(fa, "        jr      z, exgbm\n"),
     fprintf(fa, "        jr      c, exlit\n"),
-    fprintf(fa, "exgbmc: ld      c, %d\n", mapb ? 255 : 111),
+    fprintf(fa, "exgbmc: ld      c, %d\n", mapb ? 0xff : 0x6f),
     fprintf(fa, "exgeti: add     a, a\n"),
     fprintf(fa, "        jr      z, exgbi\n");
   fprintf(fa, "exgbic: inc     c\n");
@@ -442,10 +441,10 @@ exit:
     inpos= outpos= mempos= 0;
     outbyte= outnex= 1;
     inbyte= input[inpos++];
-    for( i= 0; i<52; ++i )
-      i & 15 || (b2= 1),
-      base[i]= b2,
-      bits[i]= b1= getbits(4),
+    for( index= 0; index<52; ++index )
+      index & 15 || (b2= 1),
+      base[index]= b2,
+      bits[index]= b1= getbits(4),
       putbits(b1, 4),
       b2+= 1 << b1;
     while( 1 )
@@ -462,18 +461,18 @@ exit:
           putbit(0);
           putbits( -2, 17 );
           output[outnex++]= length>>8;
-          output[outnex++]= length&255;
+          output[outnex++]= length&0xff;
           while ( length-- )
             mem[mempos++]= output[outnex++]= input[inpos++];
         }
         else{
           length= base[index] + getbits(bits[index]);
           if( length==1 )
-            indoff= 48+getbits(2);
+            indoff= 0x30+getbits(2);
           else if( length==2 )
-            indoff= 32+getbits(4);
+            indoff= 0x20+getbits(4);
           else
-            indoff= 16+getbits(4);
+            indoff= 0x10+getbits(4);
           offset= base[indoff] + getbits(bits[indoff]);
           putbit(0);
           if( index==16 ){
@@ -484,56 +483,56 @@ exit:
             if( length == 1
              || offset < base[51]+(1<<bits[51]) )
               encode(length, 4, 0),
-              encode(offset, 2, 48);
+              encode(offset, 2, 0x30);
             else
               if( encodebits(length-3, 4, 0)
                 + encodebits(3, 4, 0)
                 - encodebits(length, 4, 0)
-                + encodebits(offset, 4, 16) + 1
+                + encodebits(offset, 4, 0x10) + 1
                 < encodebits(length-1, 4, 0)
                 - encodebits(length, 4, 0) + 9 )
                 encode(length-3, 4, 0),
-                encode(offset, 4, 16),
+                encode(offset, 4, 0x10),
                 putbit(0),
                 encode(3, 4, 0),
-                encode(offset, 4, 16);
+                encode(offset, 4, 0x10);
               else
                 encode(length-1, 4, 0),
-                encode(offset, 4, 16),
+                encode(offset, 4, 0x10),
                 putbit(1),
                 output[outnex++]= mem[mempos-offset+length-1];
-          else if( (length&255)==2 )
+          else if( (length&0xff)==2 )
             if( length == 2
-             || offset < base[47]+(1<<bits[47]) )
+             || offset < base[0x2f]+(1<<bits[0x2f]) )
               encode(length, 4, 0),
-              encode(offset, 4, 32);
+              encode(offset, 4, 0x20);
             else
               if( encodebits(length-3, 4, 0)
                 + encodebits(3, 4, 0)
                 - encodebits(length, 4, 0)
-                + encodebits(offset, 4, 16) + 1
+                + encodebits(offset, 4, 0x10) + 1
                 < encodebits(length-2, 4, 0)
                 - encodebits(length, 4, 0) + 18 )
                 encode(length-3, 4, 0),
-                encode(offset, 4, 16),
+                encode(offset, 4, 0x10),
                 putbit(0),
                 encode(3, 4, 0),
-                encode(offset, 4, 16);
+                encode(offset, 4, 0x10);
               else
                 encode(length-2, 4, 0),
-                encode(offset, 4, 16),
+                encode(offset, 4, 0x10),
                 putbit(1),
                 output[outnex++]= mem[mempos-offset+length-2],
                 putbit(1),
                 output[outnex++]= mem[mempos-offset+length-1];
           else
             encode(length, 4, 0),
-            encode(offset, 4, 16);
+            encode(offset, 4, 0x10);
           while ( length-- )
             mem[mempos++]= mem[mempos-offset];
         }
       }
-    while( outbyte<256 )
+    while( outbyte<0x100 )
       outbyte<<= 1;
     output[outpos]= outbyte;
     if( back )
