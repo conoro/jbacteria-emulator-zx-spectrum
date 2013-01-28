@@ -2,6 +2,7 @@
 SETLOCAL
 if "%1"=="" goto Help
 set _method=%1
+set _forw=0
 if f==%_method:~0,1% set _forw=1
 if -==%_method:~2,1% set _lit=-c
 
@@ -18,7 +19,7 @@ if 1==%_forw% (
   echo.
   exomizer raw %3 %_lit% -b -r -o %3.exo
 )
-  set _result=%_result% %3.exo
+set _result=%_result% %3.exo
 shift /3
 goto Loop
 
