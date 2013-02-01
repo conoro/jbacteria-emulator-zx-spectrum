@@ -4,8 +4,8 @@
 #ifdef __DMC__
   #define strcasecmp stricmp
 #endif
-unsigned char *mem, *precalc;
-int pos[0x103], len[0x103];
+unsigned char *mem, *precalc, *precalc2;
+int pos[0x103], len[0x102];
 unsigned char checksum, inibit= 0, tzx= 0, wav= 0, channel_type= 1,
               pilot1, pilot2, sync1, sync2, one1, one2, zero1, zero2;
 FILE *fi, *fo;
@@ -48,7 +48,7 @@ int parseHex(char * name, int index){
 }
 
 int wavsilence( int msecs ){
-  fwrite( precalc+pos[0x102], 1, frecuency*(channel_type&3)*msecs/1000, fo);
+  fwrite( precalc+0x50000, 1, frecuency*(channel_type&3)*msecs/1000, fo);
 }
 
 void tapewrite( unsigned char *buff, int length ){
@@ -72,12 +72,23 @@ int main(int argc, char* argv[]){
     printf("  GenTape [<frequency>] [<channel_type>] <output_file>\n"),
     printf("          [ basic <name> <startline> <input_file>\n"),
     printf("          | hdata <name> <address>   <input_file>\n"),
-    printf("          |  data                    <input_file> ]\n\n"),
+    printf("          |  data                    <input_file>\n"),
+    printf("          | pilot <pilot_ts> <pilot_ms>\n"),
+    printf("          | pause <pause_ms>\n"),
+    printf("          | pdata <zero_ts> <one_ts> <pause_ms> <input_file>\n"),
+    printf("          | tdata <pilot_ts> <syn1_ts> <syn2_ts> <zero_ts> <one_ts>\n"),
+    printf("                                 <pilot_ms> <pause_ms> <input_file>\n"),
+    printf("          | plug-xxx-N <param1> .. <paramN> ]\n\n"),
     printf("  <output_file>  Target file, between TAP, TZX or WAV file\n"),
     printf("  <name>         Up to 10 chars name between single quotes or in hexadecimal\n"),
     printf("  <startline>    In decimal, first BASIC line to execute\n"),
     printf("  <address>      In hexadecimal, address of the binary block\n"),
     printf("  <input_file>   Hexadecimal string or filename as data origin of that block\n"),
+    printf("  <zero_ts> <one_ts> <syn1_ts> <syn2_ts> <pilot_ts>\n"),
+    printf("                 Length of zero/one/syncs/pilot pulses at 3.5MHz clock\n"),
+    printf("  <pilot_ms> <pause_ms>\n"),
+    printf("                 Duration of pilot/pause after block in milliseconds\n"),
+    printf("  <plug-xxx-N>   External generator, must exists xxx.exe and accept N params\n\n"),
     printf("  WAV options:\n"),
     printf("      <frecuency>    Sample frequency, 44100 or 48000. Default is 44100\n"),
     printf("      <channel_type> Possible values are: mono (default), stereo or stereoinv\n\n"),
@@ -158,10 +169,10 @@ int main(int argc, char* argv[]){
   }
   while ( argc-- > 2 ){
     lpause= ftell(fo);
-    *(short*)(mem+1)= 1000;
-    tzx && fwrite(mem, 1, 3, fo);
     wav && nextsilence && wavsilence( nextsilence );
     if( !strcasecmp(argv++[2], "basic")){
+      *(short*)(mem+1)= 1000;
+      tzx && fwrite(mem, 1, 3, fo);
       param= strtol(argv[3], NULL, 10);
       fi= fopen(argv[4], "rb");
       if( fi )
@@ -193,6 +204,8 @@ int main(int argc, char* argv[]){
       argv+= 3;
     }
     else if( !strcasecmp(argv[1], "hdata")){
+      *(short*)(mem+1)= 1000;
+      tzx && fwrite(mem, 1, 3, fo);
       param= strtol(argv[3], NULL, 16);
       fi= fopen(argv[4], "rb");
       if( fi )
@@ -227,6 +240,8 @@ int main(int argc, char* argv[]){
       argv+= 3;
     }
     else if( !strcasecmp(argv[1], "data")){
+      *(short*)(mem+1)= 1000;
+      tzx && fwrite(mem, 1, 3, fo);
       fi= fopen(argv[2], "rb");
       if( fi )
         length= 2+fread(mem+6, 1, 0x20000-6, fi);
@@ -243,6 +258,64 @@ int main(int argc, char* argv[]){
       fclose(fi);
       --argc;
       ++argv;
+    }
+    else if( !strcasecmp(argv[1], "pause")){
+      nextsilence= strtol(argv[2], NULL, 10);
+      if( tzx )
+        mem[1]= 0x20,
+        *(short*)(mem+2)= nextsilence,
+        fwrite(mem+1, 1, 3, fo);
+      else if( !wav )
+        printf("\nError: pause command not allowed in TAP files\n"),
+        exit(-1);
+      --argc;
+      ++argv;
+    }
+    else if( !strcasecmp(argv[1], "pilot")){
+      k= strtol(argv[2], NULL, 10);
+      nextsilence= strtol(argv[3], NULL, 10);
+      if( tzx )
+        mem[1]= 0x12,
+        *(short*)(mem+2)= k,
+        *(unsigned short*)(mem+4)= nextsilence*3500/k+0.5,
+        fwrite(mem+1, 1, 5, fo);
+      else if( wav ){
+        pilot1= k*frecuency/175e4+0.5;
+        pilot2= pilot1>>1;
+        pilot1-= pilot2;
+        ind= pos[0x102];
+        j= (0x50000-ind)/(pilot2+pilot1); //(8063-3223)/2
+        k= j*(pilot2+pilot1);
+        while( j-- )
+          outbits( pilot1 ),
+          outbits( pilot2 );
+        nextsilence= frecuency*(channel_type&3)*nextsilence/1000;
+        fwrite( precalc+pos[0x102]+k-nextsilence%k, 1, nextsilence%k, fo);
+        for ( i= 0; i<nextsilence/k; i++ )
+          fwrite( precalc+pos[0x102], 1, k, fo);
+      }
+      else
+        printf("\nError: pilot command not allowed in TAP files\n"),
+        exit(-1);
+      nextsilence= 0;
+      argc-= 2;
+      argv+= 2;
+    }
+    else if( !strcasecmp(argv[1], "pdata")){
+      if( tzx ){
+      }
+      else if( wav ){
+        precalc2= (unsigned char *) malloc (0x200000);
+        memcpy(precalc2, precalc, 0x200000);
+        memset(precalc, 128, 0x200000);
+        memcpy(precalc, precalc2, 0x200000);
+      }
+      else
+        printf("\nError: pdata command not allowed in TAP files\n"),
+        exit(-1);
+      nextsilence= 0;
+      argc-= 4;
+      argv+= 4;
     }
     else
       printf("\nInvalid argument name: %s\n", argv[1]),
