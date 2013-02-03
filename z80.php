@@ -244,7 +244,7 @@ function callci($c) {
 }
 
 function retc($c) {
-  global $mp, $pag;
+  global $mp, $pag, $cpc;
   return 'if('.$c.')'.
     'st+='.($cpc?2:5).';'.
   'else '.
@@ -257,7 +257,7 @@ function retc($c) {
 }
 
 function retci($c) {
-  global $mp, $pag;
+  global $mp, $pag, $cpc;
   return 'if('.$c.')'.
     'st+='.($cpc?4:11).','.
     ($mp?'mp=':'').
