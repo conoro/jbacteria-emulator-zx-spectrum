@@ -1,7 +1,17 @@
 <!DOCTYPE HTML><?
+isset($_GET['title']) && ($parche= 1);
+$title= isset($title) ? $title : (isset($_GET['title']) ? $_GET['title'] : '');
+$x= isset($x) ? $x : (isset($_GET['x']) ? $_GET['x'] : '');
+$x= strtr($x, ' ', '+');
 ?><html><?
 ?><head><title><?=$title?></title></head><?
 ?><body/><?
+$lines= explode("\n", file_get_contents('txt\\'.$x.'.txt'));
+if( $parche )
+  foreach ( $lines as $line )
+    if( $line!='dom.js' ){
+?><script type="text/javascript" src="<?=$line?>"></script><?
+    }
 ?><script type="text/javascript">ie=0</script><?
 ?><!--[if IE]><?
 ?><script type="text/javascript">ie=1;onhelp=function(){return false}</script><?
@@ -17,8 +27,15 @@
     ?>game=b;<?
   ?>if(c==3)<?
     ?>document.write(game);<?
+if( $parche ){
+  ?>else if(!t--){<?
+    echo file_get_contents('dom.js');
+  ?>}<?
+}
+else{
   ?>else if(!t--)<?
     ?>this.eval(emul.substr(<?=0x18018+$y?>));<?
+}
   ?>else if(c==2){<?
     ?>k=b.indexOf('\0');<?
     ?>ci=b.length;<?
@@ -63,6 +80,9 @@
 ?>}<?
 ?>k=location.href.indexOf('?')+1;<?
 ?>ifra=location.href.slice(-1)=='#';<?
+if ( $parche ){
+?>'title'==location.href.substr(k,5)&&(k=0);<?
+}
 ?>if(k){<?
   ?>params=param=location.href.substr(k,location.href.length-k-ifra);<?
   ?>t++;<?

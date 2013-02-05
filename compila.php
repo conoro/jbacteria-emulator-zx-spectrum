@@ -1,5 +1,5 @@
 <?
-$slow= 1;
+$slow= 0;
 ///*
 function stderr($value){
   file_put_contents('php://stderr', $value."\n");
@@ -8,7 +8,7 @@ function yui($value){
   stderr($value);
   exec("A:\ZZ\Java7sdk\jre\bin\java yui $value");
 }
-function comp($in, $out){
+function comp($out, $in){
   global $slow;
   if( $slow ){
     file_put_contents('aa.rom', $in);
@@ -157,7 +157,7 @@ function compg($out){
         $rom.
         file_get_contents('rom/128.mem').
         file_get_contents('128.js'));
-  unlink('128.js');
+//  unlink('128.js');
 ///*
   yui('128s');
   $rom= file_get_contents('rom/128.rom');
@@ -540,7 +540,8 @@ function compg($out){
   ob_start();$x='JAs';$y=0x2000;$title='jupiler';
   require'emu_ace.php';
   compg('JAs');
-///*
+//
+/*
   unlink('z80elite.js');
   unlink('z80.js');
   unlink('z80m.js');
