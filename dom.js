@@ -22,20 +22,20 @@ dv.setAttribute('style','display:none;position:absolute');
 dv.appendChild(pt);
 dv.appendChild(cu);
 he= document.createElement('canvas');
-he.width= 512;
-he.height= 384;
+he.width= 500;
+he.height= 200;
 he.setAttribute('style','display:none;position:absolute');
-eld= (elm= (ct= he.getContext('2d')).getImageData(0,0,512,384)).data;
+eld= (elm= (ct= he.getContext('2d')).getImageData(0,0,500,200)).data;
 ir= document.createElement('iframe');
 ir.setAttribute('style','display:none');
 document.body.appendChild(ir);
-while(t<98303)
-  a= emul.charCodeAt(++t+24) >> 4,
+while(t<60999)
+  a= emul.charCodeAt(++t+11024) >> 4,
   eld[u++]= emul.charCodeAt(3*a),
   eld[u++]= emul.charCodeAt(3*a+1),
   eld[u++]= emul.charCodeAt(3*a+2),
   eld[u++]= a ? 255 : 55,
-  a= emul.charCodeAt(t+24) & 15,
+  a= emul.charCodeAt(t+11024) & 15,
   eld[u++]= emul.charCodeAt(3*a),
   eld[u++]= emul.charCodeAt(3*a+1),
   eld[u++]= emul.charCodeAt(3*a+2),

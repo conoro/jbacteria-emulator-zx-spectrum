@@ -289,7 +289,7 @@ function init() {
   for ( j= 0
       ; j < 0x10000
       ; j++ )        // fill memory
-    m[j]= emul.charCodeAt(j+0x18018);
+    m[j]= emul.charCodeAt(j+61024);
   game && (pc= 0x56c, tp());
   document.ondragover= handleDragOver;
   document.ondrop= handleFileSelect;
@@ -579,19 +579,15 @@ function kpress(ev) {
 function onresize(ev) {
   ratio= innerWidth / innerHeight;
   if( ratio>1.33 )
-    cv.style.height= innerHeight - 50 + 'px',
-    cv.style.width= parseInt(ratio= (innerHeight-50)*1.33) + 'px',
-    cu.style.height= parseInt((innerHeight-50)*.28)-20+'px',
-    cu.style.width= parseInt(ratio*.6)+'px',
-    cv.style.marginTop= '25px',
-    cv.style.marginLeft= (innerWidth-ratio >> 1) + 'px';
+    cv.style.height= (height= innerHeight - 50) + 'px',
+    cv.style.width= (width= parseInt(tmp= height*1.33)) + 'px',
+    cv.style.marginTop= (marginTop= 25) + 'px',
+    cv.style.marginLeft= (marginLeft= innerWidth-tmp >> 1) + 'px';
   else
-    cv.style.width= innerWidth-50+'px',
-    cv.style.height= parseInt(ratio=(innerWidth-50)/1.33)+'px',
-    cu.style.width= parseInt((innerWidth-50)*.6)+'px',
-    cu.style.height= parseInt(ratio*.28)-20+'px',
-    cv.style.marginLeft= '25px',
-    cv.style.marginTop= (innerHeight-ratio >> 1) + 'px';
+    cv.style.width= (width= innerWidth - 50) + 'px',
+    cv.style.height= (height= parseInt(width/1.33)) + 'px',
+    cv.style.marginLeft= (marginLeft= 25) + 'px',
+    cv.style.marginTop= (marginTop= 25) + 'px';
   he.style.width= cv.style.width;
   he.style.height= cv.style.height;
   dv.style.left= he.style.left= cv.style.marginLeft;

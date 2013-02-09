@@ -101,8 +101,8 @@ function compg($out){
   $rom[0x56c]= chr(0xed);
   $rom[0x56d]= chr(0xfc);
   comp( '48',
-        file_get_contents('rom/k-spectrum.pal').
-        file_get_contents('rom/k-spectrum.bin').
+        file_get_contents('rom/todo-spectrum.pal').
+        file_get_contents('rom/todo-spectrum.bin').
         $rom.
         file_get_contents('rom/48.mem').
         file_get_contents('48.js'));
