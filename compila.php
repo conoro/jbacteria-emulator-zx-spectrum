@@ -540,16 +540,9 @@ function compg($out){
   ob_start();$x='JAs';$y=0x2000;$title='jupiler';
   require'emu_ace.php';
   compg('JAs');
-//
-/*
-  unlink('z80elite.js');
-  unlink('z80.js');
-  unlink('z80m.js');
-  unlink('z80p.js');
-  unlink('z80mp.js');
-  unlink('z80pc.js');
-  unlink('z80mpc.js');
 //*/
-  unlink('aa.rom');
-  unlink('temp.zip');
+  if( $slow ){
+    unlink('aa.rom');
+    unlink('temp.zip');
+  }
 ?>

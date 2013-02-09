@@ -1,1 +1,1 @@
-\xampp\php\php compila.php >nul
+\php compila.php >nul

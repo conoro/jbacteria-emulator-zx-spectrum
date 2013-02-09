@@ -1,5 +1,5 @@
 <!DOCTYPE HTML><?
-isset($_GET['title']) && ($parche= 1);
+$parche= isset($_GET['title']) ? 1 : 0;
 $title= isset($title) ? $title : (isset($_GET['title']) ? $_GET['title'] : '');
 $x= isset($x) ? $x : (isset($_GET['x']) ? $_GET['x'] : '');
 $x= strtr($x, ' ', '+');
