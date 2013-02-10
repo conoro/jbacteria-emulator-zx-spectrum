@@ -12,18 +12,6 @@ kld= (klm= (kct= he.getContext('2d')).getImageData(0,0,500,200)).data;
 ir= document.createElement('iframe');
 ir.setAttribute('style','display:none');
 document.body.appendChild(ir);
-while(t<62499)
-  a= emul.charCodeAt(++t+12524) >> 4,
-  kld[u++]= emul.charCodeAt(3*a),
-  kld[u++]= emul.charCodeAt(3*a+1),
-  kld[u++]= emul.charCodeAt(3*a+2),
-  kld[u++]= a ? 255 : 25,
-  a= emul.charCodeAt(t+12524) & 15,
-  kld[u++]= emul.charCodeAt(3*a),
-  kld[u++]= emul.charCodeAt(3*a+1),
-  kld[u++]= emul.charCodeAt(3*a+2),
-  kld[u++]= a ? 255 : 25;
-kct.putImageData(klm, 0, 0);
 cv= document.createElement('canvas');
 cv.width= 256;
 cv.height= 192;

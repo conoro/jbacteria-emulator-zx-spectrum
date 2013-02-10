@@ -1,3 +1,4 @@
+// l506
 na= 'jBacteria ';
 m= bytes(65536);
 vm= words(6144);
@@ -20,9 +21,9 @@ kc= [0,0,0,0,0,0,0,0,      // keyboard codes
     0,0,0,0,
     0x3d,         // 32 space
     0,0,0,0,
-    localStorage.ft >> 3
+   /* localStorage.ft >> 3
     ? 0x05<<7|0x19
-    : 0x44,       // cursor left
+    :*/ 0x44,       // cursor left
     localStorage.ft >> 3
     ? 0x05<<7|0x22 
     : 0x42,       // cursor up
@@ -289,7 +290,7 @@ function init() {
   for ( j= 0
       ; j < 0x10000
       ; j++ )        // fill memory
-    m[j]= emul.charCodeAt(j+62524);
+    m[j]= emul.charCodeAt(j+301*250+24);
   game && (pc= 0x56c, tp());
   document.ondragover= handleDragOver;
   document.ondrop= handleFileSelect;
@@ -441,7 +442,7 @@ function handleDragOver(ev) {
 
 function pushk( value ){
   kb[value>>3]&= ~(0x20 >> (value & 7));
-  if( localStorage.ft&8 ){
+  if( localStorage.ft&8 && value>>3 < 8 ){
     value=  20+10*2000
           + ((value&32?0:3)^(value>>3&3))*2000*50
           + (value&32?4+(value&7):5-value&7)*200;
@@ -452,6 +453,9 @@ function pushk( value ){
       value+= 1844;
     }
     kct.putImageData(klm, 0, 0);
+  }
+  else if( localStorage.ft&16 && value>>3 == 8 ){
+    console.log('hola');
   }
 }
 
@@ -499,10 +503,36 @@ function kdown(ev) {
     case 113: // F2
       localStorage.ft= localStorage.ft&0x67 | (((localStorage.ft>>3&3)+1)%3)<<3;
       if( localStorage.ft&16 ){
+        for ( u= 0; u<99*2000+200; u+= 4 )
+          kld[u+3]= 0;
+        for ( t= 0; t<101*250; ++t ){
+          if( emul.charCodeAt(t+24)>>4 == 1 )
+            kld[u++]= kld[u++]= kld[u++]= kld[u++]= 104;
+          else
+            u+= 3,
+            kld[u++]= 0;
+          if( (emul.charCodeAt(t+24)&15) == 1 )
+            kld[u++]= kld[u++]= kld[u++]= kld[u++]= 104;
+          else
+            u+= 3,
+            kld[u++]= 0;
+        }
+        kct.putImageData(klm, 0, 0);
         console.log('joys');
-        he.style.display= 'block';
       }
       else if( localStorage.ft&8 ){
+        for ( t= u= 0; t<200*250; ++t )
+          a= emul.charCodeAt(t+101*250+24) >> 4,
+          kld[u++]= emul.charCodeAt(3*a),
+          kld[u++]= emul.charCodeAt(3*a+1),
+          kld[u++]= emul.charCodeAt(3*a+2),
+          kld[u++]= a ? 255 : 25,
+          a= emul.charCodeAt(t+101*250+24) & 15,
+          kld[u++]= emul.charCodeAt(3*a),
+          kld[u++]= emul.charCodeAt(3*a+1),
+          kld[u++]= emul.charCodeAt(3*a+2),
+          kld[u++]= a ? 255 : 25;
+        kct.putImageData(klm, 0, 0);
         console.log('keyb');
         he.style.display= 'block';
       }
@@ -634,9 +664,12 @@ function onresize(ev) {
     cv.style.height= (height= parseInt(width/1.33)) + 'px',
     cv.style.marginLeft= (marginLeft= 25) + 'px',
     cv.style.marginTop= (marginTop= 25) + 'px';
+  if( ratio>1 )
+    he.style.top= (25+0.5167*height) + 'px';
+  else
+    he.style.top= (innerHeight-25-0.4*height) + 'px';
   he.style.width= cv.style.width;
   he.style.height= (0.4*height) + 'px';
-  he.style.top= (innerHeight-25-0.4833*height) + 'px';
   dv.style.left= he.style.left= cv.style.marginLeft;
   dv.style.top= cv.style.marginTop;
 }
