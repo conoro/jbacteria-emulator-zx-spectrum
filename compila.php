@@ -6,7 +6,7 @@ function stderr($value){
 }
 function yui($value){
   stderr($value);
-  exec("A:\ZZ\Java7sdk\jre\bin\java yui $value");
+  exec("\java yui $value");
 }
 function comp($out, $in){
   global $slow;
@@ -121,8 +121,8 @@ function compg($out){
   $rom[0x56c]= chr(0xed);
   $rom[0x56d]= chr(0xfc);
   comp( '48s',
-        file_get_contents('rom/k-spectrum.pal').
-        file_get_contents('rom/k-spectrum.bin').
+        file_get_contents('rom/todo-spectrum.pal').
+        file_get_contents('rom/todo-spectrum.bin').
         $rom.
         file_get_contents('rom/48.mem').
         file_get_contents('48s.js'));

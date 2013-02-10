@@ -34,7 +34,7 @@ if( $parche ){
 }
 else{
   ?>else if(!t--)<?
-    ?>this.eval(emul.substr(<?=61024+$y?>));<?
+    ?>this.eval(emul.substr(<?=62524+$y?>));<?
 }
   ?>else if(c==2){<?
     ?>k=b.indexOf('\0');<?

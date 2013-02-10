@@ -7,7 +7,7 @@ kb= [0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff]; // keyboard state
 ks= [0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff]; // keyboard state
 kc= [0,0,0,0,0,0,0,0,      // keyboard codes
     0x05<<7|0x25, // 8 backspace
-    localStorage.ft & 2
+    localStorage.ft >> 3
     ? 0x05<<7|0x3c
     : 0x41,       // 9 tab (extend)
     0,0,0,
@@ -20,16 +20,16 @@ kc= [0,0,0,0,0,0,0,0,      // keyboard codes
     0,0,0,0,
     0x3d,         // 32 space
     0,0,0,0,
-    localStorage.ft & 2
+    localStorage.ft >> 3
     ? 0x05<<7|0x19
     : 0x44,       // cursor left
-    localStorage.ft & 2
+    localStorage.ft >> 3
     ? 0x05<<7|0x22 
     : 0x42,       // cursor up
-    localStorage.ft & 2
+    localStorage.ft >> 3
     ? 0x05<<7|0x23
     : 0x45,       // cursor right
-    localStorage.ft & 2
+    localStorage.ft >> 3
     ? 0x05<<7|0x21
     : 0x43,       // cursor down
     0,0,0,0,0,0,0,
@@ -245,7 +245,7 @@ function init() {
   scrl= ula= sample= pbcs= pbc= cts= playp= vbp= bor= f1= f3= f4= st= time= flash= 0;
   if( localStorage.ft==undefined )
     localStorage.ft= 4;
-  if ( localStorage.ft & 8 )
+  if ( localStorage.ft & 2 )
     rotapal();
   a= b= c= d= h= l= fa= fb= fr= ff= r7=
   a_=b_=c_=d_=h_=l_=fa_=fb_=fr_=e_= r= pc= iff= im= halted= t= u= 0;
@@ -289,7 +289,7 @@ function init() {
   for ( j= 0
       ; j < 0x10000
       ; j++ )        // fill memory
-    m[j]= emul.charCodeAt(j+61024);
+    m[j]= emul.charCodeAt(j+62524);
   game && (pc= 0x56c, tp());
   document.ondragover= handleDragOver;
   document.ondrop= handleFileSelect;
@@ -439,14 +439,46 @@ function handleDragOver(ev) {
   ev.preventDefault();
 }
 
+function pushk( value ){
+  kb[value>>3]&= ~(0x20 >> (value & 7));
+  if( localStorage.ft&8 ){
+    value=  20+10*2000
+          + ((value&32?0:3)^(value>>3&3))*2000*50
+          + (value&32?4+(value&7):5-value&7)*200;
+    for ( t= 0; t<30; ++t ){
+      for ( u= 0; u<39; ++u, value+= 4 )
+        if( kld[value]== 104 )
+          kld[value]= kld[value+1]= 0;
+      value+= 1844;
+    }
+    kct.putImageData(klm, 0, 0);
+  }
+}
+
+function popk( value ){
+  kb[value>>3]|= 0x20 >> (value & 7);
+  if( localStorage.ft&8 ){
+    value=  20+10*2000
+          + ((value&32?0:3)^(value>>3&3))*2000*50
+          + (value&32?4+(value&7):5-value&7)*200;
+    for ( t= 0; t<30; ++t ){
+      for ( u= 0; u<39; ++u, value+= 4 )
+        if( kld[value+2]== 104 )
+          kld[value]= kld[value+1]= 104;
+      value+= 1844;
+    }
+    kct.putImageData(klm, 0, 0);
+  }
+}
+
 function kdown(ev) {
   var code= kc[ev.keyCode];
   if( code )
     if( code>0x7f )
-      kb[code>>3 & 15]&=  ~(0x20 >> (code     & 7)),
-      kb[code>>10]&=      ~(0x20 >> (code>>7  & 7));
+      pushk( code&0x7f ),
+      pushk( code>>7 );
     else
-      kb[code>>3]&=       ~(0x20 >> (code     & 7));
+      pushk( code );
   switch( ev.keyCode ){
     case 112: // F1
       if( f1= ~f1 ){
@@ -454,18 +486,32 @@ function kdown(ev) {
           clearInterval(interval);
         else
           node.onaudioprocess= audioprocess0;
-        dv.style.display= he.style.display= 'block';
+        dv.style.display= 'block';
       }
       else{
         if( trein==32000 )
           interval= setInterval(myrun, 20);
         else
           node.onaudioprocess= audioprocess;
-        dv.style.display= he.style.display= 'none';
+        dv.style.display= 'none';
       }
       break;
     case 113: // F2
-      kc[9]^=  0x41^(0x05<<7 | 0x3c);
+      localStorage.ft= localStorage.ft&0x67 | (((localStorage.ft>>3&3)+1)%3)<<3;
+      if( localStorage.ft&16 ){
+        console.log('joys');
+        he.style.display= 'block';
+      }
+      else if( localStorage.ft&8 ){
+        console.log('keyb');
+        he.style.display= 'block';
+      }
+      else{
+        console.log('none');
+        he.style.display= 'none';
+      }
+      console.log(localStorage.ft>>3&3);
+/*      kc[9]^=  0x41^(0x05<<7 | 0x3c);
       kc[37]^= 0x44^(0x05<<7 | 0x19);
       kc[38]^= 0x42^(0x05<<7 | 0x22);
       kc[39]^= 0x45^(0x05<<7 | 0x23);
@@ -473,7 +519,7 @@ function kdown(ev) {
       alert((localStorage.ft^= 2) & 2
             ? 'Cursors enabled'
             : 'Joystick enabled on Cursors + Tab');
-      self.focus();
+      self.focus();*/
       break;
     case 114: // F3
       pbt && (
@@ -516,7 +562,7 @@ function kdown(ev) {
       }
       break;
     case 118: // F7
-      localStorage.ft^= 8;
+      localStorage.ft^= 2;
       rotapal();
       break;
     case 119: // F8
@@ -561,10 +607,10 @@ function kup(ev) {
   var code= kc[ev.keyCode];
   if( code )
     if( code>0x7f )
-      kb[code>>3 & 15]|=  0x20 >> (code     & 7),
-      kb[code>>10]|=      0x20 >> (code>>7  & 7);
+      popk( code&0x7f ),
+      popk( code>>7 );
     else
-      kb[code>>3]|=       0x20 >> (code     & 7);
+      popk( code );
   if( !ev.metaKey )
     return false;
 }
@@ -589,9 +635,10 @@ function onresize(ev) {
     cv.style.marginLeft= (marginLeft= 25) + 'px',
     cv.style.marginTop= (marginTop= 25) + 'px';
   he.style.width= cv.style.width;
-  he.style.height= cv.style.height;
+  he.style.height= (0.4*height) + 'px';
+  he.style.top= (innerHeight-25-0.4833*height) + 'px';
   dv.style.left= he.style.left= cv.style.marginLeft;
-  dv.style.top= he.style.top= cv.style.marginTop;
+  dv.style.top= cv.style.marginTop;
 }
 
 function rp(addr) {
