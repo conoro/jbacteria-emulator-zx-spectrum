@@ -59,8 +59,8 @@ exo_getindex:   call    exo_getbit      ;get one bit
                 ld      iyl, c
                 call    exo_getpair
                 push    de
-                dec     d
-                jp      p, exo_dontgo
+                rlc     d
+                jr      nz, exo_dontgo
                 dec     e
                 ld      bc, 512+160     ;2 bits, 48 offset
                 jr      z, exo_goforit

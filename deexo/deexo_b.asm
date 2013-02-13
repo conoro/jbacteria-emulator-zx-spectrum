@@ -69,18 +69,17 @@ exo_getindex:   call    exo_getbit
                 ld      iy, exo_mapbasebits-229
                 call    exo_getpair
                 push    de
-                dec     d
-                jp      p, exo_dontgo
+                rlc     d
+                jr      nz, exo_dontgo
                 dec     e
                 ld      bc, 512+32      ;2 bits, 48 offset
                 jr      z, exo_goforit
                 dec     e               ;2?
 exo_dontgo:     ld      bc, 1024+16     ;4 bits, 32 offset
                 jr      z, exo_goforit
-                ld      c, 0            ;16 offset
-                ld      e, c
-exo_goforit:    ld      d, e
-                call    exo_getbits1
+                ld      de, 0
+                ld      c, d            ;16 offset
+exo_goforit:    call    exo_getbits1
                 ld      iy, exo_mapbasebits+27
                 add     iy, de
                 call    exo_getpair
