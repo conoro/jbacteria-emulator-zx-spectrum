@@ -5,21 +5,29 @@
   #define strcasecmp stricmp
 #endif
 unsigned char *mem, *precalc, *precalc2;
-int pos[0x103], len[0x102];
+int pos[0x103], pos2[0x103], len[0x102], len2[0x102];
 unsigned char checksum, inibit= 0, tzx= 0, wav= 0, channel_type= 1,
-              pilot1, pilot2, sync1, sync2, one1, one2, zero1, zero2;
+              pilot1, pilot2, sync1, sync2, one1, one2, zero1, zero2, turbo;
 FILE *fi, *fo;
 int i, j, k, ind= 0, lpause, nextsilence= 0;
 unsigned short length, param, frecuency= 44100;
 
 void outbits( val ){
-  for ( i= 0; i<val; i++ ){
-    precalc[ind++]= inibit ? 0x40 : 0xc0;
-    if( channel_type==2 )
+  for ( i= 0; i<val; i++ )
+    if( turbo ){
+      precalc2[ind++]= inibit ? 0x40 : 0xc0;
+      if( channel_type==2 )
+        precalc2[ind++]= inibit ? 0x40 : 0xc0;
+      else if( channel_type==6 )
+        precalc2[ind++]= inibit ? 0xc0 : 0x40;
+    }
+    else{
       precalc[ind++]= inibit ? 0x40 : 0xc0;
-    else if( channel_type==6 )
-      precalc[ind++]= inibit ? 0xc0 : 0x40;
-  }
+      if( channel_type==2 )
+        precalc[ind++]= inibit ? 0x40 : 0xc0;
+      else if( channel_type==6 )
+        precalc[ind++]= inibit ? 0xc0 : 0x40;
+    }
   inibit^= 1;
 }
 
@@ -56,10 +64,18 @@ void tapewrite( unsigned char *buff, int length ){
     buff+= 2;
     length-= 2;
     i= 0x100 | *buff>>7&1;
-    fwrite( precalc+pos[i], 1, len[i], fo);
-    while ( length-- )
-      fwrite( precalc+pos[*buff], 1, len[*buff], fo ),
-      buff++;
+    if( turbo ){
+      fwrite( precalc2+pos2[i], 1, len2[i], fo);
+      while ( length-- )
+        fwrite( precalc2+pos2[*buff], 1, len2[*buff], fo ),
+        buff++;
+    }
+    else{
+      fwrite( precalc+pos[i], 1, len[i], fo);
+      while ( length-- )
+        fwrite( precalc+pos[*buff], 1, len[*buff], fo ),
+        buff++;
+    }
   }
   else
     fwrite(buff, 1, length, fo);
@@ -131,6 +147,7 @@ int main(int argc, char* argv[]){
     mem[0]= 0x10;
   else if( !strcasecmp((char *)strchr(argv[1], '.'), ".wav" ) ){
     precalc= (unsigned char *) malloc (0x200000);
+    precalc2= (unsigned char *) malloc (0x200000);
     memset(mem, 0, 44);
     memset(precalc, 128, 0x200000);
     for( j= wav++; j<0x100; j++ ){
@@ -170,6 +187,7 @@ int main(int argc, char* argv[]){
   while ( argc-- > 2 ){
     lpause= ftell(fo);
     wav && nextsilence && wavsilence( nextsilence );
+    turbo= 0;
     if( !strcasecmp(argv++[2], "basic")){
       *(short*)(mem+1)= 1000;
       tzx && fwrite(mem, 1, 3, fo);
@@ -301,14 +319,53 @@ int main(int argc, char* argv[]){
       argc-= 2;
       argv+= 2;
     }
-    else if( !strcasecmp(argv[1], "pdata")){
+    else if( !strcasecmp(argv[1], "pdata") || !strcasecmp(argv[1], "tdata") ){
+      turbo= 1;
       if( tzx ){
       }
       else if( wav ){
-        precalc2= (unsigned char *) malloc (0x200000);
-        memcpy(precalc2, precalc, 0x200000);
-        memset(precalc, 128, 0x200000);
-        memcpy(precalc, precalc2, 0x200000);
+        memset(precalc2, 128, 0x200000);
+        
+        pilot1= 2168*frecuency/175e4+0.5;
+        pilot2= pilot1>>1;
+        pilot1-= pilot2;
+        sync1= 667*frecuency/35e5+0.5;
+        sync2= 735*frecuency/35e5+0.5;
+        one1= 3420*frecuency/35e5+0.5;
+        one2= one1>>1;
+        one1-= one2;
+        zero1= 1710*frecuency/35e5+0.5;
+        zero2= zero1>>1;
+        zero1-= zero2;
+
+
+        for( j= ind= 0; j<0x100; j++ ){
+          pos[j]= ind;
+          for( k= 0; k<8; k++ )
+            outbits( j<<k & 0x80 ? one1 : zero1 ),
+            outbits( j<<k & 0x80 ? one2 : zero2 );
+          len[j]= ind-pos[j];
+        }
+        j= 2420; //(8063-3223)/2
+        pos[0x100]= ind;
+        while( j-- )
+          outbits( pilot1 ),
+          outbits( pilot2 );
+        j= 1611; //3223/2
+        pos[0x101]= ind;
+        while( j-- )
+          outbits( 30 ),
+          outbits( 29 );
+        outbits( 9 );
+        outbits( 10 );
+        pos[0x102]= ind;
+        len[0x100]= ind-pos[0x100];
+        len[0x101]= ind-pos[0x101];
+
+//    printf("          | pdata <zero_ts> <one_ts> <pause_ms> <input_file>\n"),
+//    printf("          | tdata <pilot_ts> <syn1_ts> <syn2_ts> <zero_ts> <one_ts>\n"),
+//    printf("                                 <pilot_ms> <pause_ms> <input_file>\n"),
+
       }
       else
         printf("\nError: pdata command not allowed in TAP files\n"),
