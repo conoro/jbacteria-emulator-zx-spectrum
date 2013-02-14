@@ -134,12 +134,12 @@ int main(int argc, char* argv[]){
   pilot1-= pilot2;
   sync1= 667*frecuency/35e5+0.5;
   sync2= 735*frecuency/35e5+0.5;
-  one1= 3420*frecuency/35e5+0.5;
-  one2= one1>>1;
-  one1-= one2;
   zero1= 1710*frecuency/35e5+0.5;
   zero2= zero1>>1;
   zero1-= zero2;
+  one1= 3420*frecuency/35e5+0.5;
+  one2= one1>>1;
+  one1-= one2;
   if( !strcasecmp((char *)strchr(argv[1], '.'), ".tzx" ) )
     fprintf( fo, "ZXTape!" ),
     *(int*)mem= 0xa011a,
@@ -165,10 +165,10 @@ int main(int argc, char* argv[]){
     j= 1611; //3223/2
     pos[0x101]= ind;
     while( j-- )
-      outbits( 30 ),
-      outbits( 29 );
-    outbits( 9 );
-    outbits( 10 );
+      outbits( pilot1 ),
+      outbits( pilot2 );
+    outbits( sync1 );
+    outbits( sync2 );
     pos[0x102]= ind;
     len[0x100]= ind-pos[0x100];
     len[0x101]= ind-pos[0x101];
@@ -319,60 +319,61 @@ int main(int argc, char* argv[]){
       argc-= 2;
       argv+= 2;
     }
-    else if( !strcasecmp(argv[1], "pdata") || !strcasecmp(argv[1], "tdata") ){
-      turbo= 1;
+    else if( (turbo= !strcasecmp(argv[1], "pdata")) || !strcasecmp(argv[1], "tdata") ){
+      ++turbo;
       if( tzx ){
       }
       else if( wav ){
         memset(precalc2, 128, 0x200000);
-        
-        pilot1= 2168*frecuency/175e4+0.5;
-        pilot2= pilot1>>1;
-        pilot1-= pilot2;
-        sync1= 667*frecuency/35e5+0.5;
-        sync2= 735*frecuency/35e5+0.5;
-        one1= 3420*frecuency/35e5+0.5;
-        one2= one1>>1;
-        one1-= one2;
-        zero1= 1710*frecuency/35e5+0.5;
+        if( turbo==1 )
+          pilot1= strtol(argv[2], NULL, 10)*frecuency/175e4+0.5,
+          pilot2= pilot1>>1,
+          pilot1-= pilot2,
+          sync1=  strtol(argv[3], NULL, 10)*frecuency/35e5+0.5,
+          sync2=  strtol(argv[4], NULL, 10)*frecuency/35e5+0.5,
+          zero1=  strtol(argv[5], NULL, 10)*frecuency/175e4+0.5,
+          one1=   strtol(argv[6], NULL, 10)*frecuency/175e4+0.5,
+          k=      strtol(argv[7], NULL, 10),
+          nextsilence= strtol(argv[8], NULL, 10),
+          argc-= 8,
+          argv+= 8;
+        else
+          zero1= strtol(argv[2], NULL, 10)*frecuency/175e4+0.5,
+          one1=  strtol(argv[3], NULL, 10)*frecuency/175e4+0.5,
+          nextsilence= strtol(argv[4], NULL, 10),
+          argc-= 4,
+          argv+= 4;
         zero2= zero1>>1;
         zero1-= zero2;
-
-
+        one2= one1>>1;
+        one1-= one2;
         for( j= ind= 0; j<0x100; j++ ){
-          pos[j]= ind;
+          pos2[j]= ind;
           for( k= 0; k<8; k++ )
             outbits( j<<k & 0x80 ? one1 : zero1 ),
             outbits( j<<k & 0x80 ? one2 : zero2 );
-          len[j]= ind-pos[j];
+          len2[j]= ind-pos2[j];
         }
-        j= 2420; //(8063-3223)/2
-        pos[0x100]= ind;
-        while( j-- )
-          outbits( pilot1 ),
-          outbits( pilot2 );
-        j= 1611; //3223/2
-        pos[0x101]= ind;
-        while( j-- )
-          outbits( 30 ),
-          outbits( 29 );
-        outbits( 9 );
-        outbits( 10 );
-        pos[0x102]= ind;
-        len[0x100]= ind-pos[0x100];
-        len[0x101]= ind-pos[0x101];
-
+        if( turbo==1 ){
+          j= 2048;
+          pos2[0x100]= pos2[0x101]= ind;
+          while( j-- )
+            outbits( pilot1 ),
+            outbits( pilot2 );
+          outbits( sync1 );
+          outbits( sync2 );
+          len2[0x100]= len2[0x101]= ind-pos2[0x100];
+        }
+        pos2[0x102]= ind;
+        
 //    printf("          | pdata <zero_ts> <one_ts> <pause_ms> <input_file>\n"),
 //    printf("          | tdata <pilot_ts> <syn1_ts> <syn2_ts> <zero_ts> <one_ts>\n"),
 //    printf("                                 <pilot_ms> <pause_ms> <input_file>\n"),
 
       }
       else
-        printf("\nError: pdata command not allowed in TAP files\n"),
+        printf("\nError: pdata or tdata command not allowed in TAP files\n"),
         exit(-1);
-      nextsilence= 0;
-      argc-= 4;
-      argv+= 4;
     }
     else
       printf("\nInvalid argument name: %s\n", argv[1]),
