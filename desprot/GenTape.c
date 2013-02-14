@@ -91,9 +91,9 @@ int main(int argc, char* argv[]){
     printf("          |  data                    <input_file>\n"),
     printf("          | pilot <pilot_ts> <pilot_ms>\n"),
     printf("          | pause <pause_ms>\n"),
-    printf("          | pdata <zero_ts> <one_ts> <pause_ms> <input_file>\n"),
-    printf("          | tdata <pilot_ts> <syn1_ts> <syn2_ts> <zero_ts> <one_ts>\n"),
-    printf("                                 <pilot_ms> <pause_ms> <input_file>\n"),
+    printf("          | pdata <flag> <checksum> <zero_ts> <one_ts> <pause_ms> <input_file>\n"),
+    printf("          | tdata <flag> <checksum> <pilot_ts> <syn1_ts> <syn2_ts>\n"),
+    printf("                         <zero_ts> <one_ts> <pilot_ms> <pause_ms> <input_file>\n"),
     printf("          | plug-xxx-N <param1> .. <paramN> ]\n\n"),
     printf("  <output_file>  Target file, between TAP, TZX or WAV file\n"),
     printf("  <name>         Up to 10 chars name between single quotes or in hexadecimal\n"),
@@ -265,7 +265,7 @@ int main(int argc, char* argv[]){
         length= 2+fread(mem+6, 1, 0x20000-6, fi);
       else
         length= parseHex(argv[2], 6);
-      *(short*)(mem+1)= 1000;
+//      *(short*)(mem+1)= 1000;
       *(short*)(mem+3)= length;
       mem[5]= 255;
       for ( checksum= 0, i= 5; i<5+length-1; ++i )
@@ -326,23 +326,19 @@ int main(int argc, char* argv[]){
       else if( wav ){
         memset(precalc2, 128, 0x200000);
         if( turbo==1 )
-          pilot1= strtol(argv[2], NULL, 10)*frecuency/175e4+0.5,
+          pilot1= strtol(argv[4], NULL, 10)*frecuency/175e4+0.5,
           pilot2= pilot1>>1,
           pilot1-= pilot2,
-          sync1=  strtol(argv[3], NULL, 10)*frecuency/35e5+0.5,
-          sync2=  strtol(argv[4], NULL, 10)*frecuency/35e5+0.5,
-          zero1=  strtol(argv[5], NULL, 10)*frecuency/175e4+0.5,
-          one1=   strtol(argv[6], NULL, 10)*frecuency/175e4+0.5,
-          k=      strtol(argv[7], NULL, 10),
-          nextsilence= strtol(argv[8], NULL, 10),
-          argc-= 8,
-          argv+= 8;
+          sync1=  strtol(argv[5], NULL, 10)*frecuency/35e5+0.5,
+          sync2=  strtol(argv[6], NULL, 10)*frecuency/35e5+0.5,
+          zero1=  strtol(argv[7], NULL, 10)*frecuency/175e4+0.5,
+          one1=   strtol(argv[8], NULL, 10)*frecuency/175e4+0.5,
+          k=      strtol(argv[9], NULL, 10),
+          nextsilence= strtol(argv[10], NULL, 10);
         else
-          zero1= strtol(argv[2], NULL, 10)*frecuency/175e4+0.5,
-          one1=  strtol(argv[3], NULL, 10)*frecuency/175e4+0.5,
-          nextsilence= strtol(argv[4], NULL, 10),
-          argc-= 4,
-          argv+= 4;
+          zero1= strtol(argv[4], NULL, 10)*frecuency/175e4+0.5,
+          one1=  strtol(argv[5], NULL, 10)*frecuency/175e4+0.5,
+          nextsilence= strtol(argv[6], NULL, 10);
         zero2= zero1>>1;
         zero1-= zero2;
         one2= one1>>1;
@@ -365,11 +361,28 @@ int main(int argc, char* argv[]){
           len2[0x100]= len2[0x101]= ind-pos2[0x100];
         }
         pos2[0x102]= ind;
+        mem[0]= strtol(argv[2], NULL, 16);
+        fi= fopen(argv[15-turbo*4], "rb");
+        if( fi )
+          length= 2+fread(mem+1, 1, 0x20000-1, fi);
+        else
+          length= parseHex(argv[15-turbo*4], 1);
+        for ( checksum= i= 0; i<length-1; ++i )
+          checksum^= mem[i];
+        if( argv[3][0]!='-' )
+          checksum= strtol(argv[3], NULL, 16);
+        mem[length-1]= checksum;
+        tapewrite(mem, length+2);
+        fclose(fi);
+
+ //strtol(argv[2], NULL, 16);
+
         
 //    printf("          | pdata <zero_ts> <one_ts> <pause_ms> <input_file>\n"),
 //    printf("          | tdata <pilot_ts> <syn1_ts> <syn2_ts> <zero_ts> <one_ts>\n"),
 //    printf("                                 <pilot_ms> <pause_ms> <input_file>\n"),
-
+        argc-= 14-turbo*4;
+        argv+= 14-turbo*4;
       }
       else
         printf("\nError: pdata or tdata command not allowed in TAP files\n"),
