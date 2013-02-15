@@ -5,7 +5,6 @@
   #define strcasecmp stricmp
 #endif
 unsigned char *mem, *precalc, *precalc2;
-int pos[0x103], pos2[0x103], len[0x102], len2[0x102];
 unsigned char checksum, inibit= 0, tzx= 0, wav= 0, channel_type= 1,
               pilot1, pilot2, sync1, sync2, one1, one2, zero1, zero2, turbo;
 FILE *fi, *fo;
@@ -13,21 +12,16 @@ int i, j, k, ind= 0, lpause, nextsilence= 0;
 unsigned short length, param, frecuency= 44100;
 
 void outbits( val ){
-  for ( i= 0; i<val; i++ )
-    if( turbo ){
-      precalc2[ind++]= inibit ? 0x40 : 0xc0;
-      if( channel_type==2 )
-        precalc2[ind++]= inibit ? 0x40 : 0xc0;
-      else if( channel_type==6 )
-        precalc2[ind++]= inibit ? 0xc0 : 0x40;
-    }
-    else{
+  for ( i= 0; i<val; i++ ){
+    precalc[ind++]= inibit ? 0x40 : 0xc0;
+    if( channel_type==2 )
       precalc[ind++]= inibit ? 0x40 : 0xc0;
-      if( channel_type==2 )
-        precalc[ind++]= inibit ? 0x40 : 0xc0;
-      else if( channel_type==6 )
-        precalc[ind++]= inibit ? 0xc0 : 0x40;
-    }
+    else if( channel_type==6 )
+      precalc[ind++]= inibit ? 0xc0 : 0x40;
+  }
+  if( ind>0xff000 )
+    fwrite( precalc, 1, ind, fo ),
+    ind= 0;
   inibit^= 1;
 }
 
@@ -56,25 +50,28 @@ int parseHex(char * name, int index){
 }
 
 int wavsilence( int msecs ){
-  fwrite( precalc+0x50000, 1, frecuency*(channel_type&3)*msecs/1000, fo);
+  fwrite( precalc, 1, ind, fo );
+  ind= 0;
+ // abcd
+  fwrite( precalc+0x100000, 1, frecuency*(channel_type&3)*msecs/1000, fo);
 }
 
 void tapewrite( unsigned char *buff, int length ){
   if( wav ){
     buff+= 2;
     length-= 2;
-    i= 0x100 | *buff>>7&1;
-    if( turbo ){
-      fwrite( precalc2+pos2[i], 1, len2[i], fo);
-      while ( length-- )
-        fwrite( precalc2+pos2[*buff], 1, len2[*buff], fo ),
-        buff++;
-    }
-    else{
-      fwrite( precalc+pos[i], 1, len[i], fo);
-      while ( length-- )
-        fwrite( precalc+pos[*buff], 1, len[*buff], fo ),
-        buff++;
+    i= *buff>>7&1;
+    j= i ? 3223/2 : 8063/2;
+    while( j-- )
+      outbits( pilot1 ),
+      outbits( pilot2 );
+    outbits( sync1 );
+    outbits( sync2 );
+    while ( length-- ){
+      j= *buff++;
+      for( k= 0; k<8; k++ )
+        outbits( j<<k & 0x80 ? one1 : zero1 ),
+        outbits( j<<k & 0x80 ? one2 : zero2 );
     }
   }
   else
@@ -148,30 +145,8 @@ int main(int argc, char* argv[]){
   else if( !strcasecmp((char *)strchr(argv[1], '.'), ".wav" ) ){
     precalc= (unsigned char *) malloc (0x200000);
     precalc2= (unsigned char *) malloc (0x200000);
-    memset(mem, 0, 44);
+    memset(mem, wav++, 44);
     memset(precalc, 128, 0x200000);
-    for( j= wav++; j<0x100; j++ ){
-      pos[j]= ind;
-      for( k= 0; k<8; k++ )
-        outbits( j<<k & 0x80 ? one1 : zero1 ),
-        outbits( j<<k & 0x80 ? one2 : zero2 );
-      len[j]= ind-pos[j];
-    }
-    j= 2420; //(8063-3223)/2
-    pos[0x100]= ind;
-    while( j-- )
-      outbits( pilot1 ),
-      outbits( pilot2 );
-    j= 1611; //3223/2
-    pos[0x101]= ind;
-    while( j-- )
-      outbits( pilot1 ),
-      outbits( pilot2 );
-    outbits( sync1 );
-    outbits( sync2 );
-    pos[0x102]= ind;
-    len[0x100]= ind-pos[0x100];
-    len[0x101]= ind-pos[0x101];
     *(int*)mem= 0x46464952;
     *(int*)(mem+8)= 0x45564157;
     *(int*)(mem+12)= 0x20746d66;
@@ -298,7 +273,7 @@ int main(int argc, char* argv[]){
         *(unsigned short*)(mem+4)= nextsilence*3500/k+0.5,
         fwrite(mem+1, 1, 5, fo);
       else if( wav ){
-        pilot1= k*frecuency/175e4+0.5;
+/*        pilot1= k*frecuency/175e4+0.5;
         pilot2= pilot1>>1;
         pilot1-= pilot2;
         ind= pos[0x102];
@@ -310,7 +285,7 @@ int main(int argc, char* argv[]){
         nextsilence= frecuency*(channel_type&3)*nextsilence/1000;
         fwrite( precalc+pos[0x102]+k-nextsilence%k, 1, nextsilence%k, fo);
         for ( i= 0; i<nextsilence/k; i++ )
-          fwrite( precalc+pos[0x102], 1, k, fo);
+          fwrite( precalc+pos[0x102], 1, k, fo);*/
       }
       else
         printf("\nError: pilot command not allowed in TAP files\n"),
@@ -320,7 +295,7 @@ int main(int argc, char* argv[]){
       argv+= 2;
     }
     else if( (turbo= !strcasecmp(argv[1], "pdata")) || !strcasecmp(argv[1], "tdata") ){
-      ++turbo;
+/*      ++turbo;
       if( tzx ){
       }
       else if( wav ){
@@ -386,7 +361,7 @@ int main(int argc, char* argv[]){
       }
       else
         printf("\nError: pdata or tdata command not allowed in TAP files\n"),
-        exit(-1);
+        exit(-1);*/
     }
     else
       printf("\nInvalid argument name: %s\n", argv[1]),
