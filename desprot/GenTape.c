@@ -5,13 +5,13 @@
   #define strcasecmp stricmp
 #endif
 unsigned char *mem, *precalc, *precalc2;
-unsigned char checksum, inibit= 0, tzx= 0, wav= 0, channel_type= 1,
-              pilot1, pilot2, sync1, sync2, one1, one2, zero1, zero2, turbo;
+unsigned char rem= 0, inibit= 0, tzx= 0, wav= 0, channel_type= 1,
+              checksum, turbo, mod;
 FILE *fi, *fo;
-int i, j, k, ind= 0, lpause, nextsilence= 0;
-unsigned short length, param, frecuency= 44100;
+int i, j, k, l, ind= 0, lpause, nextsilence= 0;
+unsigned short length, param, frequency= 44100;
 
-void outbits( val ){
+void outbits( short val ){
   for ( i= 0; i<val; i++ ){
     precalc[ind++]= inibit ? 0x40 : 0xc0;
     if( channel_type==2 )
@@ -23,6 +23,11 @@ void outbits( val ){
     fwrite( precalc, 1, ind, fo ),
     ind= 0;
   inibit^= 1;
+}
+
+void obgen( int nor ){
+  outbits( (nor+rem)/mod );
+  rem= (nor+rem)%mod;
 }
 
 char char2hex(char value, char * name){
@@ -53,26 +58,23 @@ int wavsilence( int msecs ){
   fwrite( precalc, 1, ind, fo );
   ind= 0;
  // abcd
-  fwrite( precalc+0x100000, 1, frecuency*(channel_type&3)*msecs/1000, fo);
+  fwrite( precalc+0x100000, 1, frequency*(channel_type&3)*msecs/1000, fo);
 }
 
 void tapewrite( unsigned char *buff, int length ){
   if( wav ){
     buff+= 2;
     length-= 2;
-    i= *buff>>7&1;
-    j= i ? 3223/2 : 8063/2;
+    j= *buff>>7&1 ? 3223 : 8063;
     while( j-- )
-      outbits( pilot1 ),
-      outbits( pilot2 );
-    outbits( sync1 );
-    outbits( sync2 );
-    while ( length-- ){
-      j= *buff++;
-      for( k= 0; k<8; k++ )
-        outbits( j<<k & 0x80 ? one1 : zero1 ),
-        outbits( j<<k & 0x80 ? one2 : zero2 );
-    }
+      obgen( 2168*2 );
+    obgen( 667*2 );
+    obgen( 735*2 );
+    while ( length-- )
+      for( k= 0, j= *buff++; k<8; k++, j<<= 1 )
+          obgen( l= 1710 << ((j & 0x80)>>7) ),
+          obgen( l );
+    obgen( 2168*2 );
   }
   else
     fwrite(buff, 1, length, fo);
@@ -103,7 +105,7 @@ int main(int argc, char* argv[]){
     printf("                 Duration of pilot/pause after block in milliseconds\n"),
     printf("  <plug-xxx-N>   External generator, must exists xxx.exe and accept N params\n\n"),
     printf("  WAV options:\n"),
-    printf("      <frecuency>    Sample frequency, 44100 or 48000. Default is 44100\n"),
+    printf("      <frequency>    Sample frequency, 44100 or 48000. Default is 44100\n"),
     printf("      <channel_type> Possible values are: mono (default), stereo or stereoinv\n\n"),
     exit(0);
   while(1)
@@ -114,11 +116,12 @@ int main(int argc, char* argv[]){
     else if( !strcasecmp(argv[1], "stereoinv") )
       channel_type= 6, ++argv, --argc;
     else if( !strcasecmp(argv[1], "44100") )
-      frecuency= 44100, ++argv, --argc;
+      frequency= 44100, ++argv, --argc;
     else if( !strcasecmp(argv[1], "48000") )
-      frecuency= 48000, ++argv, --argc;
+      frequency= 48000, ++argv, --argc;
     else
       break;
+  mod= 7056000/frequency;
   if( !strchr(argv[1], '.') )
     printf("\nInvalid argument name: %s\n", argv[1]),
     exit(-1);
@@ -126,17 +129,6 @@ int main(int argc, char* argv[]){
   if( !fo )
     printf("\nCannot create output file: %s\n", argv[1]),
     exit(-1);
-  pilot1= 4336*frecuency/35e5+0.5;
-  pilot2= pilot1>>1;
-  pilot1-= pilot2;
-  sync1= 667*frecuency/35e5+0.5;
-  sync2= 735*frecuency/35e5+0.5;
-  zero1= 1710*frecuency/35e5+0.5;
-  zero2= zero1>>1;
-  zero1-= zero2;
-  one1= 3420*frecuency/35e5+0.5;
-  one2= one1>>1;
-  one1-= one2;
   if( !strcasecmp((char *)strchr(argv[1], '.'), ".tzx" ) )
     fprintf( fo, "ZXTape!" ),
     *(int*)mem= 0xa011a,
@@ -153,8 +145,8 @@ int main(int argc, char* argv[]){
     *(char*)(mem+16)= 0x10;
     *(char*)(mem+20)= 0x01;
     *(char*)(mem+22)= *(char*)(mem+32)= channel_type&3;
-    *(short*)(mem+24)= frecuency;
-    *(int*)(mem+28)= frecuency*(channel_type&3);
+    *(short*)(mem+24)= frequency;
+    *(int*)(mem+28)= frequency*(channel_type&3);
     *(char*)(mem+34)= 8;
     *(int*)(mem+36)= 0x61746164;
     fwrite(mem, 1, 44, fo);
@@ -273,7 +265,7 @@ int main(int argc, char* argv[]){
         *(unsigned short*)(mem+4)= nextsilence*3500/k+0.5,
         fwrite(mem+1, 1, 5, fo);
       else if( wav ){
-/*        pilot1= k*frecuency/175e4+0.5;
+/*        pilot1= k*frequency/175e4+0.5;
         pilot2= pilot1>>1;
         pilot1-= pilot2;
         ind= pos[0x102];
@@ -282,7 +274,7 @@ int main(int argc, char* argv[]){
         while( j-- )
           outbits( pilot1 ),
           outbits( pilot2 );
-        nextsilence= frecuency*(channel_type&3)*nextsilence/1000;
+        nextsilence= frequency*(channel_type&3)*nextsilence/1000;
         fwrite( precalc+pos[0x102]+k-nextsilence%k, 1, nextsilence%k, fo);
         for ( i= 0; i<nextsilence/k; i++ )
           fwrite( precalc+pos[0x102], 1, k, fo);*/
@@ -301,18 +293,18 @@ int main(int argc, char* argv[]){
       else if( wav ){
         memset(precalc2, 128, 0x200000);
         if( turbo==1 )
-          pilot1= strtol(argv[4], NULL, 10)*frecuency/175e4+0.5,
+          pilot1= strtol(argv[4], NULL, 10)*frequency/175e4+0.5,
           pilot2= pilot1>>1,
           pilot1-= pilot2,
-          sync1=  strtol(argv[5], NULL, 10)*frecuency/35e5+0.5,
-          sync2=  strtol(argv[6], NULL, 10)*frecuency/35e5+0.5,
-          zero1=  strtol(argv[7], NULL, 10)*frecuency/175e4+0.5,
-          one1=   strtol(argv[8], NULL, 10)*frecuency/175e4+0.5,
+          sync1=  strtol(argv[5], NULL, 10)*frequency/35e5+0.5,
+          sync2=  strtol(argv[6], NULL, 10)*frequency/35e5+0.5,
+          zero1=  strtol(argv[7], NULL, 10)*frequency/175e4+0.5,
+          one1=   strtol(argv[8], NULL, 10)*frequency/175e4+0.5,
           k=      strtol(argv[9], NULL, 10),
           nextsilence= strtol(argv[10], NULL, 10);
         else
-          zero1= strtol(argv[4], NULL, 10)*frecuency/175e4+0.5,
-          one1=  strtol(argv[5], NULL, 10)*frecuency/175e4+0.5,
+          zero1= strtol(argv[4], NULL, 10)*frequency/175e4+0.5,
+          one1=  strtol(argv[5], NULL, 10)*frequency/175e4+0.5,
           nextsilence= strtol(argv[6], NULL, 10);
         zero2= zero1>>1;
         zero1-= zero2;
