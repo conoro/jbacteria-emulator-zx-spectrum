@@ -57,8 +57,7 @@ int parseHex(char * name, int index){
 
 int wavsilence( float msecs ){
   fwrite( precalc, 1, ind, fo );
-  ind= 0;
- // abcd
+  rem= ind= 0;
   fwrite( precalc+0x100000, 1, frequency*(channel_type&3)*msecs/1000, fo);
 }
 
@@ -75,7 +74,7 @@ void tapewrite( unsigned char *buff, int length ){
       for( k= 0, j= *buff++; k<8; k++, j<<= 1 )
         obgen( l= 1710 << ((j & 0x80)>>7) ),
         obgen( l );
-    obgen( 2168*2 );
+    obgen( l );
   }
   else
     fwrite(buff, 1, length, fo);
@@ -92,9 +91,9 @@ int main(int argc, char* argv[]){
     printf("          | pilot <pilot_ts> <pilot_ms>\n"),
     printf("          | pulse <M> <pulse1_ts> <pulse2_ts> .. <pulseM_ts>\n"),
     printf("          | pause <pause_ms>\n"),
-    printf("          | pdata <flag> <checksum> <zero_ts> <one_ts> <pause_ms> <input_file>\n"),
-    printf("          | tdata <flag> <checksum> <pilot_ts> <syn1_ts> <syn2_ts>\n"),
-    printf("                         <zero_ts> <one_ts> <pilot_ms> <pause_ms> <input_file>\n"),
+    printf("          | pdata <zero_ts> <one_ts> <pause_ms> <input_file>\n"),
+    printf("          | tdata <pilot_ts> <syn1_ts> <syn2_ts> <zero_ts> <one_ts>\n"),
+    printf("                                 <pilot_ms> <pause_ms> <input_file>\n"),
     printf("          | plug-xxx-N <param1> <param2> .. <paramN> ]\n\n"),
     printf("  <output_file>  Target file, between TAP, TZX or WAV file\n"),
     printf("  <name>         Up to 10 chars name between single quotes or in hexadecimal\n"),
@@ -158,7 +157,7 @@ int main(int argc, char* argv[]){
     if( !strcasecmp(argv++[2], "basic")){
       *(short*)(mem+1)= 1000;
       tzx && fwrite(mem, 1, 3, fo);
-      param= strtol(argv[3], NULL, 10);
+      param= strtol(argv[3], NULL, 10); //atoi
       fi= fopen(argv[4], "rb");
       if( fi )
         length= fread(mem+27, 1, 0x20000-27, fi);
@@ -277,73 +276,90 @@ int main(int argc, char* argv[]){
       argc-= 2;
       argv+= 2;
     }
-    else if( (turbo= !strcasecmp(argv[1], "pdata")) || !strcasecmp(argv[1], "tdata") ){
-/*    if( tzx ){
+    else if( !strcasecmp(argv[1], "pulse")){
+      k= strtol(argv++[2], NULL, 10);
+      if( tzx ){
+        mem[1]= 0x13;
+        *(unsigned char*)(mem+2)= k;
+        for ( j= 0; j<k; j++ )
+          *(unsigned short*)(mem+3+j*2)= strtol(argv++[2], NULL, 10) >> 1-plus;
+        fwrite(mem+1, 1, k+1<<1, fo);
+      }
+      else if( wav )
+        for ( j= 0; j<k; j++ )
+          obgen( strtol(argv++[2], NULL, 10) << plus );
+      else
+        printf("\nError: pulse command not allowed in TAP files\n"),
+        exit(-1);
+      nextsilence= 0;
+      argc-= k+1;
+    }
+    else if( (turbo= !strcasecmp(argv[1], "tdata")) || !strcasecmp(argv[1], "pdata") ){
+      fi= fopen(argv[5+turbo*4], "rb");
+      if( tzx ){
+        if( turbo ){
+          mem[1]= 0x11;
+          *(short*)(mem+2)= k= strtol(argv++[2], NULL, 10) >> 1-plus;
+          *(short*)(mem+4)= strtol(argv++[2], NULL, 10) >> 1-plus;
+          *(short*)(mem+6)= strtol(argv++[2], NULL, 10) >> 1-plus;
+          *(short*)(mem+8)= strtol(argv++[2], NULL, 10) >> 1-plus;
+          *(short*)(mem+10)= strtol(argv++[2], NULL, 10) >> 1-plus;
+          *(short*)(mem+12)= atof(argv++[2])*3500/k+0.5;
+          *(char*)(mem+14)= 8;
+          *(unsigned short*)(mem+15)= strtol(argv++[2], NULL, 10);
+          if( fi )
+            length= fread(mem+20, 1, 0x20000-20, fi);
+          else
+            length= parseHex(argv[2], 20);
+          *(unsigned short*)(mem+17)= length;
+          *(char*)(mem+19)= 0;  // abcd
+          fwrite(mem+1, 1, length+19, fo);
+        }
+        else{
+          mem[1]= 0x14;
+          *(short*)(mem+2)= strtol(argv++[2], NULL, 10) >> 1-plus;
+          *(short*)(mem+4)= strtol(argv++[2], NULL, 10) >> 1-plus;
+          *(char*)(mem+6)= 8;
+          *(unsigned short*)(mem+7)= strtol(argv++[2], NULL, 10);
+          if( fi )
+            length= fread(mem+20, 1, 0x20000-20, fi);
+          else
+            length= parseHex(argv[2], 20);
+          *(unsigned short*)(mem+9)= length;
+          *(char*)(mem+11)= 0;  // abcd
+          fwrite(mem+1, 1, length+11, fo);
+        }
+        ++argv;
       }
       else if( wav ){
-        memset(precalc2, 128, 0x200000);
-        if( turbo==1 )
-          pilot1= strtol(argv[4], NULL, 10)*frequency/175e4+0.5,
-          pilot2= pilot1>>1,
-          pilot1-= pilot2,
-          sync1=  strtol(argv[5], NULL, 10)*frequency/35e5+0.5,
-          sync2=  strtol(argv[6], NULL, 10)*frequency/35e5+0.5,
-          zero1=  strtol(argv[7], NULL, 10)*frequency/175e4+0.5,
-          one1=   strtol(argv[8], NULL, 10)*frequency/175e4+0.5,
-          k=      strtol(argv[9], NULL, 10),
-          nextsilence= strtol(argv[10], NULL, 10);
-        else
-          zero1= strtol(argv[4], NULL, 10)*frequency/175e4+0.5,
-          one1=  strtol(argv[5], NULL, 10)*frequency/175e4+0.5,
-          nextsilence= strtol(argv[6], NULL, 10);
-        zero2= zero1>>1;
-        zero1-= zero2;
-        one2= one1>>1;
-        one1-= one2;
-        for( j= ind= 0; j<0x100; j++ ){
-          pos2[j]= ind;
-          for( k= 0; k<8; k++ )
-            outbits( j<<k & 0x80 ? one1 : zero1 ),
-            outbits( j<<k & 0x80 ? one2 : zero2 );
-          len2[j]= ind-pos2[j];
-        }
-        if( turbo==1 ){
-          j= 2048;
-          pos2[0x100]= pos2[0x101]= ind;
+        if( turbo ){
+          k= strtol(argv[2], NULL, 10) << plus;
+          j= atof(argv[7])*7056/k+0.5;
           while( j-- )
-            outbits( pilot1 ),
-            outbits( pilot2 );
-          outbits( sync1 );
-          outbits( sync2 );
-          len2[0x100]= len2[0x101]= ind-pos2[0x100];
+            obgen( k );
+          obgen( strtol(argv[3], NULL, 10) << plus );
+          obgen( strtol(argv[4], NULL, 10) << plus );
         }
-        pos2[0x102]= ind;
-        mem[0]= strtol(argv[2], NULL, 16);
-        fi= fopen(argv[15-turbo*4], "rb");
         if( fi )
-          length= 2+fread(mem+1, 1, 0x20000-1, fi);
+          length= fread(mem, 1, 0x20000, fi);
         else
-          length= parseHex(argv[15-turbo*4], 1);
-        for ( checksum= i= 0; i<length-1; ++i )
-          checksum^= mem[i];
-        if( argv[3][0]!='-' )
-          checksum= strtol(argv[3], NULL, 16);
-        mem[length-1]= checksum;
-        tapewrite(mem, length+2);
+          length= parseHex(argv[5+turbo*4], 0);
+        j= 0;
+        param= strtol(argv[2+turbo*3], NULL, 10) << plus;
+        k= strtol(argv[3+turbo*3], NULL, 10) << plus;
+        while ( length-- )
+          for( wav= 0, checksum= mem[j++]; wav<8; wav++, checksum<<= 1 )
+            obgen( l= checksum & 0x80 ? k : param ),
+            obgen( l );
+        obgen( l );
         fclose(fi);
-
- //strtol(argv[2], NULL, 16);
-
-        
-//    printf("          | pdata <zero_ts> <one_ts> <pause_ms> <input_file>\n"),
-//    printf("          | tdata <pilot_ts> <syn1_ts> <syn2_ts> <zero_ts> <one_ts>\n"),
-//    printf("                                 <pilot_ms> <pause_ms> <input_file>\n"),
-        argc-= 14-turbo*4;
-        argv+= 14-turbo*4;
+        argv+= turbo+1<<2;
+        nextsilence= silence= atof(argv[0]);
       }
       else
         printf("\nError: pdata or tdata command not allowed in TAP files\n"),
-        exit(-1);*/
+        exit(-1);
+      argc-= turbo+1<<2;
     }
     else
       printf("\nInvalid argument name: %s\n", argv[1]),
