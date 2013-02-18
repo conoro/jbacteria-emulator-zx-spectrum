@@ -2099,9 +2099,8 @@ int main (int argc, char **argv){
         st+= 4;
         prefix=2;break;
       case 0xcb: // OP CB
-        r++;
         if( !prefix )
-          switch( mem[pc++] ){
+          switch( r++, mem[pc++] ){
             case 0x00:  RLC(b); break;                       // RLC B
             case 0x01:  RLC(c); break;                       // RLC C
             case 0x02:  RLC(d); break;                       // RLC D
