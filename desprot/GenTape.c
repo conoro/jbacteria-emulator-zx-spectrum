@@ -5,6 +5,7 @@
   #define strcasecmp stricmp
 #endif
 unsigned char *mem, *precalc;
+char *ext, *command;
 unsigned char rem= 0, inibit= 0, tzx= 0, wav= 0, channel_type= 1, plus= 1,
               checksum, turbo, mod;
 FILE *fi, *fo;
@@ -123,7 +124,7 @@ int main(int argc, char* argv[]){
     else
       break;
   mod= 7056000/frequency;
-  if( !strchr(argv[1], '.') )
+  if( !(ext= strchr(argv[1], '.')) )
     printf("\nInvalid argument name: %s\n", argv[1]),
     exit(-1);
   fo= fopen(argv[1], "wb+");
@@ -360,6 +361,21 @@ int main(int argc, char* argv[]){
         printf("\nError: pdata or tdata command not allowed in TAP files\n"),
         exit(-1);
       argc-= turbo+1<<2;
+    }
+    else if( strchr(argv[1], '-')
+          && (*strchr(argv[1], '-')= 0, !strcasecmp(argv[1], "plug")) ){
+      argv[1]+= 5;
+      k= strtol(strstr(argv[1], "-")+1, NULL, 10);
+      *strchr(argv[1], '-')= 0;
+//      printf( "%d", system("leches"));
+      command= (char *) malloc (0x100);
+      sprintf(command, "%s %s %d %s -o tmp.wav", argv[1], ++ext,
+              frequency, channel_type-1 ? (channel_type-2?"stereoinv":"stereo") : "mono");
+      argc-= k;
+      while( k-- )
+        strcat(command, " "),
+        strcat(command, argv++[2]);
+      printf( command );
     }
     else
       printf("\nInvalid argument name: %s\n", argv[1]),
