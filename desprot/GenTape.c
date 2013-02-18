@@ -229,11 +229,10 @@ int main(int argc, char* argv[]){
       tzx && fwrite(mem, 1, 3, fo);
       fi= fopen(argv[2], "rb");
       if( fi )
-        length= 2+fread(mem+6, 1, 0x20000-6, fi);
+        length= fread(mem+6, 1, 0x20000-6, fi);
       else
         length= parseHex(argv[2], 6);
-//      *(short*)(mem+1)= 1000;
-      *(short*)(mem+3)= length;
+      *(short*)(mem+3)= length+= 2;
       mem[5]= 255;
       for ( checksum= 0, i= 5; i<5+length-1; ++i )
         checksum^= mem[i];

@@ -4,14 +4,14 @@
 #ifdef __DMC__
   #define strcasecmp stricmp
 #endif
-unsigned char *mem, *precalc;
+unsigned char *mem, *buff, *precalc;
 char *ext, *command;
-unsigned char rem= 0, inibit= 0, tzx= 0, wav= 0, channel_type= 1, plus= 1,
+unsigned char rem= 0, inibit= 0, tzx= 0, channel_type= 1, plus= 1,
               checksum, turbo, mod;
 FILE *fi, *fo;
-int i, j, k, l, ind= 0, lpause, nextsilence= 0;
+int i, j, k, l, ind= 0, lpause, pilotpulses;
 float silence;
-unsigned short length, param, frequency= 44100;
+unsigned short length, flag, frequency= 44100;
 
 void outbits( short val ){
   for ( i= 0; i<val; i++ ){
@@ -62,25 +62,6 @@ int wavsilence( float msecs ){
   fwrite( precalc+0x100000, 1, frequency*(channel_type&3)*msecs/1000, fo);
 }
 
-void tapewrite( unsigned char *buff, int length ){
-  if( wav ){
-    buff+= 2;
-    length-= 2;
-    j= *buff>>7&1 ? 3223 : 8063;
-    while( j-- )
-      obgen( 2168*2 );
-    obgen( 667*2 );
-    obgen( 735*2 );
-    while ( length-- )
-      for( k= 0, j= *buff++; k<8; k++, j<<= 1 )
-        obgen( l= 1710 << ((j & 0x80)>>7) ),
-        obgen( l );
-    obgen( l );
-  }
-  else
-    fwrite(buff, 1, length, fo);
-}
-
 int main(int argc, char* argv[]){
   mem= (unsigned char *) malloc (0x20000);
   if( argc==1 )
@@ -98,7 +79,7 @@ int main(int argc, char* argv[]){
     printf("\nInvalid number of parameters\n"),
     exit(-1);
   frequency= strtol(argv[1], NULL, 10); //atoi
-  if( frequency!=44100 || frequency!=48000 )
+  if( frequency!=44100 && frequency!=48000 )
     printf("\nInvalid sample rate: %d\n", frequency),
     exit(-1);
   if( !strcasecmp(argv[2], "mono") )
@@ -115,14 +96,14 @@ int main(int argc, char* argv[]){
   if( !fo )
     printf("\nCannot create output file: %s\n", argv[3]),
     exit(-1);
-  if( !strcasecmp((char *)strchr(argv[1], '.'), ".tzx" ) )
+  if( !strcasecmp((char *)strchr(argv[3], '.'), ".tzx" ) )
     fprintf( fo, "ZXTape!" ),
     *(int*)mem= 0xa011a,
     fwrite(mem, ++tzx, 3, fo),
     mem[0]= 0x12;
-  else if( !strcasecmp((char *)strchr(argv[1], '.'), ".wav" ) ){
+  else if( !strcasecmp((char *)strchr(argv[3], '.'), ".wav" ) ){
     precalc= (unsigned char *) malloc (0x200000);
-    memset(mem, wav++, 44);
+    memset(mem, 0, 44);
     memset(precalc, 128, 0x200000);
     *(int*)mem= 0x46464952;
     *(int*)(mem+8)= 0x45564157;
@@ -136,19 +117,48 @@ int main(int argc, char* argv[]){
     *(int*)(mem+36)= 0x61746164;
     fwrite(mem, 1, 44, fo);
   }
-  *(short*)(mem+1)= 500; //abcd
-  *(short*)(mem+3)= atof(argv[5])*3500/k+0.5;
-  mem[5]= strtol(argv[4], NULL, 16);
-  tzx && fwrite(mem, 1, 3, fo);
+//  *(short*)(mem+1)= 500; //abcd
+//  *(short*)(mem+3)= pilotpulses= atof(argv[5])*3500/k+0.5;
+//  tzx && fwrite(mem, 1, 3, fo);
+  pilotpulses= atof(argv[5])*7056/1764+0.5;
   fi= fopen(argv[7], "rb");
   if( fi )
-    length= 2+fread(mem+6, 1, 0x20000-6, fi);
+    length= fread(mem+5, 1, 0x20000-5, fi);
   else
-    length= parseHex(argv[2], 6);
-  for ( checksum= 0, i= 5; i<5+length-1; ++i )
+    length= parseHex(argv[2], 5);
+  for ( checksum= i= 5; i<length; i++ )
     checksum^= mem[i];
-  mem[length+4]= checksum;
-  tapewrite(mem+3, length+2);
+  if( tzx )
+    fwrite(mem, 1, length, fo);
+  else{
+    pilotpulses&1 || obgen( 1764 );
+    while( pilotpulses-- )
+      obgen( 1764 );
+    obgen( 4116 );
+    pilotpulses= 6;
+    while( pilotpulses-- )
+      obgen( 1764 );
+    outbits( 2 );
+    outbits( 5 );
+    flag= checksum | strtol(argv[4], NULL, 16)<<4;
+    for ( j= 0; j<16; j++, flag<<= 1 )
+      outbits( l= flag&0x8000 ? 4 : 8 ),
+      outbits( l );
+    outbits( 2 );
+    outbits( 3 );
+    buff= mem;
+    while( length-- )
+      outbits( 1+(*buff>>6    ) ),
+      outbits( 1+(*buff>>4 & 3) ),
+      outbits( 1+(*buff>>2 & 3) ),
+      outbits( 1+(*buff++  & 3) );
+    outbits( 8 );
+    outbits( 8 ); // stop
+    obgen( 1764 );
+    obgen( 1764 );
+  }
+
+  
  // pause
   fclose(fi);
 
@@ -156,7 +166,7 @@ int main(int argc, char* argv[]){
     fseek(fo, ++lpause, SEEK_SET),
     *(short*)mem= 0,
     fwrite(mem, 2, 1, fo);
-  else if( wav )
+  else
     wavsilence( 100 ),
     i= ftell(fo)-8,
     fseek(fo, 4, SEEK_SET),
