@@ -43,7 +43,12 @@ ultr4:  cp      16              ; si el contador esta entre 10 y 16 es el tono g
         inc     h
         jr      nz, ultr0       ; si detecto sincronismo sin 8 pulsos de tono guia retorno a bucle
         call    $05ed           ; leo pulso negativo de sincronismo
-        ld      l, $01          ; hl vale 0001, marker para leer 16 bits en hl (checksum y byte flag)
+        ld      a, b
+        cp      5
+        ld      e, $fe
+        jr      nc, ultr5
+        ld      e, $fc
+ultr5:  ld      l, $01          ; hl vale 0001, marker para leer 16 bits en hl (checksum y byte flag)
 get16:  ld      b, 0            ; 16 bytes
         call    $05ed           ; esta rutina lee 2 pulsos e inicializa el contador de pulsos
         call    $05ed
@@ -59,8 +64,9 @@ get16:  ld      b, 0            ; 16 bytes
         push    hl              ; pongo direccion de comienzo en pila
         ld      c, a
         exx
+        ld      c, e            ; este valor es el que necesita b para entrar en raudo
         pop     de              ; recupero en de la direccion de comienzo del bloque
-        ld      c, $fe          ; este valor es el que necesita b para entrar en raudo
+        dec     de
 ultr7:  in      f, (c)
         jp      po, ultr7
         call    l9405           ; salto a raudo segun el signo del pulso en flag z
@@ -186,9 +192,9 @@ ult11:  push    hl              ; ha ido bien
         defb    0, 0, 0         ; bc
         defb    0, 0            ; be
         block   $92bf-$
-        inc     de              ;6  51
-        ld      a, r            ;9
+        ld      a, r            ;9  51
         ld      l, a            ;4
+        inc     de              ;6
         ex      af, af'         ;4
         or      (hl)            ;7
         ex      af, af'         ;4
@@ -239,7 +245,7 @@ l9405:  ld      a, c            ;4
         jp      (hl)
 fin:
 
-;1 33+16 49 inc/out
-;2 33+17 50 inc/ld a,b/exaf/ret m
-;3 33+18 51 inc/incde/exaf/exaf
-;4 33+18 51 ld h,90/exaf/ld (de),a
+;1 33+16 49 inch/outc
+;2 33+17 50 inch/lda,b/ex af/ret m
+;3 33+18 51 inch/incde/ex af/ex af
+;4 33+18 51 ld h/ex af/ld(de

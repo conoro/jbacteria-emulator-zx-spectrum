@@ -137,16 +137,16 @@ int main(int argc, char* argv[]){
       obgen( 1764 );
     rem= 0;
     outbits( 2 );
-    outbits( 5 );
+    outbits( 8 ); // 8
     flag= strtol(argv[4], NULL, 16) | checksum<<8;
     for ( j= 0; j<16; j++, flag<<= 1 )
       outbits( l= flag&0x8000 ? 4 : 8 ),
       outbits( l );
     outbits( 2 );
     outbits( 3 );
-    buff= mem+5;
+    buff= mem+4;
     while( length-- )
-      outbits( 1+(*buff++  & 3) ),
+      outbits( 1+(*++buff  & 3) ),
       outbits( 1+(*buff>>2 & 3) ),
       outbits( 1+(*buff>>4 & 3) ),
       outbits( 1+(*buff>>6    ) );
