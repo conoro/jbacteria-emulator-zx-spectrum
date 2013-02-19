@@ -5,11 +5,9 @@
   #define strcasecmp stricmp
 #endif
 unsigned char *mem, *buff, *precalc;
-char *ext, *command;
-unsigned char rem= 0, inibit= 0, tzx= 0, channel_type= 1, plus= 1,
-              checksum, turbo, mod;
+unsigned char inibit= 0, tzx= 0, channel_type= 1, checksum;
 FILE *fi, *fo;
-int i, j, k, l, ind= 0, lpause, pilotpulses;
+int i, j, k, l, ind= 0, pilotpulses;
 float silence;
 unsigned short length, flag, frequency= 44100;
 
@@ -25,11 +23,6 @@ void outbits( short val ){
     fwrite( precalc, 1, ind, fo ),
     ind= 0;
   inibit^= 1;
-}
-
-void obgen( int nor ){
-  outbits( (nor+rem)/mod );
-  rem= (nor+rem)%mod;
 }
 
 char char2hex(char value, char * name){
@@ -85,7 +78,6 @@ int main(int argc, char* argv[]){
   else
     printf("\nInvalid argument name: %s\n", argv[2]),
     exit(-1);
-  mod= 7056000/frequency;
   fo= fopen(argv[3], "wb+");
   if( !fo )
     printf("\nCannot create output file: %s\n", argv[3]),
@@ -124,20 +116,19 @@ int main(int argc, char* argv[]){
     checksum^= mem[i];
   if( tzx )
     fwrite(mem, 1, length, fo),
-    fseek(fo, ++lpause, SEEK_SET),
+//    fseek(fo, ++lpause, SEEK_SET),
     *(short*)mem= 0,
     fwrite(mem, 2, 1, fo);
   else{
-    pilotpulses&1 || obgen( 1764 );
+    pilotpulses&1 || outbits( 12 );
     while( pilotpulses-- )
-      obgen( 1764 );
-    obgen( 4116 );
+      outbits( 12 );
+    outbits( 28 );
     pilotpulses= 6;
     while( pilotpulses-- )
-      obgen( 1764 );
-    rem= 0;
+      outbits( 12 );
     outbits( 2 );
-    outbits( 8 ); // 8
+    outbits( frequency==48000 ? 4 : 8 );
     flag= strtol(argv[4], NULL, 16) | checksum<<8;
     for ( j= 0; j<16; j++, flag<<= 1 )
       outbits( l= flag&0x8000 ? 4 : 8 ),
@@ -150,10 +141,10 @@ int main(int argc, char* argv[]){
       outbits( 1+(*buff>>2 & 3) ),
       outbits( 1+(*buff>>4 & 3) ),
       outbits( 1+(*buff>>6    ) );
-    outbits( 8 );
-    outbits( 8 ); // stop
-    obgen( 1764 );
-    obgen( 1764 );
+    outbits( 1 );
+    outbits( frequency==48000 ? 22 : 11 );
+    outbits( 1 );
+    outbits( 1 );
     fwrite( precalc, 1, ind, fo );
     fwrite( precalc+0x100000, 1, frequency*(channel_type&3)*atof(argv[6])/1000, fo);
     i= ftell(fo)-8,
