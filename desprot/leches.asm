@@ -238,3 +238,8 @@ l9405:  ld      a, c            ;4
         in      l, (c)
         jp      (hl)
 fin:
+
+;1 33+16 49 inc/out
+;2 33+17 50 inc/ld a,b/exaf/ret m
+;3 33+18 51 inc/incde/exaf/exaf
+;4 33+18 51 ld h,90/exaf/ld (de),a
