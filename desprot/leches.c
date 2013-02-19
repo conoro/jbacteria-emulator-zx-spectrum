@@ -56,12 +56,6 @@ int parseHex(char * name, int index){
   return flen;
 }
 
-int wavsilence( float msecs ){
-  fwrite( precalc, 1, ind, fo );
-  rem= ind= 0;
-  fwrite( precalc+0x100000, 1, frequency*(channel_type&3)*msecs/1000, fo);
-}
-
 int main(int argc, char* argv[]){
   mem= (unsigned char *) malloc (0x20000);
   if( argc==1 )
@@ -129,7 +123,10 @@ int main(int argc, char* argv[]){
   for ( checksum= i= 5; i<length; i++ )
     checksum^= mem[i];
   if( tzx )
-    fwrite(mem, 1, length, fo);
+    fwrite(mem, 1, length, fo),
+    fseek(fo, ++lpause, SEEK_SET),
+    *(short*)mem= 0,
+    fwrite(mem, 2, 1, fo);
   else{
     pilotpulses&1 || obgen( 1764 );
     while( pilotpulses-- )
@@ -138,9 +135,10 @@ int main(int argc, char* argv[]){
     pilotpulses= 6;
     while( pilotpulses-- )
       obgen( 1764 );
+    rem= 0;
     outbits( 2 );
     outbits( 5 );
-    flag= checksum | strtol(argv[4], NULL, 16)<<4;
+    flag= strtol(argv[4], NULL, 16) | checksum<<8;
     for ( j= 0; j<16; j++, flag<<= 1 )
       outbits( l= flag&0x8000 ? 4 : 8 ),
       outbits( l );
@@ -156,24 +154,16 @@ int main(int argc, char* argv[]){
     outbits( 8 ); // stop
     obgen( 1764 );
     obgen( 1764 );
-  }
-
-  
- // pause
-  fclose(fi);
-
-  if( tzx )
-    fseek(fo, ++lpause, SEEK_SET),
-    *(short*)mem= 0,
-    fwrite(mem, 2, 1, fo);
-  else
-    wavsilence( 100 ),
+    fwrite( precalc, 1, ind, fo );
+    fwrite( precalc+0x100000, 1, frequency*(channel_type&3)*atof(argv[6])/1000, fo);
     i= ftell(fo)-8,
     fseek(fo, 4, SEEK_SET),
     fwrite(&i, 4, 1, fo),
     i-= 36,
     fseek(fo, 40, SEEK_SET),
     fwrite(&i, 4, 1, fo);
+  }
+  fclose(fi);
   fclose(fo);
   printf("\nFile generated successfully\n");
 }

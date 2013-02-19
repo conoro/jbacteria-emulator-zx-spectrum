@@ -366,7 +366,6 @@ int main(int argc, char* argv[]){
       argv[1]+= 5;
       k= strtol(strstr(argv[1], "-")+1, NULL, 10);
       *strchr(argv[1], '-')= 0;
-//      printf( "%d", system("leches"));
       command= (char *) malloc (0x100);
       sprintf(command, "%s %d %s tmp.%s", argv[1], frequency,
               channel_type-1 ? (channel_type-2?"stereoinv":"stereo") : "mono", ++ext);
@@ -374,7 +373,32 @@ int main(int argc, char* argv[]){
       while( k-- )
         strcat(command, " "),
         strcat(command, argv++[2]);
-      printf( command );
+      if( system(command) )
+        printf("\nError: plug error with command:\n", command),
+        exit(-1);
+      else{
+        fwrite( precalc, 1, ind, fo );
+        rem= ind= 0;
+        fi= fopen("tmp.wav", "rb");
+        if( fi ){
+          fread(mem, 1, 44, fi);
+          i= *(int*)(mem+40);
+          j= i>>20;
+          k= i&0xfffff;
+          for ( int i= 0; i<j; i++ )
+            fread(precalc, 1, 0x100000, fi),
+            fwrite(precalc, 1, 0x100000, fo);
+          fread(precalc, 1, k, fi);
+          fwrite(precalc, 1, k, fo);
+          fclose(fi);
+          if( remove("tmp.wav") )
+            printf("\nError: deleting tmp.wav\n"),
+            exit(-1);
+        }
+        else
+          printf("\nError: plug doesn't generate valid file\n"),
+          exit(-1);
+      }
     }
     else
       printf("\nInvalid argument name: %s\n", argv[1]),
