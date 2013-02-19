@@ -15,11 +15,11 @@ unsigned short length, flag, frequency= 44100;
 
 void outbits( short val ){
   for ( i= 0; i<val; i++ ){
-    precalc[ind++]= inibit ? 0x40 : 0xc0;
+    precalc[ind++]= inibit ? 0xc0 : 0x40;
     if( channel_type==2 )
-      precalc[ind++]= inibit ? 0x40 : 0xc0;
-    else if( channel_type==6 )
       precalc[ind++]= inibit ? 0xc0 : 0x40;
+    else if( channel_type==6 )
+      precalc[ind++]= inibit ? 0x40 : 0xc0;
   }
   if( ind>0xff000 )
     fwrite( precalc, 1, ind, fo ),
@@ -144,12 +144,12 @@ int main(int argc, char* argv[]){
       outbits( l );
     outbits( 2 );
     outbits( 3 );
-    buff= mem;
+    buff= mem+5;
     while( length-- )
-      outbits( 1+(*buff>>6    ) ),
-      outbits( 1+(*buff>>4 & 3) ),
+      outbits( 1+(*buff++  & 3) ),
       outbits( 1+(*buff>>2 & 3) ),
-      outbits( 1+(*buff++  & 3) );
+      outbits( 1+(*buff>>4 & 3) ),
+      outbits( 1+(*buff>>6    ) );
     outbits( 8 );
     outbits( 8 ); // stop
     obgen( 1764 );

@@ -62,7 +62,7 @@ get16:  ld      b, 0            ; 16 bytes
         pop     de              ; recupero en de la direccion de comienzo del bloque
         ld      c, $fe          ; este valor es el que necesita b para entrar en raudo
 ultr7:  in      f, (c)
-        jp      pe, ultr7
+        jp      po, ultr7
         call    l9405           ; salto a raudo segun el signo del pulso en flag z
         exx                     ; ya se ha acabado la ultracarga (raudo)
         ld      b, e
