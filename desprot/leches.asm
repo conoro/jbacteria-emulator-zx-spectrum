@@ -51,7 +51,6 @@ get16:  ld      b, 0            ; 16 bytes
         cp      12
         adc     hl, hl
         jr      nc, get16
-        pop     af              ; machaco la direccion de retorno de la carga estandar
         ex      af, af'         ; a es el byte flag que espero
         cp      l               ; lo comparo con el que me encuentro en la ultracarga
         ret     nz              ; salgo si no coinciden
@@ -61,11 +60,10 @@ get16:  ld      b, 0            ; 16 bytes
         ld      c, a
         exx
         pop     de              ; recupero en de la direccion de comienzo del bloque
-        ld      bc, $effe       ; este valor es el que necesita b para entrar en raudo
-        ld      h, $37
+        ld      c, $fe          ; este valor es el que necesita b para entrar en raudo
 ultr7:  in      f, (c)
         jp      pe, ultr7
-        call    l90bf           ; salto a raudo segun el signo del pulso en flag z
+        call    l9405           ; salto a raudo segun el signo del pulso en flag z
         exx                     ; ya se ha acabado la ultracarga (raudo)
         ld      b, e
         ld      e, c
@@ -91,7 +89,152 @@ ult11:  push    hl              ; ha ido bien
         ret
 
 
-        block   $90bf-$
-l90bf:  ret
 
+        block   $9083-$
+        defb          %00001000 ; 83
+        defb    0, 0, %00001000 ; 86
+        defb    0, 0, %00001000 ; 89
+        defb    0, 0, %00001001 ; 8c
+        defb    0, 0, %00001001 ; 8f
+        defb    0, 0, %00001001 ; 92
+        defb    0, 0, %00001001 ; 95
+        defb    0, 0, %00001001 ; 98
+        defb    0, 0, %00001010 ; 9b
+        defb    0, 0, %00001010 ; 9e --
+        defb    0, 0, %00001010 ; a1
+        defb    0, 0, %00001010 ; a4
+        defb    0, 0, %00001010 ; a7
+        defb    0, 0, %00001011 ; aa
+        defb    0, 0, %00001011 ; ad
+        defb    0, 0, %00001011 ; b0
+        defb    0, 0, %00001011 ; b3
+        defb    0, 0, %00001011 ; b6
+        defb    0, 0, 0         ; b9
+        defb    0, 0, 0         ; bc
+        defb    0, 0            ; be
+        ld      a, r            ;9  49
+        ld      l, a            ;4
+        ld      b, (hl)         ;7
+        out     (c), b          ;12
+        ld      a, c            ;4
+        inc     h               ;4
+        ld      r, a            ;9
+        in      l, (c)        
+        jp      (hl)        
+        block   $90ff-$
+        in      l, (c)        
+        jp      (hl)        
+
+        block   $9183-$
+        defb          %00001000 ; 83
+        defb    0, 0, %00001000 ; 86
+        defb    0, 0, %00001000 ; 89
+        defb    0, 0, %00001100 ; 8c
+        defb    0, 0, %00001100 ; 8f
+        defb    0, 0, %00001100 ; 92
+        defb    0, 0, %00001100 ; 95
+        defb    0, 0, %00001100 ; 98
+        defb    0, 0, %00000000 ; 9b
+        defb    0, 0, %00000000 ; 9e --
+        defb    0, 0, %00000000 ; a1
+        defb    0, 0, %00000000 ; a4
+        defb    0, 0, %00000000 ; a7
+        defb    0, 0, %00000100 ; aa
+        defb    0, 0, %00000100 ; ad
+        defb    0, 0, %00000100 ; b0
+        defb    0, 0, %00000100 ; b3
+        defb    0, 0, %00000100 ; b6
+        defb    0, 0, 0         ; b9
+        defb    0, 0, 0         ; bc
+        defb    0, 0            ; be
+        block   $91bf-$
+        in      l, (c)        
+        jp      (hl)        
+        block   $91ff-$
+        ld      a, r            ;9  50
+        ld      l, a            ;4  
+        ld      a, b            ;4
+        xor     (hl)            ;7
+        ret     m               ;5
+        ex      af, af'         ;4
+        ld      a, c            ;4
+        inc     h               ;4
+        ld      r, a            ;9
+        in      l, (c)        
+        jp      (hl)        
+
+        block   $9283-$
+        defb          %00000000 ; 83
+        defb    0, 0, %00000000 ; 86
+        defb    0, 0, %00000000 ; 89
+        defb    0, 0, %00010000 ; 8c
+        defb    0, 0, %00010000 ; 8f
+        defb    0, 0, %00010000 ; 92
+        defb    0, 0, %00010000 ; 95
+        defb    0, 0, %00010000 ; 98
+        defb    0, 0, %00100000 ; 9b
+        defb    0, 0, %00100000 ; 9e --
+        defb    0, 0, %00100000 ; a1
+        defb    0, 0, %00100000 ; a4
+        defb    0, 0, %00100000 ; a7
+        defb    0, 0, %00110000 ; aa
+        defb    0, 0, %00110000 ; ad
+        defb    0, 0, %00110000 ; b0
+        defb    0, 0, %00110000 ; b3
+        defb    0, 0, %00110000 ; b6
+        defb    0, 0, 0         ; b9
+        defb    0, 0, 0         ; bc
+        defb    0, 0            ; be
+        block   $92bf-$
+        inc     de              ;6  51
+        ld      a, r            ;9
+        ld      l, a            ;4
+        ex      af, af'         ;4
+        or      (hl)            ;7
+        ex      af, af'         ;4
+        ld      a, c            ;4
+        inc     h               ;4
+        ld      r, a            ;9
+        in      l, (c)        
+        jp      (hl)        
+        block   $92ff-$
+        in      l, (c)        
+        jp      (hl)        
+
+        block   $9383-$
+        defb          %00000000 ; 83
+        defb    0, 0, %00000000 ; 86
+        defb    0, 0, %00000000 ; 89
+        defb    0, 0, %01000000 ; 8c
+        defb    0, 0, %01000000 ; 8f
+        defb    0, 0, %01000000 ; 92
+        defb    0, 0, %01000000 ; 95
+        defb    0, 0, %01000000 ; 98
+        defb    0, 0, %10000000 ; 9b
+        defb    0, 0, %10000000 ; 9e --
+        defb    0, 0, %10000000 ; a1
+        defb    0, 0, %10000000 ; a4
+        defb    0, 0, %10000000 ; a7
+        defb    0, 0, %11000000 ; aa
+        defb    0, 0, %11000000 ; ad
+        defb    0, 0, %11000000 ; b0
+        defb    0, 0, %11000000 ; b3
+        defb    0, 0, %11000000 ; b6
+        defb    0, 0, 0         ; b9
+        defb    0, 0, 0         ; bc
+        defb    0, 0            ; be
+        block   $93bf-$
+        in      l, (c)        
+        jp      (hl)        
+        block   $93ff-$
+        ld      a, r            ;9  51
+        ld      l, a            ;4  
+        ex      af, af'         ;4
+        or      (hl)            ;7
+        ld      (de), a         ;7
+l9405:  ld      a, c            ;4
+        ld      h, $90          ;7
+        ld      r, a            ;9
+        in      l, (c)
+        jp      (hl)
 fin:
