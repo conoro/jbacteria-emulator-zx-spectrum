@@ -4,7 +4,7 @@
 #ifdef __DMC__
   #define strcasecmp stricmp
 #endif
-unsigned char *mem, *buff, *precalc;
+unsigned char *mem, *precalc;
 unsigned char inibit= 0, tzx= 0, channel_type= 1, checksum;
 FILE *fi, *fo;
 int i, j, k, ind= 0;
@@ -118,7 +118,7 @@ int main(int argc, char* argv[]){
   if( fi )
     length= fread(mem, 1, 0x20000, fi);
   else
-    length= parseHex(argv[2], 0);
+    length= parseHex(argv[7], 0);
   for ( checksum= i= 0; i<length; i++ )
     checksum^= mem[i];
   if( tzx )
@@ -146,12 +146,12 @@ int main(int argc, char* argv[]){
     outbits( k );
   outbits( 2 );
   outbits( 3 );
-  buff= mem-1;
+  --mem;
   while( length-- )
-    outbits( 1+(*++buff  & 3) ),
-    outbits( 1+(*buff>>2 & 3) ),
-    outbits( 1+(*buff>>4 & 3) ),
-    outbits( 1+(*buff>>6    ) );
+    outbits( 1+(*++mem  & 3) ),
+    outbits( 1+(*mem>>2 & 3) ),
+    outbits( 1+(*mem>>4 & 3) ),
+    outbits( 1+(*mem>>6    ) );
   outbits( 1 );
   outbits( frequency==48000 ? 22 : 11 );
   outbits( 1 );

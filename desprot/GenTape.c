@@ -84,7 +84,7 @@ void tapewrite( unsigned char *buff, int length ){
 int main(int argc, char* argv[]){
   mem= (unsigned char *) malloc (0x20000);
   if( argc==1 )
-    printf("\nGenTape v0.20, a Tape File Generator by Antonio Villena, 16 Feb 2013\n\n"),
+    printf("\nGenTape v0.20, a Tape File Generator by Antonio Villena, 20 Feb 2013\n\n"),
     printf("  GenTape [<frequency>] [<channel_type>] <output_file>\n"),
     printf("          [ basic <name> <startline> <input_file>\n"),
     printf("          | hdata <name> <address>   <input_file>\n"),
@@ -92,8 +92,8 @@ int main(int argc, char* argv[]){
     printf("          | pilot <pilot_ts> <pilot_ms>\n"),
     printf("          | pulse <M> <pulse1_ts> <pulse2_ts> .. <pulseM_ts>\n"),
     printf("          | pause <pause_ms>\n"),
-    printf("          | pdata <zero_ts> <one_ts> <pause_ms> <input_file>\n"),
-    printf("          | tdata <pilot_ts> <syn1_ts> <syn2_ts> <zero_ts> <one_ts>\n"),
+    printf("          |  pure <zero_ts> <one_ts> <pause_ms> <input_file>\n"),
+    printf("          | turbo <pilot_ts> <syn1_ts> <syn2_ts> <zero_ts> <one_ts>\n"),
     printf("                                 <pilot_ms> <pause_ms> <input_file>\n"),
     printf("          | plug-xxx-N <param1> <param2> .. <paramN> ]\n\n"),
     printf("  <output_file>  Target file, between TAP, TZX or WAV file\n"),
@@ -131,13 +131,13 @@ int main(int argc, char* argv[]){
   if( !fo )
     printf("\nCannot create output file: %s\n", argv[1]),
     exit(-1);
+  precalc= (unsigned char *) malloc (0x200000);
   if( !strcasecmp((char *)strchr(argv[1], '.'), ".tzx" ) )
     fprintf( fo, "ZXTape!" ),
     *(int*)mem= 0xa011a,
     fwrite(mem, ++tzx, 3, fo),
     mem[0]= 0x10;
   else if( !strcasecmp((char *)strchr(argv[1], '.'), ".wav" ) ){
-    precalc= (unsigned char *) malloc (0x200000);
     memset(mem, wav++, 44);
     memset(precalc, 128, 0x200000);
     *(int*)mem= 0x46464952;
@@ -158,7 +158,7 @@ int main(int argc, char* argv[]){
     if( !strcasecmp(argv++[2], "basic")){
       *(short*)(mem+1)= 1000;
       tzx && fwrite(mem, 1, 3, fo);
-      param= strtol(argv[3], NULL, 10); //atoi
+      param= atoi(argv[3]);
       fi= fopen(argv[4], "rb");
       if( fi )
         length= fread(mem+27, 1, 0x20000-27, fi);
@@ -256,7 +256,7 @@ int main(int argc, char* argv[]){
       ++argv;
     }
     else if( !strcasecmp(argv[1], "pilot")){
-      k= strtol(argv[2], NULL, 10);
+      k= atoi(argv[2]);
       if( tzx )
         mem[1]= 0x12,
         k>>= 1-plus,
@@ -277,76 +277,76 @@ int main(int argc, char* argv[]){
       argv+= 2;
     }
     else if( !strcasecmp(argv[1], "pulse")){
-      k= strtol(argv++[2], NULL, 10);
+      k= atoi(argv++[2]);
       if( tzx ){
         mem[1]= 0x13;
         *(unsigned char*)(mem+2)= k;
         for ( j= 0; j<k; j++ )
-          *(unsigned short*)(mem+3+j*2)= strtol(argv++[2], NULL, 10) >> 1-plus;
+          *(unsigned short*)(mem+3+j*2)= atoi(argv++[2]) >> 1-plus;
         fwrite(mem+1, 1, k+1<<1, fo);
       }
       else if( wav )
         for ( j= 0; j<k; j++ )
-          obgen( strtol(argv++[2], NULL, 10) << plus );
+          obgen( atoi(argv++[2]) << plus );
       else
         printf("\nError: pulse command not allowed in TAP files\n"),
         exit(-1);
       nextsilence= 0;
       argc-= k+1;
     }
-    else if( (turbo= !strcasecmp(argv[1], "tdata")) || !strcasecmp(argv[1], "pdata") ){
+    else if( (turbo= !strcasecmp(argv[1], "turbo")) || !strcasecmp(argv[1], "pure") ){
       fi= fopen(argv[5+turbo*4], "rb");
       if( tzx ){
         if( turbo ){
           mem[1]= 0x11;
-          *(short*)(mem+2)= k= strtol(argv++[2], NULL, 10) >> 1-plus;
-          *(short*)(mem+4)= strtol(argv++[2], NULL, 10) >> 1-plus;
-          *(short*)(mem+6)= strtol(argv++[2], NULL, 10) >> 1-plus;
-          *(short*)(mem+8)= strtol(argv++[2], NULL, 10) >> 1-plus;
-          *(short*)(mem+10)= strtol(argv++[2], NULL, 10) >> 1-plus;
+          *(short*)(mem+2)= k= atoi(argv++[2]) >> 1-plus;
+          *(short*)(mem+4)= atoi(argv++[2]) >> 1-plus;
+          *(short*)(mem+6)= atoi(argv++[2]) >> 1-plus;
+          *(short*)(mem+8)= atoi(argv++[2]) >> 1-plus;
+          *(short*)(mem+10)= atoi(argv++[2]) >> 1-plus;
           *(short*)(mem+12)= atof(argv++[2])*3500/k+0.5;
           *(char*)(mem+14)= 8;
-          *(unsigned short*)(mem+15)= strtol(argv++[2], NULL, 10);
+          *(unsigned short*)(mem+15)= atoi(argv++[2]);
           if( fi )
             length= fread(mem+20, 1, 0x20000-20, fi);
           else
             length= parseHex(argv[2], 20);
           *(unsigned short*)(mem+17)= length;
-          *(char*)(mem+19)= 0;  // abcd
+          *(unsigned char*)(mem+19)= length>>16;
           fwrite(mem+1, 1, length+19, fo);
         }
         else{
           mem[1]= 0x14;
-          *(short*)(mem+2)= strtol(argv++[2], NULL, 10) >> 1-plus;
-          *(short*)(mem+4)= strtol(argv++[2], NULL, 10) >> 1-plus;
+          *(short*)(mem+2)= atoi(argv++[2]) >> 1-plus;
+          *(short*)(mem+4)= atoi(argv++[2]) >> 1-plus;
           *(char*)(mem+6)= 8;
-          *(unsigned short*)(mem+7)= strtol(argv++[2], NULL, 10);
+          *(unsigned short*)(mem+7)= atoi(argv++[2]);
           if( fi )
             length= fread(mem+20, 1, 0x20000-20, fi);
           else
             length= parseHex(argv[2], 20);
           *(unsigned short*)(mem+9)= length;
-          *(char*)(mem+11)= 0;  // abcd
+          *(unsigned char*)(mem+11)= length>>16;
           fwrite(mem+1, 1, length+11, fo);
         }
         ++argv;
       }
       else if( wav ){
         if( turbo ){
-          k= strtol(argv[2], NULL, 10) << plus;
+          k= atoi(argv[2]) << plus;
           j= atof(argv[7])*7056/k+0.5;
           while( j-- )
             obgen( k );
-          obgen( strtol(argv[3], NULL, 10) << plus );
-          obgen( strtol(argv[4], NULL, 10) << plus );
+          obgen( atoi(argv[3]) << plus );
+          obgen( atoi(argv[4]) << plus );
         }
         if( fi )
           length= fread(mem, 1, 0x20000, fi);
         else
           length= parseHex(argv[5+turbo*4], 0);
         j= 0;
-        param= strtol(argv[2+turbo*3], NULL, 10) << plus;
-        k= strtol(argv[3+turbo*3], NULL, 10) << plus;
+        param= atoi(argv[2+turbo*3]) << plus;
+        k= atoi(argv[3+turbo*3]) << plus;
         while ( length-- )
           for( wav= 0, checksum= mem[j++]; wav<8; wav++, checksum<<= 1 )
             obgen( l= checksum & 0x80 ? k : param ),
@@ -357,14 +357,14 @@ int main(int argc, char* argv[]){
         nextsilence= silence= atof(argv[0]);
       }
       else
-        printf("\nError: pdata or tdata command not allowed in TAP files\n"),
+        printf("\nError: pure or turbo command not allowed in TAP files\n"),
         exit(-1);
       argc-= turbo+1<<2;
     }
     else if( strchr(argv[1], '-')
           && (*strchr(argv[1], '-')= 0, !strcasecmp(argv[1], "plug")) ){
       argv[1]+= 5;
-      k= strtol(strstr(argv[1], "-")+1, NULL, 10);
+      k= atoi(strstr(argv[1], "-")+1);
       *strchr(argv[1], '-')= 0;
       command= (char *) malloc (0x100);
       sprintf(command, "%s %d %s tmp.%s", argv[1], frequency,
@@ -383,18 +383,19 @@ int main(int argc, char* argv[]){
         fi= fopen(command, "rb");
         if( fi ){
           if( tzx ) // abcd
-            fread(mem, 1, 44, fi);
-          else{
-            fread(mem, 1, 44, fi);
+            fseek(fi, 0, SEEK_END),
+            i= ftell(fi)-10,
+            fseek(fi, 10, SEEK_SET);
+          else
+            fread(mem, 1, 44, fi),
             i= *(int*)(mem+40);
-            j= i>>20;
-            k= i&0xfffff;
-            for ( int i= 0; i<j; i++ )
-              fread(precalc, 1, 0x100000, fi),
-              fwrite(precalc, 1, 0x100000, fo);
-            fread(precalc, 1, k, fi);
-            fwrite(precalc, 1, k, fo);
-          }
+          j= i>>20;
+          k= i&0xfffff;
+          for ( int i= 0; i<j; i++ )
+            fread(precalc, 1, 0x100000, fi),
+            fwrite(precalc, 1, 0x100000, fo);
+          fread(precalc, 1, k, fi);
+          fwrite(precalc, 1, k, fo);
           fclose(fi);
           if( remove(command) )
             printf("\nError: deleting \n", command),
@@ -410,9 +411,13 @@ int main(int argc, char* argv[]){
       exit(-1);
   }
   if( tzx )
-    fseek(fo, ++lpause, SEEK_SET),
+    fseek(fo, lpause, SEEK_SET),
+    fread(&turbo, 1, 1, fo),
+    fread(&length, 2, 1, fo),
+    fseek(fo, lpause, SEEK_SET),
+ printf( "%X %d %d", lpause, turbo, length), // abcd creo que hay que poner 2000 tras data
     *(short*)mem= 0,
-    fwrite(mem, 2, 1, fo);
+    turbo==0x10 && length==2000 && fwrite(mem, 2, 1, fo);
   else if( wav )
     wavsilence( 100 ),
     i= ftell(fo)-8,
