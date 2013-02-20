@@ -6,10 +6,10 @@
 #endif
 unsigned char *mem, *precalc;
 char *ext, *command;
-unsigned char rem= 0, inibit= 0, tzx= 0, wav= 0, channel_type= 1, plus= 1,
+unsigned char rem= 0, inibit= 0, tzx= 0, wav= 0, channel_type= 1,
               checksum, turbo, mod;
 FILE *fi, *fo;
-int i, j, k, l, ind= 0, lpause, nextsilence= 0;
+int i, j, k, l, ind= 0, nextsilence= 0;
 float silence;
 unsigned short length, param, frequency= 44100;
 
@@ -112,7 +112,7 @@ int main(int argc, char* argv[]){
     printf("      <frequency>    Sample frequency, 44100 or 48000. Default is 44100\n"),
     printf("      <channel_type> Possible values are: mono (default), stereo or stereoinv\n\n"),
     exit(0);
-  while( argv[1][0]!='+' || (++argv[1], plus--) )
+  while( 1 )
     if( !strcasecmp(argv[1], "mono") || !strcasecmp(argv[1], "44100") )
       ++argv, --argc;
     else if( !strcasecmp(argv[1], "stereo") )
@@ -153,7 +153,6 @@ int main(int argc, char* argv[]){
     fwrite(mem, 1, 44, fo);
   }
   while ( argc-- > 2 ){
-    lpause= ftell(fo);
     wav && nextsilence && wavsilence( silence );
     if( !strcasecmp(argv++[2], "basic")){
       *(short*)(mem+1)= 1000;
@@ -179,7 +178,6 @@ int main(int argc, char* argv[]){
       mem[length+25]= checksum;
       tapewrite(mem+3, 21);
       wav && wavsilence( 1000 );
-      lpause= ftell(fo);
       *(short*)(mem+1)= 2000;
       tzx && fwrite(mem, 1, 3, fo);
       tapewrite(mem+24, length+2);
@@ -215,7 +213,6 @@ int main(int argc, char* argv[]){
       mem[length+25]= checksum;
       tapewrite(mem+3, 21);
       wav && wavsilence( 1000 );
-      lpause= ftell(fo);
       *(short*)(mem+1)= 2000;
       tzx && fwrite(mem, 1, 3, fo);
       tapewrite(mem+24, length+2);
@@ -225,7 +222,7 @@ int main(int argc, char* argv[]){
       argv+= 3;
     }
     else if( !strcasecmp(argv[1], "data")){
-      *(short*)(mem+1)= 1000;
+      *(short*)(mem+1)= 2000;
       tzx && fwrite(mem, 1, 3, fo);
       fi= fopen(argv[2], "rb");
       if( fi )
@@ -259,13 +256,12 @@ int main(int argc, char* argv[]){
       k= atoi(argv[2]);
       if( tzx )
         mem[1]= 0x12,
-        k>>= 1-plus,
         *(short*)(mem+2)= k,
         *(unsigned short*)(mem+4)= atof(argv[3])*3500/k+0.5,
         fwrite(mem+1, 1, 5, fo);
       else if( wav ){
-        j= atof(argv[3])*3528/k+0.5;
-        k<<= plus;
+        k<<= 1;
+        j= atof(argv[3])*7056/k+0.5;
         while( j-- )
           obgen( k );
       }
@@ -282,12 +278,12 @@ int main(int argc, char* argv[]){
         mem[1]= 0x13;
         *(unsigned char*)(mem+2)= k;
         for ( j= 0; j<k; j++ )
-          *(unsigned short*)(mem+3+j*2)= atoi(argv++[2]) >> 1-plus;
+          *(unsigned short*)(mem+3+j*2)= atoi(argv++[2]);
         fwrite(mem+1, 1, k+1<<1, fo);
       }
       else if( wav )
         for ( j= 0; j<k; j++ )
-          obgen( atoi(argv++[2]) << plus );
+          obgen( atoi(argv++[2]) << 1 );
       else
         printf("\nError: pulse command not allowed in TAP files\n"),
         exit(-1);
@@ -299,11 +295,11 @@ int main(int argc, char* argv[]){
       if( tzx ){
         if( turbo ){
           mem[1]= 0x11;
-          *(short*)(mem+2)= k= atoi(argv++[2]) >> 1-plus;
-          *(short*)(mem+4)= atoi(argv++[2]) >> 1-plus;
-          *(short*)(mem+6)= atoi(argv++[2]) >> 1-plus;
-          *(short*)(mem+8)= atoi(argv++[2]) >> 1-plus;
-          *(short*)(mem+10)= atoi(argv++[2]) >> 1-plus;
+          *(short*)(mem+2)= k= atoi(argv++[2]);
+          *(short*)(mem+4)= atoi(argv++[2]);
+          *(short*)(mem+6)= atoi(argv++[2]);
+          *(short*)(mem+8)= atoi(argv++[2]);
+          *(short*)(mem+10)= atoi(argv++[2]);
           *(short*)(mem+12)= atof(argv++[2])*3500/k+0.5;
           *(char*)(mem+14)= 8;
           *(unsigned short*)(mem+15)= atoi(argv++[2]);
@@ -317,8 +313,8 @@ int main(int argc, char* argv[]){
         }
         else{
           mem[1]= 0x14;
-          *(short*)(mem+2)= atoi(argv++[2]) >> 1-plus;
-          *(short*)(mem+4)= atoi(argv++[2]) >> 1-plus;
+          *(short*)(mem+2)= atoi(argv++[2]);
+          *(short*)(mem+4)= atoi(argv++[2]);
           *(char*)(mem+6)= 8;
           *(unsigned short*)(mem+7)= atoi(argv++[2]);
           if( fi )
@@ -333,20 +329,20 @@ int main(int argc, char* argv[]){
       }
       else if( wav ){
         if( turbo ){
-          k= atoi(argv[2]) << plus;
+          k= atoi(argv[2]) << 1;
           j= atof(argv[7])*7056/k+0.5;
           while( j-- )
             obgen( k );
-          obgen( atoi(argv[3]) << plus );
-          obgen( atoi(argv[4]) << plus );
+          obgen( atoi(argv[3]) << 1 );
+          obgen( atoi(argv[4]) << 1 );
         }
         if( fi )
           length= fread(mem, 1, 0x20000, fi);
         else
           length= parseHex(argv[5+turbo*4], 0);
         j= 0;
-        param= atoi(argv[2+turbo*3]) << plus;
-        k= atoi(argv[3+turbo*3]) << plus;
+        param= atoi(argv[2+turbo*3]) << 1;
+        k= atoi(argv[3+turbo*3]) << 1;
         while ( length-- )
           for( wav= 0, checksum= mem[j++]; wav<8; wav++, checksum<<= 1 )
             obgen( l= checksum & 0x80 ? k : param ),
@@ -382,7 +378,7 @@ int main(int argc, char* argv[]){
         sprintf(command, "tmp.%s", ext);
         fi= fopen(command, "rb");
         if( fi ){
-          if( tzx ) // abcd
+          if( tzx )
             fseek(fi, 0, SEEK_END),
             i= ftell(fi)-10,
             fseek(fi, 10, SEEK_SET);
@@ -410,14 +406,57 @@ int main(int argc, char* argv[]){
       printf("\nInvalid argument name: %s\n", argv[1]),
       exit(-1);
   }
-  if( tzx )
-    fseek(fo, lpause, SEEK_SET),
-    fread(&turbo, 1, 1, fo),
-    fread(&length, 2, 1, fo),
-    fseek(fo, lpause, SEEK_SET),
- printf( "%X %d %d", lpause, turbo, length), // abcd creo que hay que poner 2000 tras data
-    *(short*)mem= 0,
-    turbo==0x10 && length==2000 && fwrite(mem, 2, 1, fo);
+  if( tzx ){
+    fseek(fo, 0, SEEK_END);
+    i= ftell(fo);
+    fseek(fo, 10, SEEK_SET);
+    while( ftell(fo)<i ){
+      fread(&turbo, 1, 1, fo);
+      switch(turbo){
+        case 0x10:
+          fseek(fo, 2, SEEK_CUR);
+          j= ftell(fo);
+          fread(&length, 2, 1, fo);
+          fseek(fo, length, SEEK_CUR);
+          break;
+        case 0x11:
+          fseek(fo, 13, SEEK_CUR);
+          j= ftell(fo);
+          fseek(fo, 2, SEEK_CUR);
+          fread(&length, 2, 1, fo);
+          fseek(fo, length+1, SEEK_CUR);
+          break;
+        case 0x12:
+          j= 0;
+          fseek(fo, 4, SEEK_CUR);
+          break;
+        case 0x13:
+          j= 0;
+          fread(&turbo, 1, 1, fo);
+          fseek(fo, turbo<<1, SEEK_CUR);
+          break;
+        case 0x14:
+          fseek(fo, 5, SEEK_CUR);
+          j= ftell(fo);
+          fseek(fo, 2, SEEK_CUR);
+          fread(&length, 2, 1, fo);
+          fseek(fo, length+1, SEEK_CUR);
+          break;
+        case 0x15:
+          fseek(fo, 2, SEEK_CUR);
+          j= ftell(fo);
+          fseek(fo, 3, SEEK_CUR);
+          fread(&length, 2, 1, fo);
+          fseek(fo, length+1, SEEK_CUR);
+          break;
+        default: 
+          printf("Invalid TZX ID: %X\n", turbo);
+      }
+    }
+    fseek(fo, j, SEEK_SET);
+    length= 100;
+    j && fwrite(&length, 2, 1, fo);
+  }
   else if( wav )
     wavsilence( 100 ),
     i= ftell(fo)-8,
