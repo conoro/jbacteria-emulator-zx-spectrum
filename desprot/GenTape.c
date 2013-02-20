@@ -379,20 +379,25 @@ int main(int argc, char* argv[]){
       else{
         fwrite( precalc, 1, ind, fo );
         rem= ind= 0;
-        fi= fopen("tmp.wav", "rb");
+        sprintf(command, "tmp.%s", ext);
+        fi= fopen(command, "rb");
         if( fi ){
-          fread(mem, 1, 44, fi);
-          i= *(int*)(mem+40);
-          j= i>>20;
-          k= i&0xfffff;
-          for ( int i= 0; i<j; i++ )
-            fread(precalc, 1, 0x100000, fi),
-            fwrite(precalc, 1, 0x100000, fo);
-          fread(precalc, 1, k, fi);
-          fwrite(precalc, 1, k, fo);
+          if( tzx ) // abcd
+            fread(mem, 1, 44, fi);
+          else{
+            fread(mem, 1, 44, fi);
+            i= *(int*)(mem+40);
+            j= i>>20;
+            k= i&0xfffff;
+            for ( int i= 0; i<j; i++ )
+              fread(precalc, 1, 0x100000, fi),
+              fwrite(precalc, 1, 0x100000, fo);
+            fread(precalc, 1, k, fi);
+            fwrite(precalc, 1, k, fo);
+          }
           fclose(fi);
-          if( remove("tmp.wav") )
-            printf("\nError: deleting tmp.wav\n"),
+          if( remove(command) )
+            printf("\nError: deleting \n", command),
             exit(-1);
         }
         else

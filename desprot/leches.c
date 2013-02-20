@@ -7,18 +7,26 @@
 unsigned char *mem, *buff, *precalc;
 unsigned char inibit= 0, tzx= 0, channel_type= 1, checksum;
 FILE *fi, *fo;
-int i, j, k, l, ind= 0, pilotpulses;
-float silence;
-unsigned short length, flag, frequency= 44100;
+int i, j, k, ind= 0;
+unsigned short length, flag, outbyte= 1, frequency= 44100, pilotts, pilotpulses;
 
 void outbits( short val ){
-  for ( i= 0; i<val; i++ ){
-    precalc[ind++]= inibit ? 0xc0 : 0x40;
-    if( channel_type==2 )
+  if( tzx )
+    for ( i= 0; i<val; i++ )
+      if( outbyte>0xff )
+        precalc[ind++]= outbyte&0xff,
+        outbyte= 2 | inibit;
+      else
+        outbyte<<= 1,
+        outbyte|= inibit;
+  else
+    for ( i= 0; i<val; i++ ){
       precalc[ind++]= inibit ? 0xc0 : 0x40;
-    else if( channel_type==6 )
-      precalc[ind++]= inibit ? 0x40 : 0xc0;
-  }
+      if( channel_type==2 )
+        precalc[ind++]= inibit ? 0xc0 : 0x40;
+      else if( channel_type==6 )
+        precalc[ind++]= inibit ? 0x40 : 0xc0;
+    }
   if( ind>0xff000 )
     fwrite( precalc, 1, ind, fo ),
     ind= 0;
@@ -82,13 +90,10 @@ int main(int argc, char* argv[]){
   if( !fo )
     printf("\nCannot create output file: %s\n", argv[3]),
     exit(-1);
+  precalc= (unsigned char *) malloc (0x200000);
   if( !strcasecmp((char *)strchr(argv[3], '.'), ".tzx" ) )
-    fprintf( fo, "ZXTape!" ),
-    *(int*)mem= 0xa011a,
-    fwrite(mem, ++tzx, 3, fo),
-    mem[0]= 0x12;
+    ++tzx;
   else if( !strcasecmp((char *)strchr(argv[3], '.'), ".wav" ) ){
-    precalc= (unsigned char *) malloc (0x200000);
     memset(mem, 0, 44);
     memset(precalc, 128, 0x200000);
     *(int*)mem= 0x46464952;
@@ -103,57 +108,71 @@ int main(int argc, char* argv[]){
     *(int*)(mem+36)= 0x61746164;
     fwrite(mem, 1, 44, fo);
   }
-//  *(short*)(mem+1)= 500; //abcd
-//  *(short*)(mem+3)= pilotpulses= atof(argv[5])*3500/k+0.5;
-//  tzx && fwrite(mem, 1, 3, fo);
-  pilotpulses= atof(argv[5])*7056/1764+0.5;
+  else
+    printf("Output format not allowed, use only TZX or WAV\n"),
+    exit(-1);
+  pilotts= frequency==48000 ? 875 : 952;
+  pilotpulses= atof(argv[5])*3500/pilotts+0.5;
+  pilotpulses&1 || ++pilotpulses;
   fi= fopen(argv[7], "rb");
   if( fi )
-    length= fread(mem+5, 1, 0x20000-5, fi);
+    length= fread(mem, 1, 0x20000, fi);
   else
-    length= parseHex(argv[2], 5);
-  for ( checksum= i= 5; i<length; i++ )
+    length= parseHex(argv[2], 0);
+  for ( checksum= i= 0; i<length; i++ )
     checksum^= mem[i];
   if( tzx )
-    fwrite(mem, 1, length, fo),
-//    fseek(fo, ++lpause, SEEK_SET),
-    *(short*)mem= 0,
-    fwrite(mem, 2, 1, fo);
-  else{
-    pilotpulses&1 || outbits( 12 );
+    fprintf( fo, "ZXTape!" ),
+    *(int*)precalc= 0xa011a,
+    precalc[3]= 0x12,
+    *(short*)(precalc+4)= pilotts,
+    *(short*)(precalc+6)= pilotpulses,
+    precalc[8]= 0x15,
+    *(short*)(precalc+9)= frequency==48000 ? 73 : 79,
+    *(short*)(precalc+11)= atof(argv[6]),
+    ind= 17;
+  else
     while( pilotpulses-- )
       outbits( 12 );
-    outbits( 28 );
-    pilotpulses= 6;
-    while( pilotpulses-- )
-      outbits( 12 );
-    outbits( 2 );
-    outbits( frequency==48000 ? 4 : 8 );
-    flag= strtol(argv[4], NULL, 16) | checksum<<8;
-    for ( j= 0; j<16; j++, flag<<= 1 )
-      outbits( l= flag&0x8000 ? 4 : 8 ),
-      outbits( l );
-    outbits( 2 );
-    outbits( 3 );
-    buff= mem+4;
-    while( length-- )
-      outbits( 1+(*++buff  & 3) ),
-      outbits( 1+(*buff>>2 & 3) ),
-      outbits( 1+(*buff>>4 & 3) ),
-      outbits( 1+(*buff>>6    ) );
-    outbits( 1 );
-    outbits( frequency==48000 ? 22 : 11 );
-    outbits( 1 );
-    outbits( 1 );
+  outbits( 28 );
+  pilotpulses= 6;
+  while( pilotpulses-- )
+    outbits( 12 );
+  outbits( 2 );
+  outbits( frequency==48000 ? 4 : 8 );
+  flag= strtol(argv[4], NULL, 16) | checksum<<8;
+  for ( j= 0; j<16; j++, flag<<= 1 )
+    outbits( k= flag&0x8000 ? 4 : 8 ),
+    outbits( k );
+  outbits( 2 );
+  outbits( 3 );
+  buff= mem-1;
+  while( length-- )
+    outbits( 1+(*++buff  & 3) ),
+    outbits( 1+(*buff>>2 & 3) ),
+    outbits( 1+(*buff>>4 & 3) ),
+    outbits( 1+(*buff>>6    ) );
+  outbits( 1 );
+  outbits( frequency==48000 ? 22 : 11 );
+  outbits( 1 );
+  outbits( 1 );
+  if( tzx ){
+    for ( j= 8; outbyte<0x100; outbyte<<= 1, --j );
+    precalc[ind++]= outbyte;
     fwrite( precalc, 1, ind, fo );
-    fwrite( precalc+0x100000, 1, frequency*(channel_type&3)*atof(argv[6])/1000, fo);
+    i= j | (ftell(fo)-24)<<8;
+    fseek(fo, 20, SEEK_SET);
+    fwrite(&i, 4, 1, fo);
+  }
+  else
+    fwrite( precalc, 1, ind, fo ),
+    fwrite( precalc+0x100000, 1, frequency*(channel_type&3)*atof(argv[6])/1000, fo),
     i= ftell(fo)-8,
     fseek(fo, 4, SEEK_SET),
     fwrite(&i, 4, 1, fo),
     i-= 36,
     fseek(fo, 40, SEEK_SET),
     fwrite(&i, 4, 1, fo);
-  }
   fclose(fi);
   fclose(fo);
   printf("\nFile generated successfully\n");
