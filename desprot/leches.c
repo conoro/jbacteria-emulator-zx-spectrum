@@ -73,7 +73,7 @@ int main(int argc, char* argv[]){
   if( argc!=8 )
     printf("\nInvalid number of parameters\n"),
     exit(-1);
-  frequency= strtol(argv[1], NULL, 10); //atoi
+  frequency= atoi(argv[1]);
   if( frequency!=44100 && frequency!=48000 )
     printf("\nInvalid sample rate: %d\n", frequency),
     exit(-1);

@@ -24,6 +24,31 @@ ruti:   ld      ix, $a003
         ld      de, $1b00
         ld      a, $12
         call    ultra
+        ld      hl, $a001
+        ld      b, $00
+        ei
+bbuu:   inc     hl
+        ld      a, (hl)
+        rrca
+        rrca
+        rrca
+        rrca
+        and     $0f
+        cp      $0a
+        jr      c, alp
+        add     a, $7
+alp:    add     a, $30
+        rst     $10
+        ld      a, (hl)
+        and     $0f
+        cp      $0a
+        jr      c, alp2
+        add     a, $7
+alp2:   add     a, $30
+        rst     $10
+        ld      a, $20
+        rst     $10
+        djnz    bbuu
 binf:   jr      binf
 
 ultra:  ex      af, af'
