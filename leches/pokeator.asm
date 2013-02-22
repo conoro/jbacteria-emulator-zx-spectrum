@@ -19137,7 +19137,50 @@ LGR4    inc     (hl)            ; Aumento la longitud de la cadena en 1
         add     hl, bc          ; Posiciono el puntero al carácter que se va a escribir (el último de la cadena)
         ld      (hl), a         ; Escribo el carácter en la cadena
         jr      LGR2            ; Retomo el bucle en LGR2
-LE04    jr      LE04
+LE04    ld      b, c
+        dec     b
+        ex      de, hl
+        sbc     hl, hl
+LE05    inc     e
+        ld      a, (de)
+        and     $0f
+        push    bc
+        add     hl, hl
+        ld      b, h
+        ld      c, l
+        add     hl, hl
+        add     hl, hl
+        add     hl, bc
+        ld      b, 0
+        ld      c, a
+        add     hl, bc
+        pop     bc
+        djnz    LE05
+        ld      a, (hl)
+        ld      hl, CADEN+2
+        ld      (hl), $2f
+        dec     l
+        ld      (hl), $32
+        sub     200
+        jr      nc, m200
+        dec     (hl)
+        add     a, 100
+        jr      c, m200
+        dec     (hl)
+        dec     (hl)
+        add     a, 90
+        jr      nc, unid
+        ccf
+        jr      dec2
+m200    inc     l
+dece    sub     10
+dec2    inc     (hl)
+        jr      nc, dece
+        inc     l
+unid    add     a, 10+$30
+        ld      (hl), a
+
+        jr      LGR2
 
 PRSTR   ld      a, (de)         ; Imprimir una cadena mediante rutina ROM, leo carácter de buffer (DE)
         push    de              ; Guardo puntero al buffer (DE)
