@@ -1,5 +1,5 @@
 ;        DEFINE  CADEN   $5C57+1
-        define  CADEN   $5000
+        define  CADEN   $5800-6
         DEFINE  LASTKK  ($5C08)
 
         OUTPUT  48.rom
@@ -19111,15 +19111,20 @@ L386C:  DEFB    $38             ;;end-calc              last value is 1 or 0.
 input:  ei
         ld      a, 8
         ld      ($5c3b), a
-        ld      hl, CADEN+16    ; Función GRAPH para darle nombre al archivo, Apunto a final buffer cadena
-        ld      bc, $1020       ; B=16 caracteres del buffer cadena. C=32 (lo relleno de espacios)
-LGR1    ld      (hl), c         ; Pongo a 01 20 20 .. 20 (todo espacios) la cadena a escribir
-        dec     hl
-        ld      (hl), b
-        djnz    LGR1
-LGR2    ld      de, CADEN+1     ; Apunto con DE al primer carácter de la cadena
-        ld      hl, $4000       ; Zona de pantalla donde se imprimirá la cadena
-        ld      b, $05          ; B=16 caracteres de longitud, C=B+1 porque se decrementará y no interesa que nos cambie de línea
+        xor     a
+INCI    ld      hl, CADEN       ; Función GRAPH para darle nombre al archivo, Apunto a final buffer cadena
+LGR1    inc     (hl)
+        inc     l
+        ld      (hl), 0
+        jr      nz, LGR1
+        or      a
+LG15    ld      de, CADEN+1     ; Apunto con DE al primer carácter de la cadena
+        jr      z, LGR2
+        ld      (de), a
+        ld      l, CADEN & $ff
+        ld      (hl), 2
+LGR2    ld      hl, $4000       ; Zona de pantalla donde se imprimirá la cadena
+        ld      bc, $500        ; B=16 caracteres de longitud, C=B+1 porque se decrementará y no interesa que nos cambie de línea
         call    PRSTR           ; Imprimo la cadena (mediante rutina ROM)
 LGR3    call    READK           ; Espero a que se pulse una tecla y obtengo el resultado en A
         jr      z, LGR3
@@ -19134,11 +19139,13 @@ LGR3    call    READK           ; Espero a que se pulse una tecla y obtengo el r
         dec     c               ; Decremento C también para apuntar al carácter que quiero borrar
         dec     (hl)            ; Para compensar en INC que hay justo después (saltarse la siguiente línea requeriría 2 bytes)
 LGR4    inc     (hl)            ; Aumento la longitud de la cadena en 1
+        jp      m, INCI
         add     hl, bc          ; Posiciono el puntero al carácter que se va a escribir (el último de la cadena)
         ld      (hl), a         ; Escribo el carácter en la cadena
-        jr      LGR2            ; Retomo el bucle en LGR2
-LE04    ld      b, c
-        dec     b
+        xor     a
+tg15    jr      LG15            ; Retomo el bucle en LGR2
+LE04    dec     c
+        ld      b, c
         ex      de, hl
         sbc     hl, hl
 LE05    inc     e
@@ -19156,7 +19163,15 @@ LE05    inc     e
         add     hl, bc
         pop     bc
         djnz    LE05
-        ld      a, (hl)
+        bit     2, c
+        jr      nz, bytt
+        ld      a, l
+        ex      (sp), hl
+        ld      (hl), a
+hhhh    jr      hhhh
+
+bytt    ld      a, (hl)
+        ex      (sp), hl
         ld      hl, CADEN+2
         ld      (hl), $2f
         dec     l
@@ -19177,10 +19192,13 @@ dece    sub     10
 dec2    inc     (hl)
         jr      nc, dece
         inc     l
-unid    add     a, 10+$30
-        ld      (hl), a
-
-        jr      LGR2
+unid    ld      (CADEN), a
+        add     a, 10+$30
+buct    ld      (hl), a
+        xor     a
+        inc     l
+        jr      nz, buct
+        jr      tg15
 
 PRSTR   ld      a, (de)         ; Imprimir una cadena mediante rutina ROM, leo carácter de buffer (DE)
         push    de              ; Guardo puntero al buffer (DE)
