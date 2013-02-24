@@ -19095,6 +19095,7 @@ L386C:  DEFB    $38             ;;end-calc              last value is 1 or 0.
 poke    push    af
         push    de
         push    bc
+        ld      bc, 11
         push    hl
         push    iy
         ld      iy, $5c3a
@@ -19109,13 +19110,14 @@ poke    push    af
         ld      e, (hl)
         inc     l
         ld      d, (hl)
-        ld      (hl), a
+        ld      (hl), b
         push    de
         ld      l, $8f
         ld      e, (hl)
         ld      (hl), $39
         inc     l
         ld      d, (hl)
+        ld      (hl), b
         push    de
         inc     l
         ld      a, (hl)
@@ -19126,6 +19128,7 @@ poke    push    af
         ld      (hl), a
         ld      l, $41
         ld      d, (hl)
+        ld      (hl), b
         ld      l, $3b
         ld      a, (hl)
         and     $22
@@ -19137,10 +19140,8 @@ poke    push    af
         and     $dd
         ld      (hl), a
         push    de
-        xor     a
-        ld      l, a
+        ld      l, b
         ld      de, CADEN-13
-        ld      bc, 11
         ldir
         ex      de, hl
         ld      hl, pok20+10
@@ -19149,6 +19150,7 @@ poke    push    af
         lddr
         dec     sp
         dec     sp
+        ld      a, b
         ei
 pok01   ld      hl, CADEN
 pok02   ld      (hl), 1
@@ -19183,10 +19185,10 @@ pok06   bit     5, (hl)
         ld      a, ($5C08)
         ld      hl, CADEN
         ld      c, (hl)
-        cp      13
         jr      pok07
         defb    $ff, $ff
-pok07   jr      z, pok16
+pok07   cp      13
+        jr      z, pok16
         jr      nc, pok08
         dec     (hl)
         jr      z, pok08
@@ -19278,7 +19280,7 @@ pok19   ld      c, 11
         dec     l
         ld      (hl), d
         dec     l
-        ld      (hl), d
+        ld      (hl), e
         pop     hl
         ld      ($5c78), hl
         pop     af
