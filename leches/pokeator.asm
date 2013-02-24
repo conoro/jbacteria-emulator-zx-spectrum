@@ -1,9 +1,5 @@
-;        DEFINE  CADEN   $5C57+1
         define  CADEN   $5800-6
-        DEFINE  LASTKK  ($5C08)
-
-        OUTPUT  48.rom
-
+        output  48.rom
  
 ;************************************************************************
 ;** An Assembly File Listing to generate a 16K ROM for the ZX Spectrum **
@@ -253,21 +249,9 @@ L0055:  LD      (IY+$00),L      ; Store it in the system variable ERR_NR.
 ;   placing two zeros in the NMIADD system variable.
 
 ;; RESET
-L0066:  PUSH    AF              ; save the
-        PUSH    HL              ; registers.
-  nop
-  nop
-  nop
-  nop
-  nop
-  jp    input
-;        LD      HL,($5CB0)      ; fetch the system variable NMIADD.
-;        LD      A,H             ; test address
-;        OR      L               ; for zero.
-
-;        JR      NZ,L0070        ; skip to NO-RESET if NOT ZERO
-
-;        JP      (HL)            ; jump to routine ( i.e. L0000 )
+L0066:  ld      (CADEN-2), sp
+        ld      sp, CADEN-11
+        jp      poke
 
 ;; NO-RESET
 L0070:  POP     HL              ; restore the
@@ -19108,47 +19092,140 @@ L386C:  DEFB    $38             ;;end-calc              last value is 1 or 0.
 ; ---------------------
 
 ;; spare
-input:  ei
-        ld      a, 8
-        ld      ($5c3b), a
-        xor     a
-INCI    ld      hl, CADEN       ; Función GRAPH para darle nombre al archivo, Apunto a final buffer cadena
-LGR1    inc     (hl)
+poke    push    af
+        push    de
+        push    bc
+        push    hl
+        push    iy
+        ld      iy, $5c3a
+        ld      a, i
+        push    af
+        dec     sp
+        ex      af, af'
+        push    af
+        ld      a, $18
+        ld      i, a
+        ld      hl, ($5c78)
+        push    hl
+        res     7, (iy+$3f)
+        ld      hl, $5c8f
+        ld      e, (hl)
+        ld      (hl), $39
         inc     l
-        ld      (hl), 0
-        jr      nz, LGR1
+        ld      d, (hl)
+        push    de
+        inc     l
+        ld      a, (hl)
+        and     $57
+        ld      e, a
+        ld      a, (hl)
+        and     $a8
+        ld      (hl), a
+        ld      l, $41
+        ld      d, (hl)
+        ld      l, $3b
+        ld      a, (hl)
+        and     $22
+        rlca
+        rlca
+        or      e
+        ld      e, a
+        ld      a, (hl)
+        and     $dd
+        ld      (hl), a
+        push    de
+        xor     a
+        ld      l, a
+        ld      de, CADEN-11
+        ld      bc, 9
+        ldir
+        dec     sp
+        dec     sp
+        ei
+pok01   ld      hl, CADEN
+pok02   ld      (hl), 1
+        inc     l
+        jr      nz, pok02
         or      a
-LG15    ld      de, CADEN+1     ; Apunto con DE al primer carácter de la cadena
-        jr      z, LGR2
+pok03   ld      de, CADEN+1
+        jr      z, pok04
         ld      (de), a
         ld      l, CADEN & $ff
         ld      (hl), 2
-LGR2    ld      hl, $4000       ; Zona de pantalla donde se imprimirá la cadena
-        ld      bc, $500        ; B=16 caracteres de longitud, C=B+1 porque se decrementará y no interesa que nos cambie de línea
-        call    PRSTR           ; Imprimo la cadena (mediante rutina ROM)
-LGR3    call    READK           ; Espero a que se pulse una tecla y obtengo el resultado en A
-        jr      z, LGR3
-        ld      hl, CADEN       ; Apunto al principio de la cadena (longitud)
-        ld      c, (hl)         ; Leo la longitud en C
-        cp      13              ; Veo si he pulsado Enter
-        jp      z, LE04         ; Si lo he pulsado salgo por LE04 y le doy el control al PIC
-        jr      nc, LGR4        ; Si es mayor (no se ha pulsado la tecla borrar) salto a LGR4
-        dec     (hl)            ; Al pulsar CS+0 debo borrar el último carácter
-        ld      a, $20          ; Pongo un espacio en ese lugar y decremento longitud
-        jr      z, LGR4         ; Si la longitud es 0 salto a LGR4 para no decrementar más la longitud
-        dec     c               ; Decremento C también para apuntar al carácter que quiero borrar
-        dec     (hl)            ; Para compensar en INC que hay justo después (saltarse la siguiente línea requeriría 2 bytes)
-LGR4    inc     (hl)            ; Aumento la longitud de la cadena en 1
-        jp      m, INCI
-        add     hl, bc          ; Posiciono el puntero al carácter que se va a escribir (el último de la cadena)
-        ld      (hl), a         ; Escribo el carácter en la cadena
+pok04   ld      hl, $4000
+        ld      b, $5
+pok05   ld      a, (de)
+        push    de
+        ex      de, hl
+        ld      l, a
+        ld      h, 7
+        add     hl, hl
+        inc     h
+        add     hl, hl
+        add     hl, hl
+        ex      de, hl
+        call    $0B99
+        pop     de
+        inc     de
+        djnz    pok05
+pok06   ld      hl, $5c3b
+        bit     5, (hl)
+        jr      z, pok06
+        res     5, (hl)
+        ld      a, ($5C08)
+        ld      hl, CADEN
+        ld      c, (hl)
+        cp      13
+        jr      z, pok16
+        jr      nc, pok08
+        dec     (hl)
+        jr      z, pok08
+        jr      pok07
+        defb    $ff, $ff
+pok07   xor     a
+        dec     c
+        dec     (hl)
+pok08   inc     (hl)
+        jp      m, pok01
+        add     hl, bc
+        ld      (hl), a
         xor     a
-tg15    jr      LG15            ; Retomo el bucle en LGR2
-LE04    dec     c
+pok09   jr      pok03
+pok10   ld      a, (hl)
+        ex      (sp), hl
+        ld      hl, CADEN+2
+        ld      (hl), $2f
+        dec     l
+        ld      (hl), $32
+        sub     200
+        jr      nc, pok11
+        dec     (hl)
+        add     a, 100
+        jr      c, pok11
+        dec     (hl)
+        dec     (hl)
+        add     a, 90
+        jr      nc, pok14
+        ccf
+        jr      pok13
+pok11   inc     l
+pok12   sub     10
+pok13   inc     (hl)
+        jr      nc, pok12
+        inc     l
+pok14   ld      (CADEN), a
+        add     a, 10+$30
+pok15   ld      (hl), a
+        xor     a
+        inc     l
+        jr      nz, pok15
+        jr      pok09
+pok16   dec     c
+        jp      m, pok18
         ld      b, c
         ex      de, hl
         sbc     hl, hl
-LE05    inc     e
+pok17   inc     e
         ld      a, (de)
         and     $0f
         push    bc
@@ -19162,68 +19239,56 @@ LE05    inc     e
         ld      c, a
         add     hl, bc
         pop     bc
-        djnz    LE05
+        djnz    pok17
         bit     2, c
-        jr      nz, bytt
+        jr      nz, pok10
+        di
         ld      a, l
-        ex      (sp), hl
+pok18   pop     hl
+        jr      nz, pok19
         ld      (hl), a
-hhhh    jr      hhhh
-
-bytt    ld      a, (hl)
-        ex      (sp), hl
-        ld      hl, CADEN+2
-        ld      (hl), $2f
+pok19   ld      c, 9
+        ld      hl, CADEN-11
+        ld      de, $5c00
+        ldir
+        pop     de
+        ld      a, e
+        rrca
+        rrca
+        and     $22
+        ld      hl, $5c41
+        ld      (hl), d
+        ld      l, $3b
+        or      (hl)
+        ld      (hl), a
+        ld      l, $91
+        ld      a, e
+        and     $57
+        or      (hl)
+        ld      (hl), a
+        pop     de
         dec     l
-        ld      (hl), $32
-        sub     200
-        jr      nc, m200
-        dec     (hl)
-        add     a, 100
-        jr      c, m200
-        dec     (hl)
-        dec     (hl)
-        add     a, 90
-        jr      nc, unid
-        ccf
-        jr      dec2
-m200    inc     l
-dece    sub     10
-dec2    inc     (hl)
-        jr      nc, dece
-        inc     l
-unid    ld      (CADEN), a
-        add     a, 10+$30
-buct    ld      (hl), a
-        xor     a
-        inc     l
-        jr      nz, buct
-        jr      tg15
+        ld      (hl), d
+        dec     l
+        ld      (hl), d
+        pop     hl
+        ld      ($5c78), hl
+        pop     af
+        ex      af, af'
+        inc     sp
+        pop     af
+        ld      i, a
+        pop     iy
+        pop     hl
+        pop     bc
+        pop     de
+        pop     af
+        ld      sp, (CADEN-2)
+        retn
 
-PRSTR   ld      a, (de)         ; Imprimir una cadena mediante rutina ROM, leo carácter de buffer (DE)
-        push    de              ; Guardo puntero al buffer (DE)
-        ex      de, hl
-        ld      l, a
-        ld      h, 7
-        add     hl, hl          ; multiply
-        inc     h
-        add     hl, hl          ; by
-        add     hl, hl          ; eight
-        ex      de, hl
-        call    $0B99           ; Imprimo carácter mediante rutina ROM
-        pop     de              ; Recupero puntero
-        inc     de              ; Incremento puntero (apunto al siguiente carácter)
-        djnz    PRSTR           ; Repito B veces y salgo
-        ret
-
-READK   ld      hl, $5c3b       ; Rutina que mira si se ha pulsado una tecla,     5C42
-        bit     5, (hl)         ; y en caso afirmativo la devuelve en A.
-        ret     z               ; La pulsación/no pulsación se devuelve en Flag Z
-        res     5, (hl)
-        ld      a, (LASTKK)
-        ret
-
-        block $3d00-$
+        block   $3cde-$, $ff
+        jp      L0038
+        block   $3d00-$, $ff
 
 ; -------------------------------
 ; THE 'ZX SPECTRUM CHARACTER SET'
