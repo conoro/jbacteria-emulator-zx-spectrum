@@ -250,7 +250,7 @@ L0055:  LD      (IY+$00),L      ; Store it in the system variable ERR_NR.
 
 ;; RESET
 L0066:  ld      (CADEN-2), sp
-        ld      sp, CADEN-11
+        ld      sp, CADEN-13
         jp      poke
 
 ;; NO-RESET
@@ -19105,10 +19105,13 @@ poke    push    af
         push    af
         ld      a, $18
         ld      i, a
-        ld      hl, ($5c78)
-        push    hl
-        res     7, (iy+$3f)
-        ld      hl, $5c8f
+        ld      hl, $5c78
+        ld      e, (hl)
+        inc     l
+        ld      d, (hl)
+        ld      (hl), a
+        push    de
+        ld      l, $8f
         ld      e, (hl)
         ld      (hl), $39
         inc     l
@@ -19136,9 +19139,14 @@ poke    push    af
         push    de
         xor     a
         ld      l, a
-        ld      de, CADEN-11
-        ld      bc, 9
+        ld      de, CADEN-13
+        ld      bc, 11
         ldir
+        ex      de, hl
+        ld      hl, pok20+10
+        ld      c, e
+        dec     e
+        lddr
         dec     sp
         dec     sp
         ei
@@ -19168,21 +19176,21 @@ pok05   ld      a, (de)
         pop     de
         inc     de
         djnz    pok05
-pok06   ld      hl, $5c3b
-        bit     5, (hl)
+        ld      hl, $5c3b
+pok06   bit     5, (hl)
         jr      z, pok06
         res     5, (hl)
         ld      a, ($5C08)
         ld      hl, CADEN
         ld      c, (hl)
         cp      13
-        jr      z, pok16
+        jr      pok07
+        defb    $ff, $ff
+pok07   jr      z, pok16
         jr      nc, pok08
         dec     (hl)
         jr      z, pok08
-        jr      pok07
-        defb    $ff, $ff
-pok07   xor     a
+        xor     a
         dec     c
         dec     (hl)
 pok08   inc     (hl)
@@ -19224,7 +19232,7 @@ pok16   dec     c
         jp      m, pok18
         ld      b, c
         ex      de, hl
-        sbc     hl, hl
+        ld      h, l
 pok17   inc     e
         ld      a, (de)
         and     $0f
@@ -19247,8 +19255,8 @@ pok17   inc     e
 pok18   pop     hl
         jr      nz, pok19
         ld      (hl), a
-pok19   ld      c, 9
-        ld      hl, CADEN-11
+pok19   ld      c, 11
+        ld      hl, CADEN-13
         ld      de, $5c00
         ldir
         pop     de
@@ -19285,7 +19293,7 @@ pok19   ld      c, 9
         pop     af
         ld      sp, (CADEN-2)
         retn
-
+pok20   defb    $ff, $00, $00, $00, $ff, $00, $00, $00, $00, $23, $05
         block   $3cde-$, $ff
         jp      L0038
         block   $3d00-$, $ff
