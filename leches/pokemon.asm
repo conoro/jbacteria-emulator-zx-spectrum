@@ -250,7 +250,7 @@ L0055:  LD      (IY+$00),L      ; Store it in the system variable ERR_NR.
 
 ;; RESET
 L0066:  ld      (CADEN-2), sp
-        ld      sp, CADEN-13
+        ld      sp, CADEN-13-1 ;sobra 1 byte
         jp      poke
 
 ;; NO-RESET
@@ -19102,6 +19102,7 @@ poke    push    af
         ex      af, af'
         push    af
         ld      hl, $5c78
+        ld      sp, $5700
         ld      e, (hl)
         inc     l
         ld      d, (hl)
@@ -19182,9 +19183,11 @@ pok06   bit     5, (hl)
         dec     c
         dec     (hl)
 pok07   inc     (hl)
-        jp      m, pok01
-        nop
-        defb    $fa, $ff, $ff
+;        nop
+;        defb    $ca, 
+        jr      pok75
+        defb    $ff, $ff
+pok75   jp      m, pok01
         add     hl, bc
         ld      (hl), a
         xor     a
@@ -19249,6 +19252,20 @@ pok17   ld      c, 11
         ld      hl, CADEN-13
         ld      de, $5c00
         ldir
+        ld      hl, $5805
+        ld      a, (hl)
+        and     $f8
+        ld      c, a
+        rra
+        rra
+        rra
+        and     $07
+        or      c
+        ld      c, l
+        dec     l
+        ld      (hl), a
+        ld      de, $5803
+        lddr
         pop     de
         ld      hl, $5c41
         ld      (hl), d
@@ -19266,6 +19283,7 @@ pok17   ld      c, 11
         ld      (hl), e
         pop     hl
         ld      ($5c78), hl
+        ld      sp, $57e0
         pop     af
         ex      af, af'
         pop     iy
