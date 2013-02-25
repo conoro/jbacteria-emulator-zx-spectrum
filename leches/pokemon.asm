@@ -19261,8 +19261,8 @@ pok17   ld      c, 11
         rra
         and     $07
         or      c
-        ld      c, l
         dec     l
+        ld      c, l
         ld      (hl), a
         ld      de, $5803
         lddr
