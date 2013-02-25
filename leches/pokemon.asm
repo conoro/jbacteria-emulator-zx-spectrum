@@ -19099,13 +19099,8 @@ poke    push    af
         push    hl
         push    iy
         ld      iy, $5c3a
-        ld      a, i
-        push    af
-        dec     sp
         ex      af, af'
         push    af
-        ld      a, $18
-        ld      i, a
         ld      hl, $5c78
         ld      e, (hl)
         inc     l
@@ -19120,36 +19115,29 @@ poke    push    af
         ld      (hl), b
         push    de
         inc     l
-        ld      a, (hl)
-        and     $57
+        ld      a, i
         ld      e, a
-        ld      a, (hl)
-        and     $a8
-        ld      (hl), a
+        ld      a, $18
+        ld      i, a
+        ld      d, (hl)
+        ld      (hl), b
+        push    de
+        ld      l, $3b
+        ld      e, (hl)
+        ld      (hl), b
         ld      l, $41
         ld      d, (hl)
         ld      (hl), b
-        ld      l, $3b
-        ld      a, (hl)
-        and     $22
-        rlca
-        rlca
-        or      e
-        ld      e, a
-        ld      a, (hl)
-        and     $dd
-        ld      (hl), a
         push    de
         ld      l, b
         ld      de, CADEN-13
         ldir
         ex      de, hl
-        ld      hl, pok20+10
+        ld      hl, pok18+10
         ld      c, e
         dec     e
         lddr
-        dec     sp
-        dec     sp
+        push    bc
         ld      a, b
         ei
 pok01   ld      hl, CADEN
@@ -19185,57 +19173,57 @@ pok06   bit     5, (hl)
         ld      a, ($5C08)
         ld      hl, CADEN
         ld      c, (hl)
-        jr      pok07
-        defb    $ff, $ff
-pok07   cp      13
-        jr      z, pok16
-        jr      nc, pok08
+        cp      13
+        jr      z, pok14
+        jr      nc, pok07
         dec     (hl)
-        jr      z, pok08
+        jr      z, pok07
         xor     a
         dec     c
         dec     (hl)
-pok08   inc     (hl)
+pok07   inc     (hl)
         jp      m, pok01
+        nop
+        defb    $fa, $ff, $ff
         add     hl, bc
         ld      (hl), a
         xor     a
-pok09   jr      pok03
-pok10   ld      a, (hl)
+        jr      pok03
+pok08   ld      a, (hl)
         ex      (sp), hl
         ld      hl, CADEN+2
         ld      (hl), $2f
         dec     l
         ld      (hl), $32
         sub     200
-        jr      nc, pok11
+        jr      nc, pok09
         dec     (hl)
         add     a, 100
-        jr      c, pok11
+        jr      c, pok09
         dec     (hl)
         dec     (hl)
         add     a, 90
-        jr      nc, pok14
-        ccf
-        jr      pok13
-pok11   inc     l
-pok12   sub     10
-pok13   inc     (hl)
         jr      nc, pok12
+        ccf
+        jr      pok11
+pok09   inc     l
+pok10   sub     10
+pok11   inc     (hl)
+        jr      nc, pok10
         inc     l
-pok14   ld      (CADEN), a
+pok12   ld      (CADEN), a
         add     a, 10+$30
-pok15   ld      (hl), a
+pok13   ld      (hl), a
         xor     a
         inc     l
-        jr      nz, pok15
-        jr      pok09
-pok16   dec     c
-        jp      m, pok18
+        jr      nz, pok13
+        jr      pok03
+pok14   dec     c
+        jp      m, pok16
         ld      b, c
         ex      de, hl
         ld      h, l
-pok17   inc     e
+pok15   inc     e
         ld      a, (de)
         and     $0f
         push    bc
@@ -19249,33 +19237,28 @@ pok17   inc     e
         ld      c, a
         add     hl, bc
         pop     bc
-        djnz    pok17
+        djnz    pok15
         bit     2, c
-        jr      nz, pok10
+        jr      nz, pok08
         di
         ld      a, l
-pok18   pop     hl
-        jr      nz, pok19
+pok16   pop     hl
+        jr      nz, pok17
         ld      (hl), a
-pok19   ld      c, 11
+pok17   ld      c, 11
         ld      hl, CADEN-13
         ld      de, $5c00
         ldir
         pop     de
-        ld      a, e
-        rrca
-        rrca
-        and     $22
         ld      hl, $5c41
         ld      (hl), d
         ld      l, $3b
-        or      (hl)
-        ld      (hl), a
+        ld      (hl), e
+        pop     de
         ld      l, $91
         ld      a, e
-        and     $57
-        or      (hl)
-        ld      (hl), a
+        ld      i, a
+        ld      (hl), d
         pop     de
         dec     l
         ld      (hl), d
@@ -19285,9 +19268,6 @@ pok19   ld      c, 11
         ld      ($5c78), hl
         pop     af
         ex      af, af'
-        inc     sp
-        pop     af
-        ld      i, a
         pop     iy
         pop     hl
         pop     bc
@@ -19295,7 +19275,7 @@ pok19   ld      c, 11
         pop     af
         ld      sp, (CADEN-2)
         retn
-pok20   defb    $ff, $00, $00, $00, $ff, $00, $00, $00, $00, $23, $05
+pok18   defb    $ff, $00, $00, $00, $ff, $00, $00, $00, $00, $23, $05
         block   $3cde-$, $ff
         jp      L0038
         block   $3d00-$, $ff
