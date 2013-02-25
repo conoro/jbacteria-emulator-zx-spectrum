@@ -19241,6 +19241,11 @@ pok15   inc     e
         bit     2, c
         jr      nz, pok08
         di
+        ld      a, (CADEN+1)
+        sub     'r'
+        ret     z
+        dec     a
+        jr      z, save
         ld      a, l
 pok16   pop     hl
         jr      nz, pok17
@@ -19291,6 +19296,7 @@ pok17   ld      c, 11
         ld      sp, (CADEN-2)
         retn
 pok18   defb    $ff, $00, $00, $00, $ff, $00, $00, $00, $00, $23, $05
+save
         block   $3cde-$, $ff
         jp      L0038
         block   $3d00-$, $ff
