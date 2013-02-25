@@ -19125,7 +19125,7 @@ poke    push    af
         push    de
         ld      l, $3b
         ld      e, (hl)
-        ld      (hl), b
+        ld      (hl), 8
         ld      l, $41
         ld      d, (hl)
         ld      (hl), b
@@ -19183,11 +19183,8 @@ pok06   bit     5, (hl)
         dec     c
         dec     (hl)
 pok07   inc     (hl)
-;        nop
-;        defb    $ca, 
-        jr      pok75
-        defb    $ff, $ff
-pok75   jp      m, pok01
+        defb    $ca, $ff, $ff
+        jp      m, pok01
         add     hl, bc
         ld      (hl), a
         xor     a
