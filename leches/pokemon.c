@@ -2,7 +2,6 @@
 int main(int argc, char* argv[]){
   unsigned char *mem= (unsigned char *) malloc (0x4000);
   unsigned char *patch= (unsigned char *) malloc (0x4000);
-//  unsigned char tmp;
   unsigned short size, len, addr, i;
   FILE *fi, *fp, *fo;
   if( argc==1 )

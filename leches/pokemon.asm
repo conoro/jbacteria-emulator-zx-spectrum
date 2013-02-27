@@ -53,7 +53,7 @@ poke    push    af
         ld      de, CADEN-13
         ldir
         ex      de, hl
-        ld      hl, pok18+10
+        ld      hl, pok19+10
         ld      c, e
         dec     e
         lddr
@@ -140,7 +140,7 @@ pok13   ld      (hl), a
         jr      nz, pok13
         jr      pok03
 pok14   dec     c
-        jp      m, pok16
+        jp      m, pok17
         ld      b, c
         rlca
         rlca
@@ -163,13 +163,13 @@ pok15   inc     e
         pop     bc
         djnz    pok15
         bit     0, c
-        jr      z, pok111
+        jr      z, pok16
         ld      a, l
         pop     bc
         ld      (bc), a
         inc     bc
         jp      pokm1
-pok111  bit     3, c
+pok16   bit     3, c
         jr      nz, pok08
         di
         ld      a, (CADEN+1)
@@ -178,10 +178,10 @@ pok111  bit     3, c
         dec     a
         jr      z, save
         ld      a, l
-pok16   pop     hl
-        jr      nz, pok17
+pok17   pop     hl
+        jr      nz, pok18
         ld      (hl), a
-pok17   ld      c, 11
+pok18   ld      c, 11
         ld      hl, CADEN-13
         ld      de, $5c00
         ldir
@@ -226,7 +226,7 @@ pok17   ld      c, 11
         pop     af
         ld      sp, (CADEN-2)
         retn
-pok18   defb    $ff, $00, $00, $00, $ff, $00, $00, $00, $00, $23, $05
+pok19   defb    $ff, $00, $00, $00, $ff, $00, $00, $00, $00, $23, $05
 save
 pokef
 
