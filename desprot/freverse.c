@@ -20,7 +20,7 @@ int main(int argc, char* argv[]){
     exit(-1);
   fo= fopen(argv[2], "wb+");
   if( !fo )
-    printf("\nCannot create output file: %s\n", argv[4]),
+    printf("\nCannot create output file: %s\n", argv[2]),
     exit(-1);
   fseek(fi, 0, SEEK_END);
   size= ftell(fi);
