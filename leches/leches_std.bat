@@ -1,1 +1,1 @@
-\xampp\php\php leches_std.php %1 %2 %3
+\php leches_std.php %1 %2 %3

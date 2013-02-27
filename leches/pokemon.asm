@@ -12,9 +12,9 @@ L0066f
         defw    poke, pokef-poke
         org     $38b5
 poke    push    af
-        push    de
         push    bc
         ld      bc, 11
+        push    de
         push    hl
         push    iy
         ld      iy, $5c3a
@@ -175,12 +175,11 @@ pok16   bit     3, c
         ld      a, (CADEN+1)
         sub     'r'
         ret     z
-        dec     a
-        jr      z, save
-        ld      a, l
+        ex      af, af'
+        ld      c, l
 pok17   pop     hl
         jr      nz, pok18
-        ld      (hl), a
+        ld      (hl), c
 pok18   ld      c, 11
         ld      hl, CADEN-13
         ld      de, $5c00
@@ -219,16 +218,59 @@ pok18   ld      c, 11
         ld      sp, $57e0
         pop     af
         ex      af, af'
+        dec     a
+        jr      z, save
         pop     iy
         pop     hl
-        pop     bc
         pop     de
+        pop     bc
         pop     af
         ld      sp, (CADEN-2)
         retn
 pok19   defb    $ff, $00, $00, $00, $ff, $00, $00, $00, $00, $23, $05
-save
-pokef
+pok20   defb    $00, $73, $6e, $61, $70, $73, $68, $6f, $74, $34
+        defb    $38, $2b, $00, $0a, $00, $2b, $00
+;00 6D 61 72 69 6F 20 20 20 20 20 2B 00 0A 00 2B 00
+;57fb-57ff  string
+;57fa       string length
+;57f8       sp
+;57ed-57f7  keyboard variables
+;57ec       unused
+;57ea       af
+;57e8       bc
+;57e6       de
+;57e4       hl
+;57e2       iy
+;57e0       af'
+;56fe       FRAMES1           ix
+;56fc       ATTR_T MASK-T     
+;56fa       I P_FLAG
+;56f8       FLAGS MODE
+;56f6       poke addr
+;56f4       push de
+;56f2       call 0b99
+;56f0       push bc
+;56ee       push hl
+;56ec       call 0bdb
+;56ea       interrup addr
+;56e8       push af
+;56e6       push hl
+;56e4       push bc
+;56e2       push de
+;56e0       call 02bf  
+;56de       call 028e
+;56d9                         bloque1
+; o mover de 57b9 a 56d9 (39 bytes)
+; 3e xx ed 47 de c0 37 0e 8f 39 96 01 xx xx 11 xx xx 21 xx xx d9 ed 56/5e
+;     i iy                            bc'      de'      hl'         im
+; fd 21 xx xx 11 00 c0 21 00 40 31 08 80 c3 f4 07  (39 bytes)
+
+save    ld      ($56fe), ix
+        ld      ix, pok20
+        ld      de, $0011
+        call    $04c2
+        
+pokef   ld      a, 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
