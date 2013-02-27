@@ -43,10 +43,8 @@ int main(int argc, char* argv[]){
     fread(&addr, 2, 1, fp);
     fread(&len, 2, 1, fp);
     if( addr>0x386d && addr<0x3d00 ){
-      for ( i= 0; i<len && mem[addr]==0xff; i++ );
-      if( i!=len )
-        printf("\nCollision detected at %X\n", i+addr),
-        exit(-1);
+      for ( i= 0; i<len && (!mem[addr+i] || mem[addr+i]==0xff); i++ );
+      i!=len && printf("\nWarning: Collision detected at %X\n", i+addr);
     }
     fread(mem+addr, 1, len, fp);
   }

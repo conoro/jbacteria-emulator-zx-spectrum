@@ -2,8 +2,7 @@
         output  pokemon.bin
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-        defw    L0066, L0066f-L0066
-        org     $0066
+        defw    $0066, 10
 L0066   ld      (CADEN-2), sp
         ld      sp, CADEN-13-1 ;sobra 1 byte
         jp      poke
@@ -11,7 +10,7 @@ L0066f
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
         defw    poke, pokef-poke
-        org     $386e
+        org     $38b5
 poke    push    af
         push    de
         push    bc
@@ -58,9 +57,10 @@ poke    push    af
         ld      c, e
         dec     e
         lddr
-        push    bc
-        ld      a, b
+pokm1   push    bc
+        xor     a
         ei
+        defb    $c2, $ff, $ff
 pok01   ld      hl, CADEN
 pok02   ld      (hl), 1
         inc     l
@@ -102,8 +102,9 @@ pok06   bit     5, (hl)
         xor     a
         dec     c
         dec     (hl)
-pok07   inc     (hl)
-        defb    $ca, $ff, $ff
+pok07   cp      'i'
+        jr      z, pok14
+        inc     (hl)
         jp      m, pok01
         add     hl, bc
         ld      (hl), a
@@ -141,6 +142,9 @@ pok13   ld      (hl), a
 pok14   dec     c
         jp      m, pok16
         ld      b, c
+        rlca
+        rlca
+        rl      c
         ex      de, hl
         ld      h, l
 pok15   inc     e
@@ -158,7 +162,14 @@ pok15   inc     e
         add     hl, bc
         pop     bc
         djnz    pok15
-        bit     2, c
+        bit     0, c
+        jr      z, pok111
+        ld      a, l
+        pop     bc
+        ld      (bc), a
+        inc     bc
+        jp      pokm1
+pok111  bit     3, c
         jr      nz, pok08
         di
         ld      a, (CADEN+1)
@@ -221,6 +232,11 @@ pokef
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+        defw    $3c00, 16
+        defb    $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff
+        defb    $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
         defw    $3cde, 3
-        org     $3cde
         jp      $0038
