@@ -5,8 +5,8 @@ int main(int argc, char* argv[]){
   unsigned short size, len, addr, i;
   FILE *fi, *fp, *fo;
   if( argc==1 )
-    printf("\npokemon v0.99, a ZX Rom patch for the poke utility by Antonio Villena, 26 Feb 2013\n\n"),
-    printf("  pokemon <input_rom_file> <input_patch_file> <output_file>\n\n"),
+    printf("\nRomP v0.99, a ZX Rom Patch for the poke utility by Antonio Villena, 26 Feb 2013\n\n"),
+    printf("  RomP <input_rom_file> <input_patch_file> <output_file>\n\n"),
     printf("  <input_rom_file>    Origin rom to patch\n"),
     printf("  <input_patch_file>  Patch file\n"),
     printf("  <output_file>       Genetated patched file\n\n"),

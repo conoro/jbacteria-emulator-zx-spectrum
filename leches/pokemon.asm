@@ -1,3 +1,12 @@
+; pokemon ROM patch for ZX Spectrum 48, poke & save snapshot with NMI button
+; developped by Antonio Villena and flopping, GPL license, January 2013
+; assembled with sjasmplus, use patch.exe to patch the 48.rom file
+;        define  is16k
+      IFDEF is16k
+        define  LENP  $40
+      ELSE
+        define  LENP  $c0
+      ENDIF
         define  CADEN   $5800-6
         output  pokemon.bin
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -145,7 +154,7 @@ pok14   inc     e
         ld      a, (CADEN+1)
         sub     'r'
         ret     z
-        cp      3
+        cp      2
         jr      c, pok17
         ld      a, l
         bit     2, c
@@ -245,7 +254,7 @@ pok21   defb    $00, $10, $01, 'snapshot'
 ;56fd   $c3, $f4, $07                           jp  $07f4
 pok22   defb    $3e, 0,   $ed, $47, $de, $c0, $37, $0e, $8f, $39
         defb    $96, $01, 0,   0,   $11, 0,   0,   $21, 0,   0
-        defb    $d9, $ed, $56, $fd, $21, 0,   0,   $11, $00, $c0
+        defb    $d9, $ed, $56, $fd, $21, 0,   0,   $11, $00, LENP
         defb    $21, $00, $40, $31, $00, $58, $c3, $f4, $07
 
 ;56e3   $21, 0,   0,   $e5, $f1, $08      af'   ld  hl, 0 / push hl / pop af / ex af,af'
@@ -345,7 +354,7 @@ sav00   ld      hl, ($57e2)
 sav01   ld      hl, ($57f8)
         ld      ($56fc), hl   ;sp
         ld      ix, $4000
-        ld      de, $c000
+        ld      de, LENP*256
         sbc     a, a
         call    $04c6
         ld      ix, ($56f1)
