@@ -219,7 +219,7 @@ pok18   ld      c, 11
         ex      af, af'
         dec     a
         jr      z, save
-        ld      sp, $57e0
+pok188  ld      sp, $57e0
         pop     af
         pop     iy
         pop     hl
@@ -237,21 +237,34 @@ pok21   defb    $3e, 0,   $ed, $47, $de, $c0, $37, $0e, $8f, $39
         defb    $21, $00, $40, $31, $00, $58, $c3, $f4, $07
 pok22   defb    $21, 0,   0,   $e5, $f1, $08, $01, 0,   0,   $11
         defb    0,   0,   $dd, $21, 0,   0,   $21, 0,   0,   $e5
-        defb    $f1, $21, 0,   0,   $31, 0,   0,   $f3, $ed, $45
+        defb    $f1, $21, 0,   0,   $31, 0,   0,   $f3, $c9
 
-;56e2   $21, 0,   0,   $e5, $f1, $08      af'
-;56e8   $01, 0,   0                       bc
-;56eb   $11, 0,   0                       de
-;56ee   $dd, $21, 0,   0                  ix
-;56f2   $21, 0,   0,   $e5, $f1           af
-;56f7   $21, 0,   0                       hl
-;56fa   $31, 0,   0                       sp
-;56fd   $f3                               iff
-;56fe   $ed, $45
+;56d9   $3e, 0                            i
+;56db   $ed, $47
+;56dd   $de, $c0, $37, $0e, $8f, $39, $96
+;56e4   $01, 0,   0                       bc'
+;56e7   $11, 0,   0                       de'
+;56ea   $21, 0,   0                       hl'
+;56ed   $d9
+;56ee   $ed, $56                          im
+;56f0   $fd, $21, 0,   0                  iy
+;56f4   $11, $00, $c0
+;56f7   $21, $00, $40
+;56fa   $31, $00, $58
+;56fd   $c3, $f4, $07
 
-;00 6D 61 72 69 6F 20 20 20 20 20 2B 00 0A 00 2B 00
+;56e3   $21, 0,   0,   $e5, $f1, $08      af'
+;56e9   $01, 0,   0                       bc
+;56ec   $11, 0,   0                       de
+;56ef   $dd, $21, 0,   0                  ix
+;56f3   $21, 0,   0,   $e5, $f1           af
+;56f8   $21, 0,   0                       hl
+;56fb   $31, 0,   0                       sp
+;56fe   $f3                               iff
+;56ff   $c9
+
 ;57fb-57ff  string
-;57fa       string length 5+1          56e2
+;57fa       string length 5+1          56e3
 ;57f8       sp
 ;57ed-57f7  keyboard variables 11
 ;57ec       unused
@@ -276,24 +289,20 @@ pok22   defb    $21, 0,   0,   $e5, $f1, $08, $01, 0,   0,   $11
 ;56e6       push hl
 ;56e4       push bc
 ;56e2       push de
-;56e0       call 02bf    56e2 bloque2
+;56e0       call 02bf    56e3 bloque2
 ;56de       call 028e
 ;56d9                         bloque1
-;56d5                         
-; o mover de 57b9 a 56d9 (39 bytes)
-; 3e xx ed 47 de c0 37 0e 8f 39 96 01 xx xx 11 xx xx 21 xx xx d9 ed 56/5e
-;     i iy                            bc'      de'      hl'         im
-; fd 21 xx xx 11 00 c0 21 00 40 31 08 80 c3 f4 07  (39 bytes)
 
 save    ld      sp, $5800
-        ld      ($56ef), ix
+        push    ix
         ld      ix, pok20
         ld      de, $0011
         call    $04c6
         ld      hl, pok21
         ld      de, $56d9
         push    de
-        ld      c, $27 ;push bc
+        ld      c, $27
+        push    bc
         ldir
         ld      a, i
         ld      ($56da), a
@@ -301,47 +310,52 @@ save    ld      sp, $5800
         ld      ($56e5), bc
         ld      ($56e8), de
         ld      ($56eb), hl
+        exx
+        pop     de
+        pop     ix
         ld      a, ($57ec)
         dec     a
-        ld      a, $5e
         jr      nz, sav01
-        ld      ($56ef), a
+        set     3, (ix+$16)
 sav01   ld      hl, ($57e2)
         ld      ($56f2), hl
-        ld      de, $0027 ;pop de
-        pop     ix
-        ld      a, $ff
+        sbc     a, a
         call    $04c6
-        ld      de, $56e2
+        ld      d, $56
+        ld      hl, pok22+$1c
+        ld      c, $1d
+        lddr
+        pop     hl
+        ld      ($56f1), hl
+        inc     e
         push    de
         ld      hl, $05cd
         push    hl
-        ld      hl, pok22
-        ld      c, $1e
-        ldir
         ld      sp, $57e0
         pop     hl
-        ld      ($56e3), hl   ;af'
+        ld      ($56e4), hl   ;af'
         pop     hl
         pop     hl
-        ld      ($56f8), hl   ;hl
+        ld      ($56f9), hl   ;hl
         pop     hl
-        ld      ($56ec), hl   ;de
+        ld      ($56ed), hl   ;de
         pop     hl
-        ld      ($56e9), hl   ;bc
+        ld      ($56ea), hl   ;bc
         pop     hl
-        ld      ($56f3), hl   ;af
-        ld      hl, ($57f8)
+        ld      ($56f4), hl   ;af
         ld      a, i
         jp      pe, sav02
-        ld      a, $fb
-        ld      ($56fd), a    ;iff
-sav02   ld      ($56fb), hl   ;sp
+        set     3, (ix-3)     ;iff
+sav02   ld      hl, ($57f8)
+        ld      ($56fc), hl   ;sp
         ld      ix, $4000
         ld      de, $c000
-        ld      a, $ff
+        sbc     a, a
         call    $04c6
-        halt
+        ld      ix, ($56f1)
+        ld      hl, ($56f4)   ;af
+        ld      ($57ea), hl
+        jp      pok188
 pokef
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
