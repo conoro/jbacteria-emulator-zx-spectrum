@@ -53,7 +53,7 @@ poke    push    af
         ld      de, CADEN-13
         ldir
         ex      de, hl
-        ld      hl, sav03+10
+        ld      hl, pok20+10
         ld      c, e
         dec     e
         lddr
@@ -61,19 +61,17 @@ poke    push    af
         xor     a
         ei
         defb    $c2, $ff, $ff
-pok01   ld      hl, CADEN
-pok02   ld      (hl), 1
-        inc     l
-        jr      nz, pok02
-        or      a
-pok03   ld      de, CADEN+1
-        jr      z, pok04
+        ld      h, CADEN>>8
+pok00   ld      l, CADEN & $ff
+        ld      (hl), l
+pok01   ld      de, CADEN+1
+        jr      z, pok02
         ld      (de), a
         ld      l, CADEN & $ff
         ld      (hl), 2
-pok04   ld      hl, $4000
+pok02   ld      hl, $4000
         ld      b, $5
-pok05   ld      a, (de)
+pok03   ld      a, (de)
         push    de
         ex      de, hl
         ld      l, a
@@ -86,28 +84,33 @@ pok05   ld      a, (de)
         call    $0B99
         pop     de
         inc     de
-        djnz    pok05
+        djnz    pok03
         ld      hl, $5c3b
-pok06   bit     5, (hl)
-        jr      z, pok06
+pok04   bit     5, (hl)
+        jr      z, pok04
         res     5, (hl)
         ld      a, ($5C08)
         ld      hl, CADEN
         ld      c, (hl)
         cp      13
         jr      z, pok13
-        jr      nc, pok07
+        jr      nc, pok05
         dec     (hl)
-        jr      z, pok07
+        jr      z, pok05
         xor     a
         dec     c
         dec     (hl)
-pok07   inc     (hl)
-        jp      m, pok01
-        add     hl, bc
+pok05   inc     (hl)
+        jp      p, pok07
+pok06   ld      (hl), 1
+        inc     l
+        jr      nz, pok06
+        or      a
+        jr      pok01
+pok07   add     hl, bc
         ld      (hl), a
         xor     a
-        jr      pok03
+        jr      pok01
 pok08   inc     l
 pok09   sub     10
 pok10   inc     (hl)
@@ -118,9 +121,7 @@ pok12   ld      (hl), a
         xor     a
         inc     l
         jr      nz, pok12
-        ld      l, CADEN & $ff
-        ld      (hl), l
-        jr      pok03
+        jr      pok00
 pok13   dec     c
         jp      m, pok18
         ld      b, c
@@ -144,7 +145,7 @@ pok14   inc     e
         ld      a, (CADEN+1)
         sub     'r'
         ret     z
-        cp      2
+        cp      3
         jr      c, pok17
         ld      a, l
         bit     2, c
@@ -217,16 +218,15 @@ pok18   pop     hl
         jr      z, save
 pok19   ld      sp, $57e0
         pop     af
-        jr      pok20
-        block   $3a01-$, $ff
-pok20   pop     iy
+        pop     iy
         pop     hl
         pop     de
         pop     bc
         pop     af
         ld      sp, (CADEN-2)
         retn
-
+        block   $3a00-$, $ff
+pok20   defb    $ff, $00, $00, $00, $ff, $00, $00, $00, $00, $23, $05
 pok21   defb    $00, $10, $01, 'snapshot'
         defb    $27, $00, $00, $00, $27, $00
 
@@ -311,9 +311,9 @@ save    ld      sp, $5800
         pop     ix
         ld      a, ($57ec)
         dec     a
-        jr      nz, sav01
+        jr      nz, sav00
         set     3, (ix+$16)
-sav01   ld      hl, ($57e2)
+sav00   ld      hl, ($57e2)
         ld      ($56f2), hl
         sbc     a, a
         call    $04c6
@@ -340,9 +340,9 @@ sav01   ld      hl, ($57e2)
         pop     hl
         ld      ($56f4), hl   ;af
         ld      a, i
-        jp      pe, sav02
+        jp      pe, sav01
         set     3, (ix-3)     ;iff
-sav02   ld      hl, ($57f8)
+sav01   ld      hl, ($57f8)
         ld      ($56fc), hl   ;sp
         ld      ix, $4000
         ld      de, $c000
@@ -352,9 +352,6 @@ sav02   ld      hl, ($57f8)
         ld      hl, ($56f4)   ;af
         ld      ($57ea), hl
         jp      pok19
-        block   $3b00-$, $ff
-sav03   defb    $ff, $00, $00, $00, $ff, $00, $00, $00, $00, $23, $05
-
 pokef
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
