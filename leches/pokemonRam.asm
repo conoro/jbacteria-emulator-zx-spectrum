@@ -1,14 +1,20 @@
 ; pokemon ROM patch for ZX Spectrum 48, poke & save snapshot with NMI button
 ; developped by Antonio Villena and flopping, GPL license, January 2013
 ; assembled with sjasmplus, use patch.exe to patch the 48.rom file
-;        define  is16k
-      IFDEF is16k
-        define  LENP  $40
-      ELSE
-        define  LENP  $c0
-      ENDIF
+
         define  CADEN   $5800-6
         output  pokemon.bin
+
+
+
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+        defw    $0002, 5
+        ld      hl, $ffff
+        defb    $c3, $c8
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -16,6 +22,111 @@
         ld      (CADEN-2), sp
         ld      sp, CADEN-13-1
         jp      poke
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+        defw    rplay, rplayf-rplay
+        org     $11b8
+rplay   ld      hl, ($5cb2)
+        exx
+        ld      bc, ($5cb4)
+        ld      de, ($5c38)
+        ld      hl, ($5c7b)
+        exx
+        ex      af, af'
+        ld      a, $3f
+        out     ($fe), a
+        ld      i, a
+l11cf   ld      (hl), $01
+        dec     hl
+        cp      h
+        jr      nz, l11cf
+l11d5   inc     hl
+        dec     (hl)
+        jr      z, l11d5
+        dec     hl
+        ld      b,(hl)
+        exx
+        ld      ($5cb4), bc
+        ld      ($5c38), de
+        ld      ($5c7b), hl
+        exx
+        ex      af, af'
+        ld      de, $3eaf
+        jr      nz, l1201
+        ld      ($5cb4), hl
+        ld      c, $a7
+        ex      de, hl
+        lddr
+        ex      de, hl
+        ld      ($5c7b), hl
+        dec     hl
+        ld      c, $40
+        ld      ($5c38), bc
+l1201   ld      ($5cb2), hl
+        ld      (hl), d
+        dec     hl
+        ld      sp, hl
+        dec     hl
+        dec     hl
+        ld      ($5c3d), hl
+        im      1
+        ld      iy, $5c3a
+        ei
+        ld      (iy-3), $3c
+        ld      hl, $5cb6
+        ld      ($5c4f), hl
+        ld      de, $15af
+        ld      c, d
+        ex      de, hl
+        ldir
+        ld      e, $0e
+        ld      c, $10
+        ldir
+        ld      hl, $0523
+        ld      c, h
+        ld      (iy+$31), c
+        ld      ($5c09), hl
+        ld      hl, $5cca
+        ld      ($5c57), hl
+        inc     l
+        ld      ($5c53), hl
+        ld      ($5c4b), hl
+        ld      (hl), $80
+        inc     l
+        ld      ($5c59), hl
+        ld      de, l129d
+        ex      de, hl
+        ldir
+        ex      de, hl
+        ld      ($5c61), hl
+        ld      ($5c63), hl
+        ld      ($5c65), hl
+        ld      a, $38
+        ld      ($5c8d), a
+        ld      ($5c48), a
+        dec     (iy-$3a)
+        dec     (iy-$36)
+        call    $164d
+        call    $0edf
+        ld      (iy+$01), $8c
+        call    $0d6b
+        ld      de, $1538
+        call    $0c0a
+        call    $0308+3
+        jr      $1303-11
+        defb    $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff
+        defb    $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff
+        defb    $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff
+        defb    $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff
+l129d   defb    $ef, $22, $22, $0d, $80
+rplayf
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+        defw    $1539, msgf-msg
+msg     defb   "Press PLAY or SPACE to brea", 'k'+$80
+msgf
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -255,7 +366,7 @@ pok21   defb    $00, $10, $01, 'snapshot'
 ;56fd   $c3, $f4, $07                           jp  $07f4
 pok22   defb    $3e, 0,   $ed, $47, $de, $c0, $37, $0e, $8f, $39
         defb    $96, $01, 0,   0,   $11, 0,   0,   $21, 0,   0
-        defb    $d9, $ed, $56, $fd, $21, 0,   0,   $11, $00, LENP
+        defb    $d9, $ed, $56, $fd, $21, 0,   0,   $11, $00, $c0
         defb    $21, $00, $40, $31, $00, $58, $c3, $f4, $07
 
 ;56e3   $21, 0,   0,   $e5, $f1, $08      af'   ld  hl, 0 / push hl / pop af / ex af,af'
@@ -355,7 +466,7 @@ sav00   ld      hl, ($57e2)
 sav01   ld      hl, ($57f8)
         ld      ($56fc), hl   ;sp
         ld      ix, $4000
-        ld      de, LENP*256
+        ld      de, $c000
         sbc     a, a
         call    $04c6
         ld      ix, ($56f1)
