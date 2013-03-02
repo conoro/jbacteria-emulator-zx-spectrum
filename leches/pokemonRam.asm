@@ -1,136 +1,18 @@
 ; pokemon ROM patch for ZX Spectrum 48, poke & save snapshot with NMI button
 ; developped by Antonio Villena and flopping, GPL license, January 2013
-; assembled with sjasmplus, use patch.exe to patch the 48.rom file
+; assembled with sjasmplus (hacer que no se machaquen los primeros 5 bytes de ROM)
 
-        define  CADEN   $5800-6
-        output  pokemon.bin
-
-
-
-
-
-
+      macro bloque  addr, length        ;38b5 014b
+        defw    addr                    ;0002 0005
+        defb    length & 255            ;0066 000a
+      endm                              ;11b8 00ea
+        define  CADEN   $5800-6         ;1539 001c
+        output  pokemonRam.bin          ;3aff 00f7
+                                        ;3cde 0006
+                                        ;3c01 000f
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-        defw    $0002, 5
-        ld      hl, $ffff
-        defb    $c3, $c8
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-        defw    $0066, 10
-        ld      (CADEN-2), sp
-        ld      sp, CADEN-13-1
-        jp      poke
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-        defw    rplay, rplayf-rplay
-        org     $11b8
-rplay   ld      hl, ($5cb2)
-        exx
-        ld      bc, ($5cb4)
-        ld      de, ($5c38)
-        ld      hl, ($5c7b)
-        exx
-        ex      af, af'
-        ld      a, $3f
-        out     ($fe), a
-        ld      i, a
-l11cf   ld      (hl), $01
-        dec     hl
-        cp      h
-        jr      nz, l11cf
-l11d5   inc     hl
-        dec     (hl)
-        jr      z, l11d5
-        dec     hl
-        ld      b,(hl)
-        exx
-        ld      ($5cb4), bc
-        ld      ($5c38), de
-        ld      ($5c7b), hl
-        exx
-        ex      af, af'
-        ld      de, $3eaf
-        jr      nz, l1201
-        ld      ($5cb4), hl
-        ld      c, $a7
-        ex      de, hl
-        lddr
-        ex      de, hl
-        ld      ($5c7b), hl
-        dec     hl
-        ld      c, $40
-        ld      ($5c38), bc
-l1201   ld      ($5cb2), hl
-        ld      (hl), d
-        dec     hl
-        ld      sp, hl
-        dec     hl
-        dec     hl
-        ld      ($5c3d), hl
-        im      1
-        ld      iy, $5c3a
-        ei
-        ld      (iy-3), $3c
-        ld      hl, $5cb6
-        ld      ($5c4f), hl
-        ld      de, $15af
-        ld      c, d
-        ex      de, hl
-        ldir
-        ld      e, $0e
-        ld      c, $10
-        ldir
-        ld      hl, $0523
-        ld      c, h
-        ld      (iy+$31), c
-        ld      ($5c09), hl
-        ld      hl, $5cca
-        ld      ($5c57), hl
-        inc     l
-        ld      ($5c53), hl
-        ld      ($5c4b), hl
-        ld      (hl), $80
-        inc     l
-        ld      ($5c59), hl
-        ld      de, l129d
-        ex      de, hl
-        ldir
-        ex      de, hl
-        ld      ($5c61), hl
-        ld      ($5c63), hl
-        ld      ($5c65), hl
-        ld      a, $38
-        ld      ($5c8d), a
-        ld      ($5c48), a
-        dec     (iy-$3a)
-        dec     (iy-$36)
-        call    $164d
-        call    $0edf
-        ld      (iy+$01), $8c
-        call    $0d6b
-        ld      de, $1538
-        call    $0c0a
-        call    $0308+3
-        jr      $1303-11
-        defb    $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff
-        defb    $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff
-        defb    $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff
-        defb    $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff
-l129d   defb    $ef, $22, $22, $0d, $80
-rplayf
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-        defw    $1539, msgf-msg
-msg     defb   "Press PLAY or SPACE to brea", 'k'+$80
-msgf
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-        defw    poke, pokef-poke
+        bloque  poke, pokef-poke
         org     $38b5
 poke    push    af
         push    bc
@@ -336,7 +218,7 @@ pok18   pop     hl
         ld      ($5c78), hl
         ex      af, af'
         dec     a
-        jr      z, save
+        jp      z, save
 pok19   ld      sp, $57e0
         pop     af
         pop     iy
@@ -346,7 +228,128 @@ pok19   ld      sp, $57e0
         pop     af
         ld      sp, (CADEN-2)
         retn
-        block   $3a00-$, $ff
+pokef
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+        bloque  $0002, 5
+        ld      hl, $ffff
+        defb    $c3, $c8
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+        bloque  $0066, 10
+        ld      (CADEN-2), sp
+        ld      sp, CADEN-13-1
+        jp      poke
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+        bloque  rplay, rplayf-rplay
+        org     $11b8
+rplay   ld      hl, ($5cb2)
+        exx
+        ld      bc, ($5cb4)
+        ld      de, ($5c38)
+        ld      hl, ($5c7b)
+        exx
+        ex      af, af'
+        ld      a, $3f
+        out     ($fe), a
+        ld      i, a
+l11cf   ld      (hl), $01
+        dec     hl
+        cp      h
+        jr      nz, l11cf
+l11d5   inc     hl
+        dec     (hl)
+        jr      z, l11d5
+        inc     (hl)
+        dec     hl
+        ld      b,(hl)
+        exx
+        ld      ($5cb4), bc
+        ld      ($5c38), de
+        ld      ($5c7b), hl
+        exx
+        ex      af, af'
+        ld      de, $3eaf
+        jr      nz, l1201
+        ld      ($5cb4), hl
+        ld      c, $a7
+        ex      de, hl
+        lddr
+        ex      de, hl
+        ld      ($5c7b), hl
+        dec     hl
+        ld      c, $40
+        ld      ($5c38), bc
+l1201   ld      ($5cb2), hl
+        ld      (hl), d
+        dec     hl
+        ld      sp, hl
+        dec     hl
+        dec     hl
+        ld      ($5c3d), hl
+        im      1
+        ld      iy, $5c3a
+        ei
+        ld      (iy-3), $3c
+        ld      hl, $5cb6
+        ld      ($5c4f), hl
+        ld      de, $15af
+        ld      c, d
+        ex      de, hl
+        ldir
+        ld      e, $0e
+        ld      c, $10
+        ldir
+        ld      hl, $0523
+        ld      c, h
+        ld      (iy+$31), c
+        ld      ($5c09), hl
+        ld      hl, $5cca
+        ld      ($5c57), hl
+        inc     l
+        ld      ($5c53), hl
+        ld      ($5c4b), hl
+        ld      (hl), $80
+        inc     l
+        ld      ($5c59), hl
+        ld      de, loadcc
+        ex      de, hl
+        ldir
+        ex      de, hl
+        ld      ($5c61), hl
+        ld      ($5c63), hl
+        ld      ($5c65), hl
+        ld      a, $38
+        ld      ($5c8d), a
+        ld      ($5c48), a
+        dec     (iy-$3a)
+        dec     (iy-$36)
+        call    $164d
+        call    $0edf
+        ld      (iy+$01), $8c
+        call    $0d6b
+        ld      de, $1538
+        call    $0c0a
+        call    $0308+3
+        jr      $1303-11
+loadcc  defb    $ef, $22, $22, $0d, $80
+rplayf
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+        bloque  $1539, msgf-msg
+msg     defb    "Press PLAY or SPACE to brea", 'k'+$80
+msgf
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+        bloque  l3aff, l3afff-l3aff
+        org     $3aff
+l3aff   defb    $ff
 pok20   defb    $ff, $00, $00, $00, $ff, $00, $00, $00, $00, $23, $05
 pok21   defb    $00, $10, $01, 'snapshot'
         defb    $27, $00, $00, $00, $27, $00
@@ -473,16 +476,16 @@ sav01   ld      hl, ($57f8)
         ld      hl, ($56f4)   ;af
         ld      ($57ea), hl
         jp      pok19
-pokef
+l3afff
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-        defw    $3c00, 16
-        defb    $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff
-        defb    $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-        defw    $3cde, 6
+        bloque  $3cde, 6
         ld      ($57ec), a
         jp      $0038
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+        bloque  $3c01, 15
+        defb    $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff
+        defb    $ff, $ff, $ff, $ff, $ff, $ff, $ff
