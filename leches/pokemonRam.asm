@@ -15,6 +15,7 @@
         bloque  poke, pokef-poke
         org     $38b5
 poke    push    af
+        push    af
         push    bc
         ld      bc, 11
         push    de
@@ -154,10 +155,12 @@ pok14   inc     e
         pop     bc
         djnz    pok14
         ld      a, (CADEN+1)
-        sub     'r'
+        sub     'q'
+        jp      z, quit
+        dec     a
         ret     z
-        cp      2
-        jr      c, pok17
+        dec     a
+        jr      z, pok17
         ld      a, l
         bit     2, c
         jr      z, pok16
@@ -187,7 +190,6 @@ pok16   pop     hl
 pok17   halt
         di
         ex      af, af'
-        ld      c, l
 pok18   pop     hl
         ld      c, 11
         ld      hl, CADEN-13
@@ -222,8 +224,8 @@ pok19   ld      c, 5
         pop     hl
         ld      ($5c78), hl
         ex      af, af'
-        dec     a
         jp      z, save
+        jp      c, qui01
 pok20   ld      sp, $3ae0
         pop     af
         pop     iy
@@ -245,7 +247,7 @@ pokef
 
         bloque  $0066, 10
         ld      (CADEN-2), sp
-        ld      sp, CADEN-13-1
+        ld      sp, CADEN-13+1
         jp      poke
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -450,7 +452,7 @@ save    ld      sp, $3b00
         pop     de
         pop     ix
         ld      a, ($3bec)
-        dec     a
+        or      a
         jr      nz, sav01
         set     3, (ix+$16)
 sav01   ld      hl, ($3be2)
@@ -492,6 +494,9 @@ sav02   ld      hl, ($3bf8)
         ld      hl, ($3ad4)   ;af
         ld      ($3bea), hl
         jp      pok20
+quit    ccf
+        jp      pok17
+qui01   
 tablef
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
