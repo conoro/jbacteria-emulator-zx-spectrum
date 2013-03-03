@@ -1,12 +1,12 @@
 ; pokemon ROM patch for ZX Spectrum 48, poke & save snapshot with NMI button
 ; developped by Antonio Villena and flopping, GPL license, January 2013
-; assembled with sjasmplus (hacer que no se machaquen los primeros 5 bytes de ROM)
+; assembled with sjasmplus
 
       macro bloque  addr, length        ;38b5 014b
         defw    addr                    ;0002 0005
         defb    length & 255            ;0066 000a
       endm                              ;11b8 00ea
-        define  CADEN   $5800-6         ;1539 001c
+        define  CADEN   $3b00-6         ;1539 001c
         output  pokemonRam.bin          ;3aff 00f7
                                         ;3cde 0006
                                         ;3c01 000f
@@ -24,7 +24,6 @@ poke    push    af
         ex      af, af'
         push    af
         ld      hl, $5c78
-        ld      sp, $5700
         ld      e, (hl)
         inc     l
         ld      d, (hl)
@@ -56,24 +55,39 @@ poke    push    af
         ld      de, CADEN-13
         ldir
         ex      de, hl
-        ld      hl, pok20+10
+        ld      hl, tab01+10
         ld      c, e
         dec     e
         lddr
+        ld      hl, $4000
+        ld      de, $3a8c
+pok00   ld      c, 5
+        ldir
+        ld      l, b
+        inc     h
+        bit     3, h
+        jr      z, pok00
+        sub     h
+        ld      h, $58
+        jr      c, pok00
         push    bc
         xor     a
         ei
         defb    $c2, $ff, $ff
-        ld      h, CADEN>>8
-pok00   ld      l, CADEN & $ff
+        ld      hl, CADEN
+pok01   ld      (hl), 1
+        inc     l
+        jr      nz, pok01
+        or      a
+pok02   ld      l, CADEN & $ff
         ld      (hl), l
-pok01   ld      de, CADEN+1
-        jr      z, pok02
+pok03   ld      de, CADEN+1
+        jr      z, pok04
         ld      (de), a
         ld      (hl), 2
-pok02   ld      hl, $4000
+pok04   ld      hl, $4000
         ld      b, $5
-pok03   ld      a, (de)
+pok05   ld      a, (de)
         push    de
         ex      de, hl
         ld      l, a
@@ -86,33 +100,28 @@ pok03   ld      a, (de)
         call    $0B99
         pop     de
         inc     de
-        djnz    pok03
+        djnz    pok05
         ld      hl, $5c3b
-pok04   bit     5, (hl)
-        jr      z, pok04
+pok06   bit     5, (hl)
+        jr      z, pok06
         res     5, (hl)
-        ld      a, ($5C08)
+        ld      a, ($5c08)
         ld      hl, CADEN
         ld      c, (hl)
         cp      13
         jr      z, pok13
-        jr      nc, pok05
+        jr      nc, pok07
         dec     (hl)
-        jr      z, pok05
+        jr      z, pok07
         xor     a
         dec     c
         dec     (hl)
-pok05   inc     (hl)
-        jp      p, pok07
-pok06   ld      (hl), 1
-        inc     l
-        jr      nz, pok06
-        or      a
-        jr      pok00
-pok07   add     hl, bc
+pok07   inc     (hl)
+        jp      m, pok01
+        add     hl, bc
         ld      (hl), a
         xor     a
-        jr      pok01
+        jr      pok03
 pok08   inc     l
 pok09   sub     10
 pok10   inc     (hl)
@@ -123,7 +132,7 @@ pok12   ld      (hl), a
         xor     a
         inc     l
         jr      nz, pok12
-        jr      pok00
+        jr      pok02
 pok13   dec     c
         jp      m, pok18
         ld      b, c
@@ -184,20 +193,17 @@ pok18   pop     hl
         ld      hl, CADEN-13
         ld      de, $5c00
         ldir
-        ld      hl, $5805
-        ld      a, (hl)
-        and     $f8
-        ld      c, a
-        rra
-        rra
-        rra
-        and     $07
-        or      c
-        dec     l
-        ld      c, l
-        ld      (hl), a
-        ld      de, $5803
-        lddr
+        ld      de, $4000
+        ld      l, $8c
+pok19   ld      c, 5
+        ldir
+        ld      e, b
+        inc     d
+        bit     3, d
+        jr      z, pok19
+        bit     4, d
+        ld      d, $58
+        jr      z, pok19
         pop     de
         ld      hl, $5c41
         ld      (hl), d
@@ -218,7 +224,7 @@ pok18   pop     hl
         ex      af, af'
         dec     a
         jp      z, save
-pok19   ld      sp, $57e0
+pok20   ld      sp, $3ae0
         pop     af
         pop     iy
         pop     hl
@@ -351,11 +357,11 @@ msgf
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-        bloque  l3aff, l3afff-l3aff
+        bloque  table, tablef-table
         org     $3aff
-l3aff   defb    $ff
-pok20   defb    $ff, $00, $00, $00, $ff, $00, $00, $00, $00, $23, $05
-pok21   defb    $00, $10, $01, 'snapshot'
+table   defb    $ff
+tab01   defb    $ff, $00, $00, $00, $ff, $00, $00, $00, $00, $23, $05
+tab02   defb    $00, $10, $01, 'snapshot'
         defb    $27, $00, $00, $00, $27, $00
 
 ;56d9   $3e, 0                            i     ld  a, i
@@ -371,7 +377,7 @@ pok21   defb    $00, $10, $01, 'snapshot'
 ;56f7   $21, $00, $40                           ld  de, $c000
 ;56fa   $31, $00, $58                           ld  sp, $5800
 ;56fd   $c3, $f4, $07                           jp  $07f4
-pok22   defb    $3e, 0,   $ed, $47, $de, $c0, $37, $0e, $8f, $39
+tab03   defb    $3e, 0,   $ed, $47, $de, $c0, $37, $0e, $8f, $39
         defb    $96, $01, 0,   0,   $11, 0,   0,   $21, 0,   0
         defb    $d9, $ed, $56, $fd, $21, 0,   0,   $11, $00, $c0
         defb    $21, $00, $40, $31, $00, $58, $c3, $f4, $07
@@ -385,9 +391,15 @@ pok22   defb    $3e, 0,   $ed, $47, $de, $c0, $37, $0e, $8f, $39
 ;56fb   $31, 0,   0                       sp    ld  sp, 0
 ;56fe   $f3                               iff   di
 ;56ff   $c9                                     ret
-pok23   defb    $21, 0,   0,   $e5, $f1, $08, $01, 0,   0,   $11
+tab04   defb    $21, 0,   0,   $e5, $f1, $08, $01, 0,   0,   $11
         defb    0,   0,   $dd, $21, 0,   0,   $21, 0,   0,   $e5
         defb    $f1, $21, 0,   0,   $31, 0,   0,   $f3, $c9
+
+;5800-3b00
+;5700-3ae0
+;56e0-3ac0
+;56d9-3ab9
+;9*5=45 (2d) 3a8c-3ab9
 
 ;57fb-57ff  string                        56e3  <-57fe
 ;57fa       string length                 05cd  <-57fc
@@ -417,75 +429,75 @@ pok23   defb    $21, 0,   0,   $e5, $f1, $08, $01, 0,   0,   $11
 ;56e2       push de
 ;56e0       call 02bf                   bloque2 <-56e3
 ;56de       call 028e                   bloque1 <-56d9
-save    ld      sp, $5800
+save    ld      sp, $3b00
         push    ix
-        ld      ix, pok21
+        ld      ix, tab02
         ld      de, $0011
         call    $04c6
-        ld      hl, pok22
-        ld      de, $56d9
+        ld      hl, tab03
+        ld      de, $3ab9
         push    de
         ld      c, $27
         push    bc
         ldir
         ld      a, i
-        ld      ($56da), a
+        ld      ($3aba), a
         exx
-        ld      ($56e5), bc
-        ld      ($56e8), de
-        ld      ($56eb), hl
+        ld      ($3ac5), bc
+        ld      ($3ac8), de
+        ld      ($3acb), hl
         exx
         pop     de
         pop     ix
-        ld      a, ($57ec)
+        ld      a, ($3bec)
         dec     a
-        jr      nz, sav00
+        jr      nz, sav01
         set     3, (ix+$16)
-sav00   ld      hl, ($57e2)
-        ld      ($56f2), hl
+sav01   ld      hl, ($3be2)
+        ld      ($3ad2), hl
         sbc     a, a
         call    $04c6
-        ld      d, $56
-        ld      hl, pok23+$1c
+        ld      de, $3adf
+        ld      hl, tab04+$1c
         ld      c, $1d
         lddr
         pop     hl
-        ld      ($56f1), hl
+        ld      ($3ad1), hl
         inc     e
         push    de
         ld      hl, $05cd
         push    hl
-        ld      sp, $57e0
+        ld      sp, $3ae0
         pop     hl
-        ld      ($56e4), hl   ;af'
+        ld      ($3ac4), hl   ;af'
         pop     hl
         pop     hl
-        ld      ($56f9), hl   ;hl
+        ld      ($3ad9), hl   ;hl
         pop     hl
-        ld      ($56ed), hl   ;de
+        ld      ($3acd), hl   ;de
         pop     hl
-        ld      ($56ea), hl   ;bc
+        ld      ($3aca), hl   ;bc
         pop     hl
-        ld      ($56f4), hl   ;af
+        ld      ($3ad4), hl   ;af
         ld      a, i
-        jp      pe, sav01
+        jp      pe, sav02
         set     3, (ix-3)     ;iff
-sav01   ld      hl, ($57f8)
-        ld      ($56fc), hl   ;sp
+sav02   ld      hl, ($3bf8)
+        ld      ($3adc), hl   ;sp
         ld      ix, $4000
         ld      de, $c000
         sbc     a, a
         call    $04c6
-        ld      ix, ($56f1)
-        ld      hl, ($56f4)   ;af
-        ld      ($57ea), hl
-        jp      pok19
-l3afff
+        ld      ix, ($3ad1)
+        ld      hl, ($3ad4)   ;af
+        ld      ($3bea), hl
+        jp      pok20
+tablef
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
         bloque  $3cde, 6
-        ld      ($57ec), a
+        ld      ($3bec), a
         jp      $0038
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
