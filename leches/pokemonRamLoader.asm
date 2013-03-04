@@ -29,5 +29,6 @@ poralo  ld      e, (hl)
         ldir
         dec     a
         jr      nz, poralo
+        ld      ($33fb), a
         rst     0
 file    incbin  pokemonRam.bin

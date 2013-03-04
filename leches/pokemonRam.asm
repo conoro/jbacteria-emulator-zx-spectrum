@@ -2,17 +2,17 @@
 ; developped by Antonio Villena and flopping, GPL license, January 2013
 ; assembled with sjasmplus
 
-      macro bloque  addr, length        ;38b5 014b
-        defw    addr                    ;0002 0005
-        defb    length & 255            ;0066 000a
-      endm                              ;11b8 00ea
-        define  CADEN   $3b00-6         ;1539 001c
-        output  pokemonRam.bin          ;3aff 00f7
-                                        ;3cde 0006
-                                        ;3c01 000f
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-        bloque  poke, pokef-poke
+      macro bloque  addr, length        ;38b5 015c      0581 9c a4 +8
+        defw    addr                    ;0002 0005      0590 c9 cc +3
+        defb    length & 255            ;0066 000e      05a6 b0 b8 +8
+      endm                              ;11b8 00cb      05c7 b2 ba +8
+        define  CADEN   $3b00-6         ;1539 001c      05d4 b0 b8 +8
+        output  pokemonRam.bin          ;3aff 00fd      04df a4 90 (leader)
+                                        ;3cde 0006      04e9 2f (sync1)
+                                        ;3c01 0086      04f1 37 (sync2)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;                      0519 42 (uno-cero)
+                                                      ; 051f 3e (cero)
+        bloque  poke, pokef-poke                      ; 052e 31 (051f)
         org     $38b5
 poke    ld      bc, 11
         push    iy
@@ -78,7 +78,7 @@ pok01   ld      (hl), 1
         or      a
 pok02   ld      l, CADEN & $ff
         ld      (hl), l
-pok03   ld      e, CADEN+1
+pok03   ld      e, CADEN+1 & 255
         jr      z, pok04
         ld      (de), a
         ld      (hl), 2
@@ -221,18 +221,7 @@ pok19   ld      c, 5
         ld      (hl), e
         pop     hl
         ld      ($5c78), hl
-        ex      af, af'
-        jp      c, quit
-        jp      z, save
-pok20   pop     af
-        ex      af, af'
-        pop     iy
-        pop     hl
-        pop     de
-        pop     bc
-        pop     af
-        ld      sp, (CADEN-2)
-        retn
+        jp      pokkk
 pokef
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -356,8 +345,8 @@ msgf
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-        bloque  $33fb, 1
-        defb    0
+;        bloque  $33fb, 1
+;        defb    0
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -561,6 +550,18 @@ qui02   ld      hl, $3ac2
         ld      a, 4
         ld      sp, (CADEN-2)
         jp      $1e7d
+pokkk   ex      af, af'
+        jp      c, quit
+        jp      z, save
+pok20   pop     af
+        ex      af, af'
+        pop     iy
+        pop     hl
+        pop     de
+        pop     bc
+        pop     af
+        ld      sp, (CADEN-2)
+        retn
         
 ;5->4 guarda
 ;4->5 codigo
