@@ -2,14 +2,13 @@
 ; developped by Antonio Villena and flopping, GPL license, January 2013
 ; assembled with sjasmplus
 
-      macro bloque  addr, length        ;38b5 015c
-        defw    addr                    ;0002 0005
-        defb    length & 255            ;0066 000e
-      endm                              ;11b8 00cb
-        define  CADEN   $3b00-6         ;1539 001c
-        output  pokemonRam.bin          ;3aff 00fd
-                                        ;3cde 0006
-                                        ;3c01 0086
+      macro bloque  addr, length
+        defw    addr
+        defb    length & 255
+      endm
+        define  CADEN   $3b00-6
+        output  pokemonRam.bin
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;                
                                                   
         bloque  poke, pokef-poke                  
@@ -36,7 +35,7 @@ poke    ld      bc, 11
         ld      a, i
         ld      e, a
         ld      a, $18
-        ld      ($3bec), a
+        ld      ($3aec), a
         ld      i, a
         ld      d, (hl)
         ld      (hl), b
@@ -60,31 +59,31 @@ poke    ld      bc, 11
         ld      de, $3a8c
         ei
         defb    $ca, $ff, $ff
-pok00   ld      c, 5
+pok01   ld      c, 5
         ldir
         ld      l, b
         inc     h
         bit     3, h
-        jr      z, pok00
+        jr      z, pok01
         sub     h
         ld      h, $58
-        jr      c, pok00
+        jr      c, pok01
         push    bc
         xor     a
         ld      hl, CADEN
-pok01   ld      (hl), 1
+pok02   ld      (hl), 1
         inc     l
-        jr      nz, pok01
+        jr      nz, pok02
         or      a
-pok02   ld      l, CADEN & $ff
+pok03   ld      l, CADEN & $ff
         ld      (hl), l
-pok03   ld      e, CADEN+1 & 255
-        jr      z, pok04
+pok04   ld      e, CADEN+1 & 255
+        jr      z, pok05
         ld      (de), a
         ld      (hl), 2
-pok04   ld      hl, $4000
+pok05   ld      hl, $4000
         ld      b, $5
-pok05   ld      a, (de)
+pok06   ld      a, (de)
         push    de
         ex      de, hl
         ld      l, a
@@ -94,48 +93,48 @@ pok05   ld      a, (de)
         add     hl, hl
         add     hl, hl
         ex      de, hl
-        call    $0B99
+        call    $0b99
         pop     de
         inc     e
-        djnz    pok05
+        djnz    pok06
         ld      hl, $5c3b
-pok06   bit     5, (hl)
-        jr      z, pok06
+pok07   bit     5, (hl)
+        jr      z, pok07
         res     5, (hl)
         ld      a, ($5c08)
         ld      hl, CADEN
         ld      c, (hl)
         cp      13
-        jr      z, pok13
-        jr      nc, pok07
+        jr      z, pok14
+        jr      nc, pok08
         dec     (hl)
-        jr      z, pok07
+        jr      z, pok08
         xor     a
         dec     c
         dec     (hl)
-pok07   inc     (hl)
-        jp      m, pok01
+pok08   inc     (hl)
+        jp      m, pok02
         add     hl, bc
         ld      (hl), a
         xor     a
-        jr      pok03
-pok08   inc     l
-pok09   sub     10
-pok10   inc     (hl)
-        jr      nc, pok09
+        jr      pok04
+pok09   inc     l
+pok10   sub     10
+pok11   inc     (hl)
+        jr      nc, pok10
         inc     l
-pok11   add     a, 10+$30
-pok12   ld      (hl), a
+pok12   add     a, 10+$30
+pok13   ld      (hl), a
         xor     a
         inc     l
-        jr      nz, pok12
-        jr      pok02
-pok13   dec     c
-        jp      m, pok18
+        jr      nz, pok13
+        jr      pok03
+pok14   dec     c
+        jp      m, pok20
         ld      b, c
         ex      de, hl
         ld      h, l
-pok14   inc     e
+pok15   inc     e
         ld      a, (de)
         and     $0f
         push    bc
@@ -149,21 +148,21 @@ pok14   inc     e
         ld      c, a
         add     hl, bc
         pop     bc
-        djnz    pok14
+        djnz    pok15
         ld      a, (CADEN+1)
         sub     'q'
-        jr      nz, pok145
+        jr      nz, pok16
         ccf
-        jr      pok17
-pok145  dec     a
+        jr      pok19
+pok16   dec     a
         ret     z
         dec     a
-        jr      z, pok17
+        jr      z, pok19
         ld      a, l
         bit     2, c
-        jr      z, pok16
+        jr      z, pok18
         pop     bc
-pok15   push    hl
+pok17   push    hl
         ld      a, (hl)
         ex      (sp), hl
         ld      hl, CADEN+2
@@ -171,39 +170,39 @@ pok15   push    hl
         dec     l
         ld      (hl), $32
         sub     200
-        jr      nc, pok08
+        jr      nc, pok09
         dec     (hl)
         add     a, 100
-        jr      c, pok08
+        jr      c, pok09
         dec     (hl)
         dec     (hl)
         add     a, 90
-        jr      nc, pok11
+        jr      nc, pok12
         ccf
-        jr      pok10
-pok16   pop     hl
+        jr      pok11
+pok18   pop     hl
         ld      (hl), a
         inc     hl
-        jr      pok15
-pok17   halt
+        jr      pok17
+pok19   halt
         di
         ex      af, af'
-pok18   pop     hl
+pok20   pop     hl
         ld      c, 11
         ld      hl, CADEN-13
         ld      de, $5c00
         ldir
         ld      de, $4000
         ld      l, $8c
-pok19   ld      c, 5
+pok21   ld      c, 5
         ldir
         ld      e, b
         inc     d
         bit     3, d
-        jr      z, pok19
+        jr      z, pok21
         bit     4, d
         ld      d, $58
-        jr      z, pok19
+        jr      z, pok21
         pop     de
         ld      hl, $5c41
         ld      (hl), d
@@ -221,7 +220,8 @@ pok19   ld      c, 5
         ld      (hl), e
         pop     hl
         ld      ($5c78), hl
-        jp      pokkk
+        ex      af, af'
+        jp      sal04
 pokef
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -243,9 +243,9 @@ pokef
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-        bloque  rplay, rplayf-rplay
+        bloque  play, playf-play
         org     $11b8
-rplay   ld      hl, ($5cb2)
+play    ld      hl, ($5cb2)
         exx
         ld      bc, ($5cb4)
         ld      de, ($5c38)
@@ -255,13 +255,13 @@ rplay   ld      hl, ($5cb2)
         ld      a, $3f
         out     ($fe), a
         ld      i, a
-l11cf   ld      (hl), $01
+pla01   ld      (hl), $01
         dec     hl
         cp      h
-        jr      nz, l11cf
-l11d5   inc     hl
+        jr      nz, pla01
+pla02   inc     hl
         dec     (hl)
-        jr      z, l11d5
+        jr      z, pla02
         inc     (hl)
         dec     hl
         ld      b,(hl)
@@ -272,7 +272,7 @@ l11d5   inc     hl
         exx
         ex      af, af'
         ld      de, $3eaf
-        jr      nz, l1201
+        jr      nz, pla03
         ld      ($5cb4), hl
         ld      c, $a7
         ex      de, hl
@@ -282,7 +282,7 @@ l11d5   inc     hl
         dec     hl
         ld      c, $40
         ld      ($5c38), bc
-l1201   ld      ($5cb2), hl
+pla03   ld      ($5cb2), hl
         ld      (hl), d
         dec     hl
         ld      sp, hl
@@ -314,7 +314,7 @@ l1201   ld      ($5cb2), hl
         ld      (hl), $80
         inc     l
         ld      ($5c59), hl
-        ld      de, loadcc
+        ld      de, pla04
         ex      de, hl
         ldir
         ex      de, hl
@@ -334,8 +334,8 @@ l1201   ld      ($5cb2), hl
         call    $0c0a
         call    $0308+3
         jr      $1303-11
-loadcc  defb    $ef, $22, $22, $0d, $80
-rplayf
+pla04   defb    $ef, $22, $22, $0d, $80
+playf
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -357,72 +357,66 @@ tab01   defb    $ff, $00, $00, $00, $ff, $00, $00, $00, $00, $23, $05
 tab02   defb    $00, $10, $01, 'snapshot'
         defb    $27, $00, $00, $00, $27, $00
 
-;56d9   $3e, 0                            i     ld  a, i
-;56db   $ed, $47                                ld  i, a
-;56dd   $de, $c0, $37, $0e, $8f, $39, $96       over usr 5ccb
-;56e4   $01, 0,   0                       bc'   ld  bc, 0
-;56e7   $11, 0,   0                       de'   ld  de, 0
-;56ea   $21, 0,   0                       hl'   ld  hl, 0
-;56ed   $d9                                     exx
-;56ee   $ed, $56                          im    im  1
-;56f0   $fd, $21, 0,   0                  iy    ld  iy, 0
-;56f4   $11, $00, $c0                           ld  hl, $4000
-;56f7   $21, $00, $40                           ld  de, $c000
-;56fa   $31, $00, $58                           ld  sp, $5800
-;56fd   $c3, $f4, $07                           jp  $07f4
+;3ab9 $3e, 0                            i     ld  a, i
+;3abb $ed, $47                                ld  i, a
+;3abd $de, $c0, $37, $0e, $8f, $39, $96       over usr 5ccb
+;3ac4 $01, 0,   0                       bc'   ld  bc, 0
+;3ac7 $11, 0,   0                       de'   ld  de, 0
+;3aca $21, 0,   0                       hl'   ld  hl, 0
+;3acd $d9                                     exx
+;3ace $ed, $56                          im    im  1
+;3ad0 $fd, $21, 0,   0                  iy    ld  iy, 0
+;3ad4 $11, $00, $c0                           ld  hl, $4000
+;3ad7 $21, $00, $40                           ld  de, $c000
+;3ada $31, $00, $58                           ld  sp, $5800
+;3add $c3, $f4, $07                           jp  $07f4
 tab03   defb    $3e, 0,   $ed, $47, $de, $c0, $37, $0e, $8f, $39
         defb    $96, $01, 0,   0,   $11, 0,   0,   $21, 0,   0
         defb    $d9, $ed, $56, $fd, $21, 0,   0,   $11, $00, $c0
         defb    $21, $00, $40, $31, $00, $58, $c3, $f4, $07
 
-;56e3   $21, 0,   0,   $e5, $f1, $08      af'   ld  hl, 0 / push hl / pop af / ex af,af'
-;56e9   $01, 0,   0                       bc    ld  bc, 0
-;56ec   $11, 0,   0                       de    ld  de, 0
-;56ef   $dd, $21, 0,   0                  ix    ld  ix, 0
-;56f3   $21, 0,   0,   $e5, $f1           af    ld  hl, 0 / push hl / pop af
-;56f8   $21, 0,   0                       hl    ld  hl, 0
-;56fb   $31, 0,   0                       sp    ld  sp, 0
-;56fe   $f3                               iff   di
-;56ff   $c9                                     ret
+;3ac3 $21, 0,   0,   $e5, $f1, $08      af'   ld  hl, 0 / push hl / pop af / ex af,af'
+;3ac9 $01, 0,   0                       bc    ld  bc, 0
+;3acc $11, 0,   0                       de    ld  de, 0
+;3acf $dd, $21, 0,   0                  ix    ld  ix, 0
+;3ad3 $21, 0,   0,   $e5, $f1           af    ld  hl, 0 / push hl / pop af
+;3ad8 $21, 0,   0                       hl    ld  hl, 0
+;3adb $31, 0,   0                       sp    ld  sp, 0
+;3ade $f3                               iff   di
+;3adf $c9                                     ret
 tab04   defb    $21, 0,   0,   $e5, $f1, $08, $01, 0,   0,   $11
         defb    0,   0,   $dd, $21, 0,   0,   $21, 0,   0,   $e5
         defb    $f1, $21, 0,   0,   $31, 0,   0,   $f3, $c9
 
-;5800-3b00
-;5700-3ae0
-;56e0-3ac0
-;56d9-3ab9
-;9*5=45 (2d) 3a8c-3ab9
-
-;57fb-57ff  string                        56e3  <-57fe
-;57fa       string length                 05cd  <-57fc
-;57f8       sp
-;57ed-57f7  keyboard variables
-;57ec       unused                        im
-;57ea       af
-;57e8       bc
-;57e6       de
-;57e4       hl
-;57e2       iy
-;57e0       af'
-;56fe       FRAMES1
-;56fc       ATTR_T MASK-T     
-;56fa       I P_FLAG
-;56f8       FLAGS MODE
-;56f6       poke addr
-;56f4       push de
-;56f2       call 0b99
-;56f0       push bc
-;56ee       push hl
-;56ec       call 0bdb
-;56ea       interrup addr
-;56e8       push af
-;56e6       push hl
-;56e4       push bc
-;56e2       push de
-;56e0       call 02bf                   bloque2 <-56e3
-;56de       call 028e                   bloque1 <-56d9
-save    ld      sp, $3b00
+;3afb-3aff  string                        3ac3  <-3afe
+;3afa       string length                 05cd  <-3afc
+;3af8       sp
+;57ed-57f7  3aed-3af7  keyboard variables
+;3aec       unused                        im
+;3aea       af
+;3ae8       bc
+;3ae6       de
+;3ae4       hl
+;3ae2       iy
+;3ae0       af'
+;3ade       FRAMES1
+;3adc       ATTR_T MASK-T     
+;3ada       I P_FLAG
+;3ad8       FLAGS MODE
+;3ad6       poke addr
+;3ad4       push de
+;3ad2       call 0b99
+;3ad0       push bc
+;3ace       push hl
+;3acc       call 0bdb
+;3aca       interrup addr
+;3ac8       push af
+;3ac6       push hl
+;3ac4       push bc
+;3ac2       push de
+;3ac0       call 02bf                   bloque2 <-3ac3
+;3abe       call 028e                   bloque1 <-3ab9
+tab05   ld      sp, $3b00
         push    ix
         ld      ix, tab02
         ld      de, $0011
@@ -442,11 +436,11 @@ save    ld      sp, $3b00
         exx
         pop     de
         pop     ix
-        ld      a, ($3bec)
+        ld      a, ($3aec)
         or      a
-        jr      nz, sav01
+        jr      nz, tab06
         set     3, (ix+$16)
-sav01   ld      hl, ($3be2)
+tab06   ld      hl, ($3ae2)
         ld      ($3ad2), hl
         sbc     a, a
         call    $04c6
@@ -473,9 +467,9 @@ sav01   ld      hl, ($3be2)
         pop     hl
         ld      ($3ad4), hl   ;af
         ld      a, i
-        jp      pe, sav02
+        jp      pe, tab07
         set     3, (ix-3)     ;iff
-sav02   ld      hl, ($3bf8)
+tab07   ld      hl, ($3af8)
         ld      ($3adc), hl   ;sp
         ld      ix, $4000
         ld      de, $c000
@@ -483,16 +477,14 @@ sav02   ld      hl, ($3bf8)
         call    $04c6
         ld      ix, ($3ad1)
         ld      hl, ($3ad4)   ;af
-        ld      ($3bea), hl
-quit    ld      sp, $3ae0
-        jp      nz, pok20
-        jr      sal01
+        ld      ($3aea), hl
+        jp      sal05
 tablef
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
         bloque  $3cde, 6
-        ld      ($3bec), a
+        ld      ($3aec), a
         jp      $0038
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -501,23 +493,24 @@ tablef
         org     $3c01
 salir   defb    $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff
         defb    $ff, $ff, $ff, $ff, $ff, $ff, $ff
-sal01   pop     af
+sal01   ld      sp, $3ae0
+        pop     af
         ex      af, af'
         pop     iy
         ld      hl, $5b00
         ld      de, $3ac2
-        ld      c, qui02-qui01
+        ld      c, sal03-sal02
         push    hl
         ldir
         pop     de
         push    de
-        ld      hl, qui01
-        ld      c, qui02-qui01
+        ld      hl, sal02
+        ld      c, sal03-sal02
         ldir
         ld      bc, $1ffd
         ld      a, $04
         ret
-qui01   out     (c), a
+sal02   out     (c), a
         ld      bc, $4000
         ld      de, $8000
         ld      hl, $c000
@@ -527,10 +520,10 @@ qui01   out     (c), a
         out     (c), d
         ld      b, $1f
         out     (c), e
-        jp      qui02
-qui02   ld      hl, $3ac2
+        jp      sal03
+sal03   ld      hl, $3ac2
         ld      de, $5b00
-        ld      bc, qui02-qui01
+        ld      bc, sal03-sal02
         ldir
         ld      sp, (CADEN-2)
         ld      hl, $fff7
@@ -539,15 +532,15 @@ qui02   ld      hl, $3ac2
         ld      (CADEN-2), sp
         ld      hl, $45ed               ; retn
         push    hl
-        ld      hl, ($3be8)             ; bc
+        ld      hl, ($3ae8)             ; bc
         push    hl
         ld      h, 1                    ; ld bc, xxxx
         push    hl
         inc     sp
-        ld      hl, ($3bea)             ; af
+        ld      hl, ($3aea)             ; af
         ld      l, $3e                  ; ld a, xx
         push    hl
-        ld      sp, $3be4
+        ld      sp, $3ae4
         pop     hl
         pop     de
         pop     bc
@@ -556,10 +549,10 @@ qui02   ld      hl, $3ac2
         ld      a, 4
         ld      sp, (CADEN-2)
         jp      $1e7d
-pokkk   ex      af, af'
-        jp      c, quit
-        jp      z, save
-pok20   pop     af
+sal04   jr      c, sal01
+        jp      z, tab05
+sal05   ld      sp, $3ae0
+        pop     af
         ex      af, af'
         pop     iy
         pop     hl
@@ -568,18 +561,6 @@ pok20   pop     af
         pop     af
         ld      sp, (CADEN-2)
         retn
-        
-;5->4 guarda
-;4->5 codigo
-;salta 5
-;R526
-;6->2
-;R523
-;4563
-;salta 4
-;4->5 restaura
-;R523 salta a ld a,x ld bc,xx retn sp-9 2+3+2+2
-
 salirf
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

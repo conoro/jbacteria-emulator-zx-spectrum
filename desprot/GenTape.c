@@ -414,8 +414,8 @@ int main(int argc, char* argv[]){
       fread(&turbo, 1, 1, fo);
       switch(turbo){
         case 0x10:
-          fseek(fo, 2, SEEK_CUR);
           j= ftell(fo);
+          fseek(fo, 2, SEEK_CUR);
           fread(&length, 2, 1, fo);
           fseek(fo, length, SEEK_CUR);
           break;
@@ -448,6 +448,10 @@ int main(int argc, char* argv[]){
           fseek(fo, 3, SEEK_CUR);
           fread(&length, 2, 1, fo);
           fseek(fo, length+1, SEEK_CUR);
+          break;
+        case 0x20:
+          j= ftell(fo);
+          fseek(fo, 2, SEEK_CUR);
           break;
         default: 
           printf("Invalid TZX ID: %X\n", turbo);

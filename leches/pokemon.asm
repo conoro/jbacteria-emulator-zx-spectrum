@@ -95,7 +95,7 @@ pok05   ld      a, (de)
         add     hl, hl
         add     hl, hl
         ex      de, hl
-        call    $0B99
+        call    $0b99
         pop     de
         inc     de
         djnz    pok05
