@@ -58,6 +58,8 @@ poke    ld      bc, 11
         lddr
         ld      hl, $4000
         ld      de, $3a8c
+        ei
+        defb    $ca, $ff, $ff
 pok00   ld      c, 5
         ldir
         ld      l, b
@@ -69,8 +71,6 @@ pok00   ld      c, 5
         jr      c, pok00
         push    bc
         xor     a
-        ei
-        defb    $c2, $ff, $ff
         ld      hl, CADEN
 pok01   ld      (hl), 1
         inc     l
@@ -78,7 +78,7 @@ pok01   ld      (hl), 1
         or      a
 pok02   ld      l, CADEN & $ff
         ld      (hl), l
-pok03   ld      de, CADEN+1
+pok03   ld      e, CADEN+1
         jr      z, pok04
         ld      (de), a
         ld      (hl), 2
@@ -96,7 +96,7 @@ pok05   ld      a, (de)
         ex      de, hl
         call    $0B99
         pop     de
-        inc     de
+        inc     e
         djnz    pok05
         ld      hl, $5c3b
 pok06   bit     5, (hl)
@@ -510,7 +510,7 @@ sal01   pop     af
         ex      af, af'
         pop     iy
         ld      hl, $5b00
-        ld      de, $3c10
+        ld      de, $3ac2
         ld      c, qui02-qui01
         push    hl
         ldir
@@ -519,10 +519,10 @@ sal01   pop     af
         ld      hl, qui01
         ld      c, qui02-qui01
         ldir
-        ret
-qui01   ld      bc, $1ffd
+        ld      bc, $1ffd
         ld      a, $04
-        out     (c), a
+        ret
+qui01   out     (c), a
         ld      bc, $4000
         ld      de, $8000
         ld      hl, $c000
@@ -533,13 +533,35 @@ qui01   ld      bc, $1ffd
         ld      b, $1f
         out     (c), e
         jp      qui02
-qui02   ld      hl, $3c10
+qui02   ld      hl, $3ac2
         ld      de, $5b00
         ld      bc, qui02-qui01
         ldir
+        ld      sp, (CADEN-2)
+        ld      hl, $fff7
+        add     hl, sp
+        push    hl
+        ld      (CADEN-2), sp
+        ld      hl, $45ed               ; retn
+        push    hl
+        ld      hl, ($3be8)             ; bc
+        push    hl
+        ld      h, 1                    ; ld bc, xxxx
+        push    hl
+        inc     sp
+        ld      hl, ($3bea)             ; af
+        ld      l, $3e                  ; ld a, xx
+        push    hl
+        ld      sp, $3be4
+        pop     hl
+        pop     de
+        pop     bc
+        pop     af
+        ld      bc, $1ffd
+        ld      a, 4
+        ld      sp, (CADEN-2)
+        jp      $1e7d
         
-        
-; 4563 -> R524 -> R526 -> R523
 ;5->4 guarda
 ;4->5 codigo
 ;salta 5
@@ -551,17 +573,6 @@ qui02   ld      hl, $3c10
 ;4->5 restaura
 ;R523 salta a ld a,x ld bc,xx retn sp-9 2+3+2+2
 
-; ld bc, 1ffd
-; ld a, 5
-; out 
-; 
-; R523
-;        pop     hl
-;        pop     de
-;        pop     bc
-;        pop     af
-;        ld      sp, (CADEN-2)
-;        retn
 salirf
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
