@@ -2,17 +2,17 @@
 ; developped by Antonio Villena and flopping, GPL license, January 2013
 ; assembled with sjasmplus
 
-      macro bloque  addr, length        ;38b5 015c      0581 9c a4 +8
-        defw    addr                    ;0002 0005      0590 c9 cc +3
-        defb    length & 255            ;0066 000e      05a6 b0 b8 +8
-      endm                              ;11b8 00cb      05c7 b2 ba +8
-        define  CADEN   $3b00-6         ;1539 001c      05d4 b0 b8 +8
-        output  pokemonRam.bin          ;3aff 00fd      04df a4 90 (leader)
-                                        ;3cde 0006      04e9 2f (sync1)
-                                        ;3c01 0086      04f1 37 (sync2)
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;                      0519 42 (uno-cero)
-                                                      ; 051f 3e (cero)
-        bloque  poke, pokef-poke                      ; 052e 31 (051f)
+      macro bloque  addr, length        ;38b5 015c
+        defw    addr                    ;0002 0005
+        defb    length & 255            ;0066 000e
+      endm                              ;11b8 00cb
+        define  CADEN   $3b00-6         ;1539 001c
+        output  pokemonRam.bin          ;3aff 00fd
+                                        ;3cde 0006
+                                        ;3c01 0086
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;                
+                                                  
+        bloque  poke, pokef-poke                  
         org     $38b5
 poke    ld      bc, 11
         push    iy
@@ -491,6 +491,12 @@ tablef
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+        bloque  $3cde, 6
+        ld      ($3bec), a
+        jp      $0038
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
         bloque  salir, salirf-salir
         org     $3c01
 salir   defb    $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff
@@ -578,6 +584,14 @@ salirf
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-        bloque  $3cde, 6
-        ld      ($3bec), a
-        jp      $0038
+        defb                  $90   ; 04df a4 90
+        defb    $04e9-$04df,  $29   ; 04e9 2f 29
+        defb    $04f1-$04e9,  $31   ; 04f1 37 31
+        defb    $0519-$04f1,  $3a   ; 0519 42 3a
+        defb    $051f-$0519,  $34   ; 051f 3e 34
+        defb    $052e-$051f,  $29   ; 052e 31 29
+        defb    $0581-$052e,  $a4   ; 0581 9c a4
+        defb    $0590-$0581,  $cc   ; 0590 c9 cc
+        defb    $05a6-$0590,  $b8   ; 05a6 b0 b8
+        defb    $05c7-$05a6,  $ba   ; 05c7 b2 ba
+        defb    $05d4-$05c7,  $b8   ; 05d4 b0 b8

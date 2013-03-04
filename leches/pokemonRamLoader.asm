@@ -30,5 +30,17 @@ poralo  ld      e, (hl)
         dec     a
         jr      nz, poralo
         ld      ($33fb), a
+        ld      b, 11
+        ld      de, $04df
+gamofa  ld      a, (hl)
+        inc     hl
+        ld      (de), a
+        ld      a, (hl)
+        inc     hl
+        add     a, e
+        ld      e, a
+        jr      nc, potipo
+        inc     d
+potipo  djnz    gamofa
         rst     0
 file    incbin  pokemonRam.bin
