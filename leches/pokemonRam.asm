@@ -14,12 +14,7 @@
 
         bloque  poke, pokef-poke
         org     $38b5
-poke    push    af
-        push    af
-        push    bc
-        ld      bc, 11
-        push    de
-        push    hl
+poke    ld      bc, 11
         push    iy
         ld      iy, $5c3a
         ex      af, af'
@@ -41,6 +36,7 @@ poke    push    af
         ld      a, i
         ld      e, a
         ld      a, $18
+        ld      ($3bec), a
         ld      i, a
         ld      d, (hl)
         ld      (hl), b
@@ -156,8 +152,10 @@ pok14   inc     e
         djnz    pok14
         ld      a, (CADEN+1)
         sub     'q'
-        jp      z, quit
-        dec     a
+        jr      nz, pok145
+        ccf
+        jr      pok17
+pok145  dec     a
         ret     z
         dec     a
         jr      z, pok17
@@ -224,10 +222,10 @@ pok19   ld      c, 5
         pop     hl
         ld      ($5c78), hl
         ex      af, af'
+        jp      c, quit
         jp      z, save
-        jp      c, qui01
-pok20   ld      sp, $3ae0
-        pop     af
+pok20   pop     af
+        ex      af, af'
         pop     iy
         pop     hl
         pop     de
@@ -245,9 +243,13 @@ pokef
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-        bloque  $0066, 10
+        bloque  $0066, 14
         ld      (CADEN-2), sp
-        ld      sp, CADEN-13+1
+        ld      sp, CADEN-13-1
+        push    af
+        push    bc
+        push    de
+        push    hl
         jp      poke
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -493,20 +495,77 @@ sav02   ld      hl, ($3bf8)
         ld      ix, ($3ad1)
         ld      hl, ($3ad4)   ;af
         ld      ($3bea), hl
-        jp      pok20
-quit    ccf
-        jp      pok17
-qui01   
+quit    ld      sp, $3ae0
+        jp      nz, pok20
+        jr      sal01
 tablef
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+        bloque  salir, salirf-salir
+        org     $3c01
+salir   defb    $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff
+        defb    $ff, $ff, $ff, $ff, $ff, $ff, $ff
+sal01   pop     af
+        ex      af, af'
+        pop     iy
+        ld      hl, $5b00
+        ld      de, $3c10
+        ld      c, qui02-qui01
+        push    hl
+        ldir
+        pop     de
+        push    de
+        ld      hl, qui01
+        ld      c, qui02-qui01
+        ldir
+        ret
+qui01   ld      bc, $1ffd
+        ld      a, $04
+        out     (c), a
+        ld      bc, $4000
+        ld      de, $8000
+        ld      hl, $c000
+        ldir
+        ld      bc, $7ffd
+        ld      de, $1305
+        out     (c), d
+        ld      b, $1f
+        out     (c), e
+        jp      qui02
+qui02   ld      hl, $3c10
+        ld      de, $5b00
+        ld      bc, qui02-qui01
+        ldir
+        
+        
+; 4563 -> R524 -> R526 -> R523
+;5->4 guarda
+;4->5 codigo
+;salta 5
+;R526
+;6->2
+;R523
+;4563
+;salta 4
+;4->5 restaura
+;R523 salta a ld a,x ld bc,xx retn sp-9 2+3+2+2
+
+; ld bc, 1ffd
+; ld a, 5
+; out 
+; 
+; R523
+;        pop     hl
+;        pop     de
+;        pop     bc
+;        pop     af
+;        ld      sp, (CADEN-2)
+;        retn
+salirf
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
         bloque  $3cde, 6
         ld      ($3bec), a
         jp      $0038
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-        bloque  $3c01, 15
-        defb    $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff
-        defb    $ff, $ff, $ff, $ff, $ff, $ff, $ff

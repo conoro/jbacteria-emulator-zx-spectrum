@@ -12,21 +12,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-        defw    $0066, 10
+        defw    $0066, 14
         ld      (CADEN-2), sp
-        ld      sp, CADEN-13+1
+        ld      sp, CADEN-13-1
+        push    af
+        push    bc
+        push    de
+        push    hl
         jp      poke
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
         defw    poke, pokef-poke
         org     $38b5
-poke    push    af
-        push    af
-        push    bc
-        ld      bc, 11
-        push    de
-        push    hl
+poke    ld      bc, 11
         push    iy
         ld      iy, $5c3a
         ex      af, af'
@@ -49,6 +48,7 @@ poke    push    af
         ld      a, i
         ld      e, a
         ld      a, $18
+        ld      ($57ec), a
         ld      i, a
         ld      d, (hl)
         ld      (hl), b
@@ -225,6 +225,7 @@ pok18   pop     hl
         jp      z, save
 pok19   ld      sp, $57e0
         pop     af
+        ex      af, af'
         pop     iy
         pop     hl
         pop     de
