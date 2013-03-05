@@ -354,6 +354,7 @@ sav01   ld      hl, ($57e2)
         ld      ($56ea), hl   ;bc
         pop     hl
         ld      ($56f4), hl   ;af
+        pop     hl
         ld      a, i
         jp      pe, sav02
         set     3, (ix-3)     ;iff
@@ -364,8 +365,8 @@ sav02   ld      hl, ($57f8)
         sbc     a, a
         call    $04c6
         ld      ix, ($56f1)
-        ld      hl, ($56f4)   ;af
-        ld      ($57ea), hl
+;        ld      hl, ($56f4)   ;af
+;        ld      ($57ea), hl
         jp      pok19
 tablef
 

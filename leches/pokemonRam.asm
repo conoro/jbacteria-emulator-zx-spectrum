@@ -360,36 +360,41 @@ tab01   defb    $ff, $00, $00, $00, $ff, $00, $00, $00, $00, $23, $05
 tab02   defb    $00, $10, $01, 'snapshot'
         defb    $27, $00, $00, $00, $27, $00
 
-;3ab9 $3e, 0                            i     ld  a, i
-;3abb $ed, $47                                ld  i, a
-;3abd $de, $c0, $37, $0e, $8f, $39, $96       over usr 5ccb
-;3ac4 $01, 0,   0                       bc'   ld  bc, 0
-;3ac7 $11, 0,   0                       de'   ld  de, 0
-;3aca $21, 0,   0                       hl'   ld  hl, 0
-;3acd $d9                                     exx
-;3ace $ed, $56                          im    im  1
-;3ad0 $fd, $21, 0,   0                  iy    ld  iy, 0
-;3ad4 $11, $00, $c0                           ld  hl, $4000
-;3ad7 $21, $00, $40                           ld  de, $c000
-;3ada $31, $00, $58                           ld  sp, $5800
-;3add $c3, $f4, $07                           jp  $07f4
+;3ab9   $3e, 0                            i     ld  a, i
+;3abb   $ed, $47                                ld  i, a
+;3abd   $de, $c0, $37, $0e, $8f, $39, $96       over usr 5ccb
+;3ac4   $01, 0,   0                       bc'   ld  bc, 0
+;3ac7   $11, 0,   0                       de'   ld  de, 0
+;3aca   $21, 0,   0                       hl'   ld  hl, 0
+;3acd   $d9                                     exx
+;3ace   $ed, $56                          im    im  1
+;3ad0   $fd, $21, 0,   0                  iy    ld  iy, 0
+;3ad4   $11, $00, $c0                           ld  hl, $4000
+;3ad7   $21, $00, $40                           ld  de, $c000
+;3ada   $31, $00, $58                           ld  sp, $5800
+;3add   $c3, $f4, $07                           jp  $07f4
 tab03   defb    $3e, 0,   $ed, $47, $de, $c0, $37, $0e, $8f, $39
         defb    $96, $01, 0,   0,   $11, 0,   0,   $21, 0,   0
         defb    $d9, $ed, $56, $fd, $21, 0,   0,   $11, $00, $c0
         defb    $21, $00, $40, $31, $00, $58, $c3, $f4, $07
 
-;3ac3 $21, 0,   0,   $e5, $f1, $08      af'   ld  hl, 0 / push hl / pop af / ex af,af'
-;3ac9 $01, 0,   0                       bc    ld  bc, 0
-;3acc $11, 0,   0                       de    ld  de, 0
-;3acf $dd, $21, 0,   0                  ix    ld  ix, 0
-;3ad3 $21, 0,   0,   $e5, $f1           af    ld  hl, 0 / push hl / pop af
-;3ad8 $21, 0,   0                       hl    ld  hl, 0
-;3adb $31, 0,   0                       sp    ld  sp, 0
-;3ade $f3                               iff   di
-;3adf $c9                                     ret
+;57db   $21, 0,   0,   $e5, $f1, $08      af'   ld  hl, 0 / push hl / pop af / ex af,af'
+;57e1   $01, 0,   0                       bc    ld  bc, 0
+;57e4   $11, 0,   0                       de    ld  de, 0
+;57e7   $dd, $21, 0,   0                  ix    ld  ix, 0
+;57eb   $21, 0,   0,   $e5, $f1           af    ld  hl, 0 / push hl / pop af
+;57f0   $21, 0,   0                       hl    ld  hl, 0
+;57f3   $31, 0,   0                       sp    ld  sp, 0
+;57f6   $f3                               iff   di
+;57f7   $c9                                     ret
+;57f8   dummy
+;57fa   dummy
+;57fc   $05cd
+;57fe   $57db
 tab04   defb    $21, 0,   0,   $e5, $f1, $08, $01, 0,   0,   $11
         defb    0,   0,   $dd, $21, 0,   0,   $21, 0,   0,   $e5
         defb    $f1, $21, 0,   0,   $31, 0,   0,   $f3, $c9
+        defw    0, $05cd, $57db
 
 ;3afb-3aff  string                        3ac3  <-3afe
 ;3afa       string length                 05cd  <-3afc
@@ -447,41 +452,38 @@ tab06   ld      hl, ($3ae2)
         ld      ($3ad2), hl
         ld      a, $ff
         call    $04c6
-        ld      de, $3adf
-        ld      hl, tab04+$1c
-        ld      c, $1d
+        ld      de, $57ff
+        ld      hl, tab04+$24
+        ld      c, $25
         lddr
         pop     hl
-        ld      ($3ad1), hl
-        inc     e
-        ld      sp, $5800
-        push    de
-        ld      hl, $05cd
-        push    hl
+        ld      ($57e9), hl
         ld      sp, $3ae0
         pop     hl
-        ld      ($3ac4), hl   ;af'
+        ld      ($57dc), hl   ;af'
         pop     hl
         pop     hl
-        ld      ($3ad9), hl   ;hl
+        ld      ($57f1), hl   ;hl
         pop     hl
-        ld      ($3acd), hl   ;de
+        ld      ($57e5), hl   ;de
         pop     hl
-        ld      ($3aca), hl   ;bc
+        ld      ($57e2), hl   ;bc
         pop     hl
-        ld      ($3ad4), hl   ;af
+        ld      ($57ec), hl   ;af
+        pop     hl
         ld      a, i
         jp      pe, tab07
-        set     3, (ix-3)     ;iff
+        ld      a, $fb
+        ld      ($57f6), a    ;iff
 tab07   ld      hl, ($3af8)
-        ld      ($3adc), hl   ;sp
+        ld      ($57f4), hl   ;sp
         ld      ix, $4000
         ld      de, $c000
         sbc     a, a
         call    $04c6
-        ld      ix, ($3ad1)
-        ld      hl, ($3ad4)   ;af
-        ld      ($3aea), hl
+        ld      ix, ($57e9)
+;        ld      hl, ($57ef)   ;af
+;        ld      ($3aea), hl
         jp      sal05
 tablef
 
