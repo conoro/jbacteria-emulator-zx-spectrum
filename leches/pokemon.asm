@@ -184,9 +184,9 @@ pok16   pop     hl
         inc     hl
         jr      pok15
 pok17   halt
-        di
         ex      af, af'
-pok18   pop     hl
+pok18   di
+        pop     hl
         ld      c, 11
         ld      hl, CADEN-13
         ld      de, $5c00
@@ -279,7 +279,7 @@ tab04   defb    $21, 0,   0,   $e5, $f1, $08, $01, 0,   0,   $11
 ;57fb-57ff  string                        56e3  <-57fe
 ;57fa       string length                 05cd  <-57fc
 ;57f8       sp
-;57ed-57f7  keyboard variables
+;57ed-57f7  keyboard variables            5c00
 ;57ec       unused                        im
 ;57ea       af
 ;57e8       bc
@@ -287,10 +287,10 @@ tab04   defb    $21, 0,   0,   $e5, $f1, $08, $01, 0,   0,   $11
 ;57e4       hl
 ;57e2       iy
 ;57e0       af'
-;56fe       FRAMES1
-;56fc       ATTR_T MASK-T     
-;56fa       I P_FLAG
-;56f8       FLAGS MODE
+;56fe       FRAMES1                       5c78
+;56fc       ATTR_T MASK-T                 5c8f     
+;56fa       I P_FLAG                      5c91
+;56f8       FLAGS MODE                    5c3b 5c41
 ;56f6       poke addr
 ;56f4       push de
 ;56f2       call 0b99

@@ -18,9 +18,9 @@ poke    ld      bc, 11
         ld      iy, $5c3a
         ex      af, af'
         push    af
-        ld      a, r
-        push    af
-        inc     sp
+;        ld      a, r
+;        push    af
+;        inc     sp
         ld      hl, $5c78
         ld      e, (hl)
         inc     l
@@ -189,9 +189,9 @@ pok18   pop     hl
         inc     hl
         jr      pok17
 pok19   halt
-        di
         ex      af, af'
-pok20   pop     hl
+pok20   di
+        pop     hl
         ld      c, 11
         ld      hl, CADEN-13
         ld      de, $5c00
@@ -557,12 +557,12 @@ sal03   ld      hl, $3ac2
 sal04   ld      ($5c78), hl
         jp      c, sal01
         jp      z, tab05
-sal05   dec     sp
-        pop     af
-        rlca
-        sub     (17+13)*2
-        rrca
-        ld      r, a
+sal05   ;dec     sp
+        ;pop     af
+        ;rlca
+        ;sub     (17+13)*2
+        ;rrca
+        ;ld      r, a
         ld      sp, $3ae0
         pop     af
         ex      af, af'
