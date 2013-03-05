@@ -445,7 +445,7 @@ tab05   ld      sp, $3b00
         set     3, (ix+$16)
 tab06   ld      hl, ($3ae2)
         ld      ($3ad2), hl
-        sbc     a, a
+        ld      a, $ff
         call    $04c6
         ld      de, $3adf
         ld      hl, tab04+$1c
@@ -454,6 +454,7 @@ tab06   ld      hl, ($3ae2)
         pop     hl
         ld      ($3ad1), hl
         inc     e
+        ld      sp, $5800
         push    de
         ld      hl, $05cd
         push    hl

@@ -330,7 +330,7 @@ save    ld      sp, $5800
         set     3, (ix+$16)
 sav01   ld      hl, ($57e2)
         ld      ($56f2), hl
-        sbc     a, a
+        ld      a, $ff
         call    $04c6
         ld      d, $56
         ld      hl, tab04+$1c
