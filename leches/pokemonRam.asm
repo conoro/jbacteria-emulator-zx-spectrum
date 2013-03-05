@@ -18,6 +18,9 @@ poke    ld      bc, 11
         ld      iy, $5c3a
         ex      af, af'
         push    af
+        ld      a, r
+        push    af
+        inc     sp
         ld      hl, $5c78
         ld      e, (hl)
         inc     l
@@ -507,10 +510,12 @@ sal01   ld      sp, $3ae0
         ld      hl, sal02
         ld      c, sal03-sal02
         ldir
-        ld      bc, $1ffd
-        ld      a, $04
+        ld      bc, $7ffd
+        ld      de, $1604
+        out     (c), d
+        ld      b, $1f
         ret
-sal02   out     (c), a
+sal02   out     (c), e
         ld      bc, $4000
         ld      de, $8000
         ld      hl, $c000
@@ -550,9 +555,15 @@ sal03   ld      hl, $3ac2
         ld      sp, (CADEN-2)
         jp      $1e7d
 sal04   ld      ($5c78), hl
-        jr      c, sal01
+        jp      c, sal01
         jp      z, tab05
-sal05   ld      sp, $3ae0
+sal05   dec     sp
+        pop     af
+        rlca
+        sub     (17+13)*2
+        rrca
+        ld      r, a
+        ld      sp, $3ae0
         pop     af
         ex      af, af'
         pop     iy
