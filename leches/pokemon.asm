@@ -69,10 +69,10 @@ poke    ld      bc, 11
         dec     e
         lddr
         push    bc
+        ld      hl, CADEN
+        defb    $ca, $ff, $ff
         xor     a
         ei
-        defb    $c2, $ff, $ff
-        ld      hl, CADEN
 pok01   ld      (hl), 1
         inc     l
         jr      nz, pok01
@@ -104,9 +104,10 @@ pok06   bit     5, (hl)
         jr      z, pok06
         res     5, (hl)
         ld      a, ($5c08)
+        or      $20
         ld      hl, CADEN
         ld      c, (hl)
-        cp      13
+        cp      $2d
         jr      z, pok13
         jr      nc, pok07
         dec     (hl)

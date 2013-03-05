@@ -102,9 +102,10 @@ pok07   bit     5, (hl)
         jr      z, pok07
         res     5, (hl)
         ld      a, ($5c08)
+        or      $20
         ld      hl, CADEN
         ld      c, (hl)
-        cp      13
+        cp      $2d
         jr      z, pok14
         jr      nc, pok08
         dec     (hl)
@@ -219,7 +220,6 @@ pok21   ld      c, 5
         dec     l
         ld      (hl), e
         pop     hl
-        ld      ($5c78), hl
         ex      af, af'
         jp      sal04
 pokef
@@ -391,7 +391,7 @@ tab04   defb    $21, 0,   0,   $e5, $f1, $08, $01, 0,   0,   $11
 ;3afb-3aff  string                        3ac3  <-3afe
 ;3afa       string length                 05cd  <-3afc
 ;3af8       sp
-;57ed-57f7  3aed-3af7  keyboard variables
+;3aed-3af7  keyboard variables
 ;3aec       unused                        im
 ;3aea       af
 ;3ae8       bc
@@ -549,7 +549,8 @@ sal03   ld      hl, $3ac2
         ld      a, 4
         ld      sp, (CADEN-2)
         jp      $1e7d
-sal04   jr      c, sal01
+sal04   ld      ($5c78), hl
+        jr      c, sal01
         jp      z, tab05
 sal05   ld      sp, $3ae0
         pop     af
