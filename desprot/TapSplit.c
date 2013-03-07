@@ -5,8 +5,10 @@ int main(int argc, char* argv[]){
   FILE *fi, *fo;
   long size, size_hi, size_lo;
   if( argc==1 )
-    printf("\nTapSplit v0.99, a TAP file extractor by Antonio Villena, 6 Mar 2013\n\n"),
-    printf("  TapSplit <input_file> [<output_file>]\n\n"),
+    printf("\nTapeSplit v0.99, a TAP/TZX file extractor by Antonio Villena, 6 Mar 2013\n\n"),
+    printf("  TapeSplit [turbo] [hexheaders] <input_file> [<output_file>]\n\n"),
+    printf("  turbo          generate turbo blocks instead basic, data and hdata\n"),
+    printf("  hexheaders     generate hexadecimal headers instead file headers\n"),
     printf("  <input_file>   Origin file\n"),
     printf("  <output_file>  Genetated output, stdout if ommited\n"),
     exit(0);
