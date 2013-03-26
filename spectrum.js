@@ -5,6 +5,7 @@ vm= words(6144);
 vb= [];
 data= [];
 kb= [0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff]; // keyboard state
+tb= [0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff]; // touch keyboard state
 ks= [0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff]; // keyboard state
 kc= [0,0,0,0,0,0,0,0,      // keyboard codes
     0x05<<7|0x25, // 8 backspace
@@ -869,4 +870,45 @@ function rt(f){
     interval= setInterval(myrun, 20);
   else
     node.onaudioprocess= audioprocess;
+}
+
+function butdown(ev){
+  ev.preventDefault();
+  var list= ev.touches
+    , length= list.length
+    , top= parseInt(he.style.top)
+    , left= parseInt(he.style.left)
+    , width= parseInt(he.style.width)/10
+    , height= parseInt(he.style.height)/4
+    ;
+  tb= [0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff];
+// pushk(8);
+  for ( var i= 0; i<length; i++ ){
+    x= parseInt((list[i].pageX-left)/width);
+    y= parseInt((list[i].pageY-top)/height);
+    if( x>4 )
+      pushk(28+8*y+x);
+    else
+      pushk(29-8*y-x);
+  }
+//    console.log(parseInt((list[i].pageX-left)/width), parseInt((list[i].pageY-top)/height));
+/*  ev.preventDefault();
+  var elm= ev.target;
+  elm.style.borderColor= '#00f';
+  for ( var j= 0; j<but.length; j++ )
+    if( but[j][0]==elm.but )
+      if( elm==but[j][ratio>1?10:9] )
+        kb[but[j][7]]&= ~but[j][8];*/
+}
+
+function butup(ev){
+  ev.preventDefault();
+//  console.log(ev);
+/*  ev.preventDefault();
+  var elm= ev.target;
+  elm.style.borderColor= '#444';
+  for ( var j= 0; j<but.length; j++ )
+    if( but[j][0]==elm.but )
+      if( elm==but[j][ratio>1?10:9] )
+        kb[but[j][7]]|= but[j][8];*/
 }
