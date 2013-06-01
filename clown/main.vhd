@@ -1,36 +1,44 @@
-library IEEE;
-use IEEE.STD_LOGIC_1164.ALL;
-use IEEE.NUMERIC_STD.ALL;
-
-library UNISIM;
-use UNISIM.vcomponents.all;
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
 
 entity main is port(
-    clk       : in  std_logic
-  ; sync      : out std_logic
-  ; lowc      : out std_logic_vector (2 downto 0)
-  ; color     : out std_logic_vector (5 downto 0)
-);
+    clk   : in  std_logic;
+    sync  : out std_logic;
+    r     : out std_logic_vector (2 downto 0);
+    g     : out std_logic_vector (2 downto 0);
+    b     : out std_logic_vector (2 downto 0));
 end main;
 
-architecture Behavioral of main is
+architecture behavioral of main is
+
+  signal  clk7    : std_logic;
+  signal  hcount  : unsigned  (8 downto 0);
+  signal  vcount  : unsigned  (8 downto 0);
+  signal  color   : std_logic_vector (3 downto 0);
 
   component clock7 is port(
-      CLKIN_IN  : in  std_logic
-    ; CLKFX_OUT : out std_logic
-  );
+      clkin_in  : in  std_logic;
+      clkfx_out : out std_logic);
   end component;
- 
-  signal  clk7      : std_logic;
-  signal  hcount    : unsigned  (8 downto 0);
-  signal  vcount    : unsigned  (8 downto 0);
-  
-begin
 
+  component colenc is port(
+      col_in  : in  std_logic_vector (3 downto 0);
+      r_out   : out std_logic_vector (2 downto 0);
+      g_out   : out std_logic_vector (2 downto 0);
+      b_out   : out std_logic_vector (2 downto 0));
+  end component;
+
+begin
   clock7_inst: clock7 port map (
-    clkin_in=>clk,
-    clkfx_out=>clk7
-  );
+    clkin_in  => clk,
+    clkfx_out => clk7);
+
+  colenc_inst: colenc port map (
+    col_in => color,
+    r_out  => r,
+    g_out  => g,
+    b_out  => b);
 
   process (clk7)
   begin
@@ -55,24 +63,16 @@ begin
     if  (vcount>=248 and vcount<252) or
         (hcount>=344 and hcount<376) then
       sync <= '0';
-      color <= "000000";
+      color <= "0000";
     else
       sync <= '1';
       if hcount>=320 and hcount<416 then
-        color <= "000000";
+        color <= "0000";
       elsif hcount<256 and vcount<192 then
-        color <=  std_logic_vector(hcount(7 downto 7))
-                & std_logic_vector(hcount(6 downto 6))
-                & std_logic_vector(hcount(7 downto 7))
-                & std_logic_vector(hcount(5 downto 5))
-                & std_logic_vector(hcount(7 downto 7))
-                & std_logic_vector(hcount(4 downto 4));
+        color <=  std_logic_vector(hcount(7 downto 4));
       else
-        color <= "010101";
+        color <= "0111";
       end if;
     end if;
   end process;
-
-  lowc <= "000";
-
-end Behavioral;
+end behavioral;
