@@ -13,12 +13,12 @@ begin
   process (col_in)
   begin
     if( col_in(3)='0' ) then
-      r_out<= col_in(2) & '0' & col_in(2);
-      g_out<= col_in(1) & '0' & col_in(1);
+      g_out<= col_in(2) & '0' & col_in(2);
+      r_out<= col_in(1) & '0' & col_in(1);
       b_out<= col_in(0) & '0' & col_in(0);
     else
-      r_out<= col_in(2) & col_in(2) & col_in(2);
-      g_out<= col_in(1) & col_in(1) & col_in(1);
+      g_out<= col_in(2) & col_in(2) & col_in(2);
+      r_out<= col_in(1) & col_in(1) & col_in(1);
       b_out<= col_in(0) & col_in(0) & col_in(0);
     end if;
   end process;

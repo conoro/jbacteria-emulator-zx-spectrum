@@ -66,7 +66,7 @@ begin
     b_out  => b);
 
   video_ram: vram port map (
-      clk => clk7
+      clk => clk
     , rd  => '1'
     , wr  => '0'
     , addr    => addrv
@@ -132,9 +132,9 @@ begin
     outl <= at2clk or viden;
   end process;
 
-  process (outl)
+  process (at2clk)
   begin
-    if falling_edge( outl ) then
+    if falling_edge( at2clk ) then
       ccount <= vcount(1 downto 0) & hcount(7 downto 3);
     end if;
   end process;
@@ -192,9 +192,9 @@ begin
   process (flash(4), at2, da2(7))
   begin
     if (da2(7) xor (at2(7) and flash(4)))='0' then
-      gencol <= at2(6) & at2(3) & at2(5) & at2(4);
+      gencol <= at2(6 downto 3);
     else
-      gencol <= at2(6) & at2(0) & at2(2) & at2(1);
+      gencol <= at2(6) & at2(2 downto 0);
     end if;
   end process;
 
