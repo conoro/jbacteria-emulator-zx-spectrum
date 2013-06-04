@@ -13,24 +13,24 @@ end main;
 architecture behavioral of main is
 
   signal  clk7    : std_logic;
+  signal  hcount  : unsigned  (8 downto 0);
+  signal  vcount  : unsigned  (8 downto 0);
+  signal  color   : std_logic_vector (3 downto 0);
   signal  bordern : std_logic;
   signal  viden   : std_logic;
   signal  at2clk  : std_logic;
-  signal  outl    : std_logic;
   signal  al1     : std_logic;
   signal  al2     : std_logic;
-  signal  hcount  : unsigned  (8 downto 0):= "000000000";
-  signal  vcount  : unsigned  (8 downto 0):= "000000000";
-  signal  ccount  : unsigned  (6 downto 0):= "0000000";
-  signal  flash   : unsigned  (4 downto 0):= "00000";
+  signal  ccount  : unsigned  (4 downto 0);
+  signal  flash   : unsigned  (4 downto 0);
+  signal  border  : std_logic_vector (2 downto 0);
   signal  at1     : std_logic_vector (7 downto 0);
   signal  at2     : std_logic_vector (7 downto 0);
   signal  da1     : std_logic_vector (7 downto 0);
   signal  da2     : std_logic_vector (7 downto 0);
-  signal  addrv   : std_logic_vector(13 downto 0);
+  signal  addrv   : std_logic_vector(12 downto 0);
   signal  vd      : std_logic_vector (7 downto 0);
-  signal  color   : std_logic_vector (3 downto 0);
-  signal  gencol  : std_logic_vector (3 downto 0);
+  signal  gencol  : std_logic_vector (2 downto 0);
 
   component clock7 is port(
       clkin_in  : in  std_logic;
@@ -45,12 +45,10 @@ architecture behavioral of main is
   end component;
 
   component vram is port(
-      clk     : in  std_logic
-    ; addr    : in  std_logic_vector(13 downto 0)
-    ; dataout : out std_logic_vector( 7 downto 0)
-  );
+      clk     : in  std_logic;
+      addr    : in  std_logic_vector(12 downto 0);
+      dataout : out std_logic_vector( 7 downto 0));
   end component;
-
 
 begin
   clock7_inst: clock7 port map (
@@ -64,10 +62,9 @@ begin
     b_out  => b);
 
   video_ram: vram port map (
-      clk => clk
-    , addr    => addrv
-    , dataout => vd
-  );
+    clk     => clk,
+    addr    => addrv,
+    dataout => vd);
 
   process (clk7)
   begin
@@ -87,10 +84,10 @@ begin
       end if;
     end if;
     if falling_edge( clk7 ) then
-      if outl='0' then
+      if (at2clk or viden)='0' then
         da2 <= da1;
       else
-        da2 <= da2(6 downto 0) & '1';
+        da2 <= da2(6 downto 0) & '0';
       end if;
     end if;
     if rising_edge( clk7 ) then
@@ -100,7 +97,7 @@ begin
     end if;
   end process;
 
-  process (hcount, vcount, gencol)
+  process (hcount, vcount, gencol, at2(6))
   begin
     color   <= "0000";
     bordern <= '0';
@@ -110,7 +107,7 @@ begin
     else
       sync <= '1';
       if hcount>=416 or hcount<310 then
-        color <= gencol;
+        color <= at2(6) & gencol;
         if hcount<256 and vcount<192 then
           bordern <= '1';
         end if;
@@ -123,39 +120,32 @@ begin
     at2clk <= not clk7 or hcount(0) or not hcount(1) or hcount(2);
   end process;
 
-  process (at2clk, viden)
-  begin
-    outl <= at2clk or viden;
-  end process;
-
   process (at2clk)
   begin
     if falling_edge( at2clk ) then
-      ccount <= vcount(1 downto 0) & hcount(7 downto 3);
+      ccount <= hcount(7 downto 3);
     end if;
   end process;
 
   process (hcount)
   begin
+    al1 <= '1';
+    al2 <= '1';
     if hcount(3 downto 1)=3 or hcount(3 downto 1)=5 then
       al1 <= '0';
-    else
-      al1 <= '1';
     end if;
     if hcount(3 downto 1)=4 or hcount(3 downto 1)=6 then
       al2 <= '0';
-    else
-      al2 <= '1';
     end if;
   end process;
 
   process (al1, vcount, ccount)
   begin
     if al1='0' then
-      addrv <= '0' & std_logic_vector(vcount(7 downto 6) & vcount(2) & ccount(6 downto 5)
-                & vcount(5 downto 3) & ccount(4 downto 0));
+      addrv <= std_logic_vector(vcount(7 downto 6) & vcount(2 downto 0)
+                & vcount(5 downto 3) & ccount);
     else
-      addrv <= "0110" & std_logic_vector(vcount(7 downto 3) & ccount(4 downto 0));
+      addrv <= "110" & std_logic_vector(vcount(7 downto 3) & ccount);
     end if;
   end process;
 
@@ -179,8 +169,7 @@ begin
       if( viden='0' ) then
         at2 <= at1;
       else
-        at2 <= "00111000";
---        at2 <= "00" & border & "000";
+        at2 <= "00" & border & "000";
       end if;
     end if;
   end process;
@@ -188,11 +177,11 @@ begin
   process (flash(4), at2, da2(7))
   begin
     if (da2(7) xor (at2(7) and flash(4)))='0' then
-      gencol <= at2(6 downto 3);
+      gencol <= at2(5 downto 3);
     else
-      gencol <= at2(6) & at2(2 downto 0);
+      gencol <= at2(2 downto 0);
     end if;
   end process;
 
-
+  border <= "101";
 end behavioral;
