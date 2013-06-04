@@ -1,40 +1,37 @@
-library IEEE;
-use IEEE.STD_LOGIC_1164.ALL;
-use IEEE.NUMERIC_STD.ALL;
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
 
-library UNISIM;
-use UNISIM.vcomponents.all;
+library unisim;
+use unisim.vcomponents.all;
 
 entity vram is port(
-    clk     : in  std_logic
-  ; rd      : in  std_logic
-  ; wr      : in  std_logic
-  ; addr    : in  std_logic_vector(13 downto 0)
-  ; dataout : out std_logic_vector( 7 downto 0)
+    clk     : in  std_logic;
+    addr    : in  std_logic_vector(13 downto 0);
+    dataout : out std_logic_vector( 7 downto 0);
 );
 end vram;
 
 architecture Behavioral of vram is
 
-type EN_a is array(7 downto 0) of std_logic;
-type Arr_d is array(7 downto 0) of std_logic_vector(7 downto 0);
-signal ENA : EN_a;
-signal DOA : Arr_d;
+  type arrayen is array(3 downto 0) of std_logic;
+  type arraydo is array(3 downto 0) of std_logic_vector(7 downto 0);
+  signal en : arrayen;
+  signal do : arraydo;
 
 begin
-
-    process(addr, rd, DOA)
-    variable i : integer;
-    begin
-        dataout <= (others => '0');
-        for i in 0 to 7 loop
-            ENA(i) <= '0';
-            if (rd='1' and to_integer(unsigned(addr(13 downto 11))) = i) then
-                ENA(i) <= '1';
-                dataout <= DOA(i);
-            end if;
-        end loop;
-    end process;
+  process(addr, do)
+  variable i : integer;
+  begin
+    dataout <= (others => '0');
+    for i in 0 to 3 loop
+      en(i) <= '0';
+      if (to_integer(unsigned(addr(13 downto 11))) = i) then
+        en(i) <= '1';
+        dataout <= do(i);
+      end if;
+    end loop;
+  end process;
 
   ram0 : RAMB16_S9
   generic map (
@@ -107,11 +104,11 @@ begin
   port map (
       DI    => "00000000"
     , DIP   => "0"
-    , DO    => DOA(0)
+    , DO    => do(0)
     , ADDR  => addr(10 downto 0)
     , CLK   => clk
-    , EN    => ENA(0)
-    , WE    => wr
+    , EN    => en(0)
+    , WE    => '0'
     , SSR   => '0'
   );
 
@@ -186,11 +183,11 @@ begin
   port map (
       DI    => "00000000"
     , DIP   => "0"
-    , DO    => DOA(1)
+    , DO    => do(1)
     , ADDR  => addr(10 downto 0)
     , CLK   => clk
-    , EN    => ENA(1)
-    , WE    => wr
+    , EN    => en(1)
+    , WE    => '0'
     , SSR   => '0'
   );
 
@@ -265,11 +262,11 @@ begin
   port map (
       DI    => "00000000"
     , DIP   => "0"
-    , DO    => DOA(2)
+    , DO    => do(2)
     , ADDR  => addr(10 downto 0)
     , CLK   => clk
-    , EN    => ENA(2)
-    , WE    => wr
+    , EN    => en(2)
+    , WE    => '0'
     , SSR   => '0'
   );
 
@@ -304,43 +301,12 @@ begin
   port map (
       DI    => "00000000"
     , DIP   => "0"
-    , DO    => DOA(3)
+    , DO    => do(3)
     , ADDR  => addr(10 downto 0)
     , CLK   => clk
-    , EN    => ENA(3)
-    , WE    => wr
+    , EN    => en(3)
+    , WE    => '0'
     , SSR   => '0'
   );
-
-    RAMB : for i in 4 to 7 generate
-    RAMB16_S9_inst : RAMB16_S9
-    generic map (
-        write_mode => "READ_FIRST"      --  WRITE_FIRST, READ_FIRST or NO_CHANGE
-    )
-    port map (
-        DO => DOA(i),      -- 8-bit Data Output
-        ADDR => addr(10 downto 0),  -- 11-bit Address Input
-        CLK => clk,    -- Clock
-        DI => "00000000",      -- 8-bit Data Input
-        DIP => "0",
-        EN => ENA(i),      -- RAM Enable Input
-        SSR => '0',    -- Synchronous Set/Reset Input
-        WE => wr       -- Write Enable Input
-    );
-    end generate;
-
---  ram4 : RAMB16_S9
---  generic map (
---      write_mode => "READ_FIRST"      --  WRITE_FIRST, READ_FIRST or NO_CHANGE
---  )
---  port map (
---      DI    => "00000000"
---    , DO    => dataout
---    , ADDR  => "00000000000"
---    , CLK   => clk
---    , EN    => ram4en
---    , WE    => '0'
---    , SSR   => '0'
---  );
 
 end Behavioral;

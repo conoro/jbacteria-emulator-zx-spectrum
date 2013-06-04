@@ -46,8 +46,6 @@ architecture behavioral of main is
 
   component vram is port(
       clk     : in  std_logic
-    ; rd      : in  std_logic
-    ; wr      : in  std_logic
     ; addr    : in  std_logic_vector(13 downto 0)
     ; dataout : out std_logic_vector( 7 downto 0)
   );
@@ -67,8 +65,6 @@ begin
 
   video_ram: vram port map (
       clk => clk
-    , rd  => '1'
-    , wr  => '0'
     , addr    => addrv
     , dataout => vd
   );
