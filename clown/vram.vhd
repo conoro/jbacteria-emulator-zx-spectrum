@@ -8,8 +8,7 @@ use unisim.vcomponents.all;
 entity vram is port(
     clk     : in  std_logic;
     addr    : in  std_logic_vector(13 downto 0);
-    dataout : out std_logic_vector( 7 downto 0);
-);
+    dataout : out std_logic_vector( 7 downto 0));
 end vram;
 
 architecture Behavioral of vram is
