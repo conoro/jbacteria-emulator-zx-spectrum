@@ -16,14 +16,13 @@ architecture behavioral of main is
   signal  hcount  : unsigned  (8 downto 0);
   signal  vcount  : unsigned  (8 downto 0);
   signal  color   : std_logic_vector (3 downto 0);
-  signal  bordern : std_logic;
-  signal  viden   : std_logic;
+  signal  vid     : std_logic;
+  signal  viddel  : std_logic;
   signal  at2clk  : std_logic;
   signal  al1     : std_logic;
   signal  al2     : std_logic;
   signal  ccount  : unsigned  (4 downto 0);
   signal  flash   : unsigned  (4 downto 0);
-  signal  border  : std_logic_vector (2 downto 0);
   signal  at1     : std_logic_vector (7 downto 0);
   signal  at2     : std_logic_vector (7 downto 0);
   signal  da1     : std_logic_vector (7 downto 0);
@@ -71,59 +70,71 @@ begin
     if falling_edge( clk7 ) then
       if hcount=447 then
         hcount <= (others => '0');
+        if vcount=311 then
+          vcount <= (others => '0');
+          flash <= flash + 1;
+        else
+          vcount <= vcount + 1;
+        end if;
       else
         hcount <= hcount + 1;
       end if;
-    end if;
-    if falling_edge( clk7 ) and hcount=447 then
-      if vcount=311 then
-        vcount <= (others => '0');
-        flash <= flash + 1;
-      else
-        vcount <= vcount + 1;
-      end if;
-    end if;
-    if falling_edge( clk7 ) then
-      if (at2clk or viden)='0' then
+      if (at2clk or viddel)='0' then
         da2 <= da1;
       else
         da2 <= da2(6 downto 0) & '0';
       end if;
+      if at2clk='0' then
+        ccount <= hcount(7 downto 3);
+      end if;
     end if;
     if rising_edge( clk7 ) then
       if hcount(3)='1' then
-        viden <= not bordern;
+        viddel <= vid;
       end if;
     end if;
   end process;
 
   process (hcount, vcount, gencol, at2(6))
   begin
-    color   <= "0000";
-    bordern <= '0';
+    color <= "0000";
+    vid   <= '1';
     if  (vcount>=248 and vcount<252) or
         (hcount>=344 and hcount<376) then
       sync <= '0';
     else
       sync <= '1';
-      if hcount>=416 or hcount<310 then
+      if hcount>=416 or hcount<320 then
         color <= at2(6) & gencol;
         if hcount<256 and vcount<192 then
-          bordern <= '1';
+          vid <= '0';
         end if;
       end if;
     end if;
   end process;
 
-  process (clk7, hcount)
+  process (al1)
   begin
-    at2clk <= not clk7 or hcount(0) or not hcount(1) or hcount(2);
+    if rising_edge( al1 ) then
+      da1 <= vd;
+    end if;
+  end process;
+
+  process (al2)
+  begin
+    if rising_edge( al2 ) then
+      at1 <= vd;
+    end if;
   end process;
 
   process (at2clk)
   begin
-    if falling_edge( at2clk ) then
-      ccount <= hcount(7 downto 3);
+    if rising_edge( at2clk ) then
+      if( viddel='0' ) then
+        at2 <= at1;
+      else
+        at2 <= "00000000";
+      end if;
     end if;
   end process;
 
@@ -149,31 +160,6 @@ begin
     end if;
   end process;
 
-  process (al1)
-  begin
-    if rising_edge( al1 ) then
-      da1 <= vd;
-    end if;
-  end process;
-
-  process (al2)
-  begin
-    if rising_edge( al2 ) then
-      at1 <= vd;
-    end if;
-  end process;
-
-  process (at2clk)
-  begin
-    if rising_edge( at2clk ) then
-      if( viden='0' ) then
-        at2 <= at1;
-      else
-        at2 <= "00" & border & "000";
-      end if;
-    end if;
-  end process;
-
   process (flash(4), at2, da2(7))
   begin
     if (da2(7) xor (at2(7) and flash(4)))='0' then
@@ -183,5 +169,8 @@ begin
     end if;
   end process;
 
-  border <= "101";
+  process (clk7, hcount)
+  begin
+    at2clk <= not clk7 or hcount(0) or not hcount(1) or hcount(2);
+  end process;
 end behavioral;
