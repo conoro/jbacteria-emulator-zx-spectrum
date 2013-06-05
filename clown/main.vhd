@@ -149,7 +149,7 @@ begin
     end if;
   end process;
 
-  process (al1, vd)
+  process (al1)
   begin
     if rising_edge( al1 ) then
       da1 <= vd;
