@@ -28,7 +28,7 @@ architecture behavioral of main is
   signal  da1     : std_logic_vector (7 downto 0);
   signal  da2     : std_logic_vector (7 downto 0);
   signal  addrv   : std_logic_vector (12 downto 0);
-  signal  vd      : std_logic_vector (7 downto 0);
+  signal  datav   : std_logic_vector (7 downto 0);
   signal  gencol  : std_logic_vector (2 downto 0);
   signal  abus    : std_logic_vector (15 downto 0);
   signal  dbus    : std_logic_vector (7 downto 0);
@@ -53,9 +53,18 @@ architecture behavioral of main is
   end component;
 
   component vram is port(
+      clk   : in  std_logic;
+      rd    : in  std_logic;
+      wr    : in  std_logic;
+      addr  : in  std_logic_vector(13 downto 0);
+      data  : inout std_logic_vector(7 downto 0));
+  end component;
+
+  component rom is port(
       clk     : in  std_logic;
-      addr    : in  std_logic_vector(12 downto 0);
-      dataout : out std_logic_vector( 7 downto 0));
+      en      : in  std_logic;
+      addr    : in  std_logic_vector(13 downto 0);
+      dataout : out std_logic_vector(7 downto 0));
   end component;
 
   component T80a is port(
@@ -89,9 +98,17 @@ begin
     b_out  => b);
 
   vram_inst: vram port map (
+    clk   => clk,
+    rd    => rdv,
+    wr    => wrv,
+    addr  => addrv,
+    data  => datav);
+
+  rom_inst: rom port map (
     clk     => clk,
-    addr    => addrv,
-    dataout => vd);
+    en      => romcs,
+    addr    => abus(13 downto 0),
+    dataout => doutrom);
 
   T80a_inst: T80a port map (
     RESET_n => '1',

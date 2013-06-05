@@ -26,7 +26,7 @@ begin
     dataout <= (others => '0');
     for i in 0 to 7 loop
       ena(i) <= '0';
-      if (en and to_integer(unsigned(addr(12 downto 11))) = i) then
+      if en='1' and to_integer(unsigned(addr(12 downto 11))) = i then
         ena(i) <= '1';
         dataout <= doa(i);
       end if;
