@@ -79,36 +79,17 @@ begin
       else
         hcount <= hcount + 1;
       end if;
-      if (at2clk or viddel)='0' then
-        da2 <= da1;
-      else
-        da2 <= da2(6 downto 0) & '0';
-      end if;
+      da2 <= da2(6 downto 0) & '0';
       if at2clk='0' then
         ccount <= hcount(7 downto 3);
+        if viddel='0' then
+          da2 <= da1;
+        end if;
       end if;
     end if;
     if rising_edge( clk7 ) then
       if hcount(3)='1' then
         viddel <= vid;
-      end if;
-    end if;
-  end process;
-
-  process (hcount, vcount, gencol, at2(6))
-  begin
-    color <= "0000";
-    vid   <= '1';
-    if  (vcount>=248 and vcount<252) or
-        (hcount>=344 and hcount<376) then
-      sync <= '0';
-    else
-      sync <= '1';
-      if hcount>=416 or hcount<320 then
-        color <= at2(6) & gencol;
-        if hcount<256 and vcount<192 then
-          vid <= '0';
-        end if;
       end if;
     end if;
   end process;
@@ -134,6 +115,24 @@ begin
         at2 <= at1;
       else
         at2 <= "00000000";
+      end if;
+    end if;
+  end process;
+
+  process (hcount, vcount, gencol, at2(6))
+  begin
+    color <= "0000";
+    vid   <= '1';
+    if  (vcount>=248 and vcount<252) or
+        (hcount>=344 and hcount<376) then
+      sync <= '0';
+    else
+      sync <= '1';
+      if hcount>=416 or hcount<320 then
+        color <= at2(6) & gencol;
+        if hcount<256 and vcount<192 then
+          vid <= '0';
+        end if;
       end if;
     end if;
   end process;
