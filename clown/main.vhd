@@ -27,9 +27,18 @@ architecture behavioral of main is
   signal  at2     : std_logic_vector (7 downto 0);
   signal  da1     : std_logic_vector (7 downto 0);
   signal  da2     : std_logic_vector (7 downto 0);
-  signal  addrv   : std_logic_vector(12 downto 0);
+  signal  addrv   : std_logic_vector (12 downto 0);
   signal  vd      : std_logic_vector (7 downto 0);
   signal  gencol  : std_logic_vector (2 downto 0);
+  signal  abus    : std_logic_vector (15 downto 0);
+  signal  dbus    : std_logic_vector (7 downto 0);
+  signal  mreq_n  : std_logic;
+  signal  iorq_n  : std_logic;
+  signal  wr_n    : std_logic;
+  signal  rd_n    : std_logic;
+  signal  rfsh_n  : std_logic;
+  signal  int_n   : std_logic;
+  signal  m1_n    : std_logic;
 
   component clock7 is port(
       clkin_in  : in  std_logic;
@@ -49,6 +58,25 @@ architecture behavioral of main is
       dataout : out std_logic_vector( 7 downto 0));
   end component;
 
+  component T80a is port(
+      RESET_n : in std_logic;
+      CLK_n   : in std_logic;
+      WAIT_n  : in std_logic;
+      INT_n   : in std_logic;
+      NMI_n   : in std_logic;
+      BUSRQ_n : in std_logic;
+      M1_n    : out std_logic;
+      MREQ_n  : out std_logic;
+      IORQ_n  : out std_logic;
+      RD_n    : out std_logic;
+      WR_n    : out std_logic;
+      RFSH_n  : out std_logic;
+      HALT_n  : out std_logic;
+      BUSAK_n : out std_logic;
+      A       : out std_logic_vector(15 downto 0);
+      D       : inout std_logic_vector(7 downto 0));
+  end component;
+
 begin
   clock7_inst: clock7 port map (
     clkin_in  => clk,
@@ -60,10 +88,28 @@ begin
     g_out  => g,
     b_out  => b);
 
-  video_ram: vram port map (
+  vram_inst: vram port map (
     clk     => clk,
     addr    => addrv,
     dataout => vd);
+
+  T80a_inst: T80a port map (
+    RESET_n => '1',
+    CLK_n   => not clk7,
+    WAIT_n  => '1',
+    INT_n   => int_n,
+    NMI_n   => '1',
+    BUSRQ_n => '1',
+    M1_n    => m1_n,
+    MREQ_n  => mreq_n,
+    IORQ_n  => iorq_n,
+    RD_n    => rd_n,
+    WR_n    => wr_n,
+    RFSH_n  => rfsh_n,
+--    HALT_n  =>
+--    BUSAK_n =>
+    A       => abus,
+    D       => dbus);
 
   process (clk7)
   begin

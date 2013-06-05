@@ -31,25 +31,27 @@ int main(int argc, char* argv[]){
   for ( i= 0; i < size>>11; i++ ){
     fprintf(fo, "\n-- block %02X\n", i);
     for ( j= 0; j<0x40; j++ ){
-      fprintf(fo, "    , INIT_%02X   => X\"", j);
+      fprintf(fo, "    init_%02X => X\"", j);
       for ( k= 0x20; k-->0; )
         fprintf(fo, "%02X", mem[i<<11 | j<<5 | k]);
-      fprintf(fo, "\"\n");
+      fprintf(fo, "\",\n");
     }
   }
   size&= 0x7ff;
-  fprintf(fo, "\n-- block %02X\n", i);
+  size && fprintf(fo, "\n-- block %02X\n", i);
   for ( j= 0; j < size>>5; j++ ){
-    fprintf(fo, "    , INIT_%02X   => X\"", j);
+    fprintf(fo, "    init_%02X => X\"", j);
     for ( k= 0x20; k-->0; )
       fprintf(fo, "%02X", mem[i<<11 | j<<5 | k]);
-    fprintf(fo, "\"\n");
+    fprintf(fo, "\",\n");
   }
   size&= 0x1f;
-  fprintf(fo, "    , INIT_%02X   => X\"", j);
-  for ( k= 0x20; k-->0; )
-    fprintf(fo, "%02X", k>size ? 0 : mem[i<<11 | j<<5 | k]);
-  fprintf(fo, "\"\n");
+  if( size ){
+    fprintf(fo, "    init_%02X => X\"", j);
+    for ( k= 0x20; k-->0; )
+      fprintf(fo, "%02X", k>size ? 0 : mem[i<<11 | j<<5 | k]);
+    fprintf(fo, "\",\n");
+  }
   fclose(fi);
   fclose(fo);
   printf("\nFile generated\n", size);
