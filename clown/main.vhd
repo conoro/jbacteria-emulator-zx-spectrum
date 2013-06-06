@@ -27,11 +27,16 @@ architecture behavioral of main is
   signal  at2     : std_logic_vector (7 downto 0);
   signal  da1     : std_logic_vector (7 downto 0);
   signal  da2     : std_logic_vector (7 downto 0);
-  signal  addrv   : std_logic_vector (12 downto 0);
-  signal  datav   : std_logic_vector (7 downto 0);
+  signal  addrv   : std_logic_vector (13 downto 0);
   signal  gencol  : std_logic_vector (2 downto 0);
+  signal  romen   : std_logic;
+  signal  rdv     : std_logic;
+  signal  wrv     : std_logic;
   signal  abus    : std_logic_vector (15 downto 0);
   signal  dbus    : std_logic_vector (7 downto 0);
+  signal  din_rom : std_logic_vector (7 downto 0);
+  signal  din_ram : std_logic_vector (7 downto 0);
+  signal  dout    : std_logic_vector (7 downto 0);
   signal  mreq_n  : std_logic;
   signal  iorq_n  : std_logic;
   signal  wr_n    : std_logic;
@@ -57,14 +62,15 @@ architecture behavioral of main is
       rd    : in  std_logic;
       wr    : in  std_logic;
       addr  : in  std_logic_vector(13 downto 0);
-      data  : inout std_logic_vector(7 downto 0));
+      din   : in  std_logic_vector( 7 downto 0);
+      dout  : out std_logic_vector( 7 downto 0));
   end component;
 
   component rom is port(
-      clk     : in  std_logic;
-      en      : in  std_logic;
-      addr    : in  std_logic_vector(13 downto 0);
-      dataout : out std_logic_vector(7 downto 0));
+      clk   : in  std_logic;
+      en_n  : in  std_logic;
+      addr  : in  std_logic_vector(13 downto 0);
+      dout  : out std_logic_vector(7 downto 0));
   end component;
 
   component T80a is port(
@@ -102,17 +108,18 @@ begin
     rd    => rdv,
     wr    => wrv,
     addr  => addrv,
-    data  => datav);
+    din   => dout,
+    dout  => din_ram);
 
   rom_inst: rom port map (
-    clk     => clk,
-    en      => romcs,
-    addr    => abus(13 downto 0),
-    dataout => doutrom);
+    clk   => clk,
+    en_n  => romen,
+    addr  => abus(13 downto 0),
+    dout  => din_rom);
 
   T80a_inst: T80a port map (
     RESET_n => '1',
-    CLK_n   => not clk7,
+    CLK_n   => not hcount(0),
     WAIT_n  => '1',
     INT_n   => int_n,
     NMI_n   => '1',
@@ -160,14 +167,14 @@ begin
   process (al1)
   begin
     if rising_edge( al1 ) then
-      da1 <= vd;
+      da1 <= din_ram;
     end if;
   end process;
 
   process (al2)
   begin
     if rising_edge( al2 ) then
-      at1 <= vd;
+      at1 <= din_ram;
     end if;
   end process;
 
@@ -177,7 +184,7 @@ begin
       if( viddel='0' ) then
         at2 <= at1;
       else
-        at2 <= "00000000";
+        at2 <= "00111000";
       end if;
     end if;
   end process;
@@ -212,13 +219,21 @@ begin
     end if;
   end process;
 
-  process (al1, vcount, ccount)
+  process (al1, al2, vcount, ccount, abus, mreq_n)
   begin
-    if al1='0' then
-      addrv <= std_logic_vector(vcount(7 downto 6) & vcount(2 downto 0)
-                & vcount(5 downto 3) & ccount);
+    if (al1 and al2)='0' then
+      rdv <= '1';
+      wrv <= '0';
+      if al1='0' then
+        addrv <= '0' & std_logic_vector(vcount(7 downto 6) & vcount(2 downto 0)
+                  & vcount(5 downto 3) & ccount);
+      else
+        addrv <= "0110" & std_logic_vector(vcount(7 downto 3) & ccount);
+      end if;
     else
-      addrv <= "110" & std_logic_vector(vcount(7 downto 3) & ccount);
+      rdv <= not (rd_n or abus(15) or not abus(14) or mreq_n);
+      wrv <= not (wr_n or abus(15) or not abus(14) or mreq_n);
+      addrv <= abus(13 downto 0);
     end if;
   end process;
 
@@ -235,4 +250,25 @@ begin
   begin
     at2clk <= not clk7 or hcount(0) or not hcount(1) or hcount(2);
   end process;
+
+  process (rd_n, mreq_n, abus(15 downto 14))
+  begin
+    romen <= not (rd_n or abus(15) or abus(14) or mreq_n);
+  end process;
+
+  process (rd_n, wr_n, romen)
+  begin
+    dout <= (others => 'Z');
+    dbus <= (others => 'Z');
+    if rd_n='0' then
+      if romen='1' then
+        dbus <= din_rom;
+      else
+        dbus <= din_ram;
+      end if;
+    elsif wr_n='0' then
+      dout <= dbus;
+    end if;
+  end process;
+
 end behavioral;

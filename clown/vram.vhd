@@ -10,10 +10,11 @@ entity vram is port(
     rd    : in  std_logic;
     wr    : in  std_logic;
     addr  : in  std_logic_vector(13 downto 0);
-    data  : inout std_logic_vector( 7 downto 0));
+    din   : in  std_logic_vector( 7 downto 0);
+    dout  : out std_logic_vector( 7 downto 0));
 end vram;
 
-architecture Behavioral of vram is
+architecture behavioral of vram is
 
   type arrena is array(7 downto 0) of std_logic;
   type arrdoa is array(7 downto 0) of std_logic_vector(7 downto 0);
@@ -24,15 +25,12 @@ begin
   process(addr, doa)
   variable i : integer;
   begin
+    dout <= (others => '0');
     for i in 0 to 7 loop
       ena(i) <= '0';
-      if (rd and wr)='1' and to_integer(unsigned(addr(13 downto 11))) = i then
+      if (rd or wr)='1' and to_integer(unsigned(addr(13 downto 11))) = i then
         ena(i) <= '1';
-        if rd='1' then
-          data <= doa(i);
-        elsif wr='1' then
-          doa(i) <= data;
-        end if;
+        dout   <= doa(i);
       end if;
     end loop;
   end process;
@@ -42,6 +40,8 @@ begin
     generic map (
       write_mode => "READ_FIRST")
     port map (
+      dip   => "0",
+      di    => din,
       do    => doa(i),
       addr  => addr(10 downto 0),
       clk   => clk,
@@ -49,4 +49,4 @@ begin
       we    => wr,
       ssr   => '0');
   end generate;
-end Behavioral;
+end behavioral;

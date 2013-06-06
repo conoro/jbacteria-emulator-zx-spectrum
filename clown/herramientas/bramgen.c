@@ -1,11 +1,18 @@
 #include <stdio.h>
+FILE *fi, *fo;
+unsigned char *mem;
+long size;
+int i, j, k;
+prline(){
+  fprintf(fo, "    init_%02X => X\"", j);
+  for ( k= 0x20; k-->0; )
+    fprintf(fo, "%02X", k>size ? 0 : mem[i<<11 | j<<5 | k]);
+  fprintf(fo, "\",\n");
+}
 int main(int argc, char* argv[]){
-  unsigned char *mem= (unsigned char *) malloc (0x100000);
-  FILE *fi, *fo;
-  long size;
-  int i, j, k;
+  mem= (unsigned char *) malloc (0x100000);
   if( argc==1 )
-    printf("\nbramgen v0.99, BRAM file generation from binary files /Antonio Villena, 4Jun2013\n\n"),
+    printf("\nbramgen v1.01, BRAM file generation from binary files /Antonio Villena, 6Jun2013\n\n"),
     printf("  bramgen <input_file> <output_file>\n\n"),
     printf("  <input_file>   Origin binary file\n"),
     printf("  <output_file>  Genetated .VHD file\n\n"),
@@ -24,35 +31,19 @@ int main(int argc, char* argv[]){
     exit(-1);
   fread(mem, 1, 0x100000, fi);
   size= ftell(fi);
-  rewind(fi);
+  fclose(fi);
   if( size>0xfffff )
     printf("\nFile length exceeded 1Mb.\n"),
     exit(-1);
   for ( i= 0; i < size>>11; i++ ){
     fprintf(fo, "\n-- block %02X\n", i);
-    for ( j= 0; j<0x40; j++ ){
-      fprintf(fo, "    init_%02X => X\"", j);
-      for ( k= 0x20; k-->0; )
-        fprintf(fo, "%02X", mem[i<<11 | j<<5 | k]);
-      fprintf(fo, "\",\n");
-    }
+    for ( j= 0; j<0x40; j++ )
+      prline();
   }
-  size&= 0x7ff;
-  size && fprintf(fo, "\n-- block %02X\n", i);
-  for ( j= 0; j < size>>5; j++ ){
-    fprintf(fo, "    init_%02X => X\"", j);
-    for ( k= 0x20; k-->0; )
-      fprintf(fo, "%02X", mem[i<<11 | j<<5 | k]);
-    fprintf(fo, "\",\n");
-  }
-  size&= 0x1f;
-  if( size ){
-    fprintf(fo, "    init_%02X => X\"", j);
-    for ( k= 0x20; k-->0; )
-      fprintf(fo, "%02X", k>size ? 0 : mem[i<<11 | j<<5 | k]);
-    fprintf(fo, "\",\n");
-  }
-  fclose(fi);
+  (size&= 0x7ff) && fprintf(fo, "\n-- block %02X\n", i);
+  for ( j= 0; j < size>>5; j++ )
+    prline();
+  (size&= 0x1f) && prline();
   fclose(fo);
-  printf("\nFile generated\n", size);
+  printf("\nFile generated\n");
 }

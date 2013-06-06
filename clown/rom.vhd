@@ -6,13 +6,13 @@ library unisim;
 use unisim.vcomponents.all;
 
 entity rom is port(
-    clk     : in  std_logic;
-    en      : in  std_logic;
-    addr    : in  std_logic_vector(13 downto 0);
-    dataout : out std_logic_vector( 7 downto 0));
-end vram;
+    clk   : in  std_logic;
+    en_n  : in  std_logic;
+    addr  : in  std_logic_vector(13 downto 0);
+    dout  : out std_logic_vector( 7 downto 0));
+end rom;
 
-architecture Behavioral of vram is
+architecture behavioral of rom is
 
   type arrena is array(7 downto 0) of std_logic;
   type arrdoa is array(7 downto 0) of std_logic_vector(7 downto 0);
@@ -20,15 +20,15 @@ architecture Behavioral of vram is
   signal doa : arrdoa;
 
 begin
-  process(addr, en, doa)
+  process(addr, en_n, doa)
   variable i : integer;
   begin
-    dataout <= (others => '0');
+    dout <= (others => '0');
     for i in 0 to 7 loop
       ena(i) <= '0';
-      if en='1' and to_integer(unsigned(addr(12 downto 11))) = i then
+      if en_n='0' and to_integer(unsigned(addr(12 downto 11))) = i then
         ena(i) <= '1';
-        dataout <= doa(i);
+        dout <= doa(i);
       end if;
     end loop;
   end process;
@@ -632,4 +632,4 @@ begin
     en    => ena(7),
     we    => '0',
     ssr   => '0');
-end Behavioral;
+end behavioral;
