@@ -13,25 +13,34 @@ end main;
 architecture behavioral of main is
 
   signal  clk7    : std_logic;
-  signal  hcount  : unsigned  (8 downto 0);
-  signal  vcount  : unsigned  (8 downto 0);
+  signal  hcount  : unsigned  (8 downto 0):= "000000000";
+  signal  vcount  : unsigned  (8 downto 0):= "000000000";
+--  signal  hcount  : unsigned  (8 downto 0);
+--  signal  vcount  : unsigned  (8 downto 0);
   signal  color   : std_logic_vector (3 downto 0);
   signal  vid     : std_logic;
   signal  viddel  : std_logic;
+  signal  cbis1   : std_logic;
+  signal  cbis2   : std_logic;
   signal  at2clk  : std_logic;
   signal  al1     : std_logic;
   signal  al2     : std_logic;
   signal  ccount  : unsigned  (4 downto 0);
-  signal  flash   : unsigned  (4 downto 0);
+  signal  flash   : unsigned  (4 downto 0):= "00000";
+--  signal  flash   : unsigned  (4 downto 0);
   signal  at1     : std_logic_vector (7 downto 0);
   signal  at2     : std_logic_vector (7 downto 0);
   signal  da1     : std_logic_vector (7 downto 0);
   signal  da2     : std_logic_vector (7 downto 0);
   signal  addrv   : std_logic_vector (13 downto 0);
   signal  gencol  : std_logic_vector (2 downto 0);
+  signal  lowp    : std_logic;
+  signal  mcon    : std_logic;
   signal  romen   : std_logic;
   signal  rdv     : std_logic;
   signal  wrv     : std_logic;
+  signal  iorqula : std_logic;
+  signal  clkcpu  : std_logic;
   signal  abus    : std_logic_vector (15 downto 0);
   signal  dbus    : std_logic_vector (7 downto 0);
   signal  din_rom : std_logic_vector (7 downto 0);
@@ -119,7 +128,7 @@ begin
 
   T80a_inst: T80a port map (
     RESET_n => '1',
-    CLK_n   => not hcount(0),
+    CLK_n   => clkcpu,
     WAIT_n  => '1',
     INT_n   => int_n,
     NMI_n   => '1',
@@ -149,6 +158,12 @@ begin
       else
         hcount <= hcount + 1;
       end if;
+
+      int_n <= '1';
+      if vcount=248 and hcount<32 then
+        int_n <= '0';
+      end if;
+
       da2 <= da2(6 downto 0) & '0';
       if at2clk='0' then
         ccount <= hcount(7 downto 3);
@@ -156,7 +171,11 @@ begin
           da2 <= da1;
         end if;
       end if;
+
+      cbis1 <= vid or (hcount(3) and hcount(2));
+
     end if;
+
     if rising_edge( clk7 ) then
       if hcount(3)='1' then
         viddel <= vid;
@@ -186,6 +205,13 @@ begin
       else
         at2 <= "00111000";
       end if;
+    end if;
+  end process;
+
+  process (clkcpu)
+  begin
+    if rising_edge( clkcpu ) then
+      cbis2 <= iorqula and mreq_n;
     end if;
   end process;
 
@@ -219,7 +245,7 @@ begin
     end if;
   end process;
 
-  process (al1, al2, vcount, ccount, abus, mreq_n)
+  process (al1, al2, vcount, ccount, abus, mreq_n, mcon)
   begin
     if (al1 and al2)='0' then
       rdv <= '1';
@@ -231,8 +257,8 @@ begin
         addrv <= "0110" & std_logic_vector(vcount(7 downto 3) & ccount);
       end if;
     else
-      rdv <= not (rd_n or abus(15) or not abus(14) or mreq_n);
-      wrv <= not (wr_n or abus(15) or not abus(14) or mreq_n);
+      rdv <= not (rd_n or mcon or mreq_n);
+      wrv <= not (wr_n or mcon or mreq_n);
       addrv <= abus(13 downto 0);
     end if;
   end process;
@@ -251,9 +277,9 @@ begin
     at2clk <= not clk7 or hcount(0) or not hcount(1) or hcount(2);
   end process;
 
-  process (rd_n, mreq_n, abus(15 downto 14))
+  process (rd_n, mreq_n, lowp)
   begin
-    romen <= not (rd_n or abus(15) or abus(14) or mreq_n);
+    romen <= not (rd_n or lowp) or mreq_n;
   end process;
 
   process (rd_n, wr_n, romen)
@@ -269,6 +295,17 @@ begin
     elsif wr_n='0' then
       dout <= dbus;
     end if;
+  end process;
+
+  process (abus(15 downto 14))
+  begin
+    mcon <= abus(15) or not abus(14);
+    lowp <= abus(15) or abus(14);
+  end process;
+
+  process (cbis1, cbis2, mcon, iorqula, abus(0), hcount(0))
+  begin
+    clkcpu <= hcount(0) or (not cbis1 and (mcon nand iorqula) and cbis2);
   end process;
 
 end behavioral;

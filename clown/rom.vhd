@@ -101,6 +101,8 @@ begin
     init_3F => X"A701203702FE5C743AE1DDE50E66DD0D6EDD0620B57CE11D2003FE007EDD0728",
     write_mode => "READ_FIRST")
   port map (
+    dip   => "0",
+    di    => "00000000",
     do    => doa(0),
     addr  => addr(10 downto 0),
     clk   => clk,
@@ -176,6 +178,8 @@ begin
     init_3F => X"18190FCD5C492108206E37CBFDC91615CDE15C5B22232323235C592A0F34FD18",
     write_mode => "READ_FIRST")
   port map (
+    dip   => "0",
+    di    => "00000000",
     do    => doa(1),
     addr  => addr(10 downto 0),
     clk   => clk,
@@ -251,6 +255,8 @@ begin
     init_3F => X"CD000236FD023E0218033EC9A602CBFD1833CDEB0128196ECD5C6C2A5C6C22ED",
     write_mode => "READ_FIRST")
   port map (
+    dip   => "0",
+    di    => "00000000",
     do    => doa(2),
     addr  => addr(10 downto 0),
     clk   => clk,
@@ -326,6 +332,8 @@ begin
     init_3F => X"20ACFEDFC9D70D3E1FC3CDC829FEF328204ECD1FFCCDFB28204ECD0D282045CD",
     write_mode => "READ_FIRST")
   port map (
+    dip   => "0",
+    di    => "00000000",
     do    => doa(3),
     addr  => addr(10 downto 0),
     clk   => clk,
@@ -401,6 +409,8 @@ begin
     init_3F => X"204F24D6E747DFE6E72712C3F6CB0228F1B6CB5C3B21E71C8AC229FEF518E703",
     write_mode => "READ_FIRST")
   port map (
+    dip   => "0",
+    di    => "00000000",
     do    => doa(4),
     addr  => addr(10 downto 0),
     clk   => clk,
@@ -476,6 +486,8 @@ begin
     init_3F => X"D95D57002EAFD9C03004CDD0C1F2101BCB1ACBD91BCB1ACB2DCBD947C5163021",
     write_mode => "READ_FIRST")
   port map (
+    dip   => "0",
+    di    => "00000000",
     do    => doa(5),
     addr  => addr(10 downto 0),
     clk   => clk,
@@ -551,6 +563,8 @@ begin
     init_3F => X"0F3104313101A0EF03331B060001A3363105011BA1EF0E3881FE7E3297CDC938",
     write_mode => "READ_FIRST")
   port map (
+    dip   => "0",
+    di    => "00000000",
     do    => doa(6),
     addr  => addr(10 downto 0),
     clk   => clk,
@@ -626,6 +640,8 @@ begin
     init_3F => X"3C4299A1A199423C0000000000281400007010100C1070000008080808080800",
     write_mode => "READ_FIRST")
   port map (
+    dip   => "0",
+    di    => "00000000",
     do    => doa(7),
     addr  => addr(10 downto 0),
     clk   => clk,
