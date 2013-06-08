@@ -36,7 +36,7 @@ architecture behavioral of main is
   signal  gencol  : std_logic_vector (2 downto 0);
   signal  lowp    : std_logic;
   signal  mcon    : std_logic;
-  signal  romen   : std_logic;
+  signal  romcs   : std_logic;
   signal  rdv     : std_logic;
   signal  wrv     : std_logic;
   signal  iorqula : std_logic;
@@ -122,7 +122,7 @@ begin
 
   rom_inst: rom port map (
     clk   => clk,
-    en_n  => romen,
+    en_n  => romcs,
     addr  => abus(13 downto 0),
     dout  => din_rom);
 
@@ -279,15 +279,15 @@ begin
 
   process (rd_n, mreq_n, lowp)
   begin
-    romen <= not (rd_n or lowp) or mreq_n;
+    romcs <= rd_n or lowp or mreq_n;
   end process;
 
-  process (rd_n, wr_n, romen)
+  process (rd_n, wr_n, mreq_n, romcs)
   begin
     dout <= (others => 'Z');
     dbus <= (others => 'Z');
-    if rd_n='0' then
-      if romen='1' then
+    if rd_n='0' and mreq_n='0' then
+      if romcs='0' then
         dbus <= din_rom;
       else
         dbus <= din_ram;
@@ -303,7 +303,12 @@ begin
     lowp <= abus(15) or abus(14);
   end process;
 
-  process (cbis1, cbis2, mcon, iorqula, abus(0), hcount(0))
+  process (iorq_n, abus(0))
+  begin
+    iorqula <= iorq_n or abus(0);
+  end process;
+
+  process (cbis1, cbis2, mcon, iorqula, hcount(0))
   begin
     clkcpu <= hcount(0) or (not cbis1 and (mcon nand iorqula) and cbis2);
   end process;
