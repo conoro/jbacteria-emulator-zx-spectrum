@@ -53,7 +53,7 @@ architecture behavioral of lec3 is
   signal  int_n   : std_logic;
   signal  m1_n    : std_logic;
 
-  component vram is port(
+  component ram is port(
       clk   : in  std_logic;
       rd    : in  std_logic;
       wr    : in  std_logic;
@@ -64,7 +64,6 @@ architecture behavioral of lec3 is
 
   component rom is port(
       clk   : in  std_logic;
-      en_n  : in  std_logic;
       addr  : in  std_logic_vector(13 downto 0);
       dout  : out std_logic_vector(7 downto 0));
   end component;
@@ -90,7 +89,7 @@ architecture behavioral of lec3 is
 
 begin
 
-  vram_inst: vram port map (
+  ram_inst: ram port map (
     clk   => clk7,
     rd    => rdv,
     wr    => wrv,
@@ -100,7 +99,6 @@ begin
 
   rom_inst: rom port map (
     clk   => clk7,
-    en_n  => romcs,
     addr  => abus(13 downto 0),
     dout  => din_rom);
 
