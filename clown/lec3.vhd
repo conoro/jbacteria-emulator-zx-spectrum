@@ -1,23 +1,23 @@
-library ieee;
+Vlibrary ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-entity main is port(
+entity lec3 is port(
     clk   : in  std_logic;
     sync  : out std_logic;
-    r     : out std_logic_vector (2 downto 0);
-    g     : out std_logic_vector (2 downto 0);
-    b     : out std_logic_vector (2 downto 0));
-end main;
+    r     : out std_logic;
+    g     : out std_logic;
+    b     : out std_logic;
+    i     : out std_logic);
+end lec3;
 
-architecture behavioral of main is
+architecture behavioral of lec3 is
 
   signal  clk7    : std_logic;
   signal  hcount  : unsigned  (8 downto 0):= "000000000";
   signal  vcount  : unsigned  (8 downto 0):= "000000000";
 --  signal  hcount  : unsigned  (8 downto 0);
 --  signal  vcount  : unsigned  (8 downto 0);
-  signal  color   : std_logic_vector (3 downto 0);
   signal  vid     : std_logic;
   signal  viddel  : std_logic;
   signal  cbis1   : std_logic;
@@ -53,18 +53,6 @@ architecture behavioral of main is
   signal  rfsh_n  : std_logic;
   signal  int_n   : std_logic;
   signal  m1_n    : std_logic;
-
-  component clock7 is port(
-      clkin_in  : in  std_logic;
-      clkfx_out : out std_logic);
-  end component;
-
-  component colenc is port(
-      col_in  : in  std_logic_vector (3 downto 0);
-      r_out   : out std_logic_vector (2 downto 0);
-      g_out   : out std_logic_vector (2 downto 0);
-      b_out   : out std_logic_vector (2 downto 0));
-  end component;
 
   component vram is port(
       clk   : in  std_logic;
@@ -102,15 +90,6 @@ architecture behavioral of main is
   end component;
 
 begin
-  clock7_inst: clock7 port map (
-    clkin_in  => clk,
-    clkfx_out => clk7);
-
-  colenc_inst: colenc port map (
-    col_in => color,
-    r_out  => r,
-    g_out  => g,
-    b_out  => b);
 
   vram_inst: vram port map (
     clk   => clk,
@@ -217,7 +196,10 @@ begin
 
   process (hcount, vcount, gencol, at2(6))
   begin
-    color <= "0000";
+    r <= '0';
+    g <= '0';
+    b <= '0';
+    i <= '0';
     vid   <= '1';
     if  (vcount>=248 and vcount<252) or
         (hcount>=344 and hcount<376) then
@@ -225,7 +207,10 @@ begin
     else
       sync <= '1';
       if hcount>=416 or hcount<320 then
-        color <= at2(6) & gencol;
+        r <= gencol(2);
+        g <= gencol(1);
+        b <= gencol(0);
+        i <= at2(6);
         if hcount<256 and vcount<192 then
           vid <= '0';
         end if;

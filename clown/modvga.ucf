@@ -1,0 +1,11 @@
+net "clk"     loc = "p83" | iostandard= lvcmos33;
+net "rout<2>" loc = "p15" | iostandard= lvcmos33;
+net "rout<1>" loc = "p16" | iostandard= lvcmos33;
+net "rout<0>" loc = "p19" | iostandard= lvcmos33;
+net "gout<2>" loc = "p13" | iostandard= lvcmos33;
+net "gout<1>" loc = "p12" | iostandard= lvcmos33;
+net "gout<0>" loc = "p10" | iostandard= lvcmos33;
+net "bout<2>" loc = "p9"  | iostandard= lvcmos33;
+net "bout<1>" loc = "p6"  | iostandard= lvcmos33;
+net "bout<0>" loc = "p5"  | iostandard= lvcmos33;
+net "sync"    loc = "p4"  | iostandard= lvcmos33;
