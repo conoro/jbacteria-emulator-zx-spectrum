@@ -1,9 +1,9 @@
-Vlibrary ieee;
+library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 entity lec3 is port(
-    clk   : in  std_logic;
+    clk7  : in  std_logic;
     sync  : out std_logic;
     r     : out std_logic;
     g     : out std_logic;
@@ -13,7 +13,6 @@ end lec3;
 
 architecture behavioral of lec3 is
 
-  signal  clk7    : std_logic;
   signal  hcount  : unsigned  (8 downto 0):= "000000000";
   signal  vcount  : unsigned  (8 downto 0):= "000000000";
 --  signal  hcount  : unsigned  (8 downto 0);
@@ -92,7 +91,7 @@ architecture behavioral of lec3 is
 begin
 
   vram_inst: vram port map (
-    clk   => clk,
+    clk   => clk7,
     rd    => rdv,
     wr    => wrv,
     addr  => addrv,
@@ -100,7 +99,7 @@ begin
     dout  => din_ram);
 
   rom_inst: rom port map (
-    clk   => clk,
+    clk   => clk7,
     en_n  => romcs,
     addr  => abus(13 downto 0),
     dout  => din_rom);
