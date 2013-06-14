@@ -51,7 +51,7 @@ architecture behavioral of lec3 is
 
   component rom is port(
       clk   : in  std_logic;
-      addr  : in  std_logic_vector(13 downto 0);
+      addr  : in  std_logic_vector(9 downto 0);
       dout  : out std_logic_vector(7 downto 0));
   end component;
 
@@ -85,7 +85,7 @@ begin
 
   rom_inst: rom port map (
     clk   => clk7,
-    addr  => abus(13 downto 0),
+    addr  => abus(9 downto 0),
     dout  => din_rom);
 
   T80a_inst: T80a port map (
