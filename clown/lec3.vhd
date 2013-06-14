@@ -13,32 +13,22 @@ end lec3;
 
 architecture behavioral of lec3 is
 
-  signal  hcount  : unsigned  (8 downto 0):= "000000000";
-  signal  vcount  : unsigned  (8 downto 0):= "000000000";
---  signal  hcount  : unsigned  (8 downto 0);
---  signal  vcount  : unsigned  (8 downto 0);
+  signal  hcount  : unsigned  (8 downto 0);
+  signal  vcount  : unsigned  (8 downto 0);
   signal  vid     : std_logic;
   signal  viddel  : std_logic;
-  signal  cbis1   : std_logic;
-  signal  cbis2   : std_logic;
   signal  at2clk  : std_logic;
   signal  al1     : std_logic;
   signal  al2     : std_logic;
   signal  ccount  : unsigned  (4 downto 0);
-  signal  flash   : unsigned  (4 downto 0):= "00000";
---  signal  flash   : unsigned  (4 downto 0);
+  signal  flash   : unsigned  (4 downto 0);
   signal  at1     : std_logic_vector (7 downto 0);
   signal  at2     : std_logic_vector (7 downto 0);
   signal  da1     : std_logic_vector (7 downto 0);
   signal  da2     : std_logic_vector (7 downto 0);
   signal  addrv   : std_logic_vector (13 downto 0);
   signal  gencol  : std_logic_vector (2 downto 0);
-  signal  lowp    : std_logic;
-  signal  mcon    : std_logic;
-  signal  romcs   : std_logic;
-  signal  rdv     : std_logic;
   signal  wrv     : std_logic;
-  signal  iorqula : std_logic;
   signal  clkcpu  : std_logic;
   signal  abus    : std_logic_vector (15 downto 0);
   signal  dbus    : std_logic_vector (7 downto 0);
@@ -49,13 +39,10 @@ architecture behavioral of lec3 is
   signal  iorq_n  : std_logic;
   signal  wr_n    : std_logic;
   signal  rd_n    : std_logic;
-  signal  rfsh_n  : std_logic;
   signal  int_n   : std_logic;
-  signal  m1_n    : std_logic;
 
   component ram is port(
       clk   : in  std_logic;
-      rd    : in  std_logic;
       wr    : in  std_logic;
       addr  : in  std_logic_vector(13 downto 0);
       din   : in  std_logic_vector( 7 downto 0);
@@ -91,7 +78,6 @@ begin
 
   ram_inst: ram port map (
     clk   => clk7,
-    rd    => rdv,
     wr    => wrv,
     addr  => addrv,
     din   => dout,
@@ -109,14 +95,10 @@ begin
     INT_n   => int_n,
     NMI_n   => '1',
     BUSRQ_n => '1',
-    M1_n    => m1_n,
     MREQ_n  => mreq_n,
     IORQ_n  => iorq_n,
     RD_n    => rd_n,
     WR_n    => wr_n,
-    RFSH_n  => rfsh_n,
---    HALT_n  =>
---    BUSAK_n =>
     A       => abus,
     D       => dbus);
 
@@ -147,8 +129,6 @@ begin
           da2 <= da1;
         end if;
       end if;
-
-      cbis1 <= vid or (hcount(3) and hcount(2));
 
     end if;
 
@@ -184,13 +164,6 @@ begin
     end if;
   end process;
 
-  process (clkcpu)
-  begin
-    if rising_edge( clkcpu ) then
-      cbis2 <= iorqula and mreq_n;
-    end if;
-  end process;
-
   process (hcount, vcount, gencol, at2(6))
   begin
     r <= '0';
@@ -204,8 +177,8 @@ begin
     else
       sync <= '1';
       if hcount>=416 or hcount<320 then
-        r <= gencol(2);
-        g <= gencol(1);
+        r <= gencol(1);
+        g <= gencol(2);
         b <= gencol(0);
         i <= at2(6);
         if hcount<256 and vcount<192 then
@@ -215,22 +188,23 @@ begin
     end if;
   end process;
 
-  process (hcount)
+  process (hcount, vid)
   begin
     al1 <= '1';
     al2 <= '1';
-    if hcount(3 downto 1)=3 or hcount(3 downto 1)=5 then
-      al1 <= '0';
-    end if;
-    if hcount(3 downto 1)=4 or hcount(3 downto 1)=6 then
-      al2 <= '0';
+    if vid='0' then
+      if hcount(3 downto 1)=3 or hcount(3 downto 1)=5 then
+        al1 <= '0';
+      end if;
+      if hcount(3 downto 1)=4 or hcount(3 downto 1)=6 then
+        al2 <= '0';
+      end if;
     end if;
   end process;
 
-  process (al1, al2, vcount, ccount, abus, mreq_n, mcon)
+  process (al1, al2, vcount, ccount, abus, mreq_n)
   begin
     if (al1 and al2)='0' then
-      rdv <= '1';
       wrv <= '0';
       if al1='0' then
         addrv <= '0' & std_logic_vector(vcount(7 downto 6) & vcount(2 downto 0)
@@ -239,8 +213,7 @@ begin
         addrv <= "0110" & std_logic_vector(vcount(7 downto 3) & ccount);
       end if;
     else
-      rdv <= not (rd_n or mcon or mreq_n);
-      wrv <= not (wr_n or mcon or mreq_n);
+      wrv <= not (wr_n or mreq_n or abus(15) or not abus(14));
       addrv <= abus(13 downto 0);
     end if;
   end process;
@@ -259,40 +232,26 @@ begin
     at2clk <= not clk7 or hcount(0) or not hcount(1) or hcount(2);
   end process;
 
-  process (rd_n, mreq_n, lowp)
-  begin
-    romcs <= rd_n or lowp or mreq_n;
-  end process;
-
-  process (rd_n, wr_n, mreq_n, romcs)
+  process (rd_n, wr_n, mreq_n, abus)
   begin
     dout <= (others => 'Z');
     dbus <= (others => 'Z');
-    if rd_n='0' and mreq_n='0' then
-      if romcs='0' then
-        dbus <= din_rom;
-      else
-        dbus <= din_ram;
+    if mreq_n='0' then
+      if rd_n='0' then
+        if abus(15 downto 14)="00" then
+          dbus <= din_rom;
+        else
+          dbus <= din_ram;
+        end if;
+      elsif wr_n='0' then
+        dout <= dbus;
       end if;
-    elsif wr_n='0' then
-      dout <= dbus;
     end if;
   end process;
 
-  process (abus(15 downto 14))
+  process (hcount(0), vid)
   begin
-    mcon <= abus(15) or not abus(14);
-    lowp <= abus(15) or abus(14);
-  end process;
-
-  process (iorq_n, abus(0))
-  begin
-    iorqula <= iorq_n or abus(0);
-  end process;
-
-  process (cbis1, cbis2, mcon, iorqula, hcount(0))
-  begin
-    clkcpu <= hcount(0) or (not cbis1 and (mcon nand iorqula) and cbis2);
+    clkcpu <= hcount(0) and vid;
   end process;
 
 end behavioral;

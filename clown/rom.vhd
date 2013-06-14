@@ -12,7 +12,7 @@ architecture behavioral of rom is
 
   type rom_t is array (0 to 16383) of std_logic_vector(7 downto 0);
   signal rom : rom_t := (
-  X"F3", X"AF", X"11", X"FF", X"FF", X"C3", X"CB", X"11", --0000
+  X"F3", X"C3", X"F6", X"64", X"FF", X"C3", X"CB", X"11", --0000
   X"2A", X"5D", X"5C", X"22", X"5F", X"5C", X"18", X"43", --0008
   X"C3", X"F2", X"15", X"FF", X"FF", X"FF", X"FF", X"FF", --0010
   X"2A", X"5D", X"5C", X"7E", X"CD", X"7D", X"00", X"D0", --0018
