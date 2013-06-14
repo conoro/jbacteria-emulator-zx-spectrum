@@ -27,14 +27,12 @@ architecture behavioral of lec3 is
   signal  da1     : std_logic_vector (7 downto 0);
   signal  da2     : std_logic_vector (7 downto 0);
   signal  addrv   : std_logic_vector (13 downto 0);
-  signal  gencol  : std_logic_vector (2 downto 0);
   signal  wrv     : std_logic;
   signal  clkcpu  : std_logic;
   signal  abus    : std_logic_vector (15 downto 0);
   signal  dbus    : std_logic_vector (7 downto 0);
   signal  din_rom : std_logic_vector (7 downto 0);
   signal  din_ram : std_logic_vector (7 downto 0);
-  signal  dout    : std_logic_vector (7 downto 0);
   signal  mreq_n  : std_logic;
   signal  iorq_n  : std_logic;
   signal  wr_n    : std_logic;
@@ -80,7 +78,7 @@ begin
     clk   => clk7,
     wr    => wrv,
     addr  => addrv,
-    din   => dout,
+    din   => dbus,
     dout  => din_ram);
 
   rom_inst: rom port map (
@@ -129,7 +127,6 @@ begin
           da2 <= da1;
         end if;
       end if;
-
     end if;
 
     if rising_edge( clk7 ) then
@@ -164,7 +161,7 @@ begin
     end if;
   end process;
 
-  process (hcount, vcount, gencol, at2(6))
+  process (hcount, vcount, at2, da2(7), flash(4))
   begin
     r <= '0';
     g <= '0';
@@ -177,9 +174,15 @@ begin
     else
       sync <= '1';
       if hcount>=416 or hcount<320 then
-        r <= gencol(1);
-        g <= gencol(2);
-        b <= gencol(0);
+        if (da2(7) xor (at2(7) and flash(4)))='0' then
+          r <= at2(4);
+          g <= at2(5);
+          b <= at2(3);
+        else
+          r <= at2(1);
+          g <= at2(2);
+          b <= at2(0);
+        end if;
         i <= at2(6);
         if hcount<256 and vcount<192 then
           vid <= '0';
@@ -218,15 +221,6 @@ begin
     end if;
   end process;
 
-  process (flash(4), at2, da2(7))
-  begin
-    if (da2(7) xor (at2(7) and flash(4)))='0' then
-      gencol <= at2(5 downto 3);
-    else
-      gencol <= at2(2 downto 0);
-    end if;
-  end process;
-
   process (clk7, hcount)
   begin
     at2clk <= not clk7 or hcount(0) or not hcount(1) or hcount(2);
@@ -234,24 +228,23 @@ begin
 
   process (rd_n, wr_n, mreq_n, abus)
   begin
-    dout <= (others => 'Z');
     dbus <= (others => 'Z');
-    if mreq_n='0' then
-      if rd_n='0' then
-        if abus(15 downto 14)="00" then
-          dbus <= din_rom;
-        else
-          dbus <= din_ram;
-        end if;
-      elsif wr_n='0' then
-        dout <= dbus;
+    if mreq_n='0' and rd_n='0' then
+      if abus(15 downto 14)="00" then
+        dbus <= din_rom;
+      else
+        dbus <= din_ram;
       end if;
     end if;
   end process;
 
-  process (hcount(0), vid)
+  process (hcount(0), vcount)
   begin
-    clkcpu <= hcount(0) and vid;
+    if vcount>192 then
+      clkcpu <= hcount(0);
+    else
+      clkcpu <= '0';
+    end if;
   end process;
 
 end behavioral;
