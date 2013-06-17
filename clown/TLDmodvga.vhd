@@ -4,11 +4,14 @@ library unisim;
 use unisim.vcomponents.all;
 
 entity TLDmodvga is port(
-    clk   : in  std_logic;
-    sync  : out std_logic;
-    rout  : out std_logic_vector (2 downto 0);
-    gout  : out std_logic_vector (2 downto 0);
-    bout  : out std_logic_vector (2 downto 0));
+    clk     : in  std_logic;
+    sync    : out std_logic;
+    rout    : out std_logic_vector (2 downto 0);
+    gout    : out std_logic_vector (2 downto 0);
+    bout    : out std_logic_vector (2 downto 0);
+    flashcs : out std_logic;
+    clkps2  : in  std_logic;
+    dataps2 : in  std_logic);
 end TLDmodvga;
 
 architecture behavioral of TLDmodvga is
@@ -23,28 +26,34 @@ architecture behavioral of TLDmodvga is
   signal  b         : std_logic;
   signal  i         : std_logic;
 
-  component lec3 is port(
-      clk7  : in  std_logic;
-      r     : out std_logic;
-      g     : out std_logic;
-      b     : out std_logic;
-      i     : out std_logic;
-      sync  : out std_logic);
+  component lec4 is port(
+      clk7    : in  std_logic;
+      r       : out std_logic;
+      g       : out std_logic;
+      b       : out std_logic;
+      i       : out std_logic;
+      sync    : out std_logic;
+      clkps2  : in  std_logic;
+      dataps2 : in  std_logic);
   end component;
 
 begin
 
-  lec3_inst: lec3 port map (
-    clk7  => clk7,
-    r     => r,
-    g     => g,
-    b     => b,
-    i     => i,
-    sync  => sync);
+  lec4_inst: lec4 port map (
+    clk7    => clk7,
+    r       => r,
+    g       => g,
+    b       => b,
+    i       => i,
+    sync    => sync,
+    clkps2  => clkps2,
+    dataps2 => dataps2);
 
   rout <= r & (i and r) & r;
   gout <= g & (i and g) & g;
   bout <= b & (i and b) & b;
+
+  flashcs <= '1';
 
   gnd_bit <= '0';
   clkfx_bufg_inst : bufg

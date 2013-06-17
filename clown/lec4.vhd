@@ -2,16 +2,18 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-entity lec3 is port(
-    clk7  : in  std_logic;
-    sync  : out std_logic;
-    r     : out std_logic;
-    g     : out std_logic;
-    b     : out std_logic;
-    i     : out std_logic);
-end lec3;
+entity lec4 is port(
+    clk7    : in  std_logic;
+    sync    : out std_logic;
+    r       : out std_logic;
+    g       : out std_logic;
+    b       : out std_logic;
+    i       : out std_logic;
+    clkps2  : in  std_logic;
+    dataps2 : in  std_logic);
+end lec4;
 
-architecture behavioral of lec3 is
+architecture behavioral of lec4 is
 
   signal  hcount  : unsigned  (8 downto 0);
   signal  vcount  : unsigned  (8 downto 0);
@@ -38,6 +40,7 @@ architecture behavioral of lec3 is
   signal  wr_n    : std_logic;
   signal  rd_n    : std_logic;
   signal  int_n   : std_logic;
+  signal  kbcol   : std_logic_vector (4 downto 0);
 
   component ram is port(
       clk   : in  std_logic;
@@ -49,7 +52,7 @@ architecture behavioral of lec3 is
 
   component rom is port(
       clk   : in  std_logic;
-      addr  : in  std_logic_vector(9 downto 0);
+      addr  : in  std_logic_vector(13 downto 0);
       dout  : out std_logic_vector(7 downto 0));
   end component;
 
@@ -72,6 +75,15 @@ architecture behavioral of lec3 is
       D       : inout std_logic_vector(7 downto 0));
   end component;
 
+  component ps2k is port (
+      CLK       : in  std_logic;
+      nRESET    : in  std_logic;
+      PS2CLK    : in  std_logic;
+      PS2DATA   : in  std_logic;
+      A         : in  std_logic_vector(15 downto 0);
+      KEYB      : out std_logic_vector(4 downto 0));
+  end component;
+
 begin
 
   ram_inst: ram port map (
@@ -83,7 +95,7 @@ begin
 
   rom_inst: rom port map (
     clk   => clk7,
-    addr  => abus(9 downto 0),
+    addr  => abus(13 downto 0),
     dout  => din_rom);
 
   T80a_inst: T80a port map (
@@ -99,6 +111,14 @@ begin
     WR_n    => wr_n,
     A       => abus,
     D       => dbus);
+    
+  ps2k_inst: ps2k port map (
+    CLK     => clk7,
+    nRESET  => '1',
+    PS2CLK  => clkps2,
+    PS2DATA => dataps2,
+    A       => abus,
+    KEYB    => kbcol);
 
   process (clk7)
   begin
@@ -226,14 +246,23 @@ begin
     at2clk <= not clk7 or hcount(0) or not hcount(1) or hcount(2);
   end process;
 
-  process (rd_n, wr_n, mreq_n, abus)
+  process (rd_n, wr_n, mreq_n, abus, kbcol)
   begin
     dbus <= (others => 'Z');
-    if mreq_n='0' and rd_n='0' then
-      if abus(15 downto 14)="00" then
-        dbus <= din_rom;
-      else
-        dbus <= din_ram;
+    if rd_n='0' then
+      if mreq_n='0' then
+        if abus(15 downto 14)="00" then
+          dbus <= din_rom;
+        else
+          dbus <= din_ram;
+        end if;
+      elsif iorq_n='0' and abus(0)='0' then
+--        if abus(13)='0' then
+--          dbus <= "11111110";
+--        else
+--          dbus <= "11111111";
+--        end if;
+        dbus <= "101" & kbcol;
       end if;
     end if;
   end process;
