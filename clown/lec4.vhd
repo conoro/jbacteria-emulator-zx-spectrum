@@ -4,7 +4,7 @@ use ieee.numeric_std.all;
 
 entity lec4 is port(
     clk7    : in  std_logic;
-    reset   : in  std_logic;
+--    reset   : in  std_logic;
     sync    : out std_logic;
     r       : out std_logic;
     g       : out std_logic;
@@ -94,7 +94,8 @@ begin
     dout  => din_rom);
 
   T80a_inst: T80a port map (
-    RESET_n => reset,
+--    RESET_n => reset,
+    RESET_n => '1',
     CLK_n   => clkcpu,
     WAIT_n  => '1',
     INT_n   => int_n,
@@ -135,7 +136,7 @@ begin
         end if;
       end if;
 
-      cbis1 <= vid or (hcount(3) and hcount(2));
+      cbis1 <= vid nor (hcount(3) and hcount(2));
 
     end if;
 
