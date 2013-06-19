@@ -2,7 +2,9 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-entity ps2k is port (
+entity ps2k is
+generic (filter_length : positive := 6);
+port (
     clk     : in  std_logic;
     nreset  : in  std_logic;
     ps2clk  : in  std_logic;
@@ -13,36 +15,77 @@ end ps2k;
 
 architecture rtl of ps2k is
 
-  type key_matrix is array (7 downto 0) of std_logic_vector(4 downto 0);
-  signal keyb_data  : std_logic_vector(7 downto 0);
-  signal keyb_valid : std_logic;
-  signal keyb_error : std_logic;
-  signal keys       : key_matrix;
-  signal release    : std_logic;
-  signal extended   : std_logic;
+  type    key_matrix  is array (7 downto 0) of std_logic_vector(4 downto 0);
+  subtype filter_t    is std_logic_vector(filter_length-1 downto 0);
+  signal  data      : std_logic_vector(7 downto 0);
+  signal  valid     : std_logic;
+  signal  error     : std_logic;
+  signal  keys      : key_matrix;
+  signal  release   : std_logic;
+  signal  extended  : std_logic;
+  signal  clkfilter : filter_t;
+  signal  ps2clkin  : std_logic;
+  signal  ps2datin  : std_logic;
+  signal  clk_edge  : std_logic;
+  signal  bit_count : unsigned (3 downto 0);
+  signal  shiftreg  : std_logic_vector(8 downto 0);
+  signal  parity    : std_logic;
 
-  component ps2_intf is
-  generic (filter_length : positive := 8);
-  port(
-      clk     : in  std_logic;
-      nreset  : in  std_logic;
-      ps2clk  : in  std_logic;
-      ps2data : in  std_logic;
-      data    : out std_logic_vector(7 downto 0);
-      valid   : out std_logic;
-      error   : out std_logic);
-  end component;
 
 begin
 
-  ps2 : ps2_intf port map (
-    clk         => clk,
-    nreset      => nreset,
-    ps2clk      => ps2clk,
-    ps2data     => ps2data,
-    data        => keyb_data,
-    valid       => keyb_valid,
-    error       => keyb_error);
+  process (nreset, clk)
+  begin
+    if nreset='0' then
+      bit_count <= (others => '0');
+      shiftreg  <= (others => '0');
+      parity    <= '0';
+      data      <= (others => '0');
+      valid     <= '0';
+      error     <= '0';
+      ps2clkin  <= '1';
+      ps2datin  <= '1';
+      clkfilter <= (others => '1');
+      clk_edge  <= '0';
+    elsif rising_edge(clk) then
+      ps2datin  <= ps2data;
+      clkfilter <= ps2clk & clkfilter(clkfilter'high downto 1);
+      clk_edge  <= '0';
+      valid     <= '0';
+      error     <= '0';
+      if clkfilter = filter_t'(filter_length-1 downto 0 => '1') then
+        ps2clkin <= '1';
+      elsif clkfilter=filter_t'(filter_length-1 downto 0 => '0') and ps2clkin = '1' then
+        clk_edge <= '1';
+        ps2clkin <= '0';
+      end if;
+      if clk_edge='1' then
+        if bit_count=0 then
+          parity <= '0';
+          if ps2datin='0' then
+            bit_count <= bit_count + 1;
+          end if;
+        else
+          if bit_count<10 then
+            bit_count <= bit_count + 1;
+            shiftreg  <= ps2datin & shiftreg(shiftreg'high downto 1);
+            parity    <= parity xor ps2datin;
+          elsif ps2datin='1' then
+            bit_count <= (others => '0');
+            if parity = '1' then
+              data  <= shiftreg(7 downto 0);
+              valid <= '1';
+            else
+              error <= '1';
+            end if;
+          else
+            bit_count <= (others => '0');
+            error     <= '1';
+          end if;
+        end if;
+      end if;
+    end if;
+  end process;
 
   keyb <= keys(0) when A(8) = '0' else
           keys(1) when A(9) = '0' else
@@ -68,15 +111,15 @@ begin
       keys(6) <= (others => '1');
       keys(7) <= (others => '1');
     elsif rising_edge(CLK) then
-      if keyb_valid = '1' then
-        if keyb_data = X"e0" then
+      if valid = '1' then
+        if data = X"e0" then
           extended <= '1';
-        elsif keyb_data = X"f0" then
+        elsif data = X"f0" then
           release <= '1';
         else
           release  <= '0';
           extended <= '0';
-          case keyb_data is
+          case data is
             when X"12" => keys(0)(0) <= release; -- Left shift (CAPS SHIFT)
             when X"59" => keys(0)(0) <= release; -- Right shift (CAPS SHIFT)
             when X"1a" => keys(0)(1) <= release; -- Z

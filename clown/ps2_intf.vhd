@@ -27,26 +27,6 @@ architecture behavioral of ps2_intf is
   signal  parity    : std_logic;
 
 begin
-  process(nRESET,CLK)
-  begin
-    if nreset='0' then
-      ps2clkin  <= '1';
-      ps2datin  <= '1';
-      clkfilter <= (others => '1');
-      clk_edge  <= '0';
-    elsif rising_edge(clk) then
-      ps2datin  <= ps2data;
-      clkfilter <= ps2clk & clkfilter(clkfilter'high downto 1);
-      clk_edge  <= '0';
-      if clkfilter = filter_t'(filter_length-1 downto 0 => '1') then
-        ps2clkin <= '1';
-      elsif clkfilter=filter_t'(filter_length-1 downto 0 => '0') and ps2clkin = '1' then
-        clk_edge <= '1';
-        ps2clkin <= '0';
-      end if;	
-    end if;
-  end process;
-  
   process (nreset, clk)
   begin
     if nreset='0' then
@@ -56,9 +36,22 @@ begin
       data      <= (others => '0');
       valid     <= '0';
       error     <= '0';
+      ps2clkin  <= '1';
+      ps2datin  <= '1';
+      clkfilter <= (others => '1');
+      clk_edge  <= '0';
     elsif rising_edge(clk) then
+      ps2datin  <= ps2data;
+      clkfilter <= ps2clk & clkfilter(clkfilter'high downto 1);
+      clk_edge  <= '0';
       valid     <= '0';
       error     <= '0';
+      if clkfilter = filter_t'(filter_length-1 downto 0 => '1') then
+        ps2clkin <= '1';
+      elsif clkfilter=filter_t'(filter_length-1 downto 0 => '0') and ps2clkin = '1' then
+        clk_edge <= '1';
+        ps2clkin <= '0';
+      end if;
       if clk_edge='1' then
         if bit_count=0 then
           parity <= '0';

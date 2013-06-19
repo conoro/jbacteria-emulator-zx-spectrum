@@ -4,6 +4,7 @@ use ieee.numeric_std.all;
 
 entity lec4 is port(
     clk7    : in  std_logic;
+    reset   : in  std_logic;
     sync    : out std_logic;
     r       : out std_logic;
     g       : out std_logic;
@@ -15,15 +16,18 @@ end lec4;
 
 architecture behavioral of lec4 is
 
-  signal  hcount  : unsigned  (8 downto 0);
-  signal  vcount  : unsigned  (8 downto 0);
+  signal  hcount  : unsigned  (8 downto 0):= (others => '0');
+  signal  vcount  : unsigned  (8 downto 0):= (others => '0');
   signal  vid     : std_logic;
   signal  viddel  : std_logic;
+  signal  cbis1   : std_logic;
+  signal  cbis2   : std_logic;
+  signal  orbis2  : std_logic;
   signal  at2clk  : std_logic;
   signal  al1     : std_logic;
   signal  al2     : std_logic;
-  signal  ccount  : unsigned  (4 downto 0);
-  signal  flash   : unsigned  (4 downto 0);
+  signal  ccount  : unsigned  (4 downto 0):= (others => '0');
+  signal  flash   : unsigned  (4 downto 0):= (others => '0');
   signal  at1     : std_logic_vector (7 downto 0);
   signal  at2     : std_logic_vector (7 downto 0);
   signal  da1     : std_logic_vector (7 downto 0);
@@ -40,7 +44,7 @@ architecture behavioral of lec4 is
   signal  wr_n    : std_logic;
   signal  rd_n    : std_logic;
   signal  int_n   : std_logic;
-  signal  kbcol   : std_logic_vector (4 downto 0);
+--  signal  kbcol   : std_logic_vector (4 downto 0);
 
   component ram is port(
       clk   : in  std_logic;
@@ -75,15 +79,6 @@ architecture behavioral of lec4 is
       D       : inout std_logic_vector(7 downto 0));
   end component;
 
-  component ps2k is port (
-      CLK       : in  std_logic;
-      nRESET    : in  std_logic;
-      PS2CLK    : in  std_logic;
-      PS2DATA   : in  std_logic;
-      A         : in  std_logic_vector(15 downto 0);
-      KEYB      : out std_logic_vector(4 downto 0));
-  end component;
-
 begin
 
   ram_inst: ram port map (
@@ -99,7 +94,7 @@ begin
     dout  => din_rom);
 
   T80a_inst: T80a port map (
-    RESET_n => '1',
+    RESET_n => reset,
     CLK_n   => clkcpu,
     WAIT_n  => '1',
     INT_n   => int_n,
@@ -111,14 +106,6 @@ begin
     WR_n    => wr_n,
     A       => abus,
     D       => dbus);
-    
-  ps2k_inst: ps2k port map (
-    CLK     => clk7,
-    nRESET  => '1',
-    PS2CLK  => clkps2,
-    PS2DATA => dataps2,
-    A       => abus,
-    KEYB    => kbcol);
 
   process (clk7)
   begin
@@ -147,6 +134,9 @@ begin
           da2 <= da1;
         end if;
       end if;
+
+      cbis1 <= vid or (hcount(3) and hcount(2));
+
     end if;
 
     if rising_edge( clk7 ) then
@@ -225,7 +215,7 @@ begin
     end if;
   end process;
 
-  process (al1, al2, vcount, ccount, abus, mreq_n)
+  process (al1, al2, vcount, ccount, abus, wr_n, mreq_n)
   begin
     if (al1 and al2)='0' then
       wrv <= '0';
@@ -246,7 +236,7 @@ begin
     at2clk <= not clk7 or hcount(0) or not hcount(1) or hcount(2);
   end process;
 
-  process (rd_n, wr_n, mreq_n, abus, kbcol)
+  process (rd_n, wr_n, mreq_n, abus)
   begin
     dbus <= (others => 'Z');
     if rd_n='0' then
@@ -257,22 +247,31 @@ begin
           dbus <= din_ram;
         end if;
       elsif iorq_n='0' and abus(0)='0' then
---        if abus(13)='0' then
---          dbus <= "11111110";
---        else
---          dbus <= "11111111";
---        end if;
-        dbus <= "101" & kbcol;
+        if abus(13)='0' then
+         dbus <= "11111110";
+       else
+         dbus <= "11111111";
+       end if;
+--        dbus <= "101" & kbcol;
       end if;
     end if;
   end process;
 
-  process (hcount(0), vcount)
+  process (cbis1, cbis2, iorq_n, abus)
   begin
-    if vcount>192 then
-      clkcpu <= hcount(0);
-    else
-      clkcpu <= '0';
+    orbis2 <= cbis1 and ((abus(15) or not abus(14)) nand (iorq_n or abus(0))) and cbis2;
+  end process;
+
+
+  process (orbis2, hcount(0))
+  begin
+    clkcpu <= hcount(0) or orbis2;
+  end process;
+
+  process (clkcpu)
+  begin
+    if rising_edge( clkcpu ) then
+      cbis2 <= (iorq_n or abus(0)) and mreq_n;
     end if;
   end process;
 
