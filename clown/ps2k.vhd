@@ -3,7 +3,7 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 entity ps2k is
-generic (filter_length : positive := 6);
+generic (filter_length : positive := 8);
 port (
     clk     : in  std_logic;
     nreset  : in  std_logic;

@@ -4,6 +4,7 @@ use ieee.numeric_std.all;
 
 entity lec4 is port(
     clk7    : in  std_logic;
+    clk14   : in  std_logic;
 --    reset   : in  std_logic;
     sync    : out std_logic;
     r       : out std_logic;
@@ -22,7 +23,6 @@ architecture behavioral of lec4 is
   signal  viddel  : std_logic;
   signal  cbis1   : std_logic;
   signal  cbis2   : std_logic;
-  signal  orbis2  : std_logic;
   signal  at2clk  : std_logic;
   signal  ccount  : unsigned  (4 downto 0):= (others => '0');
   signal  flash   : unsigned  (4 downto 0):= (others => '0');
@@ -42,7 +42,7 @@ architecture behavioral of lec4 is
   signal  wr_n    : std_logic;
   signal  rd_n    : std_logic;
   signal  int_n   : std_logic;
---  signal  kbcol   : std_logic_vector (4 downto 0);
+  signal  kbcol   : std_logic_vector (4 downto 0);
 
   component ram is port(
       clk   : in  std_logic;
@@ -77,6 +77,15 @@ architecture behavioral of lec4 is
       D       : inout std_logic_vector(7 downto 0));
   end component;
 
+  component ps2k is port(
+      clk     : in  std_logic;
+      nreset  : in  std_logic;
+      ps2clk  : in  std_logic;
+      ps2data : in  std_logic;
+      a       : in  std_logic_vector(15 downto 0);
+      keyb    : out std_logic_vector(4 downto 0));
+  end component;
+
 begin
 
   ram_inst: ram port map (
@@ -92,12 +101,8 @@ begin
     dout  => din_rom);
 
   T80a_inst: T80a port map (
-<<<<<<< .mine
-    RESET_n => '1',
-=======
 --    RESET_n => reset,
     RESET_n => '1',
->>>>>>> .r396
     CLK_n   => clkcpu,
     WAIT_n  => '1',
     INT_n   => int_n,
@@ -109,6 +114,14 @@ begin
     WR_n    => wr_n,
     A       => abus,
     D       => dbus);
+
+  ps2k_inst: ps2k port map (
+    clk     => clk7,
+    nreset  => '1',
+    ps2clk  => clkps2,
+    ps2data => dataps2,
+    a       => abus,
+    keyb    => kbcol);
 
   process (clk7)
   begin
@@ -138,7 +151,6 @@ begin
         end if;
       end if;
 
-<<<<<<< .mine
       if vid='0' then
         if (hcount(1) and (hcount(2) xor hcount(3)))='1' then
           da1 <= din_ram;
@@ -147,9 +159,6 @@ begin
           at1 <= din_ram;
         end if;
       end if;
-=======
-      cbis1 <= vid nor (hcount(3) and hcount(2));
->>>>>>> .r396
 
       cbis1 <= vid nor (hcount(3) and hcount(2));
 
@@ -224,7 +233,7 @@ begin
     at2clk <= not clk7 or hcount(0) or not hcount(1) or hcount(2);
   end process;
 
-  process (rd_n, wr_n, mreq_n, abus)
+  process (rd_n, wr_n, mreq_n, iorq_n, abus)
   begin
     dbus <= (others => 'Z');
     if rd_n='0' then
@@ -235,25 +244,14 @@ begin
           dbus <= din_ram;
         end if;
       elsif iorq_n='0' and abus(0)='0' then
-        if abus(13)='0' then
-         dbus <= "11111110";
-       else
-         dbus <= "11111111";
-       end if;
---        dbus <= "101" & kbcol;
+        dbus <= "101" & kbcol;
       end if;
     end if;
   end process;
 
-  process (cbis1, cbis2, iorq_n, abus)
+  process (hcount(0), cbis1, cbis2, iorq_n, abus)
   begin
-    orbis2 <= cbis1 and ((abus(15) or not abus(14)) nand (iorq_n or abus(0))) and cbis2;
-  end process;
-
-
-  process (orbis2, hcount(0))
-  begin
-    clkcpu <= hcount(0) or orbis2;
+    clkcpu <= hcount(0) or (cbis1 and ((abus(15) or not abus(14)) nand (iorq_n or abus(0))) and cbis2);
   end process;
 
   process (clkcpu)
