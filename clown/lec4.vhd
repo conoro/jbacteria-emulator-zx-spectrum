@@ -4,7 +4,6 @@ use ieee.numeric_std.all;
 
 entity lec4 is port(
     clk7    : in  std_logic;
-    clk14   : in  std_logic;
 --    reset   : in  std_logic;
     sync    : out std_logic;
     r       : out std_logic;
@@ -177,7 +176,7 @@ begin
       if( viddel='0' ) then
         at2 <= at1;
       else
-        at2 <= "00111000";
+        at2 <= "00" & kbcol(2 downto 0) & "000";
       end if;
     end if;
   end process;

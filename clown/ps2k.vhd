@@ -87,20 +87,22 @@ begin
     end if;
   end process;
 
-  keyb <= keys(0) when A(8) = '0' else
-          keys(1) when A(9) = '0' else
-          keys(2) when A(10) = '0' else
-          keys(3) when A(11) = '0' else
-          keys(4) when A(12) = '0' else
-          keys(5) when A(13) = '0' else
-          keys(6) when A(14) = '0' else
-          keys(7) when A(15) = '0' else
-          (others => '1');
+  variable i : integer;
+  for i in 0 to 4 loop
+    keyb(i) <=  not ( (keys(0)(i) and not a(8))
+                   or (keys(1)(i) and not a(9))
+                   or (keys(2)(i) and not a(10))
+                   or (keys(3)(i) and not a(11))
+                   or (keys(4)(i) and not a(12))
+                   or (keys(5)(i) and not a(13))
+                   or (keys(6)(i) and not a(14))
+                   or (keys(7)(i) and not a(15)) );
+  end loop;
 
   process (nreset, clk)
   begin
     if nreset='0' then
-      release  <= '0';
+      release  <= '1';
       extended <= '0';
       keys(0) <= (others => '1');
       keys(1) <= (others => '1');
@@ -115,9 +117,9 @@ begin
         if data = X"e0" then
           extended <= '1';
         elsif data = X"f0" then
-          release <= '1';
+          release <= '0';
         else
-          release  <= '0';
+          release  <= '1';
           extended <= '0';
           case data is
             when X"12" => keys(0)(0) <= release; -- Left shift (CAPS SHIFT)
