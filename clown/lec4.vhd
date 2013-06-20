@@ -24,8 +24,6 @@ architecture behavioral of lec4 is
   signal  cbis2   : std_logic;
   signal  orbis2  : std_logic;
   signal  at2clk  : std_logic;
-  signal  al1     : std_logic;
-  signal  al2     : std_logic;
   signal  ccount  : unsigned  (4 downto 0):= (others => '0');
   signal  flash   : unsigned  (4 downto 0):= (others => '0');
   signal  at1     : std_logic_vector (7 downto 0);
@@ -94,8 +92,12 @@ begin
     dout  => din_rom);
 
   T80a_inst: T80a port map (
+<<<<<<< .mine
+    RESET_n => '1',
+=======
 --    RESET_n => reset,
     RESET_n => '1',
+>>>>>>> .r396
     CLK_n   => clkcpu,
     WAIT_n  => '1',
     INT_n   => int_n,
@@ -136,6 +138,19 @@ begin
         end if;
       end if;
 
+<<<<<<< .mine
+      if vid='0' then
+        if (hcount(1) and (hcount(2) xor hcount(3)))='1' then
+          da1 <= din_ram;
+        end if;
+        if (not hcount(1) and hcount(3))='1' then
+          at1 <= din_ram;
+        end if;
+      end if;
+=======
+      cbis1 <= vid nor (hcount(3) and hcount(2));
+>>>>>>> .r396
+
       cbis1 <= vid nor (hcount(3) and hcount(2));
 
     end if;
@@ -144,20 +159,6 @@ begin
       if hcount(3)='1' then
         viddel <= vid;
       end if;
-    end if;
-  end process;
-
-  process (al1)
-  begin
-    if rising_edge( al1 ) then
-      da1 <= din_ram;
-    end if;
-  end process;
-
-  process (al2)
-  begin
-    if rising_edge( al2 ) then
-      at1 <= din_ram;
     end if;
   end process;
 
@@ -202,25 +203,11 @@ begin
     end if;
   end process;
 
-  process (hcount, vid)
+  process (hcount, vcount, ccount, abus, wr_n, mreq_n)
   begin
-    al1 <= '1';
-    al2 <= '1';
-    if vid='0' then
-      if hcount(3 downto 1)=3 or hcount(3 downto 1)=5 then
-        al1 <= '0';
-      end if;
-      if hcount(3 downto 1)=4 or hcount(3 downto 1)=6 then
-        al2 <= '0';
-      end if;
-    end if;
-  end process;
-
-  process (al1, al2, vcount, ccount, abus, wr_n, mreq_n)
-  begin
-    if (al1 and al2)='0' then
+    if (vid or (hcount(3) xnor (hcount(2) and hcount(1))))='0' then
       wrv <= '0';
-      if al1='0' then
+      if (hcount(1) and (hcount(2) xor hcount(3)))='1' then
         addrv <= '0' & std_logic_vector(vcount(7 downto 6) & vcount(2 downto 0)
                   & vcount(5 downto 3) & ccount);
       else
