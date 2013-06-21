@@ -4,7 +4,6 @@ use ieee.numeric_std.all;
 
 entity lec4 is port(
     clk7    : in  std_logic;
---    reset   : in  std_logic;
     sync    : out std_logic;
     r       : out std_logic;
     g       : out std_logic;
@@ -16,15 +15,15 @@ end lec4;
 
 architecture behavioral of lec4 is
 
-  signal  hcount  : unsigned  (8 downto 0):= (others => '0');
-  signal  vcount  : unsigned  (8 downto 0):= (others => '0');
+  signal  hcount  : unsigned  (8 downto 0);
+  signal  vcount  : unsigned  (8 downto 0);
   signal  vid     : std_logic;
   signal  viddel  : std_logic;
   signal  cbis1   : std_logic;
   signal  cbis2   : std_logic;
   signal  at2clk  : std_logic;
-  signal  ccount  : unsigned  (4 downto 0):= (others => '0');
-  signal  flash   : unsigned  (4 downto 0):= (others => '0');
+  signal  ccount  : unsigned  (4 downto 0);
+  signal  flash   : unsigned  (4 downto 0);
   signal  at1     : std_logic_vector (7 downto 0);
   signal  at2     : std_logic_vector (7 downto 0);
   signal  da1     : std_logic_vector (7 downto 0);
@@ -78,10 +77,9 @@ architecture behavioral of lec4 is
 
   component ps2k is port(
       clk     : in  std_logic;
-      nreset  : in  std_logic;
       ps2clk  : in  std_logic;
       ps2data : in  std_logic;
-      a       : in  std_logic_vector(15 downto 0);
+      rows    : in  std_logic_vector(7 downto 0);
       keyb    : out std_logic_vector(4 downto 0));
   end component;
 
@@ -100,7 +98,6 @@ begin
     dout  => din_rom);
 
   T80a_inst: T80a port map (
---    RESET_n => reset,
     RESET_n => '1',
     CLK_n   => clkcpu,
     WAIT_n  => '1',
@@ -115,11 +112,10 @@ begin
     D       => dbus);
 
   ps2k_inst: ps2k port map (
-    clk     => clk7,
-    nreset  => '1',
+    clk     => hcount(5),
     ps2clk  => clkps2,
     ps2data => dataps2,
-    a       => abus,
+    rows    => abus(15 downto 8),
     keyb    => kbcol);
 
   process (clk7)
@@ -160,7 +156,6 @@ begin
       end if;
 
       cbis1 <= vid nor (hcount(3) and hcount(2));
-
     end if;
 
     if rising_edge( clk7 ) then
@@ -176,7 +171,7 @@ begin
       if( viddel='0' ) then
         at2 <= at1;
       else
-        at2 <= "00" & kbcol(2 downto 0) & "000";
+        at2 <= "00111000";
       end if;
     end if;
   end process;
@@ -260,4 +255,4 @@ begin
     end if;
   end process;
 
-end behavioral;
+end architecture;

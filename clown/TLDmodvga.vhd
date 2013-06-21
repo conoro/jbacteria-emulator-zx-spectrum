@@ -98,4 +98,4 @@ begin
     psdone  => open,
     status  => open);
 
-end behavioral;
+end architecture;
