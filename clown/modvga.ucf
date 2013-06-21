@@ -10,5 +10,5 @@ net "bout<1>" loc = "p6"  | iostandard= lvcmos33;
 net "bout<0>" loc = "p5"  | iostandard= lvcmos33;
 net "sync"    loc = "p4"  | iostandard= lvcmos33;
 net "flashcs" loc = "p27" | iostandard= lvcmos33;
-net "clkps2"  loc = "p53" | iostandard= lvttl | pullup;
-net "dataps2" loc = "p51" | iostandard= lvttl | pullup;
+net "clkps2"  loc = "p53" | iostandard= lvttl;
+net "dataps2" loc = "p51" | iostandard= lvttl;
