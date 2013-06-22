@@ -14,8 +14,7 @@ architecture behavioral of ps2k is
 
   type    key_matrix  is array (7 downto 0) of std_logic_vector(4 downto 0);
   signal  keys      : key_matrix;
-  signal  release   : std_logic;
-  signal  extended  : std_logic;
+  signal  pressed   : std_logic;
   signal  lastclk   : std_logic;
   signal  bit_count : unsigned (3 downto 0);
   signal  shiftreg  : std_logic_vector(8 downto 0);
@@ -41,66 +40,64 @@ begin
           elsif ps2data='1' then
             bit_count <= (others => '0');
             if parity = '1' then
-              release  <= '1';
-              extended <= '0';
+              pressed  <= '1';
               case shiftreg(7 downto 0) is
-                when X"e0" => extended   <= '1';
-                when X"f0" => release    <= '0';
-                when X"12" => keys(0)(0) <= release; -- Left shift (CAPS SHIFT)
-                when X"59" => keys(0)(0) <= release; -- Right shift (CAPS SHIFT)
-                when X"1a" => keys(0)(1) <= release; -- Z
-                when X"22" => keys(0)(2) <= release; -- X
-                when X"21" => keys(0)(3) <= release; -- C
-                when X"2a" => keys(0)(4) <= release; -- V
-                when X"1c" => keys(1)(0) <= release; -- A
-                when X"1b" => keys(1)(1) <= release; -- S
-                when X"23" => keys(1)(2) <= release; -- D
-                when X"2b" => keys(1)(3) <= release; -- F
-                when X"34" => keys(1)(4) <= release; -- G
-                when X"15" => keys(2)(0) <= release; -- Q
-                when X"1d" => keys(2)(1) <= release; -- W
-                when X"24" => keys(2)(2) <= release; -- E
-                when X"2d" => keys(2)(3) <= release; -- R
-                when X"2c" => keys(2)(4) <= release; -- T
-                when X"16" => keys(3)(0) <= release; -- 1
-                when X"1e" => keys(3)(1) <= release; -- 2
-                when X"26" => keys(3)(2) <= release; -- 3
-                when X"25" => keys(3)(3) <= release; -- 4
-                when X"2e" => keys(3)(4) <= release; -- 5
-                when X"45" => keys(4)(0) <= release; -- 0
-                when X"46" => keys(4)(1) <= release; -- 9
-                when X"3e" => keys(4)(2) <= release; -- 8
-                when X"3d" => keys(4)(3) <= release; -- 7
-                when X"36" => keys(4)(4) <= release; -- 6
-                when X"4d" => keys(5)(0) <= release; -- P
-                when X"44" => keys(5)(1) <= release; -- O
-                when X"43" => keys(5)(2) <= release; -- I
-                when X"3c" => keys(5)(3) <= release; -- U
-                when X"35" => keys(5)(4) <= release; -- Y
-                when X"5a" => keys(6)(0) <= release; -- ENTER
-                when X"4b" => keys(6)(1) <= release; -- L
-                when X"42" => keys(6)(2) <= release; -- K
-                when X"3b" => keys(6)(3) <= release; -- J
-                when X"33" => keys(6)(4) <= release; -- H
-                when X"29" => keys(7)(0) <= release; -- SPACE
-                when X"14" => keys(7)(1) <= release; -- CTRL (Symbol Shift)
-                when X"3a" => keys(7)(2) <= release; -- M
-                when X"31" => keys(7)(3) <= release; -- N
-                when X"32" => keys(7)(4) <= release; -- B
-                when X"6B" => keys(0)(0) <= release; -- Left (Caps 5)
-                              keys(3)(4) <= release;
-                when X"72" => keys(0)(0) <= release; -- Down (Caps 6)
-                              keys(4)(4) <= release;
-                when X"75" => keys(0)(0) <= release; -- Up (Caps 7)
-                              keys(4)(3) <= release;
-                when X"74" => keys(0)(0) <= release; -- Right (Caps 8)
-                              keys(4)(2) <= release;
-                when X"66" => keys(0)(0) <= release; -- Backspace (Caps 0)
-                              keys(4)(0) <= release;
-                when X"58" => keys(0)(0) <= release; -- Caps lock (Caps 2)
-                              keys(3)(1) <= release;
-                when X"76" => keys(0)(0) <= release; -- Break (Caps Space)
-                              keys(7)(0) <= release;
+                when X"f0" => pressed    <= '0';
+                when X"12" => keys(0)(0) <= pressed; -- Left shift (CAPS SHIFT)
+                when X"59" => keys(0)(0) <= pressed; -- Right shift (CAPS SHIFT)
+                when X"1a" => keys(0)(1) <= pressed; -- Z
+                when X"22" => keys(0)(2) <= pressed; -- X
+                when X"21" => keys(0)(3) <= pressed; -- C
+                when X"2a" => keys(0)(4) <= pressed; -- V
+                when X"1c" => keys(1)(0) <= pressed; -- A
+                when X"1b" => keys(1)(1) <= pressed; -- S
+                when X"23" => keys(1)(2) <= pressed; -- D
+                when X"2b" => keys(1)(3) <= pressed; -- F
+                when X"34" => keys(1)(4) <= pressed; -- G
+                when X"15" => keys(2)(0) <= pressed; -- Q
+                when X"1d" => keys(2)(1) <= pressed; -- W
+                when X"24" => keys(2)(2) <= pressed; -- E
+                when X"2d" => keys(2)(3) <= pressed; -- R
+                when X"2c" => keys(2)(4) <= pressed; -- T
+                when X"16" => keys(3)(0) <= pressed; -- 1
+                when X"1e" => keys(3)(1) <= pressed; -- 2
+                when X"26" => keys(3)(2) <= pressed; -- 3
+                when X"25" => keys(3)(3) <= pressed; -- 4
+                when X"2e" => keys(3)(4) <= pressed; -- 5
+                when X"45" => keys(4)(0) <= pressed; -- 0
+                when X"46" => keys(4)(1) <= pressed; -- 9
+                when X"3e" => keys(4)(2) <= pressed; -- 8
+                when X"3d" => keys(4)(3) <= pressed; -- 7
+                when X"36" => keys(4)(4) <= pressed; -- 6
+                when X"4d" => keys(5)(0) <= pressed; -- P
+                when X"44" => keys(5)(1) <= pressed; -- O
+                when X"43" => keys(5)(2) <= pressed; -- I
+                when X"3c" => keys(5)(3) <= pressed; -- U
+                when X"35" => keys(5)(4) <= pressed; -- Y
+                when X"5a" => keys(6)(0) <= pressed; -- ENTER
+                when X"4b" => keys(6)(1) <= pressed; -- L
+                when X"42" => keys(6)(2) <= pressed; -- K
+                when X"3b" => keys(6)(3) <= pressed; -- J
+                when X"33" => keys(6)(4) <= pressed; -- H
+                when X"29" => keys(7)(0) <= pressed; -- SPACE
+                when X"14" => keys(7)(1) <= pressed; -- CTRL (Symbol Shift)
+                when X"3a" => keys(7)(2) <= pressed; -- M
+                when X"31" => keys(7)(3) <= pressed; -- N
+                when X"32" => keys(7)(4) <= pressed; -- B
+                when X"6B" => keys(0)(0) <= pressed; -- Left (Caps 5)
+                              keys(3)(4) <= pressed;
+                when X"72" => keys(0)(0) <= pressed; -- Down (Caps 6)
+                              keys(4)(4) <= pressed;
+                when X"75" => keys(0)(0) <= pressed; -- Up (Caps 7)
+                              keys(4)(3) <= pressed;
+                when X"74" => keys(0)(0) <= pressed; -- Right (Caps 8)
+                              keys(4)(2) <= pressed;
+                when X"66" => keys(0)(0) <= pressed; -- Backspace (Caps 0)
+                              keys(4)(0) <= pressed;
+                when X"58" => keys(0)(0) <= pressed; -- Caps lock (Caps 2)
+                              keys(3)(1) <= pressed;
+                when X"76" => keys(0)(0) <= pressed; -- Break (Caps Space)
+                              keys(7)(0) <= pressed;
                 when others=> null;
               end case;
             end if;
