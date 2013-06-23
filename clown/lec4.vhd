@@ -10,7 +10,9 @@ entity lec4 is port(
     b       : out std_logic;
     i       : out std_logic;
     clkps2  : in  std_logic;
-    dataps2 : in  std_logic);
+    dataps2 : in  std_logic;
+    audio   : out std_logic;
+    ear     : in  std_logic);
 end lec4;
 
 architecture behavioral of lec4 is
@@ -41,6 +43,7 @@ architecture behavioral of lec4 is
   signal  rd_n    : std_logic;
   signal  int_n   : std_logic;
   signal  kbcol   : std_logic_vector (4 downto 0);
+  signal  border  : std_logic_vector (2 downto 0);
 
   component ram is port(
       clk   : in  std_logic;
@@ -171,7 +174,7 @@ begin
       if( viddel='0' ) then
         at2 <= at1;
       else
-        at2 <= "00111000";
+        at2 <= "00" & border & "000";
       end if;
     end if;
   end process;
@@ -238,7 +241,12 @@ begin
           dbus <= din_ram;
         end if;
       elsif iorq_n='0' and abus(0)='0' then
-        dbus <= "101" & kbcol;
+        dbus <= '1' & ear & '1' & kbcol;
+      end if;
+    elsif wr_n='0' then
+      if iorq_n='0' and abus(0)='0' then
+        border <= dbus(2 downto 0);
+        audio <= dbus(4);
       end if;
     end if;
   end process;
