@@ -13,7 +13,12 @@ entity TLDmodvga is port(
     clkps2  : in  std_logic;
     dataps2 : in  std_logic;
     audio   : out std_logic;
-    ear     : in  std_logic);
+    ear     : in  std_logic;
+    sa      : out std_logic_vector (17 downto 0);
+    sd      : inout std_logic_vector (7 downto 0);
+    scs     : out std_logic;
+    soe     : out std_logic;
+    swe     : out std_logic);
 end TLDmodvga;
 
 architecture behavioral of TLDmodvga is
@@ -38,7 +43,12 @@ architecture behavioral of TLDmodvga is
       clkps2  : in  std_logic;
       dataps2 : in  std_logic;
       audio   : out std_logic;
-      ear     : in  std_logic);
+      ear     : in  std_logic;
+      sa      : out std_logic_vector (17 downto 0);
+      sd      : inout std_logic_vector (7 downto 0);
+      scs     : out std_logic;
+      soe     : out std_logic;
+      swe     : out std_logic);
   end component;
 
 begin
@@ -53,7 +63,12 @@ begin
     clkps2  => clkps2,
     dataps2 => dataps2,
     audio   => audio,
-    ear     => ear);
+    ear     => ear,
+    sa      => sa,
+    sd      => sd,
+    scs     => scs,
+    soe     => soe,
+    swe     => swe);
 
   rout <= r & (i and r) & r;
   gout <= g & (i and g) & g;
