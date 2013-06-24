@@ -41,7 +41,7 @@ architecture behavioral of lec4 is
   signal  abus    : std_logic_vector (15 downto 0);
   signal  dbus    : std_logic_vector (7 downto 0);
   signal  din_rom : std_logic_vector (7 downto 0);
-  signal  din_vram : std_logic_vector (7 downto 0);
+  signal  din_ram : std_logic_vector (7 downto 0);
   signal  mreq_n  : std_logic;
   signal  iorq_n  : std_logic;
   signal  wr_n    : std_logic;
@@ -50,7 +50,7 @@ architecture behavioral of lec4 is
   signal  kbcol   : std_logic_vector (4 downto 0);
   signal  border  : std_logic_vector (2 downto 0);
 
-  component vram is port(
+  component ram is port(
       clk   : in  std_logic;
       wr    : in  std_logic;
       addr  : in  std_logic_vector(13 downto 0);
@@ -93,12 +93,12 @@ architecture behavioral of lec4 is
 
 begin
 
-  vram_inst: vram port map (
+  ram_inst: ram port map (
     clk   => clk7,
     wr    => wrv,
     addr  => addrv,
     din   => dbus,
-    dout  => din_vram);
+    dout  => din_ram);
 
   rom_inst: rom port map (
     clk   => clk7,
@@ -128,8 +128,6 @@ begin
 
   sa(14 downto 0)  <= abus(14 downto 0);
   sa(17 downto 15) <= "000";
-
-  scs <= '1';
 
   process (clk7)
   begin
@@ -161,10 +159,10 @@ begin
 
       if vid='0' then
         if (hcount(1) and (hcount(2) xor hcount(3)))='1' then
-          da1 <= din_vram;
+          da1 <= din_ram;
         end if;
         if (not hcount(1) and hcount(3))='1' then
-          at1 <= din_vram;
+          at1 <= din_ram;
         end if;
       end if;
 
@@ -243,38 +241,39 @@ begin
   process (rd_n, wr_n, mreq_n, iorq_n, abus)
   begin
     dbus <= (others => 'Z');
---    scs <= '1';
-    soe <= '1';
-    swe <= '1';
+    sd   <= (others => 'Z');
+    scs  <= '1';
+    soe  <= '1';
+    swe  <= '1';
     if rd_n='0' then
       if mreq_n='0' then
         if abus(15 downto 14)="00" then
           dbus <= din_rom;
         elsif abus(15)='1' then
---          scs <= '0';
-          soe <= '0';
+          scs  <= '0';
+          soe  <= '0';
           dbus <= sd;
         else
-          dbus <= din_vram;
+          dbus <= din_ram;
         end if;
       elsif iorq_n='0' and abus(0)='0' then
         dbus <= '1' & ear & '1' & kbcol;
       end if;
     elsif wr_n='0' then
       if mreq_n='0' and abus(15)='1' then
---        scs <= '0';
+        scs <= '0';
         swe <= '0';
-        sd <= dbus;
+        sd  <= dbus;
       elsif iorq_n='0' and abus(0)='0' then
         border <= dbus(2 downto 0);
-        audio <= dbus(4);
+        audio  <= dbus(4);
       end if;
     end if;
   end process;
 
   process (hcount(0), cbis1, cbis2, iorq_n, abus)
   begin
-    clkcpu <= hcount(0) or (cbis1 and ((abus(15) or not abus(14)) nand (iorq_n or abus(0))) and cbis2);
+    clkcpu <= hcount(0) or (cbis1 and cbis2 and ((abus(15) or not abus(14)) nand (iorq_n or abus(0))));
   end process;
 
   process (clkcpu)
