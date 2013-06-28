@@ -2,8 +2,9 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-entity lec5 is port(
+entity lec6 is port(
     clk7    : in  std_logic;
+    reset   : in  std_logic;
     sync    : out std_logic;
     r       : out std_logic;
     g       : out std_logic;
@@ -18,9 +19,9 @@ entity lec5 is port(
     scs     : out std_logic;
     soe     : out std_logic;
     swe     : out std_logic);
-end lec5;
+end lec6;
 
-architecture behavioral of lec5 is
+architecture behavioral of lec6 is
 
   signal  hcount  : unsigned  (8 downto 0);
   signal  vcount  : unsigned  (8 downto 0);
@@ -40,7 +41,6 @@ architecture behavioral of lec5 is
   signal  clkcpu  : std_logic;
   signal  abus    : std_logic_vector (15 downto 0);
   signal  dbus    : std_logic_vector (7 downto 0);
-  signal  din_rom : std_logic_vector (7 downto 0);
   signal  din_ram : std_logic_vector (7 downto 0);
   signal  mreq_n  : std_logic;
   signal  iorq_n  : std_logic;
@@ -49,19 +49,14 @@ architecture behavioral of lec5 is
   signal  int_n   : std_logic;
   signal  kbcol   : std_logic_vector (4 downto 0);
   signal  border  : std_logic_vector (2 downto 0);
-
+  signal  xpage   : std_logic:= '0';
+  
   component ram is port(
       clk   : in  std_logic;
       wr    : in  std_logic;
       addr  : in  std_logic_vector(13 downto 0);
       din   : in  std_logic_vector( 7 downto 0);
       dout  : out std_logic_vector( 7 downto 0));
-  end component;
-
-  component rom is port(
-      clk   : in  std_logic;
-      addr  : in  std_logic_vector(13 downto 0);
-      dout  : out std_logic_vector(7 downto 0));
   end component;
 
   component T80a is port(
@@ -100,11 +95,6 @@ begin
     din   => dbus,
     dout  => din_ram);
 
-  rom_inst: rom port map (
-    clk   => clk7,
-    addr  => abus(13 downto 0),
-    dout  => din_rom);
-
   T80a_inst: T80a port map (
     RESET_n => '1',
     CLK_n   => clkcpu,
@@ -126,8 +116,8 @@ begin
     rows    => abus(15 downto 8),
     keyb    => kbcol);
 
-  sa(14 downto 0)  <= abus(14 downto 0);
-  sa(17 downto 15) <= "000";
+  sa(15 downto 0)  <= abus(15 downto 0);
+  sa(17 downto 16) <= "00";
 
   process (clk7)
   begin
@@ -217,7 +207,7 @@ begin
     end if;
   end process;
 
-  process (hcount, vcount, ccount, abus, wr_n, mreq_n)
+  process (hcount, vcount, ccount, abus, wr_n, mreq_n, xpage)
   begin
     if (vid or (hcount(3) xnor (hcount(2) and hcount(1))))='0' then
       wrv <= '0';
@@ -228,7 +218,7 @@ begin
         addrv <= "0110" & std_logic_vector(vcount(7 downto 3) & ccount);
       end if;
     else
-      wrv <= not (wr_n or mreq_n or abus(15) or not abus(14));
+      wrv <= not (wr_n or mreq_n or abus(15) or (abus(14) xor xpage));
       addrv <= abus(13 downto 0);
     end if;
   end process;
@@ -238,7 +228,7 @@ begin
     at2clk <= not clk7 or hcount(0) or not hcount(1) or hcount(2);
   end process;
 
-  process (rd_n, wr_n, mreq_n, iorq_n, abus)
+  process (rd_n, wr_n, mreq_n, iorq_n, abus, xpage)
   begin
     dbus <= (others => 'Z');
     sd   <= (others => 'Z');
@@ -247,33 +237,32 @@ begin
     swe  <= '1';
     if rd_n='0' then
       if mreq_n='0' then
-        if abus(15 downto 14)="00" then
-          dbus <= din_rom;
-        elsif abus(15)='1' then
+        if (abus(15) or (abus(14) xor xpage))='0' then
+          dbus <= din_ram;
+        else
           scs  <= '0';
           soe  <= '0';
           dbus <= sd;
-        else
-          dbus <= din_ram;
         end if;
       elsif iorq_n='0' and abus(0)='0' then
-        dbus <= '1' & ear & '1' & kbcol;
+        dbus  <= '1' & ear & '1' & kbcol;
       end if;
     elsif wr_n='0' then
-      if mreq_n='0' and abus(15)='1' then
+      if mreq_n='0' and (abus(15)='1' or xpage='0') then
         scs <= '0';
         swe <= '0';
         sd  <= dbus;
       elsif iorq_n='0' and abus(0)='0' then
+        xpage <= '1';
         border <= dbus(2 downto 0);
         audio  <= dbus(4);
       end if;
     end if;
   end process;
 
-  process (hcount(0), cbis1, cbis2, iorq_n, abus)
+  process (hcount(0), cbis1, cbis2, iorq_n, abus, xpage)
   begin
-    clkcpu <= hcount(0) or (cbis1 and cbis2 and ((abus(15) or not abus(14)) nand (iorq_n or abus(0))));
+    clkcpu <= hcount(0) or (cbis1 and cbis2 and ((abus(15) or (abus(14) xor xpage)) nand (iorq_n or abus(0))));
   end process;
 
   process (clkcpu)
