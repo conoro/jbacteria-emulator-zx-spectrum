@@ -4,7 +4,6 @@ use ieee.numeric_std.all;
 
 entity lec6 is port(
     clk7    : in  std_logic;
-    reset   : in  std_logic;
     sync    : out std_logic;
     r       : out std_logic;
     g       : out std_logic;
@@ -41,7 +40,7 @@ architecture behavioral of lec6 is
   signal  clkcpu  : std_logic;
   signal  abus    : std_logic_vector (15 downto 0);
   signal  dbus    : std_logic_vector (7 downto 0);
-  signal  din_ram : std_logic_vector (7 downto 0);
+  signal  vram    : std_logic_vector (7 downto 0);
   signal  mreq_n  : std_logic;
   signal  iorq_n  : std_logic;
   signal  wr_n    : std_logic;
@@ -93,7 +92,7 @@ begin
     wr    => wrv,
     addr  => addrv,
     din   => dbus,
-    dout  => din_ram);
+    dout  => vram);
 
   T80a_inst: T80a port map (
     RESET_n => '1',
@@ -149,10 +148,10 @@ begin
 
       if vid='0' then
         if (hcount(1) and (hcount(2) xor hcount(3)))='1' then
-          da1 <= din_ram;
+          da1 <= vram;
         end if;
         if (not hcount(1) and hcount(3))='1' then
-          at1 <= din_ram;
+          at1 <= vram;
         end if;
       end if;
 
@@ -238,7 +237,7 @@ begin
     if rd_n='0' then
       if mreq_n='0' then
         if (abus(15) or (abus(14) xor xpage))='0' then
-          dbus <= din_ram;
+          dbus <= vram;
         else
           scs  <= '0';
           soe  <= '0';
