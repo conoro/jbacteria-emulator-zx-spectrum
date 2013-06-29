@@ -2,7 +2,7 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-entity lec6 is port(
+entity lec7 is port(
     clk7    : in  std_logic;
     sync    : out std_logic;
     r       : out std_logic;
@@ -18,9 +18,9 @@ entity lec6 is port(
     scs     : out std_logic;
     soe     : out std_logic;
     swe     : out std_logic);
-end lec6;
+end lec7;
 
-architecture behavioral of lec6 is
+architecture behavioral of lec7 is
 
   signal  hcount  : unsigned  (8 downto 0);
   signal  vcount  : unsigned  (8 downto 0);
