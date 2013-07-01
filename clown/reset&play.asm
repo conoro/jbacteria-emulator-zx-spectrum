@@ -18495,7 +18495,7 @@ L37FF:  ld      a, r            ;9  51
         or      (hl)            ;7
         ld      (de), a         ;7
 l9405:  ld      a, c            ;4
-        ld      h, $90          ;7
+        ld      h, $34          ;7
         ld      r, a            ;9
         in      l, (c)
         jp      (hl)
