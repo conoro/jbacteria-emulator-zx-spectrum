@@ -17092,8 +17092,7 @@ L33F8:  RET     Z               ; return if zero.          >>
         DEC     A               ; decrease
         JR      L33F8           ; loop back to SKIP-NEXT
 
-ultra:  ex      af, af'
-        push    ix              ; 133 bytes
+ultra:  push    ix              ; 133 bytes
         pop     hl              ; pongo la direccion de comienzo en hl
         exx                     ; salvo de, en caso de volver al cargador estandar y para hacer luego el checksum
         ld      c, $00
@@ -17145,11 +17144,7 @@ get16:  ld      b, d            ; 16 bytes
         dec     de
 ultr7:  in      f, (c)
         jp      po, ultr7
- nop
- nop
- nop
-
-;        call    l9405           ; salto a raudo segun el signo del pulso en flag z
+        call    l9405           ; salto a raudo segun el signo del pulso en flag z
         exx                     ; ya se ha acabado la ultracarga (raudo)
         ld      b, e
         ld      e, c
@@ -17174,7 +17169,7 @@ ult11:  push    hl              ; ha ido bien
         scf
         ret
 
-        DEFB    $FF, $FF, $FF; 3 bytes free
+        DEFB    $FF, $FF, $FF, $FF; 4 bytes free
 
 L3481:  table   %10001000, %10001001, %10001010, %10001011
 
