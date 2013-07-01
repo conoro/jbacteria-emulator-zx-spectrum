@@ -1793,8 +1793,7 @@ L0556:  INC     D               ; reset the zero flag without disturbing carry.
         IN      A,($FE)         ; read the ear state - bit 6.
         RRA                     ; rotate to bit 5.
         AND     $20             ; isolate this bit.
-        OR      $02             ; combine with red border colour.
-        LD      C,A             ; and store initial state long-term in C.
+        call    ultra
         CP      A               ; set the zero flag.
 
 ; 
