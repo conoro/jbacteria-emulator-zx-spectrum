@@ -35,7 +35,7 @@ architecture behavioral of lec7 is
   signal  at2     : std_logic_vector (7 downto 0);
   signal  da1     : std_logic_vector (7 downto 0);
   signal  da2     : std_logic_vector (7 downto 0);
-  signal  addrv   : std_logic_vector (13 downto 0);
+  signal  addrv   : std_logic_vector (14 downto 0);
   signal  wrv     : std_logic;
   signal  clkcpu  : std_logic;
   signal  abus    : std_logic_vector (15 downto 0);
@@ -49,11 +49,13 @@ architecture behavioral of lec7 is
   signal  kbcol   : std_logic_vector (4 downto 0);
   signal  border  : std_logic_vector (2 downto 0);
   signal  xpage   : std_logic:= '0';
+  signal  p7FFD   : std_logic_vector (5 downto 0);
+  signal  ramp    : std_logic_vector (2 downto 0);
   
   component ram is port(
       clk   : in  std_logic;
       wr    : in  std_logic;
-      addr  : in  std_logic_vector(13 downto 0);
+      addr  : in  std_logic_vector(14 downto 0);
       din   : in  std_logic_vector( 7 downto 0);
       dout  : out std_logic_vector( 7 downto 0));
   end component;
@@ -115,8 +117,7 @@ begin
     rows    => abus(15 downto 8),
     keyb    => kbcol);
 
-  sa(15 downto 0)  <= abus(15 downto 0);
-  sa(17 downto 16) <= "00";
+  sa <= '0' & ramp & abus(13 downto 0);
 
   process (clk7)
   begin
@@ -206,19 +207,19 @@ begin
     end if;
   end process;
 
-  process (hcount, vcount, ccount, abus, wr_n, mreq_n, xpage)
+  process (hcount, vcount, ccount, abus, wr_n, mreq_n, xpage, p7FFD)
   begin
     if (vid or (hcount(3) xnor (hcount(2) and hcount(1))))='0' then
       wrv <= '0';
       if (hcount(1) and (hcount(2) xor hcount(3)))='1' then
-        addrv <= '0' & std_logic_vector(vcount(7 downto 6) & vcount(2 downto 0)
+        addrv <= p7FFD(3) & '0' & std_logic_vector(vcount(7 downto 6) & vcount(2 downto 0)
                   & vcount(5 downto 3) & ccount);
       else
-        addrv <= "0110" & std_logic_vector(vcount(7 downto 3) & ccount);
+        addrv <= p7FFD(3) & "0110" & std_logic_vector(vcount(7 downto 3) & ccount);
       end if;
     else
       wrv <= not (wr_n or mreq_n or abus(15) or (abus(14) xor xpage));
-      addrv <= abus(13 downto 0);
+      addrv <= (xpage xnor (abus(15) and p7FFD(2) and p7FFD(1) and p7FFD(0))) & abus(13 downto 0);
     end if;
   end process;
 
@@ -227,7 +228,7 @@ begin
     at2clk <= not clk7 or hcount(0) or not hcount(1) or hcount(2);
   end process;
 
-  process (rd_n, wr_n, mreq_n, iorq_n, abus, xpage)
+  process (rd_n, wr_n, mreq_n, iorq_n, abus, xpage, p7FFD)
   begin
     dbus <= (others => 'Z');
     sd   <= (others => 'Z');
@@ -236,32 +237,69 @@ begin
     swe  <= '1';
     if rd_n='0' then
       if mreq_n='0' then
-        if (abus(15) or (abus(14) xor xpage))='0' then
-          dbus <= vram;
-        else
-          scs  <= '0';
-          soe  <= '0';
-          dbus <= sd;
-        end if;
+        case xpage & abus(15 downto 14) is
+          when "000" => dbus <= vram;
+          when "001" => ramp <= "111";
+                        scs  <= '0';
+                        soe  <= '0';
+                        dbus <= sd;
+          when "010" => ramp <= "010";
+                        scs  <= '0';
+                        soe  <= '0';
+                        dbus <= sd;
+          when "100" => ramp <= '1' & p7FFD(4) & '1';
+                        scs  <= '0';
+                        soe  <= '0';
+                        dbus <= sd;
+          when "101" => dbus <= vram;
+          when "110" => ramp <= "010";
+                        scs  <= '0';
+                        soe  <= '0';
+                        dbus <= sd;
+          when others=> if (p7FFD(2) and p7FFD(0))='1' then
+                          dbus <= vram;
+                        else
+                          ramp <= p7FFD(2 downto 0);
+                          scs  <= '0';
+                          soe  <= '0';
+                          dbus <= sd;
+                        end if;
+        end case;
       elsif iorq_n='0' and abus(0)='0' then
         dbus  <= '1' & ear & '1' & kbcol;
       end if;
     elsif wr_n='0' then
-      if mreq_n='0' and (abus(15)='1' or xpage='0') then
-        scs <= '0';
-        swe <= '0';
-        sd  <= dbus;
-      elsif iorq_n='0' and abus(0)='0' then
-        xpage <= '1';
-        border <= dbus(2 downto 0);
-        audio  <= dbus(4);
+      if mreq_n='0' then
+        if xpage='0' then
+          ramp <= '1' & (not abus(15)) & '1';
+          scs <= '0';
+          swe <= '0';
+          sd  <= dbus;
+        elsif (not abus(15) or abus(14) or (p7FFD(2) and p7FFD(0)))='0' then
+          scs <= '0';
+          swe <= '0';
+          sd  <= dbus;
+          if abus(14)='0' then
+            ramp <= "010";
+          else
+            ramp <= p7FFD(2 downto 0);
+          end if;
+        end if;
+      elsif iorq_n='0' then
+        if abus(0)='0' then
+          xpage <= '1';
+          border <= dbus(2 downto 0);
+          audio  <= dbus(4);
+        elsif abus(1)='0' and abus(14)='1' and abus(15)='0' then
+          p7FFD <= dbus(5 downto 0);
+        end if;
       end if;
     end if;
   end process;
 
-  process (hcount(0), cbis1, cbis2, iorq_n, abus, xpage)
+  process (hcount(0), cbis1, cbis2, iorq_n, abus, xpage, p7FFD)
   begin
-    clkcpu <= hcount(0) or (cbis1 and cbis2 and ((abus(15) or (abus(14) xor xpage)) nand (iorq_n or abus(0))));
+    clkcpu <= hcount(0) or (cbis1 and cbis2 and (((abus(15) and (p7FFD(2) nand p7FFD(0))) or (abus(14) xor xpage)) nand (iorq_n or abus(0))));
   end process;
 
   process (clkcpu)

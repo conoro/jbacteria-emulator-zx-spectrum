@@ -1,3 +1,11 @@
+;              00 01 10 11
+; xpage=0 lec  B  7  2  01234A6B
+;         esc  7  7  5  5
+;
+; xpage=1 lec  57 A  2  01234A6B
+;         esc  X  A  2  01234A6B
+;
+;
         OUTPUT  128.rom
 ; **************************************
 ; *** SPECTRUM 128 ROM 0 DISASSEMBLY ***
@@ -18395,9 +18403,9 @@ X3FFF:  DEFB $01         ;
 
 ;; START
 L0000:  DI                      ; disable interrupts.
-        XOR     A               ; signal coming from START.
-        LD      DE,$FFFF        ; top of possible physical RAM.
-        JP      L11CB           ; jump forward to common code at START-NEW.
+        ld      bc, $4000       ; top of possible physical RAM.
+        ld      h, c            ; signal coming from START.
+        jp      L3BE1           ; jump forward to common code at START-NEW.
 
 ; -------------------
 ; THE 'ERROR' RESTART
@@ -37529,16 +37537,23 @@ L3BDA:  DEFM    "PLA"           ; PLAY token
 ;; KP_SCAN2
 L3BDE:  JP      L3C01           ; This is not called from either ROM. It can be used to scan the keypad.
 
-L3BE1:  DEFB    $00, $00, $00   ; Unused locations
-        DEFB    $00, $00, $00
-        DEFB    $00, $00, $00
-        DEFB    $00, $00, $00
-        DEFB    $00, $00, $00
-        DEFB    $00, $00, $00
-        DEFB    $00, $00, $00
-        DEFB    $00, $00, $00
-        DEFB    $00, $00, $00
-        DEFB    $00, $00, $00
+L3BE1:  ld      l, c
+        ld      d, c
+        ld      e, c
+        ldir
+        ld      bc, $7ffd
+        ld      a, $07
+        out     (c), a
+        ld      h, $c0
+        ld      d, h
+        ld      bc, $4000
+        ldir
+        dec     de
+        xor     a
+        ld      bc, $7ffd
+        out     (c), a
+        jp      L11CB           ; Jump forward to common code at START-NEW.
+
         DEFB    $FF, $FF
 
 ;; KP_SCAN
