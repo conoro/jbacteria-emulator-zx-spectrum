@@ -17131,6 +17131,7 @@ get16:  ld      b, d            ; 16 bytes
         cp      12
         adc     hl, hl
         jr      nc, get16
+        pop     af
         ex      af, af'         ; a es el byte flag que espero
         cp      l               ; lo comparo con el que me encuentro en la ultracarga
         ret     nz              ; salgo si no coinciden
@@ -17159,7 +17160,7 @@ ult10:  xor     (hl)
         dec     c
         jp      nz, ult10
         xor     e
-ult11:  push    hl              ; ha ido bien
+        push    hl              ; ha ido bien
         ld      h, b
         ld      l, e
         ld      d, b
@@ -17169,7 +17170,7 @@ ult11:  push    hl              ; ha ido bien
         scf
         ret
 
-        DEFB    $FF, $FF, $FF, $FF; 4 bytes free
+        DEFB    $FF, $FF, $FF; 3 bytes free
 
 L3481:  table   %10001000, %10001001, %10001010, %10001011
 
