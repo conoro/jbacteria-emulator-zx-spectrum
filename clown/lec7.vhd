@@ -42,7 +42,6 @@ architecture behavioral of lec7 is
   signal  clkcpu  : std_logic;
   signal  abus    : std_logic_vector (15 downto 0);
   signal  dbus    : std_logic_vector (7 downto 0);
-  signal  din_rom : std_logic_vector (7 downto 0);
   signal  vram    : std_logic_vector (7 downto 0);
   signal  mreq_n  : std_logic;
   signal  iorq_n  : std_logic;
@@ -61,12 +60,6 @@ architecture behavioral of lec7 is
       addr  : in  std_logic_vector(13 downto 0);
       din   : in  std_logic_vector( 7 downto 0);
       dout  : out std_logic_vector( 7 downto 0));
-  end component;
-
-  component rom is port(
-      clk   : in  std_logic;
-      addr  : in  std_logic_vector(13 downto 0);
-      dout  : out std_logic_vector(7 downto 0));
   end component;
 
   component T80a is port(
@@ -98,17 +91,16 @@ architecture behavioral of lec7 is
 
 begin
 
+  sa(17 downto 16) <= "00";
+
+  flashsi <= spiwr(12);
+
   ram_inst: ram port map (
     clk   => clk7,
     wr    => wrv,
     addr  => addrv,
     din   => dbus,
     dout  => vram);
-
-  rom_inst: rom port map (
-    clk   => clk7,
-    addr  => abus(13 downto 0),
-    dout  => din_rom);
 
   T80a_inst: T80a port map (
     RESET_n => flashcs,
@@ -247,41 +239,38 @@ begin
     scs  <= '1';
     soe  <= '1';
     swe  <= '1';
-    if rd_n='0' then
-      if mreq_n='0' then
-        if abus(15 downto 14)="00" then
-          dbus <= din_rom;
-        elsif abus(15)='1' then
-          scs  <= '0';
-          soe  <= '0';
-          dbus <= sd;
-        else
-          dbus <= vram;
-        end if;
-      elsif iorq_n='0' and abus(0)='0' then
-        dbus <= '1' & ear & '1' & kbcol;
-      end if;
-    elsif wr_n='0' then
-      if mreq_n='0' and abus(15)='1' then
-        scs <= '0';
-        swe <= '0';
-        sd  <= dbus;
-      elsif iorq_n='0' and abus(0)='0' then
-        border <= dbus(2 downto 0);
-        audio  <= dbus(4);
-      end if;
-    end if;
-
-    if flashcs='0' then
+    if spiadr < X"20030" then
       if spiadr(2 downto 0)="100" and hcount(0)='0' then
-        sa(14) <= '0';
+        sa(15 downto 14) <= "00";
         sa(13 downto 0) <= std_logic_vector(spiadr(16 downto 3));
         scs <= '0';
         swe <= '0';
         sd <= spird;
       end if;
     else
-      sa(14 downto 0)  <= abus(14 downto 0);
+      sa(15 downto 0) <= abus(15 downto 0);
+      if rd_n='0' then
+        if mreq_n='0' then
+          if abus(15 downto 14)="01" then
+            dbus <= vram;
+          else
+            scs  <= '0';
+            soe  <= '0';
+            dbus <= sd;
+          end if;
+        elsif iorq_n='0' and abus(0)='0' then
+          dbus <= '1' & ear & '1' & kbcol;
+        end if;
+      elsif wr_n='0' then
+        if mreq_n='0' and abus(15)='1' then
+          scs <= '0';
+          swe <= '0';
+          sd  <= dbus;
+        elsif iorq_n='0' and abus(0)='0' then
+          border <= dbus(2 downto 0);
+          audio  <= dbus(4);
+        end if;
+      end if;
     end if;
   end process;
 
@@ -324,7 +313,4 @@ begin
     end if;
   end process;
 
-  sa(17 downto 15) <= "000";
-  flashsi <= spiwr(12);
-  
 end architecture;
