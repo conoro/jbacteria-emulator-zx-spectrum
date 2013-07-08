@@ -1,2 +1,2 @@
 ..\sjasmplus test.asm
-herramientas\bramgen test.bin test.vhd
+herramientas\vhexarr test.bin test.vhd

@@ -1,10 +1,13 @@
         output  test.bin
         org     $0000
         di
-        xor     a
+        ld      hl, $8000
+        ld      de, $4000
+        ld      bc, $1800
+        ldir
+        ld      bc, $300
         ld      hl, $5800
-start   ld      (hl), 0
-        inc     hl
-        inc     a
-        jr      nz, start
+        ld      (hl), 7
+        inc     de
+        ldir
 bucle   jr      bucle

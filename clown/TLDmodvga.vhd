@@ -10,7 +10,8 @@ entity TLDmodvga is port(
     gout    : out std_logic_vector (2 downto 0);
     bout    : out std_logic_vector (2 downto 0);
     flashcs : out std_logic;
-    clkps2  : in  std_logic;
+    flashsi : out std_logic;
+    clkps2  : inout std_logic;
     dataps2 : in  std_logic;
     audio   : out std_logic;
     ear     : in  std_logic;
@@ -40,7 +41,9 @@ architecture behavioral of TLDmodvga is
       b       : out std_logic;
       i       : out std_logic;
       sync    : out std_logic;
-      clkps2  : in  std_logic;
+      flashcs : out std_logic;
+      flashsi : out std_logic;
+      clkps2  : inout std_logic;
       dataps2 : in  std_logic;
       audio   : out std_logic;
       ear     : in  std_logic;
@@ -62,6 +65,8 @@ begin
     sync    => sync,
     clkps2  => clkps2,
     dataps2 => dataps2,
+    flashcs => flashcs,
+    flashsi => flashsi,
     audio   => audio,
     ear     => ear,
     sa      => sa,
@@ -74,9 +79,8 @@ begin
   gout <= g & (i and g) & g;
   bout <= b & (i and b) & b;
 
-  flashcs <= '1';
-
   gnd_bit <= '0';
+
   clkfx_bufg_inst : bufg
     port map( i => clkfx_buf,
               o => clk7);
@@ -89,7 +93,7 @@ begin
     clkfx_divide          => 25,
     clkfx_multiply        => 7,
     clkin_divide_by_2     => false,
-    clkin_period          => 20.0,
+    clkin_period          => 40.0,
     clkout_phase_shift    => "NONE",
     deskew_adjust         => "SYSTEM_SYNCHRONOUS",
     dfs_frequency_mode    => "LOW",
