@@ -9,7 +9,7 @@ entity lec7 is port(
     g       : out std_logic;
     b       : out std_logic;
     i       : out std_logic;
-    flashcs : out std_logic;
+    flashcs : inout std_logic;
     flashsi : out std_logic;
     clkps2  : inout std_logic;
     dataps2 : in  std_logic;
@@ -43,7 +43,7 @@ architecture behavioral of lec7 is
   signal  abus    : std_logic_vector (15 downto 0);
   signal  dbus    : std_logic_vector (7 downto 0);
   signal  din_rom : std_logic_vector (7 downto 0);
-  signal  din_ram : std_logic_vector (7 downto 0);
+  signal  vram    : std_logic_vector (7 downto 0);
   signal  mreq_n  : std_logic;
   signal  iorq_n  : std_logic;
   signal  wr_n    : std_logic;
@@ -51,10 +51,10 @@ architecture behavioral of lec7 is
   signal  int_n   : std_logic;
   signal  kbcol   : std_logic_vector (4 downto 0);
   signal  border  : std_logic_vector (2 downto 0);
-  signal  cntadr  : unsigned (16 downto 0):= (others => '0');
+  signal  spiadr  : unsigned (17 downto 0);
   signal  spird   : std_logic_vector (7 downto 0);
-  signal  spiwr   : std_logic_vector (17 downto 0);
-
+  signal  spiwr   : std_logic_vector (12 downto 0);
+  
   component ram is port(
       clk   : in  std_logic;
       wr    : in  std_logic;
@@ -103,7 +103,7 @@ begin
     wr    => wrv,
     addr  => addrv,
     din   => dbus,
-    dout  => din_ram);
+    dout  => vram);
 
   rom_inst: rom port map (
     clk   => clk7,
@@ -111,7 +111,7 @@ begin
     dout  => din_rom);
 
   T80a_inst: T80a port map (
-    RESET_n => cntadr(16),
+    RESET_n => flashcs,
     CLK_n   => clkcpu,
     WAIT_n  => '1',
     INT_n   => int_n,
@@ -161,10 +161,10 @@ begin
 
       if vid='0' then
         if (hcount(1) and (hcount(2) xor hcount(3)))='1' then
-          da1 <= din_ram;
+          da1 <= vram;
         end if;
         if (not hcount(1) and hcount(3))='1' then
-          at1 <= din_ram;
+          at1 <= vram;
         end if;
       end if;
 
@@ -240,7 +240,7 @@ begin
     at2clk <= not clk7 or hcount(0) or not hcount(1) or hcount(2);
   end process;
 
-  process (rd_n, wr_n, mreq_n, iorq_n, abus, cntadr, hcount(0))
+  process (rd_n, wr_n, mreq_n, iorq_n, abus, spiadr, hcount(0))
   begin
     dbus <= (others => 'Z');
     sd   <= (others => 'Z');
@@ -256,7 +256,7 @@ begin
           soe  <= '0';
           dbus <= sd;
         else
-          dbus <= din_ram;
+          dbus <= vram;
         end if;
       elsif iorq_n='0' and abus(0)='0' then
         dbus <= '1' & ear & '1' & kbcol;
@@ -272,10 +272,10 @@ begin
       end if;
     end if;
 
-    if cntadr(16)='0' then
-      sa(14 downto 13) <= "00";
-      if cntadr(2 downto 0)="100" and hcount(0)='0' then
-        sa(12 downto 0) <= std_logic_vector(cntadr(15 downto 3));
+    if flashcs='0' then
+      if spiadr(2 downto 0)="100" and hcount(0)='0' then
+        sa(14) <= '0';
+        sa(13 downto 0) <= std_logic_vector(spiadr(16 downto 3));
         scs <= '0';
         swe <= '0';
         sd <= spird;
@@ -297,37 +297,34 @@ begin
     end if;
   end process;
 
-  process (hcount(0), cntadr)
+  process (hcount(0), spiadr)
   begin
-    if cntadr(16)='0' then
+    flashcs <= '1';
+    if spiadr < X"20030" then
+      flashcs <= '0';
       if rising_edge( hcount(0) ) then
         spird  <= spird(6 downto 0) & dataps2;
-        cntadr <= cntadr + 1;
-        flashcs <= '1';
-        if cntadr>1 then
-          flashcs <= '0';
-        end if;
+        spiadr <= spiadr + 1;
       end if;
       if falling_edge( hcount(0) ) then
-        if cntadr=4 then
-          spiwr <= "000010110000100000";
+        if spiadr=4 then
+          spiwr <= "0000101100001";
         else
-          spiwr <= spiwr(16 downto 0) & '0';
+          spiwr <= spiwr(11 downto 0) & '0';
         end if;
       end if;
     end if;
   end process;
 
-  process (hcount(0), cntadr)
+  process (hcount(0), spiadr)
   begin
     clkps2 <= '1';
-    if cntadr>3 then
+    if spiadr>3 then
       clkps2 <= hcount(0);
     end if;
   end process;
 
   sa(17 downto 15) <= "000";
-  
-  flashsi <= spiwr(17);
+  flashsi <= spiwr(12);
   
 end architecture;
