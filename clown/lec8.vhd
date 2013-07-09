@@ -2,7 +2,7 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-entity lec7 is port(
+entity lec8 is port(
     clk7    : in  std_logic;
     sync    : out std_logic;
     r       : out std_logic;
@@ -20,9 +20,9 @@ entity lec7 is port(
     scs     : out std_logic;
     soe     : out std_logic;
     swe     : out std_logic);
-end lec7;
+end lec8;
 
-architecture behavioral of lec7 is
+architecture behavioral of lec8 is
 
   signal  hcount  : unsigned (8 downto 0);
   signal  vcount  : unsigned (8 downto 0);
@@ -37,7 +37,7 @@ architecture behavioral of lec7 is
   signal  at2     : std_logic_vector (7 downto 0);
   signal  da1     : std_logic_vector (7 downto 0);
   signal  da2     : std_logic_vector (7 downto 0);
-  signal  addrv   : std_logic_vector (13 downto 0);
+  signal  addrv   : std_logic_vector (14 downto 0);
   signal  wrv     : std_logic;
   signal  clkcpu  : std_logic;
   signal  abus    : std_logic_vector (15 downto 0);
@@ -50,14 +50,15 @@ architecture behavioral of lec7 is
   signal  int_n   : std_logic;
   signal  kbcol   : std_logic_vector (4 downto 0);
   signal  border  : std_logic_vector (2 downto 0);
-  signal  spiadr  : unsigned (17 downto 0);
+  signal  spiadr  : unsigned (18 downto 0);
   signal  spird   : std_logic_vector (7 downto 0);
   signal  spiwr   : std_logic_vector (12 downto 0);
-  
+  signal  p7FFD   : std_logic_vector (5 downto 0);
+
   component ram is port(
       clk   : in  std_logic;
       wr    : in  std_logic;
-      addr  : in  std_logic_vector(13 downto 0);
+      addr  : in  std_logic_vector(14 downto 0);
       din   : in  std_logic_vector( 7 downto 0);
       dout  : out std_logic_vector( 7 downto 0));
   end component;
@@ -119,7 +120,6 @@ begin
     rows    => abus(15 downto 8),
     keyb    => kbcol);
 
-  sa(17 downto 16) <= "00";
   flashsi <= spiwr(12);
 
   process (clk7)
@@ -210,19 +210,19 @@ begin
     end if;
   end process;
 
-  process (hcount, vcount, ccount, abus, wr_n, mreq_n)
+  process (hcount, vcount, ccount, abus, wr_n, mreq_n, p7FFD)
   begin
     if (vid or (hcount(3) xnor (hcount(2) and hcount(1))))='0' then
       wrv <= '0';
       if (hcount(1) and (hcount(2) xor hcount(3)))='1' then
-        addrv <= '0' & std_logic_vector(vcount(7 downto 6) & vcount(2 downto 0)
+        addrv <= p7FFD(3) & '0' & std_logic_vector(vcount(7 downto 6) & vcount(2 downto 0)
                   & vcount(5 downto 3) & ccount);
       else
-        addrv <= "0110" & std_logic_vector(vcount(7 downto 3) & ccount);
+        addrv <= p7FFD(3) & "0110" & std_logic_vector(vcount(7 downto 3) & ccount);
       end if;
     else
       wrv <= not (wr_n or mreq_n or abus(15) or not abus(14));
-      addrv <= abus(13 downto 0);
+      addrv <= (abus(15) and p7FFD(2) and p7FFD(1) and p7FFD(0)) & abus(13 downto 0);
     end if;
   end process;
 
@@ -231,43 +231,62 @@ begin
     at2clk <= not clk7 or hcount(0) or not hcount(1) or hcount(2);
   end process;
 
-  process (rd_n, wr_n, mreq_n, iorq_n, abus, spiadr, hcount(0))
+  process (rd_n, wr_n, mreq_n, iorq_n, abus, spiadr, hcount(0), p7FFD)
   begin
     dbus <= (others => 'Z');
     sd   <= (others => 'Z');
     scs  <= '1';
     soe  <= '1';
     swe  <= '1';
-    if spiadr < X"20030" then
+    if spiadr < X"40030" then
       if spiadr(2 downto 0)="100" and hcount(0)='0' then
-        sa(15 downto 14) <= "00";
-        sa(13 downto 0) <= std_logic_vector(spiadr(16 downto 3));
+        sa  <= "100" & std_logic_vector(spiadr(17 downto 3));
         scs <= '0';
         swe <= '0';
         sd <= spird;
       end if;
     else
-      sa(15 downto 0) <= abus(15 downto 0);
       if rd_n='0' then
         if mreq_n='0' then
-          if abus(15 downto 14)="01" then
-            dbus <= vram;
-          else
-            scs  <= '0';
-            soe  <= '0';
-            dbus <= sd;
-          end if;
+          case abus(15 downto 14) is
+            when "00"  => sa <= "100" & p7FFD(4) & abus(13 downto 0);
+                          scs  <= '0';
+                          soe  <= '0';
+                          dbus <= sd;
+            when "01"  => dbus <= vram;
+            when "10"  => sa <= "0010" & abus(13 downto 0);
+                          scs  <= '0';
+                          soe  <= '0';
+                          dbus <= sd;
+            when others=> if (p7FFD(2) and p7FFD(0))='1' then
+                            dbus <= vram;
+                          else
+                            sa <= '0' & p7FFD(2 downto 0) & abus(13 downto 0);
+                            scs  <= '0';
+                            soe  <= '0';
+                            dbus <= sd;
+                          end if;
+          end case;
         elsif iorq_n='0' and abus(0)='0' then
           dbus <= '1' & ear & '1' & kbcol;
         end if;
       elsif wr_n='0' then
-        if mreq_n='0' and abus(15)='1' then
+        if (mreq_n or not abus(15) or (abus(14) and p7FFD(2) and p7FFD(0)))='0' then
+          if abus(14)='0' then
+            sa <= "0010" & abus(13 downto 0);
+          else
+            sa <= '0' & p7FFD(2 downto 0) & abus(13 downto 0);
+          end if;
           scs <= '0';
           swe <= '0';
           sd  <= dbus;
-        elsif iorq_n='0' and abus(0)='0' then
-          border <= dbus(2 downto 0);
-          audio  <= dbus(4);
+        elsif iorq_n='0' then
+          if abus(0)='0' then
+            border <= dbus(2 downto 0);
+            audio  <= dbus(4);
+          elsif (abus(1) or not abus(14) or abus(15))='0' then
+            p7FFD <= dbus(5 downto 0);
+          end if;
         end if;
       end if;
     end if;
@@ -288,7 +307,7 @@ begin
   process (hcount(0), spiadr)
   begin
     flashcs <= '1';
-    if spiadr < X"20030" then
+    if spiadr < X"40030" then
       flashcs <= '0';
       if rising_edge( hcount(0) ) then
         spird  <= spird(6 downto 0) & dataps2;
@@ -309,7 +328,7 @@ begin
     clkps2 <= 'Z';
     if spiadr<4 then
       clkps2 <= '1';
-    elsif spiadr < X"20030" then
+    elsif spiadr < X"40030" then
       clkps2 <= hcount(0);
     end if;
   end process;

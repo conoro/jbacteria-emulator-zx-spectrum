@@ -5,14 +5,14 @@ use ieee.numeric_std.all;
 entity ram is port(
     clk   : in  std_logic;
     wr    : in  std_logic;
-    addr  : in  std_logic_vector(13 downto 0);
+    addr  : in  std_logic_vector(14 downto 0);
     din   : in  std_logic_vector( 7 downto 0);
     dout  : out std_logic_vector( 7 downto 0));
 end ram;
 
 architecture behavioral of ram is
 
-  type ram_t is array (0 to 16383) of std_logic_vector(7 downto 0);
+  type ram_t is array (0 to 32767) of std_logic_vector(7 downto 0);
   signal ram : ram_t := (others => (others => '0'));
 
 begin
