@@ -91,10 +91,6 @@ architecture behavioral of lec7 is
 
 begin
 
-  sa(17 downto 16) <= "00";
-
-  flashsi <= spiwr(12);
-
   ram_inst: ram port map (
     clk   => clk7,
     wr    => wrv,
@@ -122,6 +118,9 @@ begin
     ps2data => dataps2,
     rows    => abus(15 downto 8),
     keyb    => kbcol);
+
+  sa(17 downto 16) <= "00";
+  flashsi <= spiwr(12);
 
   process (clk7)
   begin
@@ -307,8 +306,10 @@ begin
 
   process (hcount(0), spiadr)
   begin
-    clkps2 <= '1';
-    if spiadr>3 then
+    clkps2 <= 'Z';
+    if spiadr<4 then
+      clkps2 <= '1';
+    elsif spiadr < X"20030" then
       clkps2 <= hcount(0);
     end if;
   end process;
