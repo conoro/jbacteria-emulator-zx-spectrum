@@ -164,7 +164,7 @@ begin
         if( viddel='0' ) then
           at2 <= at1;
         else
-          at2 <= "00" & p7FFD(5) & '0' & p7FFD(0) & "000";
+          at2 <= "00" & border & "000";
         end if;
       end if;
 
@@ -243,7 +243,6 @@ begin
       end if;
     else
       wrv_n <= wr_n or mreq_n or not abus(14) or (abus(15) and not (p7FFD(2) and p7FFD(0)));
---      wrv_n <= wr_n or mreq_n or abus(15) or not abus(14);
       addrv <= (abus(15) and p7FFD(2) and p7FFD(1) and p7FFD(0)) & abus(13 downto 0);
     end if;
   end process;
@@ -256,7 +255,6 @@ begin
     soe  <= '1';
     swe  <= '1';
     if spiadr < X"480B8" then
---      p7FFD <= (others => '0');
       if spiadr(2 downto 1)="01" then
         scs <= '0';
         swe <= '0';
@@ -317,7 +315,6 @@ begin
       if abus(15)='0' then
         if abus(14)='0' then
           sa <= "100" & p7FFD(4) & abus(13 downto 0);
---          sa <= "1001" & abus(13 downto 0);
         end if;
       else
         if abus(14)='0' then
