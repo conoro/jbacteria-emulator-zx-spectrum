@@ -43,8 +43,8 @@ architecture behavioral of TLDmodvga is
       sync    : out std_logic;
       flashcs : inout std_logic;
       flashsi : out std_logic;
-      clkps2  : inout std_logic;
-      dataps2 : in  std_logic;
+      clkps2  : inout  std_logic;
+      dataps2 : in std_logic;
       audio   : out std_logic;
       ear     : in  std_logic;
       sa      : out std_logic_vector (17 downto 0);
@@ -63,10 +63,10 @@ begin
     b       => b,
     i       => i,
     sync    => sync,
-    clkps2  => clkps2,
-    dataps2 => dataps2,
     flashcs => flashcs,
     flashsi => flashsi,
+    clkps2  => clkps2,
+    dataps2 => dataps2,
     audio   => audio,
     ear     => ear,
     sa      => sa,
@@ -80,7 +80,6 @@ begin
   bout <= b & (i and b) & b;
 
   gnd_bit <= '0';
-
   clkfx_bufg_inst : bufg
     port map( i => clkfx_buf,
               o => clk7);
@@ -93,7 +92,7 @@ begin
     clkfx_divide          => 25,
     clkfx_multiply        => 7,
     clkin_divide_by_2     => false,
-    clkin_period          => 40.0,
+    clkin_period          => 20.0,
     clkout_phase_shift    => "NONE",
     deskew_adjust         => "SYSTEM_SYNCHRONOUS",
     dfs_frequency_mode    => "LOW",
