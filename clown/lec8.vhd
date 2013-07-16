@@ -24,37 +24,20 @@ end lec8;
 
 architecture behavioral of lec8 is
 
-  signal  hcount  : unsigned (8 downto 0);
-  signal  vcount  : unsigned (8 downto 0);
-  signal  vid     : std_logic;
-  signal  viddel  : std_logic;
-  signal  cbis1   : std_logic;
-  signal  cbis2   : std_logic;
-  signal  ccount  : unsigned (4 downto 0);
-  signal  flash   : unsigned (4 downto 0);
-  signal  at1     : std_logic_vector (7 downto 0);
-  signal  at2     : std_logic_vector (7 downto 0);
-  signal  da1     : std_logic_vector (7 downto 0);
-  signal  da2     : std_logic_vector (7 downto 0);
-  signal  addrv   : std_logic_vector (14 downto 0);
-  signal  wrv_n   : std_logic;
-  signal  clkcpu  : std_logic;
-  signal  abus    : std_logic_vector (15 downto 0);
-  signal  dbus    : std_logic_vector (7 downto 0);
-  signal  vram    : std_logic_vector (7 downto 0);
-  signal  mreq_n  : std_logic;
-  signal  iorq_n  : std_logic;
-  signal  wr_n    : std_logic;
-  signal  rd_n    : std_logic;
-  signal  int_n   : std_logic;
-  signal  kbcol   : std_logic_vector (4 downto 0);
-  signal  border  : std_logic_vector (2 downto 0);
-  signal  spiadr  : unsigned (18 downto 0);
-  signal  spird   : std_logic_vector (7 downto 0);
-  signal  spirdd  : std_logic_vector (7 downto 0);
-  signal  spiwr   : std_logic_vector (12 downto 0);
-  signal  p7FFD   : std_logic_vector (5 downto 0);
-  signal  mcon    : std_logic;
+  signal  hcount, vcount :    unsigned (8 downto 0);
+  signal  vid, vidin, viddel, cbis1, cbis2, wrv_n, clkcpu,
+          mreq_n, iorq_n, wr_n, rd_n, int_n, mcon : std_logic;
+  signal  ccount, flash :     unsigned (4 downto 0);
+  signal  at1, at2, da1, da2, spird, spirdd,
+          dbus, vram, scrl :  std_logic_vector (7 downto 0);
+  signal  addrv :             std_logic_vector (14 downto 0);
+  signal  abus :              std_logic_vector (15 downto 0);
+  signal  kbcol :             std_logic_vector (4 downto 0);
+  signal  border :            std_logic_vector (2 downto 0);
+  signal  spiadr :            unsigned (18 downto 0);
+  signal  spiwr :             std_logic_vector (12 downto 0);
+  signal  p7FFD :             std_logic_vector (5 downto 0);
+  signal  vidsh :             std_logic_vector (6 downto 0);
 
   component ram is port(
       clk   : in  std_logic;
@@ -182,6 +165,9 @@ begin
     end if;
 
     if rising_edge( clk7 ) then
+
+--      vidsh <= vidsh(5 downto 0) & vidin;
+
       if hcount(3)='1' then
         viddel <= vid;
       end if;
@@ -201,15 +187,16 @@ begin
     end if;
   end process;
 
-  process (hcount, vcount, at2, da2(7), flash(4))
+  process (hcount, vcount, at2, da2(7), flash(4), scrl)
   begin
     r <= '0';
     g <= '0';
     b <= '0';
     i <= '0';
-    vid   <= '1';
-    if  (vcount>=248 and vcount<252) or
-        (hcount>=344 and hcount<376) then
+--    vidin <= '1';
+    vid <= '1';
+    if  (vcount-unsigned(scrl(6 downto 4))>=248 and vcount-unsigned(scrl(6 downto 4))<252) or
+        (hcount-unsigned(scrl(2 downto 0))>=344 and hcount-unsigned(scrl(2 downto 0))<376) then
       sync <= '0';
     else
       sync <= '1';
@@ -224,7 +211,8 @@ begin
           b <= at2(0);
         end if;
         i <= at2(6);
-        if hcount<256 and vcount<192 then
+        if hcount+(scrl(3) & "00")<256 and vcount+(scrl(7) & "000")<192 then
+--          vidin <= '0';
           vid <= '0';
         end if;
       end if;
@@ -284,6 +272,8 @@ begin
             audio  <= dbus(4);
           elsif (abus(1) or not abus(14) or abus(15) or p7FFD(5))='0' then
             p7FFD <= dbus(5 downto 0);
+          elsif abus=X"7F3B" then
+            scrl <= dbus;
           end if;
         end if;
       end if;
@@ -330,5 +320,19 @@ begin
   begin
     mcon <= abus(14) and (not abus(15) or (abus(15) and p7FFD(2) and p7FFD(0)));
   end process;
+
+--  process (scrl, vidin, vidsh)
+--  begin
+--    case scrl(2 downto 0) is
+--      when  "000" =>  vid <= vidin;
+--      when  "001" =>  vid <= vidsh(0);
+--      when  "010" =>  vid <= vidsh(1);
+--      when  "011" =>  vid <= vidsh(2);
+--      when  "100" =>  vid <= vidsh(3);
+--      when  "101" =>  vid <= vidsh(4);
+--      when  "110" =>  vid <= vidsh(5);
+--      when others =>  vid <= vidsh(6);
+--    end case;
+--  end process;
 
 end architecture;
