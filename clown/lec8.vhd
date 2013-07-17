@@ -25,11 +25,11 @@ end lec8;
 architecture behavioral of lec8 is
 
   signal  hcount, vcount :    unsigned (8 downto 0);
-  signal  vid, vidin, viddel, cbis1, cbis2, wrv_n, clkcpu,
-          mreq_n, iorq_n, wr_n, rd_n, int_n, mcon : std_logic;
+  signal  vid, viddel, cbis1, cbis2, wrv_n, clkcpu,
+          mreq_n, iorq_n, wr_n, rd_n, int_n, mcon, tsync : std_logic;
   signal  ccount, flash :     unsigned (4 downto 0);
   signal  at1, at2, da1, da2, spird, spirdd,
-          dbus, vram, scrl :  std_logic_vector (7 downto 0);
+          dbus, vram, scrl:   std_logic_vector (7 downto 0);
   signal  addrv :             std_logic_vector (14 downto 0);
   signal  abus :              std_logic_vector (15 downto 0);
   signal  kbcol :             std_logic_vector (4 downto 0);
@@ -37,7 +37,6 @@ architecture behavioral of lec8 is
   signal  spiadr :            unsigned (18 downto 0);
   signal  spiwr :             std_logic_vector (12 downto 0);
   signal  p7FFD :             std_logic_vector (5 downto 0);
-  signal  vidsh :             std_logic_vector (6 downto 0);
 
   component ram is port(
       clk   : in  std_logic;
@@ -105,6 +104,7 @@ begin
     keyb    => kbcol);
 
   flashsi <= spiwr(12);
+  sync <= tsync;
 
   process (clk7)
   begin
@@ -146,8 +146,8 @@ begin
       if hcount(2 downto 0)="010" then
         if( viddel='0' ) then
           at2 <= at1;
-        else
-          at2 <= "00" & border & "000";
+--        else
+--          at2 <= "00" & border & "000";
         end if;
       end if;
 
@@ -166,7 +166,7 @@ begin
 
     if rising_edge( clk7 ) then
 
---      vidsh <= vidsh(5 downto 0) & vidin;
+--      vidsh <= vidsh(6 downto 0) & viddel;
 
       if hcount(3)='1' then
         viddel <= vid;
@@ -187,20 +187,32 @@ begin
     end if;
   end process;
 
-  process (hcount, vcount, at2, da2(7), flash(4), scrl)
+  process (hcount, vcount, scrl)
   begin
+    tsync <= '0';
+--    vidin <= '1';
+    vid <= '1';
+    if  (vcount-unsigned(scrl(6 downto 4))>=248 and vcount-unsigned(scrl(6 downto 4))<252) nor
+        (hcount-unsigned(scrl(2 downto 0))>=344 and hcount-unsigned(scrl(2 downto 0))<376) then
+      tsync <= '1';
+--      if hcount+(scrl(3) & "000")<256 and vcount+(scrl(7) & "000")<192 then
+      if hcount<256 and vcount<192 then
+--        vidin <= '0';
+        vid <= '0';
+      end if;
+    end if;
+  end process;
+
+  process (at2, da2(7), flash(4), tsync, hcount)
+  begin
+    i <= '0';
     r <= '0';
     g <= '0';
     b <= '0';
-    i <= '0';
---    vidin <= '1';
-    vid <= '1';
-    if  (vcount-unsigned(scrl(6 downto 4))>=248 and vcount-unsigned(scrl(6 downto 4))<252) or
-        (hcount-unsigned(scrl(2 downto 0))>=344 and hcount-unsigned(scrl(2 downto 0))<376) then
-      sync <= '0';
-    else
-      sync <= '1';
-      if hcount>=416 or hcount<320 then
+    if tsync='1' and (hcount>=416 or hcount<320) then
+      if    (hcount<448-(scrl(3) & "000")+unsigned(scrl(2 downto 0)))
+        and (hcount+(scrl(3) & "000")-unsigned(scrl(2 downto 0))<12+256) and vcount<192 then
+        i <= at2(6);
         if (da2(7) xor (at2(7) and flash(4)))='0' then
           r <= at2(4);
           g <= at2(5);
@@ -210,11 +222,10 @@ begin
           g <= at2(2);
           b <= at2(0);
         end if;
-        i <= at2(6);
-        if hcount+(scrl(3) & "00")<256 and vcount+(scrl(7) & "000")<192 then
---          vidin <= '0';
-          vid <= '0';
-        end if;
+      else
+        r <= border(1);
+        g <= border(2);
+        b <= border(0);
       end if;
     end if;
   end process;
@@ -320,19 +331,5 @@ begin
   begin
     mcon <= abus(14) and (not abus(15) or (abus(15) and p7FFD(2) and p7FFD(0)));
   end process;
-
---  process (scrl, vidin, vidsh)
---  begin
---    case scrl(2 downto 0) is
---      when  "000" =>  vid <= vidin;
---      when  "001" =>  vid <= vidsh(0);
---      when  "010" =>  vid <= vidsh(1);
---      when  "011" =>  vid <= vidsh(2);
---      when  "100" =>  vid <= vidsh(3);
---      when  "101" =>  vid <= vidsh(4);
---      when  "110" =>  vid <= vidsh(5);
---      when others =>  vid <= vidsh(6);
---    end case;
---  end process;
 
 end architecture;
