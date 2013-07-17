@@ -210,8 +210,8 @@ begin
     g <= '0';
     b <= '0';
     if tsync='1' and (hcount>=416 or hcount<320) then
-      if    (hcount<448-(scrl(3) & "000")+unsigned(scrl(2 downto 0)))
-        and (hcount+(scrl(3) & "000")-unsigned(scrl(2 downto 0))<12+256) and vcount<192 then
+      if    (signed(hcount-unsigned(scrl(2 downto 0)))>9)
+        and (hcount+(scrl(3) & "000")-unsigned(scrl(2 downto 0))<9+256) and vcount<192 then
         i <= at2(6);
         if (da2(7) xor (at2(7) and flash(4)))='0' then
           r <= at2(4);
