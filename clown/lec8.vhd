@@ -25,7 +25,7 @@ end lec8;
 architecture behavioral of lec8 is
 
   signal  hcount, vcount :    unsigned (8 downto 0);
-  signal  vid, viddel, cbis1, cbis2, wrv_n, clkcpu,
+  signal  vid, cbis1, cbis2, wrv_n, clkcpu,
           mreq_n, iorq_n, wr_n, rd_n, int_n, mcon, tsync : std_logic;
   signal  ccount, flash :     unsigned (4 downto 0);
   signal  at1, at2, da1, da2, spird, spirdd,
@@ -129,9 +129,7 @@ begin
       da2 <= da2(6 downto 0) & '0';
       if hcount(2 downto 0)="010" then
         ccount <= hcount(7 downto 3);
-        if viddel='0' then
-          da2 <= da1;
-        end if;
+        da2 <= da1;
       end if;
 
       if vid='0' then
@@ -144,11 +142,7 @@ begin
       end if;
 
       if hcount(2 downto 0)="010" then
-        if( viddel='0' ) then
-          at2 <= at1;
---        else
---          at2 <= "00" & border & "000";
-        end if;
+        at2 <= at1;
       end if;
 
       if spiadr=X"8090" then
@@ -165,13 +159,6 @@ begin
     end if;
 
     if rising_edge( clk7 ) then
-
---      vidsh <= vidsh(6 downto 0) & viddel;
-
-      if hcount(3)='1' then
-        viddel <= vid;
-      end if;
-
       flashcs <= '1';
       if spiadr < X"480B8" then
         spiadr <= spiadr + 1;
@@ -190,14 +177,11 @@ begin
   process (hcount, vcount, scrl)
   begin
     tsync <= '0';
---    vidin <= '1';
     vid <= '1';
     if  (vcount-unsigned(scrl(6 downto 4))>=248 and vcount-unsigned(scrl(6 downto 4))<252) nor
         (hcount-unsigned(scrl(2 downto 0))>=344 and hcount-unsigned(scrl(2 downto 0))<376) then
       tsync <= '1';
---      if hcount+(scrl(3) & "000")<256 and vcount+(scrl(7) & "000")<192 then
       if hcount<256 and vcount<192 then
---        vidin <= '0';
         vid <= '0';
       end if;
     end if;
@@ -210,8 +194,10 @@ begin
     g <= '0';
     b <= '0';
     if tsync='1' and (hcount>=416 or hcount<320) then
-      if    (signed(hcount-unsigned(scrl(2 downto 0)))>9)
-        and (hcount+(scrl(3) & "000")-unsigned(scrl(2 downto 0))<9+256) and vcount<192 then
+      if    hcount>unsigned(scrl(2 downto 0))+unsigned'("01001")
+        and vcount>unsigned(scrl(6 downto 4))
+        and hcount+(scrl(3) & "000")-unsigned(scrl(2 downto 0))<268
+        and vcount+(scrl(7) & "000")-unsigned(scrl(6 downto 4))<192 then
         i <= at2(6);
         if (da2(7) xor (at2(7) and flash(4)))='0' then
           r <= at2(4);
