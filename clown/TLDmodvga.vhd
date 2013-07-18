@@ -5,7 +5,7 @@ use unisim.vcomponents.all;
 
 entity TLDmodvga is port(
     clk     : in  std_logic;
-    sync    : out std_logic;
+    sync    : inout std_logic;
     rout    : out std_logic_vector (2 downto 0);
     gout    : out std_logic_vector (2 downto 0);
     bout    : out std_logic_vector (2 downto 0);
@@ -29,18 +29,14 @@ architecture behavioral of TLDmodvga is
   signal  clkfx_buf : std_logic;
   signal  clk0_buf  : std_logic;
   signal  gnd_bit   : std_logic;
-  signal  r         : std_logic;
-  signal  g         : std_logic;
-  signal  b         : std_logic;
+  signal  grb       : std_logic_vector (2 downto 0);
   signal  i         : std_logic;
 
-  component lec8 is port(
+  component lec9 is port(
       clk7    : in  std_logic;
-      r       : out std_logic;
-      g       : out std_logic;
-      b       : out std_logic;
+      grb     : out std_logic_vector (2 downto 0);
       i       : out std_logic;
-      sync    : out std_logic;
+      sync    : inout std_logic;
       flashcs : inout std_logic;
       flashsi : out std_logic;
       clkps2  : inout  std_logic;
@@ -56,11 +52,9 @@ architecture behavioral of TLDmodvga is
 
 begin
 
-  lec8_inst: lec8 port map (
+  lec9_inst: lec9 port map (
     clk7    => clk7,
-    r       => r,
-    g       => g,
-    b       => b,
+    grb     => grb,
     i       => i,
     sync    => sync,
     flashcs => flashcs,
@@ -75,9 +69,9 @@ begin
     soe     => soe,
     swe     => swe);
 
-  rout <= r & (i and r) & r;
-  gout <= g & (i and g) & g;
-  bout <= b & (i and b) & b;
+  rout <= grb(1) & (i and grb(1)) & grb(1);
+  gout <= grb(2) & (i and grb(2)) & grb(2);
+  bout <= grb(0) & (i and grb(0)) & grb(0);
 
   gnd_bit <= '0';
   clkfx_bufg_inst : bufg

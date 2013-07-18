@@ -2,12 +2,10 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-entity lec8 is port(
+entity lec9 is port(
     clk7    : in  std_logic;
-    sync    : out std_logic;
-    r       : out std_logic;
-    g       : out std_logic;
-    b       : out std_logic;
+    sync    : inout std_logic;
+    grb     : out std_logic_vector (2 downto 0);
     i       : out std_logic;
     flashcs : inout std_logic;
     flashsi : out std_logic;
@@ -20,23 +18,23 @@ entity lec8 is port(
     scs     : out std_logic;
     soe     : out std_logic;
     swe     : out std_logic);
-end lec8;
+end lec9;
 
-architecture behavioral of lec8 is
+architecture behavioral of lec9 is
 
+  signal  spiadr :            unsigned (18 downto 0);
   signal  hcount, vcount :    unsigned (8 downto 0);
-  signal  vid, cbis1, cbis2, wrv_n, clkcpu,
-          mreq_n, iorq_n, wr_n, rd_n, int_n, mcon, tsync : std_logic;
   signal  ccount, flash :     unsigned (4 downto 0);
+  signal  abus :              std_logic_vector (15 downto 0);
+  signal  addrv :             std_logic_vector (14 downto 0);
+  signal  spiwr :             std_logic_vector (12 downto 0);
   signal  at1, at2, da1, da2, spird, spirdd,
           dbus, vram, scrl:   std_logic_vector (7 downto 0);
-  signal  addrv :             std_logic_vector (14 downto 0);
-  signal  abus :              std_logic_vector (15 downto 0);
   signal  kbcol :             std_logic_vector (4 downto 0);
-  signal  border :            std_logic_vector (2 downto 0);
-  signal  spiadr :            unsigned (18 downto 0);
-  signal  spiwr :             std_logic_vector (12 downto 0);
   signal  p7FFD :             std_logic_vector (5 downto 0);
+  signal  border :            std_logic_vector (2 downto 0);
+  signal  vid, cbis1, cbis2, wrv_n, clkcpu,
+          mreq_n, iorq_n, wr_n, rd_n, int_n, mcon : std_logic;
 
   component ram is port(
       clk   : in  std_logic;
@@ -104,7 +102,6 @@ begin
     keyb    => kbcol);
 
   flashsi <= spiwr(12);
-  sync <= tsync;
 
   process (clk7)
   begin
@@ -163,9 +160,7 @@ begin
       if spiadr < X"480B8" then
         spiadr <= spiadr + 1;
         spird  <= spird(6 downto 0) & dataps2;
-        if spiadr < X"808C" then
-          flashcs <= '1';
-        else
+        if spiadr > X"808B" then
           flashcs <= '0';
         end if;
       end if;
@@ -176,42 +171,34 @@ begin
 
   process (hcount, vcount, scrl)
   begin
-    tsync <= '0';
+    sync <= '0';
     vid <= '1';
     if  (vcount-unsigned(scrl(6 downto 4))>=248 and vcount-unsigned(scrl(6 downto 4))<252) nor
         (hcount-unsigned(scrl(2 downto 0))>=344 and hcount-unsigned(scrl(2 downto 0))<376) then
-      tsync <= '1';
+      sync <= '1';
       if hcount<256 and vcount<192 then
         vid <= '0';
       end if;
     end if;
   end process;
 
-  process (at2, da2(7), flash(4), tsync, hcount)
+  process (at2, da2(7), flash(4), sync, hcount)
   begin
     i <= '0';
-    r <= '0';
-    g <= '0';
-    b <= '0';
-    if tsync='1' and (hcount>=416 or hcount<320) then
+    grb <= "000";
+    if sync='1' and (hcount>=416 or hcount<320) then
       if    hcount>unsigned(scrl(2 downto 0))+unsigned'("01001")
         and vcount>unsigned(scrl(6 downto 4))
         and hcount+(scrl(3) & "000")-unsigned(scrl(2 downto 0))<268
         and vcount+(scrl(7) & "000")-unsigned(scrl(6 downto 4))<192 then
         i <= at2(6);
         if (da2(7) xor (at2(7) and flash(4)))='0' then
-          r <= at2(4);
-          g <= at2(5);
-          b <= at2(3);
+          grb <= at2(5 downto 3);
         else
-          r <= at2(1);
-          g <= at2(2);
-          b <= at2(0);
+          grb <= at2(2 downto 0);
         end if;
       else
-        r <= border(1);
-        g <= border(2);
-        b <= border(0);
+        grb <= border;
       end if;
     end if;
   end process;
