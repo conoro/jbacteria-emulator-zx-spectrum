@@ -22,19 +22,19 @@ end lec9;
 
 architecture behavioral of lec9 is
 
-  signal  spiadr :            unsigned (18 downto 0);
-  signal  hcount, vcount :    unsigned (8 downto 0);
-  signal  ccount, flash :     unsigned (4 downto 0);
-  signal  abus :              std_logic_vector (15 downto 0);
-  signal  addrv :             std_logic_vector (14 downto 0);
-  signal  spiwr :             std_logic_vector (12 downto 0);
-  signal  at1, at2, da1, da2, spird, spirdd,
-          dbus, vram, scrl:   std_logic_vector (7 downto 0);
-  signal  kbcol :             std_logic_vector (4 downto 0);
-  signal  p7FFD :             std_logic_vector (5 downto 0);
-  signal  border :            std_logic_vector (2 downto 0);
-  signal  vid, cbis1, cbis2, wrv_n, clkcpu,
-          mreq_n, iorq_n, wr_n, rd_n, int_n, mcon : std_logic;
+  signal  spiadr :                  unsigned (18 downto 0);
+  signal  hcount, vcount, wcount :  unsigned (8 downto 0);
+  signal  ccount, flash :           unsigned (4 downto 0);
+  signal  abus :                    std_logic_vector (15 downto 0);
+  signal  addrv :                   std_logic_vector (14 downto 0);
+  signal  spiwr :                   std_logic_vector (12 downto 0);
+  signal  at1, at2, da1, da2, spird,
+          spirdd, dbus, vram, scrl: std_logic_vector (7 downto 0);
+  signal  kbcol :                   std_logic_vector (4 downto 0);
+  signal  p7FFD :                   std_logic_vector (5 downto 0);
+  signal  border :                  std_logic_vector (2 downto 0);
+  signal  vid, cbis1, cbis2, wrv_n, clkcpu, mreq_n, iorq_n,
+          wr_n, rd_n, int_n, mcon : std_logic;
 
   component ram is port(
       clk   : in  std_logic;
@@ -102,6 +102,7 @@ begin
     keyb    => kbcol);
 
   flashsi <= spiwr(12);
+  wcount  <= vcount+unsigned(scrl(6 downto 4));
 
   process (clk7)
   begin
@@ -173,7 +174,7 @@ begin
   begin
     sync <= '0';
     vid <= '1';
-    if  (vcount-unsigned(scrl(6 downto 4))>=248 and vcount-unsigned(scrl(6 downto 4))<252) nor
+    if  (vcount>=248 and vcount<252) nor
         (hcount-unsigned(scrl(2 downto 0))>=344 and hcount-unsigned(scrl(2 downto 0))<376) then
       sync <= '1';
       if hcount<256 and vcount<192 then
@@ -186,11 +187,10 @@ begin
   begin
     i <= '0';
     grb <= "000";
-    if sync='1' and (hcount>=416 or hcount<320) then
+    if sync='1' and (hcount>=unsigned(scrl(2 downto 0))+"110100000" or hcount<unsigned(scrl(2 downto 0))+"101000000") then
       if    hcount>unsigned(scrl(2 downto 0))+unsigned'("01001")
-        and vcount>unsigned(scrl(6 downto 4))
         and hcount+(scrl(3) & "000")-unsigned(scrl(2 downto 0))<268
-        and vcount+(scrl(7) & "000")-unsigned(scrl(6 downto 4))<192 then
+        and vcount+(scrl(7) & "000")<192 then
         i <= at2(6);
         if (da2(7) xor (at2(7) and flash(4)))='0' then
           grb <= at2(5 downto 3);
@@ -208,10 +208,10 @@ begin
     if (vid or (hcount(3) xnor (hcount(2) and hcount(1))))='0' then
       wrv_n <= '1';
       if (hcount(1) and (hcount(2) xor hcount(3)))='1' then
-        addrv <= p7FFD(3) & '0' & std_logic_vector(vcount(7 downto 6) & vcount(2 downto 0)
-                  & vcount(5 downto 3) & ccount);
+        addrv <= p7FFD(3) & '0' & std_logic_vector(wcount(7 downto 6) & wcount(2 downto 0)
+                  & wcount(5 downto 3) & ccount);
       else
-        addrv <= p7FFD(3) & "0110" & std_logic_vector(vcount(7 downto 3) & ccount);
+        addrv <= p7FFD(3) & "0110" & std_logic_vector(wcount(7 downto 3) & ccount);
       end if;
     else
       wrv_n <= wr_n or mreq_n or not abus(14) or (abus(15) and not (p7FFD(2) and p7FFD(0)));
@@ -298,6 +298,11 @@ begin
         end if;
       end if;
     end if;
+  end process;
+
+  process (abus, p7FFD)
+  begin
+    mcon <= abus(14) and (not abus(15) or (abus(15) and p7FFD(2) and p7FFD(0)));
   end process;
 
   process (abus, p7FFD)
