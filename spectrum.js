@@ -519,7 +519,7 @@ function kdown(ev) {
             kld[u++]= 0;
         }
         kct.putImageData(klm, 0, 0);
-        console.log('joys');
+//        console.log('joys');
       }
       else if( localStorage.ft&8 ){
         for ( t= u= 0; t<200*250; ++t )
@@ -534,14 +534,14 @@ function kdown(ev) {
           kld[u++]= emul.charCodeAt(3*a+2),
           kld[u++]= a ? 255 : 25;
         kct.putImageData(klm, 0, 0);
-        console.log('keyb');
+//        console.log('keyb');
         he.style.display= 'block';
       }
       else{
-        console.log('none');
+//        console.log('none');
         he.style.display= 'none';
       }
-      console.log(localStorage.ft>>3&3);
+//      console.log(localStorage.ft>>3&3);
 /*      kc[9]^=  0x41^(0x05<<7 | 0x3c);
       kc[37]^= 0x44^(0x05<<7 | 0x19);
       kc[38]^= 0x42^(0x05<<7 | 0x22);

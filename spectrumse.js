@@ -269,7 +269,7 @@ function init() {
   for ( j= 0
       ; j < 0x10000
       ; j++ )        // fill memory
-    m[j]= emul.charCodeAt(j+0x18018);
+    m[j]= emul.charCodeAt(j+301*250+24);
   game && (pc= 0x56c, tp());
   document.ondragover= handleDragOver;
   document.ondrop= handleFileSelect;

@@ -52,7 +52,7 @@ function init() {
       ; j < 0x10000
       ; j++ )        // fill memory
     m[j]= j < 0x8000
-          ? emul.charCodeAt(j+0x18018) & 0xff
+          ? emul.charCodeAt(j+301*250+24) & 0xff
           : 0xff;
   game && (pc= 0x56c, tp());
   document.ondragover= handleDragOver;

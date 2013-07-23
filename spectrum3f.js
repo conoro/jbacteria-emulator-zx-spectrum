@@ -54,7 +54,7 @@ function init() {
   for ( r= 0
       ; r < 0x10000
       ; r++ )
-    rom[r>>14][r&0x3fff]= emul.charCodeAt(0x18018+r) & 0xff;
+    rom[r>>14][r&0x3fff]= emul.charCodeAt(301*250+24+r) & 0xff;
   for (j= 0; j < 0x24000; j++)        // fill memory
     ram[j>>14][j&16383]= 0;
   m[1]= mw[1]= ram[5];

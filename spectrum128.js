@@ -255,14 +255,49 @@ function handleDragOver(ev) {
   ev.preventDefault();
 }
 
+function pushk( value ){
+  kb[value>>3]&= ~(0x20 >> (value & 7));
+  if( localStorage.ft&8 && value>>3 < 8 ){
+    value=  20+10*2000
+          + ((value&32?0:3)^(value>>3&3))*2000*50
+          + (value&32?4+(value&7):5-value&7)*200;
+    for ( t= 0; t<30; ++t ){
+      for ( u= 0; u<39; ++u, value+= 4 )
+        if( kld[value]== 104 )
+          kld[value]= kld[value+1]= 0;
+      value+= 1844;
+    }
+    kct.putImageData(klm, 0, 0);
+  }
+  else if( localStorage.ft&16 && value>>3 == 8 ){
+    console.log('hola');
+  }
+}
+
+function popk( value ){
+  kb[value>>3]|= 0x20 >> (value & 7);
+  if( localStorage.ft&8 ){
+    value=  20+10*2000
+          + ((value&32?0:3)^(value>>3&3))*2000*50
+          + (value&32?4+(value&7):5-value&7)*200;
+    for ( t= 0; t<30; ++t ){
+      for ( u= 0; u<39; ++u, value+= 4 )
+        if( kld[value+2]== 104 )
+          kld[value]= kld[value+1]= 104;
+      value+= 1844;
+    }
+    kct.putImageData(klm, 0, 0);
+  }
+}
+
 function kdown(ev) {
   var code= kc[ev.keyCode];
   if( code )
     if( code>0x7f )
-      kb[code>>3 & 15]&=  ~(0x20 >> (code     & 7)),
-      kb[code>>10]&=      ~(0x20 >> (code>>7  & 7));
+      pushk( code&0x7f ),
+      pushk( code>>7 );
     else
-      kb[code>>3]&=       ~(0x20 >> (code     & 7));
+      pushk( code );
   switch( ev.keyCode ){
     case 112: // F1
       if( f1= ~f1 ){
@@ -270,18 +305,58 @@ function kdown(ev) {
           clearInterval(interval);
         else
           node.onaudioprocess= audioprocess0;
-        dv.style.display= he.style.display= 'block';
+        dv.style.display= 'block';
       }
       else{
         if( trein==32000 )
           interval= setInterval(myrun, 20);
         else
           node.onaudioprocess= audioprocess;
-        dv.style.display= he.style.display= 'none';
+        dv.style.display= 'none';
       }
       break;
     case 113: // F2
-      kc[9]^=  0x41^(0x05<<7 | 0x3c);
+      localStorage.ft= localStorage.ft&0x67 | (((localStorage.ft>>3&3)+1)%3)<<3;
+      if( localStorage.ft&16 ){
+        for ( u= 0; u<99*2000+200; u+= 4 )
+          kld[u+3]= 0;
+        for ( t= 0; t<101*250; ++t ){
+          if( emul.charCodeAt(t+24)>>4 == 1 )
+            kld[u++]= kld[u++]= kld[u++]= kld[u++]= 104;
+          else
+            u+= 3,
+            kld[u++]= 0;
+          if( (emul.charCodeAt(t+24)&15) == 1 )
+            kld[u++]= kld[u++]= kld[u++]= kld[u++]= 104;
+          else
+            u+= 3,
+            kld[u++]= 0;
+        }
+        kct.putImageData(klm, 0, 0);
+//        console.log('joys');
+      }
+      else if( localStorage.ft&8 ){
+        for ( t= u= 0; t<200*250; ++t )
+          a= emul.charCodeAt(t+101*250+24) >> 4,
+          kld[u++]= emul.charCodeAt(3*a),
+          kld[u++]= emul.charCodeAt(3*a+1),
+          kld[u++]= emul.charCodeAt(3*a+2),
+          kld[u++]= a ? 255 : 25,
+          a= emul.charCodeAt(t+101*250+24) & 15,
+          kld[u++]= emul.charCodeAt(3*a),
+          kld[u++]= emul.charCodeAt(3*a+1),
+          kld[u++]= emul.charCodeAt(3*a+2),
+          kld[u++]= a ? 255 : 25;
+        kct.putImageData(klm, 0, 0);
+//        console.log('keyb');
+        he.style.display= 'block';
+      }
+      else{
+//        console.log('none');
+        he.style.display= 'none';
+      }
+//      console.log(localStorage.ft>>3&3);
+/*      kc[9]^=  0x41^(0x05<<7 | 0x3c);
       kc[37]^= 0x44^(0x05<<7 | 0x19);
       kc[38]^= 0x42^(0x05<<7 | 0x22);
       kc[39]^= 0x45^(0x05<<7 | 0x23);
@@ -289,7 +364,7 @@ function kdown(ev) {
       alert((localStorage.ft^= 2) & 2
             ? 'Cursors enabled'
             : 'Joystick enabled on Cursors + Tab');
-      self.focus();
+      self.focus();*/
       break;
     case 114: // F3
       pbt && (
@@ -369,7 +444,7 @@ function kdown(ev) {
                         : 'dis' ) +'abled');
       self.focus();
   }
-  if( code==0x05 )
+/*  if( code==0x05 )
     kc[186]= 0x3c<<7|0x04,
     kc[187]= 0x3c<<7|0x33,
     kc[188]= 0x3c<<7|0x12,
@@ -392,14 +467,22 @@ function kdown(ev) {
    || code==(0x3c<<7|0x0c)
    || code==(0x3c<<7|0x09)
    || code==(0x3c<<7|0x2d) )
-    kb[0]|= 1;
+    kb[0]|= 1;*/
   if( !ev.metaKey )
     return false;
 }
 
-function kup(evt) {
-  var code= kc[evt.keyCode];
-  if( code==0x05 )
+function kup(ev) {
+  var code= kc[ev.keyCode];
+  if( code )
+    if( code>0x7f )
+      popk( code&0x7f ),
+      popk( code>>7 );
+    else
+      popk( code );
+  if( !ev.metaKey )
+    return false;
+/*  if( code==0x05 )
     kc[186]= 0x3c<<7|0x2c,
     kc[187]= 0x3c<<7|0x34,
     kc[188]= 0x3c<<7|0x3a,
@@ -410,15 +493,7 @@ function kup(evt) {
     kc[219]= 0x3c<<7|0x29,
     kc[220]= 0x3c<<7|0x0b,
     kc[221]= 0x3c<<7|0x2a,
-    kc[222]= 0x3c<<7|0x22;
-  if( code )
-    if( code>0x7f )
-      kb[code>>3 & 15]|=  0x20 >> (code     & 7),
-      kb[code>>10]|=      0x20 >> (code>>7  & 7);
-    else
-      kb[code>>3]|=       0x20 >> (code     & 7);
-  if( !evt.metaKey )
-    return false;
+    kc[222]= 0x3c<<7|0x22;*/
 }
 
 function kpress(evt) {
@@ -431,23 +506,23 @@ function kpress(evt) {
 function onresize(ev) {
   ratio= innerWidth / innerHeight;
   if( ratio>1.33 )
-    cv.style.height= innerHeight - 50 + 'px',
-    cv.style.width= parseInt(ratio= (innerHeight-50)*1.33) + 'px',
-    cu.style.height= parseInt((innerHeight-50)*.28)-20+'px',
-    cu.style.width= parseInt(ratio*.6)+'px',
-    cv.style.marginTop= '25px',
-    cv.style.marginLeft= (innerWidth-ratio >> 1) + 'px';
+    cv.style.height= (height= innerHeight - 50) + 'px',
+    cv.style.width= (width= parseInt(tmp= height*1.33)) + 'px',
+    cv.style.marginTop= (marginTop= 25) + 'px',
+    cv.style.marginLeft= (marginLeft= innerWidth-tmp >> 1) + 'px';
   else
-    cv.style.width= innerWidth-50+'px',
-    cv.style.height= parseInt(ratio=(innerWidth-50)/1.33)+'px',
-    cu.style.width= parseInt((innerWidth-50)*.6)+'px',
-    cu.style.height= parseInt(ratio*.28)-20+'px',
-    cv.style.marginLeft= '25px',
-    cv.style.marginTop= (innerHeight-ratio >> 1) + 'px';
+    cv.style.width= (width= innerWidth - 50) + 'px',
+    cv.style.height= (height= parseInt(width/1.33)) + 'px',
+    cv.style.marginLeft= (marginLeft= 25) + 'px',
+    cv.style.marginTop= (marginTop= 25) + 'px';
+  if( ratio>1 )
+    he.style.top= (25+0.5167*height) + 'px';
+  else
+    he.style.top= (innerHeight-25-0.4*height) + 'px';
   he.style.width= cv.style.width;
-  he.style.height= cv.style.height;
+  he.style.height= (0.4*height) + 'px';
   dv.style.left= he.style.left= cv.style.marginLeft;
-  dv.style.top= he.style.top= cv.style.marginTop;
+  dv.style.top= cv.style.marginTop;
 }
 
 function tp(){
@@ -517,4 +592,45 @@ function rt(f){
     interval= setInterval(myrun, 20);
   else
     node.onaudioprocess= audioprocess;
+}
+
+function butdown(ev){
+  ev.preventDefault();
+  var list= ev.touches
+    , length= list.length
+    , top= parseInt(he.style.top)
+    , left= parseInt(he.style.left)
+    , width= parseInt(he.style.width)/10
+    , height= parseInt(he.style.height)/4
+    ;
+  tb= [0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff];
+// pushk(8);
+  for ( var i= 0; i<length; i++ ){
+    x= parseInt((list[i].pageX-left)/width);
+    y= parseInt((list[i].pageY-top)/height);
+    if( x>4 )
+      pushk(28+8*y+x);
+    else
+      pushk(29-8*y-x);
+  }
+//    console.log(parseInt((list[i].pageX-left)/width), parseInt((list[i].pageY-top)/height));
+/*  ev.preventDefault();
+  var elm= ev.target;
+  elm.style.borderColor= '#00f';
+  for ( var j= 0; j<but.length; j++ )
+    if( but[j][0]==elm.but )
+      if( elm==but[j][ratio>1?10:9] )
+        kb[but[j][7]]&= ~but[j][8];*/
+}
+
+function butup(ev){
+  ev.preventDefault();
+//  console.log(ev);
+/*  ev.preventDefault();
+  var elm= ev.target;
+  elm.style.borderColor= '#444';
+  for ( var j= 0; j<but.length; j++ )
+    if( but[j][0]==elm.but )
+      if( elm==but[j][ratio>1?10:9] )
+        kb[but[j][7]]|= but[j][8];*/
 }

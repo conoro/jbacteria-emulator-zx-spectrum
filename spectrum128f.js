@@ -56,13 +56,13 @@ function init() {
   for ( r= 0
       ; r < 0x8000
       ; r++ )
-    rom[r>>14][r&0x3fff]= emul.charCodeAt(0x18018+r) & 0xff;
+    rom[r>>14][r&0x3fff]= emul.charCodeAt(301*250+24+r) & 0xff;
   if( game )
     for ( j= 0
         ; j < 0x24000
         ; j++)
       ram[j>>14][j&0x3fff]= 1 << (j>>14) & 0xa1
-                            ? emul.charCodeAt(0x18018+r++) & 0xff 
+                            ? emul.charCodeAt(301*250+24+r++) & 0xff 
                             : 0;
   mw[0]= ram[8];
   m[1]= mw[1]= ram[5];
