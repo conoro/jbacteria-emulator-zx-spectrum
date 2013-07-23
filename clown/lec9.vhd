@@ -29,7 +29,7 @@ architecture behavioral of lec9 is
   signal  addrv :                   std_logic_vector (14 downto 0);
   signal  spiwr :                   std_logic_vector (12 downto 0);
   signal  sumscof :                 unsigned (10 downto 0);
-  signal  modscof :                 unsigned (1 downto 0);
+  signal  modscof :                 std_logic_vector (1 downto 0);
   signal  scof :                    unsigned (9 downto 0);
   signal  at1, at2, da1, da2, spird,
           spirdd, dbus, vram, scrl: std_logic_vector (7 downto 0);
@@ -211,10 +211,9 @@ begin
     if (vid or (hcount(3) xnor (hcount(2) and hcount(1))))='0' then
       wrv_n <= '1';
       if (hcount(1) and (hcount(2) xor hcount(3)))='1' then
-        addrv <= p7FFD(3) & '0' & std_logic_vector(wcount(7 downto 6) & wcount(2 downto 0)
-                  & wcount(5 downto 3) & ccount);
+        addrv <= p7FFD(3) & '0' & modscof & std_logic_vector(wcount(2 downto 0) & sumscof(7 downto 0));
       else
-        addrv <= p7FFD(3) & "0110" & std_logic_vector(modscof & sumscof(7 downto 0));
+        addrv <= p7FFD(3) & "0110" & modscof & std_logic_vector(sumscof(7 downto 0));
       end if;
     else
       wrv_n <= wr_n or mreq_n or not abus(14) or (abus(15) and not (p7FFD(2) and p7FFD(0)));
@@ -314,7 +313,7 @@ begin
 
   process (scof, wcount, ccount)
   begin
-    sumscof <= scof+(wcount(7 downto 3) & ccount);
+    sumscof <= scof+('0' & wcount(7 downto 3) & ccount);
   end process;
 
   process (sumscof)
