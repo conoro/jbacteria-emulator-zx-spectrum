@@ -3,7 +3,8 @@ function paintNormal(){
   max= may= t= -1;
   if( scrl & 136 ){
     while( ++t < 0x300 )
-      for ( col= m[t+0x5800]
+      for ( nt= (t+scst)%0x300
+          , col= m[nt+0x5800]
           , bk= pal[col    & 7
                   | col>>3 & 8]
           , fo= pal[col>>3 & 15]
@@ -13,10 +14,10 @@ function paintNormal(){
               - ( scrl <<6 & 7168 )
               - ( scrl <<2 & 28 )
           , u=  0x4000
-              | t    & 0xff 
-              | t<<3 & 0x1800
+              | nt    & 0xff 
+              | nt<<3 & 0x1800
           ; ! ( 0x1800
-              & ( u ^ t<<3 )
+              & ( u ^ nt<<3 )
               )
           ; u+= 0x100
           , o+= 0x400)
@@ -320,8 +321,11 @@ function wp(addr, val) {                // write port, only border color emulati
     if( pbt )
       tim.style.color= pal[bor&7][0]+pal[bor&7][1]+pal[bor&7][2]<300 ? '#fff' : '#000';
   }
-  else if( addr == 0x7f3b ){
-    scrl= val;
+  else if( (addr & 0xfcff) == 0x7c3b ){
+    if( addr == 0x7f3b )
+      scrl= val;
+    else
+      scst= addr & 0x300 | val;
     for (t= 0; t < 0x1800; t++)
       vm[t]= -1;
   }
