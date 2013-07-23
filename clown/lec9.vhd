@@ -28,6 +28,9 @@ architecture behavioral of lec9 is
   signal  abus :                    std_logic_vector (15 downto 0);
   signal  addrv :                   std_logic_vector (14 downto 0);
   signal  spiwr :                   std_logic_vector (12 downto 0);
+  signal  sumscof :                 unsigned (10 downto 0);
+  signal  modscof :                 unsigned (1 downto 0);
+  signal  scof :                    unsigned (9 downto 0);
   signal  at1, at2, da1, da2, spird,
           spirdd, dbus, vram, scrl: std_logic_vector (7 downto 0);
   signal  kbcol :                   std_logic_vector (4 downto 0);
@@ -211,7 +214,7 @@ begin
         addrv <= p7FFD(3) & '0' & std_logic_vector(wcount(7 downto 6) & wcount(2 downto 0)
                   & wcount(5 downto 3) & ccount);
       else
-        addrv <= p7FFD(3) & "0110" & std_logic_vector(wcount(7 downto 3) & ccount);
+        addrv <= p7FFD(3) & "0110" & std_logic_vector(modscof & sumscof(7 downto 0));
       end if;
     else
       wrv_n <= wr_n or mreq_n or not abus(14) or (abus(15) and not (p7FFD(2) and p7FFD(0)));
@@ -256,8 +259,12 @@ begin
             audio  <= dbus(4);
           elsif (abus(1) or not abus(14) or abus(15) or p7FFD(5))='0' then
             p7FFD <= dbus(5 downto 0);
-          elsif abus=X"7F3B" then
-            scrl <= dbus;
+          elsif abus(15 downto 10)="011111" and abus(7 downto 0)=X"3B" then
+            if abus(9 downto 8)="11" then
+              scrl <= dbus;
+            else
+              scof <= unsigned(abus(9 downto 8) & dbus);
+            end if;
           end if;
         end if;
       end if;
@@ -305,9 +312,21 @@ begin
     mcon <= abus(14) and (not abus(15) or (abus(15) and p7FFD(2) and p7FFD(0)));
   end process;
 
-  process (abus, p7FFD)
+  process (scof, wcount, ccount)
   begin
-    mcon <= abus(14) and (not abus(15) or (abus(15) and p7FFD(2) and p7FFD(0)));
+    sumscof <= scof+(wcount(7 downto 3) & ccount);
+  end process;
+
+  process (sumscof)
+  begin
+    case sumscof(10 downto 8) is
+      when "000"  => modscof <= "00";
+      when "001"  => modscof <= "01";
+      when "010"  => modscof <= "10";
+      when "011"  => modscof <= "00";
+      when "100"  => modscof <= "01";
+      when others => modscof <= "10";
+    end case;
   end process;
 
 end architecture;
