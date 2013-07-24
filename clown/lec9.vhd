@@ -23,19 +23,19 @@ end lec9;
 architecture behavioral of lec9 is
 
   signal  spiadr :                  unsigned (18 downto 0);
+  signal  sumscof :                 unsigned (10 downto 0);
+  signal  scof :                    unsigned (9 downto 0);
   signal  hcount, vcount, wcount :  unsigned (8 downto 0);
   signal  ccount, flash :           unsigned (4 downto 0);
   signal  abus :                    std_logic_vector (15 downto 0);
   signal  addrv :                   std_logic_vector (14 downto 0);
   signal  spiwr :                   std_logic_vector (12 downto 0);
-  signal  sumscof :                 unsigned (10 downto 0);
-  signal  modscof :                 std_logic_vector (1 downto 0);
-  signal  scof :                    unsigned (9 downto 0);
   signal  at1, at2, da1, da2, spird,
           spirdd, dbus, vram, scrl: std_logic_vector (7 downto 0);
-  signal  kbcol :                   std_logic_vector (4 downto 0);
   signal  p7FFD :                   std_logic_vector (5 downto 0);
+  signal  kbcol :                   std_logic_vector (4 downto 0);
   signal  border :                  std_logic_vector (2 downto 0);
+  signal  modscof :                 std_logic_vector (1 downto 0);
   signal  vid, cbis1, cbis2, wrv_n, clkcpu, mreq_n, iorq_n,
           wr_n, rd_n, int_n, mcon : std_logic;
 
