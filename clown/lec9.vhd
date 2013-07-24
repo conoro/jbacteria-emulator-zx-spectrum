@@ -35,7 +35,6 @@ architecture behavioral of lec9 is
   signal  p7FFD :                   std_logic_vector (5 downto 0);
   signal  kbcol :                   std_logic_vector (4 downto 0);
   signal  border :                  std_logic_vector (2 downto 0);
-  signal  modscof :                 std_logic_vector (1 downto 0);
   signal  vid, cbis1, cbis2, wrv_n, clkcpu, mreq_n, iorq_n,
           wr_n, rd_n, int_n, mcon : std_logic;
 
@@ -73,6 +72,20 @@ architecture behavioral of lec9 is
       rows    : in  std_logic_vector(7 downto 0);
       keyb    : out std_logic_vector(4 downto 0));
   end component;
+
+  function mod3 (value : unsigned(2 downto 0)) return std_logic_vector is
+    variable result : std_logic_vector (1 downto 0);
+  begin
+    case value is
+      when "000"  => result := "00";
+      when "001"  => result := "01";
+      when "010"  => result := "10";
+      when "011"  => result := "00";
+      when "100"  => result := "01";
+      when others => result := "10";
+    end case;
+    return result;
+  end mod3;
 
 begin
 
@@ -211,9 +224,11 @@ begin
     if (vid or (hcount(3) xnor (hcount(2) and hcount(1))))='0' then
       wrv_n <= '1';
       if (hcount(1) and (hcount(2) xor hcount(3)))='1' then
-        addrv <= p7FFD(3) & '0' & modscof & std_logic_vector(wcount(2 downto 0) & sumscof(7 downto 0));
+        addrv <=  p7FFD(3) & '0' & mod3(sumscof(10 downto 8))
+                & std_logic_vector(wcount(2 downto 0) & sumscof(7 downto 0));
       else
-        addrv <= p7FFD(3) & "0110" & modscof & std_logic_vector(sumscof(7 downto 0));
+        addrv <=  p7FFD(3) & "0110" & mod3(sumscof(10 downto 8))
+                & std_logic_vector(sumscof(7 downto 0));
       end if;
     else
       wrv_n <= wr_n or mreq_n or not abus(14) or (abus(15) and not (p7FFD(2) and p7FFD(0)));
@@ -314,18 +329,6 @@ begin
   process (scof, wcount, ccount)
   begin
     sumscof <= scof+('0' & wcount(7 downto 3) & ccount);
-  end process;
-
-  process (sumscof)
-  begin
-    case sumscof(10 downto 8) is
-      when "000"  => modscof <= "00";
-      when "001"  => modscof <= "01";
-      when "010"  => modscof <= "10";
-      when "011"  => modscof <= "00";
-      when "100"  => modscof <= "01";
-      when others => modscof <= "10";
-    end case;
   end process;
 
 end architecture;

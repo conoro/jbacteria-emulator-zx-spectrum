@@ -71,7 +71,7 @@ architecture behavioral of ay8910 is
 
 begin
 
-  process (reset , clk)
+  process (reset, clk)
   begin
     if reset = '0' then
       address  <= "0000";
@@ -118,7 +118,7 @@ begin
     end if;
   end process;
 
-  DO <=          periodA (7 downto 0)   when address = "0000" and cs = '0' and bdir = '0' and bc = '1' else
+  do <=          periodA (7 downto 0)   when address = "0000" and cs = '0' and bdir = '0' and bc = '1' else
         "0000" & periodA (11 downto 8)  when address = "0001" and cs = '0' and bdir = '0' and bc = '1' else
                  periodB (7 downto 0)   when address = "0010" and cs = '0' and bdir = '0' and bc = '1' else
         "0000" & periodB (11 downto 8)  when address = "0011" and cs = '0' and bdir = '0' and bc = '1' else
