@@ -1,5 +1,6 @@
 library ieee;
 use ieee.std_logic_1164.all;
+use ieee.std_logic_unsigned.all;
 use ieee.numeric_std.all;
 
 entity lec9 is port(
@@ -11,7 +12,8 @@ entity lec9 is port(
     flashsi : out std_logic;
     clkps2  : inout std_logic;
     dataps2 : in  std_logic;
-    audio   : out std_logic;
+    audiol  : out std_logic;
+    audior  : out std_logic;
     ear     : in  std_logic;
     sa      : out std_logic_vector (17 downto 0);
     sd      : inout std_logic_vector (7 downto 0);
@@ -26,19 +28,19 @@ architecture behavioral of lec9 is
   signal  sumscof :                 unsigned (10 downto 0);
   signal  scof :                    unsigned (9 downto 0);
   signal  hcount, vcount, wcount :  unsigned (8 downto 0);
-  signal  ayoa, ayob, ayoc :        unsigned (7 downto 0);
   signal  ccount, flash :           unsigned (4 downto 0);
   signal  abus :                    std_logic_vector (15 downto 0);
   signal  addrv :                   std_logic_vector (14 downto 0);
   signal  spiwr :                   std_logic_vector (12 downto 0);
+  signal  left, right :             std_logic_vector (8 downto 0);
   signal  at1, at2, da1, da2, spird, spirdd, dbus,
-          vram, scrl, ayin, ayout:  std_logic_vector (7 downto 0);
+          vram, scrl, ayin, ayout, ayoa, ayob, ayoc:  std_logic_vector (7 downto 0);
   signal  p7FFD :                   std_logic_vector (5 downto 0);
   signal  kbcol :                   std_logic_vector (4 downto 0);
   signal  border :                  std_logic_vector (2 downto 0);
-  signal  vid, cbis1, cbis2, wrv_n, clkcpu,
-          mreq_n, iorq_n, wr_n, rd_n, int_n,
-          mcon, rst, nmi, reset, bc, bdir :   std_logic;
+  signal  vid, cbis1, cbis2, wrv_n, clkcpu, mreq_n,
+          iorq_n, wr_n, rd_n, int_n, mcon, rst, nmi,
+          reset, bc, bdir, spkr :   std_logic;
 
   component ram is port(
       clk   : in  std_logic;
@@ -84,9 +86,15 @@ architecture behavioral of lec9 is
     bc    : in  std_logic;
     di    : in  std_logic_vector(7 downto 0);
     do    : out std_logic_vector(7 downto 0);
-    outa  : out unsigned(7 downto 0);
-    outb  : out unsigned(7 downto 0);
-    outc  : out unsigned(7 downto 0));
+    outa  : out std_logic_vector(7 downto 0);
+    outb  : out std_logic_vector(7 downto 0);
+    outc  : out std_logic_vector(7 downto 0));
+  end component;
+
+  component pwm is port (
+    clk   : in  std_logic;
+    din   : in  std_logic_vector (8 downto 0);
+    dout  : out std_logic);
   end component;
 
   function mod3 (value : unsigned(2 downto 0)) return std_logic_vector is
@@ -146,9 +154,21 @@ begin
     outb  => ayob,
     outc  => ayoc);
 
+  pwm_left: pwm port map (
+    clk   => clk7,
+    din   => left,
+    dout  => audiol);
+
+  pwm_right: pwm port map (
+    clk   => clk7,
+    din   => right,
+    dout  => audior);
+
   flashsi <= spiwr(12);
   reset   <= rst and flashcs;
   wcount  <= vcount+unsigned(scrl(6 downto 4));
+  right   <= ('0'+ayoa) + ("00" & ayob(7 downto 1)) + ("00" & spkr & "000000");
+  left    <= ('0'+ayoc) + ("00" & ayob(7 downto 1)) + ("00" & spkr & "000000");
 
   process (clk7)
   begin
@@ -307,22 +327,24 @@ begin
           scs <= '0';
           swe <= '0';
           sd  <= dbus;
-        elsif rising_edge(clk7) and iorq_n='0' then
-          if abus(0)='0' then
-            border <= dbus(2 downto 0);
-            audio  <= dbus(4);
-          elsif (abus(1) or not abus(14) or abus(15) or p7FFD(5))='0' then
-            p7FFD <= dbus(5 downto 0);
-          elsif abus(15 downto 10)="011111" and abus(7 downto 0)=X"3B" then
-            if abus(9 downto 8)="11" then
-              scrl <= dbus;
-            else
-              scof <= unsigned(abus(9 downto 8) & dbus);
-            end if;
-          elsif (not abus(1) and abus(15))='1' then
+        elsif iorq_n='0' then
+          if (not abus(1) and abus(15))='1' then
             bdir <= '1';
             bc   <= abus(14);
             ayin <= dbus;
+          elsif rising_edge(clk7) then
+            if abus(0)='0' then
+              border <= dbus(2 downto 0);
+              spkr   <= dbus(4);
+            elsif (abus(1) or not abus(14) or abus(15) or p7FFD(5))='0' then
+              p7FFD <= dbus(5 downto 0);
+            elsif abus(15 downto 10)="011111" and abus(7 downto 0)=X"3B" then
+              if abus(9 downto 8)="11" then
+                scrl <= dbus;
+              else
+                scof <= unsigned(abus(9 downto 8) & dbus);
+              end if;
+            end if;
           end if;
         end if;
       end if;

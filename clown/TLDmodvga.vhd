@@ -13,7 +13,8 @@ entity TLDmodvga is port(
     flashsi : out std_logic;
     clkps2  : inout std_logic;
     dataps2 : in  std_logic;
-    audio   : out std_logic;
+    audiol  : out std_logic;
+    audior  : out std_logic;
     ear     : in  std_logic;
     sa      : out std_logic_vector (17 downto 0);
     sd      : inout std_logic_vector (7 downto 0);
@@ -41,7 +42,8 @@ architecture behavioral of TLDmodvga is
       flashsi : out std_logic;
       clkps2  : inout  std_logic;
       dataps2 : in std_logic;
-      audio   : out std_logic;
+      audiol  : out std_logic;
+      audior  : out std_logic;
       ear     : in  std_logic;
       sa      : out std_logic_vector (17 downto 0);
       sd      : inout std_logic_vector (7 downto 0);
@@ -61,7 +63,8 @@ begin
     flashsi => flashsi,
     clkps2  => clkps2,
     dataps2 => dataps2,
-    audio   => audio,
+    audiol  => audiol,
+    audior  => audior,
     ear     => ear,
     sa      => sa,
     sd      => sd,

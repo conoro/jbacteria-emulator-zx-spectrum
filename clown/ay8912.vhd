@@ -2,7 +2,7 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
  
-entity ay8910 is port(
+entity ay8912 is port(
     clk   : in  std_logic;
 --    clc   : in  std_logic;
     reset : in  std_logic;
@@ -11,12 +11,12 @@ entity ay8910 is port(
     bc    : in  std_logic;
     di    : in  std_logic_vector(7 downto 0);
     do    : out std_logic_vector(7 downto 0);
-    outa  : out unsigned(7 downto 0);
-    outb  : out unsigned(7 downto 0);
-    outc  : out unsigned(7 downto 0));
-end ay8910;
+    outa  : out std_logic_vector(7 downto 0);
+    outb  : out std_logic_vector(7 downto 0);
+    outc  : out std_logic_vector(7 downto 0));
+end ay8912;
  
-architecture behavioral of ay8910 is
+architecture behavioral of ay8912 is
 
   signal clockdiv  : unsigned (3 downto 0);
   signal periodA   : std_logic_vector (11 downto 0);
@@ -141,7 +141,7 @@ begin
     elsif rising_edge(clk) then
 --      if clc = '1' then
         clockdiv <= clockdiv - 1;
-      end if;
+--      end if;
     end if;
   end process;
 
