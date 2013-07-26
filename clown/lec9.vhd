@@ -35,8 +35,9 @@ architecture behavioral of lec9 is
   signal  p7FFD :                   std_logic_vector (5 downto 0);
   signal  kbcol :                   std_logic_vector (4 downto 0);
   signal  border :                  std_logic_vector (2 downto 0);
-  signal  vid, cbis1, cbis2, wrv_n, clkcpu, mreq_n, iorq_n,
-          wr_n, rd_n, int_n, mcon : std_logic;
+  signal  vid, cbis1, cbis2, wrv_n, clkcpu,
+          mreq_n, iorq_n, wr_n, rd_n, int_n,
+          mcon, rst, nmi, reset :   std_logic;
 
   component ram is port(
       clk   : in  std_logic;
@@ -70,7 +71,9 @@ architecture behavioral of lec9 is
       ps2clk  : in  std_logic;
       ps2data : in  std_logic;
       rows    : in  std_logic_vector(7 downto 0);
-      keyb    : out std_logic_vector(4 downto 0));
+      keyb    : out std_logic_vector(4 downto 0);
+      rst     : out std_logic;
+      nmi     : out std_logic);
   end component;
 
   function mod3 (value : unsigned(2 downto 0)) return std_logic_vector is
@@ -97,11 +100,11 @@ begin
     dout  => vram);
 
   T80a_inst: T80a port map (
-    RESET_n => flashcs,
+    RESET_n => reset,
     CLK_n   => clkcpu,
     WAIT_n  => '1',
     INT_n   => int_n,
-    NMI_n   => '1',
+    NMI_n   => nmi,
     BUSRQ_n => '1',
     MREQ_n  => mreq_n,
     IORQ_n  => iorq_n,
@@ -111,13 +114,16 @@ begin
     D       => dbus);
 
   ps2k_inst: ps2k port map (
-    clk     => hcount(5),
+    clk     => clk7,
     ps2clk  => clkps2,
     ps2data => dataps2,
     rows    => abus(15 downto 8),
-    keyb    => kbcol);
+    keyb    => kbcol,
+    rst     => rst,
+    nmi     => nmi);
 
   flashsi <= spiwr(12);
+  reset   <= rst and flashcs;
   wcount  <= vcount+unsigned(scrl(6 downto 4));
 
   process (clk7)
@@ -204,8 +210,8 @@ begin
     i <= '0';
     grb <= "000";
     if sync='1' and (hcount>=unsigned(scrl(2 downto 0))+"110100000" or hcount<unsigned(scrl(2 downto 0))+"101000000") then
-      if    hcount>unsigned(scrl(2 downto 0))+unsigned'("01001")
-        and hcount+(scrl(3) & "000")-unsigned(scrl(2 downto 0))<268
+      if    hcount>unsigned(scrl(2 downto 0))+unsigned'("01010")
+        and hcount+(scrl(3) & "000")-unsigned(scrl(2 downto 0))<267
         and vcount+(scrl(7) & "000")<192 then
         i <= at2(6);
         if (da2(7) xor (at2(7) and flash(4)))='0' then
@@ -236,14 +242,16 @@ begin
     end if;
   end process;
 
-  process (rd_n, wr_n, mreq_n, iorq_n, abus, clk7, spiadr, p7FFD, mcon)
+  process (rd_n, wr_n, mreq_n, iorq_n, abus, clk7, spiadr, p7FFD, mcon, rst)
   begin
     dbus <= (others => 'Z');
     sd   <= (others => 'Z');
     scs  <= '1';
     soe  <= '1';
     swe  <= '1';
-    if spiadr < X"480B8" then
+    if rst='0' then
+      p7FFD <= "000000";
+    elsif spiadr < X"480B8" then
       if spiadr(2 downto 1)="01" then
         scs <= '0';
         swe <= '0';

@@ -7,7 +7,9 @@ entity ps2k is port (
     ps2clk  : in  std_logic;
     ps2data : in  std_logic;
     rows    : in  std_logic_vector(7 downto 0);
-    keyb    : out std_logic_vector(4 downto 0));
+    keyb    : out std_logic_vector(4 downto 0);
+    rst     : out std_logic;
+    nmi     : out std_logic);
 end ps2k;
 
 architecture behavioral of ps2k is
@@ -15,7 +17,7 @@ architecture behavioral of ps2k is
   type    key_matrix  is array (7 downto 0) of std_logic_vector(4 downto 0);
   signal  keys      : key_matrix;
   signal  pressed   : std_logic;
-  signal  lastclk   : std_logic;
+  signal  lastclk   : std_logic_vector(4 downto 0);
   signal  bit_count : unsigned (3 downto 0);
   signal  shiftreg  : std_logic_vector(8 downto 0);
   signal  parity    : std_logic;
@@ -25,8 +27,10 @@ begin
   process (clk)
   begin
     if rising_edge(clk) then
-      lastclk <= ps2clk;
-      if ps2clk='0' and lastclk='1' then
+      rst <= '1';
+      nmi <= '1';
+      lastclk <= lastclk(3 downto 0) & ps2clk;
+      if lastclk="11100" and ps2clk='0' then
         if bit_count=0 then
           parity <= '0';
           if ps2data='0' then
@@ -98,6 +102,8 @@ begin
                               keys(3)(1) <= pressed;
                 when X"76" => keys(0)(0) <= pressed; -- Break (Caps Space)
                               keys(7)(0) <= pressed;
+                when X"05" => rst <= '0';            -- Reset
+                when X"06" => nmi <= '0';            -- Reset
                 when others=> null;
               end case;
             end if;

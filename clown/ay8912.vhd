@@ -4,7 +4,7 @@ use ieee.numeric_std.all;
  
 entity ay8910 is port(
     clk   : in  std_logic;
-    clc   : in  std_logic;
+--    clc   : in  std_logic;
     reset : in  std_logic;
     bdir  : in  std_logic;
     cs    : in  std_logic;
@@ -139,7 +139,7 @@ begin
     if reset = '0' then
       clockdiv <= "0000";
     elsif rising_edge(clk) then
-      if clc = '1' then
+--      if clc = '1' then
         clockdiv <= clockdiv - 1;
       end if;
     end if;
@@ -158,7 +158,7 @@ begin
       freqB      <= '0';
       freqC      <= '0';
     elsif rising_edge(clk) then
-      if clockdiv(2 downto 0) = "000" and clc = '1' then
+      if clockdiv(2 downto 0) = "000" then -- and clc = '1' then
         if (counterA /= X"000") then
           counterA := counterA - 1;
         elsif (periodA /= X"000") then
@@ -195,7 +195,7 @@ begin
       counterN   := "00000";
       noiseShift := "00000000000000001";
     elsif rising_edge(clk) then
-      if clockdiv(2 downto 0) = "000" and clc = '1' then
+      if clockdiv(2 downto 0) = "000" then -- and clc = '1' then
         if (counterN /= "00000") then
           counterN := counterN - 1;
         elsif (periodN /= "00000") then
@@ -219,7 +219,7 @@ begin
       volumeE    <= "0000";
       resetAck   <= '0';
     elsif rising_edge(clk) then
-      if clockdiv = "0000" and clc = '1' then
+      if clockdiv = "0000" then -- and clc = '1' then
         if (envCounter /= X"0000" and resetReq = resetAck) then 
           envCounter := envCounter - 1;
         elsif (periodE /= X"0000") then
@@ -251,7 +251,7 @@ begin
       outb <= "00000000";
       outc <= "00000000";
     elsif rising_edge(clk) then
-      if clc = '1' then
+--      if clc = '1' then
         if (((enable(0) or freqA) and (enable(3) or freqN)) = '0') then
           outa <= "00000000";
         elsif (volumeA(4) = '0') then
@@ -274,7 +274,7 @@ begin
           outc <= VolumeTable(volumeE);
         end if;
       end if;
-    end if;
+--    end if;
   end process;
 
 end architecture;
