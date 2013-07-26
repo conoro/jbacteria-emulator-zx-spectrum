@@ -7,13 +7,13 @@ entity ay8910 is port(
 --    clc   : in  std_logic;
     reset : in  std_logic;
     bdir  : in  std_logic;
-    cs    : in  std_logic;
+--    cs    : in  std_logic;
     bc    : in  std_logic;
     di    : in  std_logic_vector(7 downto 0);
     do    : out std_logic_vector(7 downto 0);
-    outa  : out std_logic_vector(7 downto 0);
-    outb  : out std_logic_vector(7 downto 0);
-    outc  : out std_logic_vector(7 downto 0));
+    outa  : out unsigned(7 downto 0);
+    outb  : out unsigned(7 downto 0);
+    outc  : out unsigned(7 downto 0));
 end ay8910;
  
 architecture behavioral of ay8910 is
@@ -89,7 +89,7 @@ begin
       portB    <= "00000000";
       resetReq <= '0';
     elsif rising_edge(clk) then
-      if cs = '0' and bdir = '1' then
+      if bdir = '1' then -- cs = '0' and 
         if bc = '1' then
           address <= di (3 downto 0);
         else
@@ -118,20 +118,20 @@ begin
     end if;
   end process;
 
-  do <=          periodA (7 downto 0)   when address = "0000" and cs = '0' and bdir = '0' and bc = '1' else
-        "0000" & periodA (11 downto 8)  when address = "0001" and cs = '0' and bdir = '0' and bc = '1' else
-                 periodB (7 downto 0)   when address = "0010" and cs = '0' and bdir = '0' and bc = '1' else
-        "0000" & periodB (11 downto 8)  when address = "0011" and cs = '0' and bdir = '0' and bc = '1' else
-                 periodC (7 downto 0)   when address = "0100" and cs = '0' and bdir = '0' and bc = '1' else
-        "0000" & periodC (11 downto 8)  when address = "0101" and cs = '0' and bdir = '0' and bc = '1' else
-        "000"  & periodN                when address = "0110" and cs = '0' and bdir = '0' and bc = '1' else
-                 enable                 when address = "0111" and cs = '0' and bdir = '0' and bc = '1' else
-        "000"  & volumeA                when address = "1000" and cs = '0' and bdir = '0' and bc = '1' else
-        "000"  & volumeB                when address = "1001" and cs = '0' and bdir = '0' and bc = '1' else
-        "000"  & volumeC                when address = "1010" and cs = '0' and bdir = '0' and bc = '1' else
-                 periodE (7 downto 0)   when address = "1011" and cs = '0' and bdir = '0' and bc = '1' else
-                 periodE (15 downto 8)  when address = "1100" and cs = '0' and bdir = '0' and bc = '1' else
-        "0000" & shape                  when address = "1101" and cs = '0' and bdir = '0' and bc = '1' else
+  do <=          periodA (7 downto 0)   when address = "0000" and bdir = '0' and bc = '1' else -- and cs='0' en todos
+        "0000" & periodA (11 downto 8)  when address = "0001" and bdir = '0' and bc = '1' else
+                 periodB (7 downto 0)   when address = "0010" and bdir = '0' and bc = '1' else
+        "0000" & periodB (11 downto 8)  when address = "0011" and bdir = '0' and bc = '1' else
+                 periodC (7 downto 0)   when address = "0100" and bdir = '0' and bc = '1' else
+        "0000" & periodC (11 downto 8)  when address = "0101" and bdir = '0' and bc = '1' else
+        "000"  & periodN                when address = "0110" and bdir = '0' and bc = '1' else
+                 enable                 when address = "0111" and bdir = '0' and bc = '1' else
+        "000"  & volumeA                when address = "1000" and bdir = '0' and bc = '1' else
+        "000"  & volumeB                when address = "1001" and bdir = '0' and bc = '1' else
+        "000"  & volumeC                when address = "1010" and bdir = '0' and bc = '1' else
+                 periodE (7 downto 0)   when address = "1011" and bdir = '0' and bc = '1' else
+                 periodE (15 downto 8)  when address = "1100" and bdir = '0' and bc = '1' else
+        "0000" & shape                  when address = "1101" and bdir = '0' and bc = '1' else
         "11111111";
 
   process (reset, clk)

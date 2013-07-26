@@ -26,18 +26,19 @@ architecture behavioral of lec9 is
   signal  sumscof :                 unsigned (10 downto 0);
   signal  scof :                    unsigned (9 downto 0);
   signal  hcount, vcount, wcount :  unsigned (8 downto 0);
+  signal  ayoa, ayob, ayoc :        unsigned (7 downto 0);
   signal  ccount, flash :           unsigned (4 downto 0);
   signal  abus :                    std_logic_vector (15 downto 0);
   signal  addrv :                   std_logic_vector (14 downto 0);
   signal  spiwr :                   std_logic_vector (12 downto 0);
-  signal  at1, at2, da1, da2, spird,
-          spirdd, dbus, vram, scrl: std_logic_vector (7 downto 0);
+  signal  at1, at2, da1, da2, spird, spirdd, dbus,
+          vram, scrl, ayin, ayout:  std_logic_vector (7 downto 0);
   signal  p7FFD :                   std_logic_vector (5 downto 0);
   signal  kbcol :                   std_logic_vector (4 downto 0);
   signal  border :                  std_logic_vector (2 downto 0);
   signal  vid, cbis1, cbis2, wrv_n, clkcpu,
           mreq_n, iorq_n, wr_n, rd_n, int_n,
-          mcon, rst, nmi, reset :   std_logic;
+          mcon, rst, nmi, reset, bc, bdir :   std_logic;
 
   component ram is port(
       clk   : in  std_logic;
@@ -74,6 +75,18 @@ architecture behavioral of lec9 is
       keyb    : out std_logic_vector(4 downto 0);
       rst     : out std_logic;
       nmi     : out std_logic);
+  end component;
+
+  component ay8912 is port(
+    clk   : in  std_logic;
+    reset : in  std_logic;
+    bdir  : in  std_logic;
+    bc    : in  std_logic;
+    di    : in  std_logic_vector(7 downto 0);
+    do    : out std_logic_vector(7 downto 0);
+    outa  : out unsigned(7 downto 0);
+    outb  : out unsigned(7 downto 0);
+    outc  : out unsigned(7 downto 0));
   end component;
 
   function mod3 (value : unsigned(2 downto 0)) return std_logic_vector is
@@ -121,6 +134,17 @@ begin
     keyb    => kbcol,
     rst     => rst,
     nmi     => nmi);
+
+  ay8912_inst: ay8912 port map (
+    clk   => hcount(1),
+    reset => rst,
+    bdir  => bdir,
+    bc    => bc,
+    di    => ayin,
+    do    => ayout,
+    outa  => ayoa,
+    outb  => ayob,
+    outc  => ayoc);
 
   flashsi <= spiwr(12);
   reset   <= rst and flashcs;
@@ -249,6 +273,8 @@ begin
     scs  <= '1';
     soe  <= '1';
     swe  <= '1';
+    bdir <= '0';
+    bc   <= '0';
     if rst='0' then
       p7FFD <= "000000";
     elsif spiadr < X"480B8" then
@@ -267,8 +293,14 @@ begin
             soe  <= '0';
             dbus <= sd;
           end if;
-        elsif iorq_n='0' and abus(0)='0' then
-          dbus <= '1' & ear & '1' & kbcol;
+        elsif iorq_n='0' then 
+          if abus(0)='0' then
+            dbus <= '1' & ear & '1' & kbcol;
+          end if;
+          if (not abus(1) and abus(14) and abus(15))='1' then
+            bc <= '1';
+            dbus <= ayout;
+          end if;
         end if;
       elsif wr_n='0' then
         if (mreq_n or not abus(15) or (abus(14) and p7FFD(2) and p7FFD(0)))='0' then
@@ -287,6 +319,10 @@ begin
             else
               scof <= unsigned(abus(9 downto 8) & dbus);
             end if;
+          elsif (not abus(1) and abus(15))='1' then
+            bdir <= '1';
+            bc   <= abus(14);
+            ayin <= dbus;
           end if;
         end if;
       end if;
