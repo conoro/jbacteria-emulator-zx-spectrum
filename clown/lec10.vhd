@@ -24,7 +24,7 @@ end lec10;
 
 architecture behavioral of lec10 is
 
-  signal  spiadr :                  unsigned (18 downto 0);
+  signal  spiadr :                  unsigned (19 downto 0);
   signal  sumscof :                 unsigned (10 downto 0);
   signal  scof :                    unsigned (9 downto 0);
   signal  hcount, vcount, wcount :  unsigned (8 downto 0);
@@ -37,7 +37,7 @@ architecture behavioral of lec10 is
           ayout, ayoa, ayob, ayoc:  std_logic_vector (7 downto 0);
   signal  p7FFD :                   std_logic_vector (5 downto 0);
   signal  kbcol :                   std_logic_vector (4 downto 0);
-  signal  border :                  std_logic_vector (2 downto 0);
+  signal  border, p1FFD :           std_logic_vector (2 downto 0);
   signal  vid, cbis1, cbis2, wrv_n, clkcpu, mreq_n,
           iorq_n, wr_n, rd_n, int_n, mcon, rst, nmi,
           reset, bc, bdir, spkr :   std_logic;
@@ -224,7 +224,7 @@ begin
 
     if rising_edge( clk7 ) then
       flashcs <= '1';
-      if spiadr < X"480B8" then
+      if spiadr < X"880B8" then
         spiadr <= spiadr + 1;
         spird  <= spird(6 downto 0) & dataps2;
         if spiadr > X"808B" then
@@ -296,8 +296,9 @@ begin
     bdir <= '0';
     bc   <= '0';
     if rst='0' then
+      p1FFD <= "000";
       p7FFD <= "000000";
-    elsif spiadr < X"480B8" then
+    elsif spiadr < X"880B8" then
       if spiadr(2 downto 1)="01" then
         scs <= '0';
         swe <= '0';
@@ -336,8 +337,12 @@ begin
             if abus(0)='0' then
               border <= dbus(2 downto 0);
               spkr   <= dbus(4);
-            elsif (abus(1) or not abus(14) or abus(15) or p7FFD(5))='0' then
-              p7FFD <= dbus(5 downto 0);
+            elsif (abus(1) or abus(15) or p7FFD(5))='0' then
+              if abus(14)='1' then
+                p7FFD <= dbus(5 downto 0);
+              elsif (abus(13) or not abus(12))='0' then
+                p1FFD <= dbus(2 downto 0);
+              end if;
             elsif abus(15 downto 10)="011111" and abus(7 downto 0)=X"3B" then
               if abus(9 downto 8)="11" then
                 scrl <= dbus;
@@ -363,19 +368,19 @@ begin
     clkps2 <= 'Z';
     if spiadr>X"8064" and spiadr<X"8090" then
       clkps2 <= '1';
-    elsif spiadr < X"480B8" then
+    elsif spiadr < X"880B8" then
       clkps2 <= clk7;
     end if;
   end process;
 
   process (abus(15), abus(14), spiadr, p7FFD)
   begin
-    if spiadr < X"480B8" then
-      sa <= "100" & std_logic_vector(spiadr(17 downto 3));
+    if spiadr < X"880B8" then
+      sa <= "10" & std_logic_vector(spiadr(18 downto 3));
     else
       if abus(15)='0' then
         if abus(14)='0' then
-          sa <= "100" & p7FFD(4) & abus(13 downto 0);
+          sa <= "10" & p1FFD(2) & p7FFD(4) & abus(13 downto 0);
         end if;
       else
         if abus(14)='0' then
