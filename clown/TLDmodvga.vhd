@@ -33,7 +33,7 @@ architecture behavioral of TLDmodvga is
   signal  grb       : std_logic_vector (2 downto 0);
   signal  i         : std_logic;
 
-  component lec10 is port(
+  component lec11 is port(
       clk7    : in  std_logic;
       grb     : out std_logic_vector (2 downto 0);
       i       : out std_logic;
@@ -54,7 +54,7 @@ architecture behavioral of TLDmodvga is
 
 begin
 
-  lec10_inst: lec10 port map (
+  lec11_inst: lec11 port map (
     clk7    => clk7,
     grb     => grb,
     i       => i,

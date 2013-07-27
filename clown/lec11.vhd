@@ -3,7 +3,7 @@ use ieee.std_logic_1164.all;
 use ieee.std_logic_unsigned.all;
 use ieee.numeric_std.all;
 
-entity lec10 is port(
+entity lec11 is port(
     clk7    : in  std_logic;
     sync    : inout std_logic;
     grb     : out std_logic_vector (2 downto 0);
@@ -20,9 +20,9 @@ entity lec10 is port(
     scs     : out std_logic;
     soe     : out std_logic;
     swe     : out std_logic);
-end lec10;
+end lec11;
 
-architecture behavioral of lec10 is
+architecture behavioral of lec11 is
 
   signal  spiadr :                  unsigned (19 downto 0);
   signal  sumscof :                 unsigned (10 downto 0);
@@ -269,7 +269,7 @@ begin
     end if;
   end process;
 
-  process (hcount, vcount, ccount, abus, wr_n, mreq_n, p7FFD)
+  process (hcount, vcount, ccount, abus, wr_n, mreq_n, p7FFD, p1FFD)
   begin
     if (vid or (hcount(3) xnor (hcount(2) and hcount(1))))='0' then
       wrv_n <= '1';
@@ -282,11 +282,12 @@ begin
       end if;
     else
       wrv_n <= wr_n or mreq_n or not mcon;
-      addrv <= (abus(15) and p7FFD(2) and p7FFD(1) and p7FFD(0)) & abus(13 downto 0);
+      addrv <= ( (not p1FFD(0) and  abus(15) and p7FFD(1))
+              or (    p1FFD(0) and (abus(15) or (p1FFD(1) and p1FFD(2))))) & abus(13 downto 0);
     end if;
   end process;
 
-  process (rd_n, wr_n, mreq_n, iorq_n, abus, clk7, spiadr, p7FFD, mcon, rst)
+  process (rd_n, wr_n, mreq_n, iorq_n, abus, clk7, spiadr, p7FFD, p1FFD, mcon, rst)
   begin
     dbus <= (others => 'Z');
     sd   <= (others => 'Z');
@@ -324,7 +325,14 @@ begin
           end if;
         end if;
       elsif wr_n='0' then
-        if (mreq_n or not abus(15) or (abus(14) and p7FFD(2) and p7FFD(0)))='0' then
+        if (  (   not p1FFD(0) 
+              and (   not abus(15) 
+                  or (abus(14) and p7FFD(2) and p7FFD(0))))
+          or  (   p1FFD(0)
+              and abus(14)
+              and (   (   not abus(15)
+                      and (p1FFD(1) or p1FFD(2)))
+                  or  (abus(15) and p1FFD(1) and not p1FFD(2)))))='0' then
           scs <= '0';
           swe <= '0';
           sd  <= dbus;
@@ -373,28 +381,45 @@ begin
     end if;
   end process;
 
-  process (abus(15), abus(14), spiadr, p7FFD)
+  process (abus(15), abus(14), spiadr, p7FFD, p1FFD)
   begin
     if spiadr < X"880B8" then
       sa <= "10" & std_logic_vector(spiadr(18 downto 3));
     else
       if abus(15)='0' then
         if abus(14)='0' then
-          sa <= "10" & p1FFD(2) & p7FFD(4) & abus(13 downto 0);
+          if p1FFD(0)='0' then
+            sa <= "10" & p1FFD(2) & p7FFD(4) & abus(13 downto 0);
+          else
+            sa <= '0' & (p1FFD(1) or p1FFD(2)) & "00" & abus(13 downto 0);
+          end if;
+        else
+          sa <= "0001" & abus(13 downto 0);
         end if;
       else
         if abus(14)='0' then
-          sa <= "0010" & abus(13 downto 0);
+          sa <= '0' & (p1FFD(0) and (p1FFD(1) or p1FFD(2))) & "10" & abus(13 downto 0);
         else
-          sa <= '0' & p7FFD(2 downto 0) & abus(13 downto 0);
+          if p1FFD(0)='0' then
+            sa <= '0' & p7FFD(2 downto 0) & abus(13 downto 0);
+          else
+            sa <= "0011" & abus(13 downto 0);
+          end if;
         end if;
       end if;
     end if;
   end process;
 
-  process (abus, p7FFD)
+  process (abus, p7FFD, p1FFD)
   begin
-    mcon <= abus(14) and (not abus(15) or (p7FFD(2) and p7FFD(0)));
+    mcon <=   abus(14)
+          and (   (   not p1FFD(0) 
+                  and (   not abus(15) 
+                      or (p7FFD(2) and p7FFD(0))))
+              or  (   p1FFD(0)
+                  and (   (   not abus(15)
+                          and (p1FFD(1) or p1FFD(2)))
+                      or  (abus(15) and p1FFD(1) and not p1FFD(2)))));
   end process;
 
   process (scof, wcount, ccount)
