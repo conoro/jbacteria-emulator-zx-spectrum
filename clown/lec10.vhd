@@ -3,7 +3,7 @@ use ieee.std_logic_1164.all;
 use ieee.std_logic_unsigned.all;
 use ieee.numeric_std.all;
 
-entity lec9 is port(
+entity lec10 is port(
     clk7    : in  std_logic;
     sync    : inout std_logic;
     grb     : out std_logic_vector (2 downto 0);
@@ -20,9 +20,9 @@ entity lec9 is port(
     scs     : out std_logic;
     soe     : out std_logic;
     swe     : out std_logic);
-end lec9;
+end lec10;
 
-architecture behavioral of lec9 is
+architecture behavioral of lec10 is
 
   signal  spiadr :                  unsigned (18 downto 0);
   signal  sumscof :                 unsigned (10 downto 0);
@@ -33,8 +33,8 @@ architecture behavioral of lec9 is
   signal  addrv :                   std_logic_vector (14 downto 0);
   signal  spiwr :                   std_logic_vector (12 downto 0);
   signal  left, right :             std_logic_vector (8 downto 0);
-  signal  at1, at2, da1, da2, spird, spirdd, dbus,
-          vram, scrl, ayin, ayout, ayoa, ayob, ayoc:  std_logic_vector (7 downto 0);
+  signal  at1, at2, da1, da2, spird, spirdd, dbus, vram, scrl, ayin,
+          ayout, ayoa, ayob, ayoc:  std_logic_vector (7 downto 0);
   signal  p7FFD :                   std_logic_vector (5 downto 0);
   signal  kbcol :                   std_logic_vector (4 downto 0);
   signal  border :                  std_logic_vector (2 downto 0);

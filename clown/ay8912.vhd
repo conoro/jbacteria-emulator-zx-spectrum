@@ -4,10 +4,8 @@ use ieee.numeric_std.all;
  
 entity ay8912 is port(
     clk   : in  std_logic;
---    clc   : in  std_logic;
     reset : in  std_logic;
     bdir  : in  std_logic;
---    cs    : in  std_logic;
     bc    : in  std_logic;
     di    : in  std_logic_vector(7 downto 0);
     do    : out std_logic_vector(7 downto 0);
@@ -29,8 +27,6 @@ architecture behavioral of ay8912 is
   signal volumeC   : std_logic_vector (4 downto 0);
   signal periodE   : std_logic_vector (15 downto 0);
   signal shape     : std_logic_vector (3 downto 0);
-  signal portA     : std_logic_vector (7 downto 0);
-  signal portB     : std_logic_vector (7 downto 0);
   signal address   : std_logic_vector (3 downto 0);
   signal resetReq  : std_logic;
   signal resetAck  : std_logic;
@@ -85,13 +81,11 @@ begin
       volumeC  <= "00000";
       periodE  <= "0000000000000000";
       shape    <= "0000";
-      portA    <= "00000000";
-      portB    <= "00000000";
       resetReq <= '0';
     elsif rising_edge(clk) then
-      if bdir = '1' then -- cs = '0' and 
+      if bdir = '1' then
         if bc = '1' then
-          address <= di (3 downto 0);
+          address <= di(3 downto 0);
         else
           case address is
             when "0000" =>  periodA (7 downto 0)  <= di;
@@ -109,8 +103,6 @@ begin
             when "1100" =>  periodE (15 downto 8) <= di;
             when "1101" =>  shape                 <= di (3 downto 0);
                             resetReq              <= not resetAck;
-            when "1110" =>  portA                 <= di;
-            when "1111" =>  portB                 <= di;
             when others =>  null;
           end case;
         end if;
@@ -118,7 +110,7 @@ begin
     end if;
   end process;
 
-  do <=          periodA (7 downto 0)   when address = "0000" and bdir = '0' and bc = '1' else -- and cs='0' en todos
+  do <=          periodA (7 downto 0)   when address = "0000" and bdir = '0' and bc = '1' else
         "0000" & periodA (11 downto 8)  when address = "0001" and bdir = '0' and bc = '1' else
                  periodB (7 downto 0)   when address = "0010" and bdir = '0' and bc = '1' else
         "0000" & periodB (11 downto 8)  when address = "0011" and bdir = '0' and bc = '1' else
@@ -139,9 +131,7 @@ begin
     if reset = '0' then
       clockdiv <= "0000";
     elsif rising_edge(clk) then
---      if clc = '1' then
-        clockdiv <= clockdiv - 1;
---      end if;
+      clockdiv <= clockdiv - 1;
     end if;
   end process;
 
@@ -158,7 +148,7 @@ begin
       freqB      <= '0';
       freqC      <= '0';
     elsif rising_edge(clk) then
-      if clockdiv(2 downto 0) = "000" then -- and clc = '1' then
+      if clockdiv(2 downto 0) = "000" then
         if (counterA /= X"000") then
           counterA := counterA - 1;
         elsif (periodA /= X"000") then
@@ -195,7 +185,7 @@ begin
       counterN   := "00000";
       noiseShift := "00000000000000001";
     elsif rising_edge(clk) then
-      if clockdiv(2 downto 0) = "000" then -- and clc = '1' then
+      if clockdiv(2 downto 0) = "000" then
         if (counterN /= "00000") then
           counterN := counterN - 1;
         elsif (periodN /= "00000") then
@@ -214,12 +204,12 @@ begin
     variable envWave    : unsigned(4 downto 0);
   begin
     if reset = '0' then
-      envCounter  := "0000000000000000";
-      envWave     := "11111";
+      envCounter := "0000000000000000";
+      envWave    := "11111";
       volumeE    <= "0000";
       resetAck   <= '0';
     elsif rising_edge(clk) then
-      if clockdiv = "0000" then -- and clc = '1' then
+      if clockdiv = "0000" then
         if (envCounter /= X"0000" and resetReq = resetAck) then 
           envCounter := envCounter - 1;
         elsif (periodE /= X"0000") then
@@ -230,13 +220,13 @@ begin
         elsif (envCounter = X"0000" and (envWave(4) = '1' or (hold = '0' and continue = '1'))) then
           envWave := envWave - 1;
         end if;
-        for I in 3 downto 0 loop
+        for i in 3 downto 0 loop
           if (envWave(4) = '0' and continue = '0') then
-             volumeE(I) <= '0';
+            volumeE(i) <= '0';
           elsif (envWave(4) = '1' or (alternate xor hold) = '0') then
-             volumeE(I) <= envWave(I) xor attack;
+            volumeE(i) <= envWave(i) xor attack;
           else
-            volumeE(I) <= envWave(I) xor attack xor '1';
+            volumeE(i) <= envWave(i) xnor attack;
           end if;
         end loop;
         resetAck <= resetReq;
@@ -251,30 +241,28 @@ begin
       outb <= "00000000";
       outc <= "00000000";
     elsif rising_edge(clk) then
---      if clc = '1' then
-        if (((enable(0) or freqA) and (enable(3) or freqN)) = '0') then
-          outa <= "00000000";
-        elsif (volumeA(4) = '0') then
-          outa <= VolumeTable(volumeA(3 downto 0));
-        else
-          outa <= VolumeTable(volumeE);
-        end if;
-        if (((enable(1) or freqB) and (enable(4) or freqN)) = '0') then
-          outb <= "00000000";
-        elsif (volumeB(4) = '0') then
-          outb <= VolumeTable(volumeB(3 downto 0));
-        else
-          outb <= VolumeTable(volumeE);
-        end if;
-        if (((enable(2) or freqC) and (enable(5) or freqN)) = '0') then
-          outc <= "00000000";
-        elsif (volumeC(4) = '0') then
-          outc <= VolumeTable(volumeC(3 downto 0));
-        else
-          outc <= VolumeTable(volumeE);
-        end if;
+      if (((enable(0) or freqA) and (enable(3) or freqN)) = '0') then
+        outa <= "00000000";
+      elsif (volumeA(4) = '0') then
+        outa <= VolumeTable(volumeA(3 downto 0));
+      else
+        outa <= VolumeTable(volumeE);
       end if;
---    end if;
+      if (((enable(1) or freqB) and (enable(4) or freqN)) = '0') then
+        outb <= "00000000";
+      elsif (volumeB(4) = '0') then
+        outb <= VolumeTable(volumeB(3 downto 0));
+      else
+        outb <= VolumeTable(volumeE);
+      end if;
+      if (((enable(2) or freqC) and (enable(5) or freqN)) = '0') then
+        outc <= "00000000";
+      elsif (volumeC(4) = '0') then
+        outc <= VolumeTable(volumeC(3 downto 0));
+      else
+        outc <= VolumeTable(volumeE);
+      end if;
+    end if;
   end process;
 
 end architecture;
