@@ -281,7 +281,7 @@ begin
                 & std_logic_vector(sumscof(7 downto 0));
       end if;
     else
-      wrv_n <= wr_n or mreq_n or not abus(14) or (abus(15) and not (p7FFD(2) and p7FFD(0)));
+      wrv_n <= wr_n or mreq_n or not mcon;
       addrv <= (abus(15) and p7FFD(2) and p7FFD(1) and p7FFD(0)) & abus(13 downto 0);
     end if;
   end process;
@@ -394,7 +394,7 @@ begin
 
   process (abus, p7FFD)
   begin
-    mcon <= abus(14) and (not abus(15) or (abus(15) and p7FFD(2) and p7FFD(0)));
+    mcon <= abus(14) and (not abus(15) or (p7FFD(2) and p7FFD(0)));
   end process;
 
   process (scof, wcount, ccount)
