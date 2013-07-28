@@ -269,7 +269,7 @@ begin
     end if;
   end process;
 
-  process (hcount, vcount, ccount, abus, wr_n, mreq_n, p7FFD, p1FFD)
+  process (hcount, vcount, ccount, abus, wr_n, mreq_n, mcon, p7FFD, p1FFD)
   begin
     if (vid or (hcount(3) xnor (hcount(2) and hcount(1))))='0' then
       wrv_n <= '1';
@@ -325,7 +325,8 @@ begin
           end if;
         end if;
       elsif wr_n='0' then
-        if (  (   not p1FFD(0) 
+        if (  mreq_n
+          or  (   not p1FFD(0) 
               and (   not abus(15) 
                   or (abus(14) and p7FFD(2) and p7FFD(0))))
           or  (   p1FFD(0)
@@ -410,7 +411,7 @@ begin
     end if;
   end process;
 
-  process (abus, p7FFD, p1FFD)
+  process (abus, p7FFD)
   begin
     mcon <=   abus(14)
           and (   (   not p1FFD(0) 
