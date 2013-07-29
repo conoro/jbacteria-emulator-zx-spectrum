@@ -20,7 +20,11 @@ entity TLDmodvga is port(
     sd      : inout std_logic_vector (7 downto 0);
     scs     : out std_logic;
     soe     : out std_logic;
-    swe     : out std_logic);
+    swe     : out std_logic;
+    spics   : out std_logic;
+    spimosi : out std_logic;
+    spimiso : in  std_logic;
+    spiclk  : out std_logic);
 end TLDmodvga;
 
 architecture behavioral of TLDmodvga is
@@ -33,7 +37,7 @@ architecture behavioral of TLDmodvga is
   signal  grb       : std_logic_vector (2 downto 0);
   signal  i         : std_logic;
 
-  component lec11 is port(
+  component lec12 is port(
       clk7    : in  std_logic;
       grb     : out std_logic_vector (2 downto 0);
       i       : out std_logic;
@@ -49,12 +53,16 @@ architecture behavioral of TLDmodvga is
       sd      : inout std_logic_vector (7 downto 0);
       scs     : out std_logic;
       soe     : out std_logic;
-      swe     : out std_logic);
+      swe     : out std_logic;
+      spics   : out std_logic;
+      spimosi : out std_logic;
+      spimiso : in  std_logic;
+      spiclk  : out std_logic);
   end component;
 
 begin
 
-  lec11_inst: lec11 port map (
+  lec12_inst: lec12 port map (
     clk7    => clk7,
     grb     => grb,
     i       => i,
@@ -70,7 +78,11 @@ begin
     sd      => sd,
     scs     => scs,
     soe     => soe,
-    swe     => swe);
+    swe     => swe,
+    spics   => spics,
+    spimosi => spimosi,
+    spimiso => spimiso,
+    spiclk  => spiclk);
 
   rout <= grb(1) & (i and grb(1)) & grb(1);
   gout <= grb(2) & (i and grb(2)) & grb(2);

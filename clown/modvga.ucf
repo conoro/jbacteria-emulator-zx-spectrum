@@ -45,3 +45,7 @@ net "sd<0>"   loc = "p28" | iostandard= lvcmos33;
 net "scs"     loc = "p50" | iostandard= lvcmos33;
 net "soe"     loc = "p20" | iostandard= lvcmos33;
 net "swe"     loc = "p64" | iostandard= lvcmos33;
+net "spics"   loc = "p88" | iostandard= lvcmos33;
+net "spiclk"  loc = "p84" | iostandard= lvcmos33;
+net "spimosi" loc = "p85" | iostandard= lvcmos33;
+net "spimiso" loc = "p86" | iostandard= lvcmos33;
