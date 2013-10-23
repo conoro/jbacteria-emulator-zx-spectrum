@@ -5,16 +5,11 @@ int main(int argc, char* argv[]){
   FILE *fi, *fo;
   int size, scrw, scrh, mapw, maph, lock;
   if( argc==1 )
-    printf("\nMap2Tmx v0.99, MAP file (Mappy) to TMX (Tiled) by Antonio Villena, 23 Oct 2013\n\n"),
-    printf("  Map2Tmx <map_w> <map_h> <screen_w> <screen_h> <lock> <input_f> <output_f>\n\n"),
-    printf("  <map_w>     Map width\n"),
-    printf("  <map_h>     Map height\n"),
-    printf("  <screen_w>  Screen width\n"),
-    printf("  <screen_h>  Screen height\n"),
-    printf("  <lock>      Tile number of the lock, normally 15\n"),
-    printf("  <input_f>   Origin file\n"),
-    printf("  <output_f>  Generated output file\n\n"),
-    printf("Example: Map2Tmx 5 4 15 10 trabajobasura.map mapa.tmx\n"),
+    printf("\nTmxCnv v0.99, TMX to H generator by Antonio Villena, 23 Oct 2013\n\n"),
+    printf("  TmxCnv <input_f> <output_f>\n\n"),
+    printf("  <input_file>   Origin .TMX file\n"),
+    printf("  <output_file>  Generated .H output file\n\n"),
+    printf("Example: TmxCnv map\mapa.tmx dev\mapa.h\n"),
     exit(0);
   if( argc!=8 )
     printf("\nInvalid number of parameters\n"),
