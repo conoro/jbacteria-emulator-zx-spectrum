@@ -5,7 +5,7 @@ int main(int argc, char* argv[]){
   char *fou;
   char *token;
   FILE *fi, *fo;
-  int size= 0, scrw, scrh, mapw, maph, lock, numlock= 0, tmpi, elem, sum, tog, i, j, k, l;
+  int size= 0, scrw, scrh, mapw, maph, lock, numlock= 0, tmpi, elem, sum, tog= 0, i, j, k, l;
   if( argc==1 )
     printf("\nTmxCnv v0.99, TMX to H generator by Antonio Villena, 24 Oct 2013\n\n"),
     printf("  TmxCnv <input_file> <output_file>\n\n"),
@@ -60,41 +60,61 @@ int main(int argc, char* argv[]){
     if( mem[i]>tmpi )
       tmpi= mem[i];
   fprintf(fo, "// %s\n", argv[2]);
-  fprintf(fo, "// Generado por MapCnv de la churrera\n");
-  fprintf(fo, "// Copyleft 2010 The Mojon Twins/Antonio Villena\n\n");
+  fprintf(fo, "// Generado por TmxCnv de la churrera\n");
+  fprintf(fo, "// Copyleft 2013 The Mojon Twins/Antonio Villena\n\n");
   fprintf(fo, "unsigned char mapa [] = {");
-  for ( i= 0; i<maph; i++ ){
-    fprintf(fo, "\n");
-    for ( j= 0; j<mapw; j++ ){
-      fprintf(fo, "    ");
-      for ( k= 0, sum= 0, tog= 0; k<scrh; k++ )
-        for ( l= 0; l<scrw; l++ ){
-          elem= mem[i*mapw*scrh*scrw+j*scrw+k*mapw*scrw+l];
-          if( lock==elem )
-            numlock++;
-          if( tog^= 1 )
-            sum= elem;
-          else
-            fprintf(fo, "%d, ", sum<<4 | elem);
-        }
+  if( tmpi>15 )
+    for ( i= 0; i<maph; i++ ){
       fprintf(fo, "\n");
+      for ( j= 0; j<mapw; j++ ){
+        fprintf(fo, "    ");
+        for ( k= 0; k<scrh; k++ )
+          for ( l= 0; l<scrw; l++ ){
+            elem= mem[i*mapw*scrh*scrw+j*scrw+k*mapw*scrw+l];
+            if( lock==elem )
+              numlock++;
+            fprintf(fo, "%d, ", elem);
+          }
+        fprintf(fo, "\n");
+      }
     }
-  }
+  else
+    for ( i= 0; i<maph; i++ ){
+      fprintf(fo, "\n");
+      for ( j= 0; j<mapw; j++ ){
+        fprintf(fo, "    ");
+        for ( k= 0; k<scrh; k++ )
+          for ( l= 0; l<scrw; l++ ){
+            elem= mem[i*mapw*scrh*scrw+j*scrw+k*mapw*scrw+l];
+            if( lock==elem )
+              numlock++;
+            if( tog^= 1 )
+              sum= elem;
+            else
+              fprintf(fo, "%d, ", sum<<4 | elem);
+          }
+        fprintf(fo, "\n");
+      }
+    }
   fprintf(fo, "};\n\n#define MAX_CERROJOS %d\n\n", numlock);
   fprintf(fo, "typedef struct {\n");
   fprintf(fo, "    unsigned char np, x, y, st;\n");
   fprintf(fo, "} CERROJOS;\n\n");
-  fprintf(fo, "CERROJOS cerrojos [MAX_CERROJOS] = {");
-  for ( i= 0; i<maph; i++ )
-    for ( j= 0; j<mapw; j++ )
-      for ( k= 0; k<scrh; k++ )
-        for ( l= 0; l<scrw; l++ )
-          if( lock==mem[i*mapw*scrh*scrw+j*scrw+k*mapw*scrw+l] ){
-            fprintf(fo, "\n    {%d, %d, %d, 0}", i*mapw+j, l, k);
-            if( --numlock )
-              fprintf(fo, ",");
-          }
-  fprintf(fo, "\n};\n\n");
+  if( numlock ){
+    fprintf(fo, "CERROJOS cerrojos [MAX_CERROJOS] = {");
+    for ( i= 0; i<maph; i++ )
+      for ( j= 0; j<mapw; j++ )
+        for ( k= 0; k<scrh; k++ )
+          for ( l= 0; l<scrw; l++ )
+            if( lock==mem[i*mapw*scrh*scrw+j*scrw+k*mapw*scrw+l] ){
+              fprintf(fo, "\n    {%d, %d, %d, 0}", i*mapw+j, l, k);
+              if( --numlock )
+                fprintf(fo, ",");
+            }
+    fprintf(fo, "\n};\n\n");
+  }
+  else
+    fprintf(fo, "CERROJOS *cerrojos;\n\n");
   fclose(fo);
   printf("\nFile generated successfully\n");
 }
