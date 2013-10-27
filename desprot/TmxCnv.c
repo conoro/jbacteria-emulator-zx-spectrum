@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 int main(int argc, char* argv[]){
   unsigned char *mem= (unsigned char *) malloc (0x10000);
   char tmpstr[1000];
