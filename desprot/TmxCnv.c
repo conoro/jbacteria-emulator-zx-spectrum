@@ -185,7 +185,12 @@ int main(int argc, char* argv[]){
         }
         else if( name )
           baddies++,
-          printf("hola\n");
+          enems[mapy*mapw+mapx].ene[k].xi= x,
+          enems[mapy*mapw+mapx].ene[k].yi= y+1,
+          enems[mapy*mapw+mapx].ene[k].xe= x,
+          enems[mapy*mapw+mapx].ene[k].ye= y+1,
+          enems[mapy*mapw+mapx].ene[k].speed= type ? type : 2,
+          printf("hola%d \n", name);
         else if( type ){
           for ( k= 0 ; k<3 && enems[mapy*mapw+mapx].ene[k].type ; k++ );
           if( k==3 )
@@ -209,13 +214,13 @@ int main(int argc, char* argv[]){
           enems[mapy*mapw+mapx].type= gid-17;
       }
     }
-    fprintf(fo, "#define BADDIES_COUNT %d\n\ntypedef struct {\n  int x, y;\n  unsigned char "
-                "x1, y1, x2, y2;\n  char mx, my;\n  char t;\n#ifdef PLAYER_CAN_FIRE\n  unsig"
-                "ned char life;\n#endif\n} MALOTE;\n\nMALOTE malotes [] = {", baddies);
+    fprintf(fo, "#define BADDIES_COUNT %d\r\n\r\ntypedef struct {\r\n\tint x, y;\r\n\tunsigned char "
+                "x1, y1, x2, y2;\r\n\tchar mx, my;\r\n\tchar t;\r\n#ifdef PLAYER_CAN_FIRE\r\n\tunsig"
+                "ned char life;\r\n#endif\r\n} MALOTE;\r\n\r\nMALOTE malotes [] = {", baddies);
     for ( i= 0; i<maph; i++ )
       for ( j= 0; j<mapw; j++ )
         for ( k= 0; k<3; k++ )
-          fprintf(fo, "\n  {%d, %d, %d, %d, %d, %d, %d, %d, %d}%s",
+          fprintf(fo, "\r\n\t{%d, %d, %d, %d, %d, %d, %d, %d, %d}%s",
                   enems[i*mapw+j].ene[k].xi<<4, enems[i*mapw+j].ene[k].yi-1<<4,
                   enems[i*mapw+j].ene[k].xi<<4, enems[i*mapw+j].ene[k].yi-1<<4,
                   enems[i*mapw+j].ene[k].xe<<4, enems[i*mapw+j].ene[k].ye-1<<4,
@@ -224,15 +229,15 @@ int main(int argc, char* argv[]){
                   enems[i*mapw+j].ene[k].type,
                   i==maph-1 && j==mapw-1 && k==2 ? "" : ",");
 
-    fprintf(fo, "\n};\n\ntypedef struct {\n  unsigned char xy, tipo, act;\n} HOTSPOT;\n\n"
+    fprintf(fo, "\r\n};\r\n\r\ntypedef struct {\r\n\tunsigned char xy, tipo, act;\r\n} HOTSPOT;\r\n\r\n"
                 "HOTSPOT hotspots [] = {");
     for ( i= 0; i<maph; i++ )
       for ( j= 0; j<mapw; j++ )
-        fprintf(fo, "\n  {%d, %d, 0}%s", 
+        fprintf(fo, "\r\n\t{%d, %d, 0}%s", 
                 enems[i*mapw+j].xy,
                 enems[i*mapw+j].type,
                 i==maph-1 && j==mapw-1 ? "" : ",");
-    fprintf(fo, "\n};\n\n");
+    fprintf(fo, "\r\n};\r\n\r\n");
     fclose(fo);
   }
   fclose(fi);
