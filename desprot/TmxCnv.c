@@ -9,6 +9,9 @@ typedef struct{
   unsigned char xy, type;
   struct enem ene[3];
 } screlm;
+int sgn(int val) {
+  return (0 < val) - (val < 0);
+}
 
 int main(int argc, char* argv[]){
   unsigned char *mem= (unsigned char *) malloc (0x10000);
@@ -171,10 +174,10 @@ int main(int argc, char* argv[]){
             enems[mapy*mapw+mapx].ene[k].type= name;
           if( gid-313&2 )
             enems[mapy*mapw+mapx].ene[k].xe= x,
-            enems[mapy*mapw+mapx].ene[k].ye= y;
+            enems[mapy*mapw+mapx].ene[k].ye= y+1;
           else{
             enems[mapy*mapw+mapx].ene[k].xi= x;
-            enems[mapy*mapw+mapx].ene[k].yi= y;
+            enems[mapy*mapw+mapx].ene[k].yi= y+1;
             enems[mapy*mapw+mapx].ene[k].speed= type ? type : 2;
             if( ((gid-313)>>2)-4 )
               baddies++;
@@ -183,13 +186,53 @@ int main(int argc, char* argv[]){
         else if( name )
           baddies++,
           printf("hola\n");
+        else if( type ){
+          for ( k= 0 ; k<3 && enems[mapy*mapw+mapx].ene[k].type ; k++ );
+          if( k==3 )
+            printf("\nError: More than 3 enemies in screen (%d, %d).\n", mapx, mapy),
+            exit(-1);
+          if( enems[mapy*mapw+mapx].ene[k].yi+enems[mapy*mapw+mapx].ene[k].ye )
+            enems[mapy*mapw+mapx].ene[k].type= (gid-313)>>2;
+          if( gid-313&2 )
+            enems[mapy*mapw+mapx].ene[k].xe= x,
+            enems[mapy*mapw+mapx].ene[k].ye= y+1;
+          else{
+            enems[mapy*mapw+mapx].ene[k].xi= x;
+            enems[mapy*mapw+mapx].ene[k].yi= y+1;
+            enems[mapy*mapw+mapx].ene[k].speed= type ? type : 2;
+            if( ((gid-313)>>2)-4 )
+              baddies++;
+          }
+        }
         else
-          enems[mapy*mapw+mapx].xy= x | y<<4,
-          enems[mapy*mapw+mapx].type= type-17;
-//          printf("%d %d %d %d %d - %d %d %d %d\n", name, type, gid, x, y, enems[mapy*mapw+mapx].ene[k].xi, enems[mapy*mapw+mapx].ene[k].yi, enems[mapy*mapw+mapx].ene[k].xe, enems[mapy*mapw+mapx].ene[k].ye);
+          enems[mapy*mapw+mapx].xy= y | x<<4,
+          enems[mapy*mapw+mapx].type= gid-17;
       }
     }
-    fprintf(fo, "#define BADDIES_COUNT %d\n\n", baddies);
+    fprintf(fo, "#define BADDIES_COUNT %d\n\ntypedef struct {\n  int x, y;\n  unsigned char "
+                "x1, y1, x2, y2;\n  char mx, my;\n  char t;\n#ifdef PLAYER_CAN_FIRE\n  unsig"
+                "ned char life;\n#endif\n} MALOTE;\n\nMALOTE malotes [] = {", baddies);
+    for ( i= 0; i<maph; i++ )
+      for ( j= 0; j<mapw; j++ )
+        for ( k= 0; k<3; k++ )
+          fprintf(fo, "\n  {%d, %d, %d, %d, %d, %d, %d, %d, %d}%s",
+                  enems[i*mapw+j].ene[k].xi<<4, enems[i*mapw+j].ene[k].yi-1<<4,
+                  enems[i*mapw+j].ene[k].xi<<4, enems[i*mapw+j].ene[k].yi-1<<4,
+                  enems[i*mapw+j].ene[k].xe<<4, enems[i*mapw+j].ene[k].ye-1<<4,
+                  sgn(enems[i*mapw+j].ene[k].xe-enems[i*mapw+j].ene[k].xi)*enems[i*mapw+j].ene[k].speed,
+                  sgn(enems[i*mapw+j].ene[k].ye-enems[i*mapw+j].ene[k].yi)*enems[i*mapw+j].ene[k].speed,
+                  enems[i*mapw+j].ene[k].type,
+                  i==maph-1 && j==mapw-1 && k==2 ? "" : ",");
+
+    fprintf(fo, "\n};\n\ntypedef struct {\n  unsigned char xy, tipo, act;\n} HOTSPOT;\n\n"
+                "HOTSPOT hotspots [] = {");
+    for ( i= 0; i<maph; i++ )
+      for ( j= 0; j<mapw; j++ )
+        fprintf(fo, "\n  {%d, %d, 0}%s", 
+                enems[i*mapw+j].xy,
+                enems[i*mapw+j].type,
+                i==maph-1 && j==mapw-1 ? "" : ",");
+    fprintf(fo, "\n};\n\n");
     fclose(fo);
   }
   fclose(fi);
