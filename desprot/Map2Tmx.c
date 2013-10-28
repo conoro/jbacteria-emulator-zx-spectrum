@@ -91,7 +91,7 @@ int main(int argc, char* argv[]){
             fprintf(fo, "<object name=\"%d\" type=\"%d\" gid=\"325\" x=\"%d\" y=\"%d\"/>\n",
                     type, speed, (xi+j*(scrw+1))<<4, (1+yi+i*(scrh+1))<<4);
           else if( type )
-            fprintf(fo, "<object name=\"%d\" type=\"%d\" gid=\"%d\" x=\"%d\" y=\"%d\"/>"
+            fprintf(fo, "<object name=\"%d\" type=\"%d\" gid=\"%d\" x=\"%d\" y=\"%d\"/>\n"
                         "<object name=\"%d\" type=\"%d\" gid=\"%d\" x=\"%d\" y=\"%d\"/>\n",
                     l++, speed, 313+4*type, (xi+j*(scrw+1))<<4, (1+yi+i*(scrh+1))<<4,
                     l,   speed, 315+4*type, (xe+j*(scrw+1))<<4, (1+ye+i*(scrh+1))<<4);
@@ -103,7 +103,7 @@ int main(int argc, char* argv[]){
         yi= xi & 15;
         xi>>= 4;
         if( type )
-          fprintf(fo, "<object name=\"\" type=\"\" gid=\"%d\" x=\"%d\" y=\"%d\"/>\n",
+          fprintf(fo, "<object gid=\"%d\" x=\"%d\" y=\"%d\"/>\n",
                   17+type, (xi+j*(scrw+1))<<4, (1+yi+i*(scrh+1))<<4);
       }
     

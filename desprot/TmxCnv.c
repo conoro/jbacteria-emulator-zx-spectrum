@@ -1,13 +1,22 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+struct enem{
+  unsigned char xi, yi, xe, ye, speed;
+  short type;
+};
+typedef struct{
+  unsigned char xy, type;
+  struct enem ene[3];
+} screlm;
+
 int main(int argc, char* argv[]){
   unsigned char *mem= (unsigned char *) malloc (0x10000);
   char tmpstr[1000];
-  char *fou;
-  char *token;
+  char *fou, *token;
   FILE *fi, *fo;
-  int size= 0, scrw, scrh, mapw, maph, lock, numlock= 0, tmpi, elem, sum, tog= 0, i, j, k, l;
+  int size= 0, scrw, scrh, mapw, maph, lock, numlock= 0, tmpi, elem, sum,
+      tog= 0, i, j, k, l, type, gid, x, y, name, mapx, mapy, baddies= 0;
   if( argc==1 )
     printf("\nTmxCnv v0.99, TMX to H generator by Antonio Villena, 24 Oct 2013\n\n"),
     printf("  TmxCnv <input_file> <output_file>\n\n"),
@@ -118,16 +127,69 @@ int main(int argc, char* argv[]){
     fprintf(fo, "CERROJOS *cerrojos;\n\n");
   fclose(fo);
   if( argc==4 ){
+    screlm *enems= (screlm *) calloc (maph*mapw, sizeof(screlm));
     fo= fopen(argv[3], "wb+");
     if( !fo )
       printf("\nCannot create output file: %s\n", argv[3]),
       exit(-1);
     while ( !feof(fi) && !strstr(tmpstr, "/map") ){
+      name= 0;
+      type= 0;
       fgets(tmpstr, 1000, fi);
       if( fou= (char *) strstr(tmpstr, "object ") ){
-        printf("%s", fou);
+        token= (char *) strtok(fou+7, " ");
+        while ( token != NULL ){
+          if( strstr(token, "name") )
+            name= atoi(token+6);
+          else if ( strstr(token, "type") )
+            type= atoi(token+6);
+          else if ( strstr(token, "gid") )
+            gid= atoi(token+5);
+          else if ( strstr(token, "x") )
+            x= atoi(token+3)>>4;
+          else if ( strstr(token, "y") )
+            y= (atoi(token+3)>>4)-1;
+          token= (char *) strtok(NULL, " ");
+        }
+        mapy= mapx= 0;
+        while ( x > scrw )
+          mapx++,
+          x-= scrw+1;
+        while ( y > scrh )
+          mapy++,
+          y-= scrh+1;
+        if( name>500 ){
+          for ( k= 0
+              ; k<3 && enems[mapy*mapw+mapx].ene[k].type && enems[mapy*mapw+mapx].ene[k].type!=name
+              ; k++ );
+          if( k==3 )
+            printf("\nError: More than 3 enemies in screen (%d, %d).\n", mapx, mapy),
+            exit(-1);
+          if( enems[mapy*mapw+mapx].ene[k].type )
+            enems[mapy*mapw+mapx].ene[k].type= (gid-313)>>2;
+          else
+            enems[mapy*mapw+mapx].ene[k].type= name;
+          if( gid-313&2 )
+            enems[mapy*mapw+mapx].ene[k].xe= x,
+            enems[mapy*mapw+mapx].ene[k].ye= y;
+          else{
+            enems[mapy*mapw+mapx].ene[k].xi= x;
+            enems[mapy*mapw+mapx].ene[k].yi= y;
+            enems[mapy*mapw+mapx].ene[k].speed= type ? type : 2;
+            if( ((gid-313)>>2)-4 )
+              baddies++;
+          }
+        }
+        else if( name )
+          baddies++,
+          printf("hola\n");
+        else
+          enems[mapy*mapw+mapx].xy= x | y<<4,
+          enems[mapy*mapw+mapx].type= type-17;
+//          printf("%d %d %d %d %d - %d %d %d %d\n", name, type, gid, x, y, enems[mapy*mapw+mapx].ene[k].xi, enems[mapy*mapw+mapx].ene[k].yi, enems[mapy*mapw+mapx].ene[k].xe, enems[mapy*mapw+mapx].ene[k].ye);
       }
     }
+    fprintf(fo, "#define BADDIES_COUNT %d\n\n", baddies);
     fclose(fo);
   }
   fclose(fi);
