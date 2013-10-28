@@ -15,7 +15,7 @@ int main(int argc, char* argv[]){
     printf("  <output_file>  Generated .H output file\n\n"),
     printf("Example: TmxCnv map\\mapa.tmx dev\\mapa.h\n"),
     exit(0);
-  if( argc!=3 )
+  if( argc<3 || argc>4 )
     printf("\nInvalid number of parameters\n"),
     exit(-1);
   fi= fopen(argv[1], "r");
@@ -26,7 +26,7 @@ int main(int argc, char* argv[]){
   if( !fo )
     printf("\nCannot create output file: %s\n", argv[2]),
     exit(-1);
-  while( !feof(fi) && !strstr(tmpstr, "data e") ){
+  while ( !feof(fi) && !strstr(tmpstr, "data e") ){
     fgets(tmpstr, 1000, fi);
     if( fou= (char *) strstr(tmpstr, " width") )
       scrw= atoi(fou+8);
@@ -37,7 +37,7 @@ int main(int argc, char* argv[]){
   }
   fgets(tmpstr, 1000, fi);
   token= (char *) strtok(tmpstr, ",");
-  while( token != NULL ){
+  while ( token != NULL ){
     if( tmpi= atoi(token) )
       mem[size++]= tmpi-1;
     token= (char *) strtok(NULL, ",");
@@ -45,16 +45,15 @@ int main(int argc, char* argv[]){
   mapw= scrw-size+1;
   scrw= size/mapw;
   fgets(tmpstr, 1000, fi);
-  while( !feof(fi) && !strstr(tmpstr, "map") ){
+  while ( !strstr(tmpstr, "/layer") ){
     token= (char *) strtok(tmpstr, ",");
-    while( token != NULL ){
+    while ( token != NULL ){
       if( tmpi= atoi(token) )
         mem[size++]= tmpi-1;
       token= (char *) strtok(NULL, ",");
     }
     fgets(tmpstr, 1000, fi);
   }
-  fclose(fi);
   maph= scrh-size/mapw/scrw+1;
   scrh= (scrh-maph+1)/maph;
   tmpi= 0;
@@ -118,5 +117,19 @@ int main(int argc, char* argv[]){
   else
     fprintf(fo, "CERROJOS *cerrojos;\n\n");
   fclose(fo);
+  if( argc==4 ){
+    fo= fopen(argv[3], "wb+");
+    if( !fo )
+      printf("\nCannot create output file: %s\n", argv[3]),
+      exit(-1);
+    while ( !feof(fi) && !strstr(tmpstr, "/map") ){
+      fgets(tmpstr, 1000, fi);
+      if( fou= (char *) strstr(tmpstr, "object ") ){
+        printf("%s", fou);
+      }
+    }
+    fclose(fo);
+  }
+  fclose(fi);
   printf("\nFile generated successfully\n");
 }
