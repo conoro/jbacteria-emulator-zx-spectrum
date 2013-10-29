@@ -1,31 +1,34 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-struct enem{
+typedef struct{
   unsigned char xi, yi, xe, ye, speed;
   short type;
-};
+} enem;
 typedef struct{
   unsigned char xy, type;
-  struct enem ene[3];
-} screlm;
+} hotspot;
 int sgn(int val) {
   return (0 < val) - (val < 0);
 }
 
 int main(int argc, char* argv[]){
   unsigned char *mem= (unsigned char *) malloc (0x10000);
+  enem enems[200][3];
+  hotspot hotspots[200];
+  enem *enac;
   char tmpstr[1000];
   char *fou, *token;
   FILE *fi, *fo;
   int size= 0, scrw, scrh, mapw, maph, lock, numlock= 0, tmpi, elem, sum,
       tog= 0, i, j, k, l, type, gid, x, y, name, mapx, mapy, baddies= 0;
   if( argc==1 )
-    printf("\nTmxCnv v1.01, TMX to H generator by Antonio Villena, 28 Oct 2013\n\n"),
-    printf("  TmxCnv <input_file> <output_file>\n\n"),
-    printf("  <input_file>   Origin .TMX file\n"),
-    printf("  <output_file>  Generated .H output file\n\n"),
-    printf("Example: TmxCnv map\\mapa.tmx dev\\mapa.h\n"),
+    printf("\nTmxCnv v1.02, TMX to H generator by Antonio Villena, 29 Oct 2013\n\n"),
+    printf("  TmxCnv <input_tmx> <output_map_h> [<output_enems_h>]\n\n"),
+    printf("  <input_tmx>       Origin .TMX file\n"),
+    printf("  <output_map_h>    Generated .H map output file\n"),
+    printf("  <output_enems_h>  Generated .H enemies output file\n\n"),
+    printf("Example: TmxCnv map\\mapa.tmx dev\\mapa.h dev\\enems.h\n"),
     exit(0);
   if( argc<3 || argc>4 )
     printf("\nInvalid number of parameters\n"),
@@ -130,7 +133,8 @@ int main(int argc, char* argv[]){
     fprintf(fo, "CERROJOS *cerrojos;\n\n");
   fclose(fo);
   if( argc==4 ){
-    screlm *enems= (screlm *) calloc (maph*mapw, sizeof(screlm));
+    memset(hotspots, 0, sizeof(hotspot)*200);
+    memset(enems, 0, sizeof(enem)*3*200);
     fo= fopen(argv[3], "wb+");
     if( !fo )
       printf("\nCannot create output file: %s\n", argv[3]),
@@ -163,60 +167,59 @@ int main(int argc, char* argv[]){
           y-= scrh+1;
         if( name>500 ){
           for ( k= 0
-              ; k<3 && enems[mapy*mapw+mapx].ene[k].type && enems[mapy*mapw+mapx].ene[k].type!=name
+              ; k<3 && enems[mapy*mapw+mapx][k].type && enems[mapy*mapw+mapx][k].type!=name
               ; k++ );
           if( k==3 )
             printf("\nError: More than 3 enemies in screen (%d, %d).\n", mapx, mapy),
             exit(-1);
-          if( enems[mapy*mapw+mapx].ene[k].type )
-            enems[mapy*mapw+mapx].ene[k].type= (gid-313)>>2;
+          enac= &enems[mapy*mapw+mapx][k];
+          if( enac->type )
+            enac->type= (gid-313)>>2;
           else
-            enems[mapy*mapw+mapx].ene[k].type= name;
+            enac->type= name;
           if( gid-313&2 )
-            enems[mapy*mapw+mapx].ene[k].xe= x,
-            enems[mapy*mapw+mapx].ene[k].ye= y+1;
+            enac->xe= x,
+            enac->ye= y+1;
           else{
-            enems[mapy*mapw+mapx].ene[k].xi= x;
-            enems[mapy*mapw+mapx].ene[k].yi= y+1;
-            enems[mapy*mapw+mapx].ene[k].speed= type ? type : 2;
+            enac->xi= x;
+            enac->yi= y+1;
+            enac->speed= type ? type : 2;
             if( ((gid-313)>>2)-4 )
               baddies++;
           }
         }
-        else if( name ){
-          for ( k= 0 ; k<3 && enems[mapy*mapw+mapx].ene[k].type ; k++ );
+        else{
+          for ( k= 0 ; k<3 && enems[mapy*mapw+mapx][k].type ; k++ );
           if( k==3 )
             printf("\nError: More than 3 enemies in screen (%d, %d).\n", mapx, mapy),
             exit(-1);
-          baddies++,
-          enems[mapy*mapw+mapx].ene[k].type= name,
-          enems[mapy*mapw+mapx].ene[k].xi= x,
-          enems[mapy*mapw+mapx].ene[k].yi= y+1,
-          enems[mapy*mapw+mapx].ene[k].xe= x,
-          enems[mapy*mapw+mapx].ene[k].ye= y+1,
-          enems[mapy*mapw+mapx].ene[k].speed= type ? type : 2;
-        }
-        else if( type ){
-          for ( k= 0 ; k<3 && enems[mapy*mapw+mapx].ene[k].type ; k++ );
-          if( k==3 )
-            printf("\nError: More than 3 enemies in screen (%d, %d).\n", mapx, mapy),
-            exit(-1);
-          if( enems[mapy*mapw+mapx].ene[k].yi+enems[mapy*mapw+mapx].ene[k].ye )
-            enems[mapy*mapw+mapx].ene[k].type= (gid-313)>>2;
-          if( gid-313&2 )
-            enems[mapy*mapw+mapx].ene[k].xe= x,
-            enems[mapy*mapw+mapx].ene[k].ye= y+1;
-          else{
-            enems[mapy*mapw+mapx].ene[k].xi= x;
-            enems[mapy*mapw+mapx].ene[k].yi= y+1;
-            enems[mapy*mapw+mapx].ene[k].speed= type ? type : 2;
-            if( ((gid-313)>>2)-4 )
-              baddies++;
+          enac= &enems[mapy*mapw+mapx][k];
+          if( name )
+            baddies++,
+            enac->type= name,
+            enac->xi= x,
+            enac->yi= y+1,
+            enac->xe= x,
+            enac->ye= y+1,
+            enac->speed= type ? type : 2;
+          else if( type ){
+            if( enac->yi+enac->ye )
+              enac->type= (gid-313)>>2;
+            if( gid-313&2 )
+              enac->xe= x,
+              enac->ye= y+1;
+            else{
+              enac->xi= x;
+              enac->yi= y+1;
+              enac->speed= type ? type : 2;
+              if( ((gid-313)>>2)-4 )
+                baddies++;
+            }
           }
+          else
+            hotspots[mapy*mapw+mapx].xy= y | x<<4,
+            hotspots[mapy*mapw+mapx].type= gid-17;
         }
-        else
-          enems[mapy*mapw+mapx].xy= y | x<<4,
-          enems[mapy*mapw+mapx].type= gid-17;
       }
     }
     fprintf(fo, "#define BADDIES_COUNT %d\r\n\r\ntypedef struct {\r\n\tint x, y;\r\n\tunsigned char "
@@ -225,27 +228,24 @@ int main(int argc, char* argv[]){
     for ( i= 0; i<maph; i++ )
       for ( j= 0; j<mapw; j++ )
         for ( k= 0; k<3; k++ ){
-          if( !enems[i*mapw+j].ene[k].yi )
-            enems[i*mapw+j].ene[k].yi= 1;
-          if( !enems[i*mapw+j].ene[k].ye )
-            enems[i*mapw+j].ene[k].ye= 1;
+          enac= &enems[i*mapw+j][k];
+          if( !enac->yi )
+            enac->yi= 1;
+          if( !enac->ye )
+            enac->ye= 1;
           fprintf(fo, "\r\n\t{%d, %d, %d, %d, %d, %d, %d, %d, %d}%s",
-                  enems[i*mapw+j].ene[k].xi<<4, enems[i*mapw+j].ene[k].yi-1<<4,
-                  enems[i*mapw+j].ene[k].xi<<4, enems[i*mapw+j].ene[k].yi-1<<4,
-                  enems[i*mapw+j].ene[k].xe<<4, enems[i*mapw+j].ene[k].ye-1<<4,
-                  sgn(enems[i*mapw+j].ene[k].xe-enems[i*mapw+j].ene[k].xi)*enems[i*mapw+j].ene[k].speed,
-                  sgn(enems[i*mapw+j].ene[k].ye-enems[i*mapw+j].ene[k].yi)*enems[i*mapw+j].ene[k].speed,
-                  enems[i*mapw+j].ene[k].type,
-                  i==maph-1 && j==mapw-1 && k==2 ? "" : ",");
+                  enac->xi<<4, enac->yi-1<<4, enac->xi<<4, enac->yi-1<<4,
+                  enac->xe<<4, enac->ye-1<<4, sgn(enac->xe-enac->xi)*enac->speed,
+                  sgn(enac->ye-enac->yi)*enac->speed,
+                  enac->type, i==maph-1 && j==mapw-1 && k==2 ? "" : ",");
         }
-
     fprintf(fo, "\r\n};\r\n\r\ntypedef struct {\r\n\tunsigned char xy, tipo, act;\r\n} "
                 "HOTSPOT;\r\n\r\nHOTSPOT hotspots [] = {");
     for ( i= 0; i<maph; i++ )
       for ( j= 0; j<mapw; j++ )
         fprintf(fo, "\r\n\t{%d, %d, 0}%s", 
-                enems[i*mapw+j].xy,
-                enems[i*mapw+j].type,
+                hotspots[i*mapw+j].xy,
+                hotspots[i*mapw+j].type,
                 i==maph-1 && j==mapw-1 ? "" : ",");
     fprintf(fo, "\r\n};\r\n\r\n");
     fclose(fo);
