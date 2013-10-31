@@ -189,20 +189,26 @@ int main(int argc, char* argv[]){
           }
         }
         else{
-          for ( k= 0 ; k<3 && enems[mapy*mapw+mapx][k].type ; k++ );
-          if( k==3 )
-            printf("\nError: More than 3 enemies in screen (%d, %d).\n", mapx, mapy),
-            exit(-1);
-          enac= &enems[mapy*mapw+mapx][k];
-          if( name )
-            baddies++,
-            enac->type= name,
-            enac->xi= x,
-            enac->yi= y+1,
-            enac->xe= x,
-            enac->ye= y+1,
+          if( name ){
+            for ( k= 0 ; k<3 && enems[mapy*mapw+mapx][k].type ; k++ );
+            if( k==3 )
+              printf("\nError: More than 3 enemies in screen (%d, %d).\n", mapx, mapy),
+              exit(-1);
+            enac= &enems[mapy*mapw+mapx][k];
+            baddies++;
+            enac->type= name;
+            enac->xi= x;
+            enac->yi= y+1;
+            enac->xe= x;
+            enac->ye= y+1;
             enac->speed= type ? type : 2;
+          }
           else if( type ){
+            for ( k= 0 ; k<3 && enems[mapy*mapw+mapx][k].type ; k++ );
+            if( k==3 )
+              printf("\nError: More than 3 enemies in screen (%d, %d).\n", mapx, mapy),
+              exit(-1);
+            enac= &enems[mapy*mapw+mapx][k];
             if( enac->yi+enac->ye )
               enac->type= (gid-61)>>2;
             if( gid-61&2 )
