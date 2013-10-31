@@ -23,7 +23,7 @@ int main(int argc, char* argv[]){
   int size= 0, scrw, scrh, mapw, maph, lock, numlock= 0, tmpi, elem, sum,
       tog= 0, i, j, k, l, type, gid, x, y, name, mapx, mapy, baddies= 0;
   if( argc==1 )
-    printf("\nTmxCnv v1.02, TMX to H generator by Antonio Villena, 29 Oct 2013\n\n"),
+    printf("\nTmxCnv v1.03, TMX to H generator by Antonio Villena, 31 Oct 2013\n\n"),
     printf("  TmxCnv <input_tmx> <output_map_h> [<output_enems_h>]\n\n"),
     printf("  <input_tmx>       Origin .TMX file\n"),
     printf("  <output_map_h>    Generated .H map output file\n"),
@@ -165,7 +165,7 @@ int main(int argc, char* argv[]){
         while ( y > scrh )
           mapy++,
           y-= scrh+1;
-        if( name>500 ){
+        if( name>100 ){
           for ( k= 0
               ; k<3 && enems[mapy*mapw+mapx][k].type && enems[mapy*mapw+mapx][k].type!=name
               ; k++ );
@@ -174,17 +174,17 @@ int main(int argc, char* argv[]){
             exit(-1);
           enac= &enems[mapy*mapw+mapx][k];
           if( enac->type )
-            enac->type= (gid-313)>>2;
+            enac->type= (gid-61)>>2;
           else
             enac->type= name;
-          if( gid-313&2 )
+          if( gid-61&2 )
             enac->xe= x,
             enac->ye= y+1;
           else{
             enac->xi= x;
             enac->yi= y+1;
             enac->speed= type ? type : 2;
-            if( ((gid-313)>>2)-4 )
+            if( ((gid-61)>>2)-4 )
               baddies++;
           }
         }
@@ -204,15 +204,15 @@ int main(int argc, char* argv[]){
             enac->speed= type ? type : 2;
           else if( type ){
             if( enac->yi+enac->ye )
-              enac->type= (gid-313)>>2;
-            if( gid-313&2 )
+              enac->type= (gid-61)>>2;
+            if( gid-61&2 )
               enac->xe= x,
               enac->ye= y+1;
             else{
               enac->xi= x;
               enac->yi= y+1;
               enac->speed= type ? type : 2;
-              if( ((gid-313)>>2)-4 )
+              if( ((gid-61)>>2)-4 )
                 baddies++;
             }
           }

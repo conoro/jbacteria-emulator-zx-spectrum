@@ -1,10 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <map version="1.0" orientation="orthogonal" width="127" height="32" tilewidth="16" tileheight="16">
- <properties><property name="lock" value="15"/></properties>
+ <properties>
+  <property name="lock" value="15"/>
+ </properties>
  <tileset firstgid="1" name="work" tilewidth="16" tileheight="16">
-  <image source="tiles.png"/></tileset>
- <tileset firstgid="301" name="sprites" tilewidth="16" tileheight="16">
-  <image source="sprites.png"/></tileset>
+  <image source="tiles.png" width="256" height="48"/>
+ </tileset>
+ <tileset firstgid="49" name="sprites" tilewidth="16" tileheight="16">
+  <image source="sprites.png" width="128" height="32"/>
+ </tileset>
  <layer name="map" width="127" height="32">
   <data encoding="csv">
 8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,0,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,0,8,8,8,8,8,8,8,8,8,8,8,8,8,11,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,11,11,11,11,11,11,11,11,11,11,11,0,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
@@ -39,167 +43,169 @@
 4,1,1,1,1,1,1,1,1,7,1,1,1,1,3,0,5,4,1,1,1,1,1,1,1,1,1,2,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3,0,5,14,2,3,5,3,6,5,6,3,14,14,2,3,2,0,2,2,14,13,14,14,14,14,14,13,3,4,4,4,3,0,3,3,3,4,3,3,4,3,3,3,3,2,2,13,15,0,14,13,14,14,14,14,14,14,14,14,14,14,14,14,14,0,14,3,4,2,15,14,14,14,14,14,14,14,13,3,4,
 3,2,1,1,1,1,1,1,1,7,1,1,1,2,4,0,6,5,1,1,2,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,4,0,5,13,3,5,6,5,1,6,1,6,2,15,3,4,3,0,3,3,14,2,13,14,13,15,13,2,4,3,4,3,3,0,4,3,4,3,3,4,3,3,4,3,4,3,3,2,2,0,2,2,14,14,15,13,14,15,14,13,14,15,14,13,14,0,14,3,3,4,2,2,14,14,13,15,14,13,2,4,3,
 3,4,2,2,2,2,2,2,2,2,2,2,2,3,3,0,1,6,2,2,3,2,12,12,12,12,12,12,2,2,2,0,2,2,2,2,2,2,2,2,2,2,12,12,12,12,4,0,6,2,6,6,1,6,1,1,1,1,5,2,3,3,4,0,3,3,2,3,2,2,2,2,2,3,3,3,3,3,3,0,3,3,3,3,4,3,4,3,3,3,3,4,4,3,3,0,3,3,2,2,2,2,2,2,2,2,2,2,2,2,2,0,2,4,3,3,3,4,2,2,2,2,2,2,4,3,4
-</data></layer>
+</data>
+ </layer>
  <objectgroup name="enems" width="127" height="32">
-<object name="501" type="1" gid="315" x="208" y="80"/>
-<object name="501" type="1" gid="316" x="208" y="128"/>
-<object name="502" type="1" gid="311" x="112" y="64"/>
-<object name="502" type="1" gid="312" x="32" y="64"/>
-<object name="503" type="1" gid="309" x="112" y="128"/>
-<object name="503" type="1" gid="310" x="16" y="128"/>
-<object name="504" type="1" gid="311" x="416" y="128"/>
-<object name="504" type="1" gid="312" x="464" y="128"/>
-<object name="505" type="1" gid="311" x="352" y="128"/>
-<object name="505" type="1" gid="312" x="272" y="128"/>
-<object name="506" type="2" gid="309" x="288" y="64"/>
-<object name="506" type="2" gid="310" x="448" y="64"/>
-<object name="507" type="2" gid="309" x="688" y="64"/>
-<object name="507" type="2" gid="310" x="528" y="64"/>
-<object name="508" type="1" gid="311" x="528" y="128"/>
-<object name="508" type="1" gid="312" x="576" y="128"/>
-<object name="509" type="1" gid="311" x="688" y="128"/>
-<object name="509" type="1" gid="312" x="640" y="128"/>
-<object name="510" type="1" gid="315" x="944" y="160"/>
-<object name="510" type="1" gid="316" x="832" y="160"/>
-<object name="511" type="1" gid="311" x="800" y="64"/>
-<object name="511" type="1" gid="312" x="800" y="144"/>
-<object name="512" type="1" gid="309" x="960" y="64"/>
-<object name="512" type="1" gid="310" x="960" y="144"/>
-<object name="513" type="1" gid="309" x="1040" y="80"/>
-<object name="513" type="1" gid="310" x="1120" y="80"/>
-<object name="514" type="1" gid="311" x="1216" y="112"/>
-<object name="514" type="1" gid="312" x="1168" y="112"/>
-<object name="515" type="2" gid="313" x="1232" y="144"/>
-<object name="515" type="2" gid="314" x="1040" y="144"/>
-<object name="516" type="2" gid="313" x="1488" y="144"/>
-<object name="516" type="2" gid="314" x="1296" y="144"/>
-<object name="517" type="1" gid="309" x="1392" y="96"/>
-<object name="517" type="1" gid="310" x="1488" y="96"/>
-<object name="518" type="2" gid="311" x="1376" y="32"/>
-<object name="518" type="2" gid="312" x="1488" y="16"/>
-<object name="519" type="1" gid="309" x="1664" y="80"/>
-<object name="519" type="1" gid="310" x="1728" y="80"/>
-<object name="520" type="1" gid="311" x="1600" y="96"/>
-<object name="520" type="1" gid="312" x="1552" y="96"/>
-<object name="521" type="1" gid="315" x="1648" y="128"/>
-<object name="521" type="1" gid="316" x="1648" y="48"/>
-<object name="522" type="1" gid="309" x="1952" y="112"/>
-<object name="522" type="1" gid="310" x="1888" y="112"/>
-<object name="523" type="1" gid="311" x="1984" y="64"/>
-<object name="523" type="1" gid="312" x="1904" y="64"/>
-<object name="524" type="2" gid="309" x="1824" y="32"/>
-<object name="524" type="2" gid="310" x="1824" y="128"/>
-<object name="525" type="1" gid="313" x="112" y="304"/>
-<object name="525" type="1" gid="314" x="48" y="304"/>
-<object name="526" type="1" gid="313" x="128" y="224"/>
-<object name="526" type="1" gid="314" x="128" y="288"/>
-<object name="527" type="1" gid="313" x="48" y="224"/>
-<object name="527" type="1" gid="314" x="96" y="272"/>
-<object name="528" type="2" gid="309" x="352" y="224"/>
-<object name="528" type="2" gid="310" x="352" y="320"/>
-<object name="529" type="1" gid="311" x="448" y="240"/>
-<object name="529" type="1" gid="312" x="448" y="320"/>
-<object name="530" type="1" gid="309" x="416" y="320"/>
-<object name="530" type="1" gid="310" x="384" y="320"/>
-<object name="531" type="1" gid="313" x="672" y="256"/>
-<object name="531" type="1" gid="314" x="624" y="256"/>
-<object name="532" type="1" gid="311" x="608" y="256"/>
-<object name="532" type="1" gid="312" x="576" y="320"/>
-<object name="533" type="1" gid="309" x="560" y="208"/>
-<object name="533" type="1" gid="310" x="560" y="320"/>
-<object name="534" type="1" gid="313" x="944" y="240"/>
-<object name="534" type="1" gid="314" x="928" y="240"/>
-<object name="535" type="2" gid="311" x="832" y="208"/>
-<object name="535" type="2" gid="312" x="912" y="272"/>
-<object name="536" type="4" gid="309" x="784" y="256"/>
-<object name="536" type="4" gid="310" x="896" y="320"/>
-<object name="537" type="1" gid="313" x="1152" y="208"/>
-<object name="537" type="1" gid="314" x="1152" y="272"/>
-<object name="538" type="1" gid="309" x="1120" y="240"/>
-<object name="538" type="1" gid="310" x="1104" y="240"/>
-<object name="539" type="1" gid="311" x="1072" y="272"/>
-<object name="539" type="1" gid="312" x="1056" y="272"/>
-<object name="540" type="2" gid="313" x="1376" y="288"/>
-<object name="540" type="2" gid="314" x="1488" y="288"/>
-<object name="541" type="1" gid="311" x="1488" y="256"/>
-<object name="541" type="1" gid="312" x="1376" y="272"/>
-<object name="542" type="1" gid="309" x="1328" y="208"/>
-<object name="542" type="1" gid="310" x="1328" y="256"/>
-<object name="543" type="1" gid="311" x="1728" y="256"/>
-<object name="543" type="1" gid="312" x="1616" y="256"/>
-<object name="544" type="1" gid="313" x="1584" y="224"/>
-<object name="544" type="1" gid="314" x="1584" y="256"/>
-<object name="545" type="1" gid="309" x="1568" y="240"/>
-<object name="545" type="1" gid="310" x="1568" y="272"/>
-<object name="546" type="1" gid="315" x="1808" y="256"/>
-<object name="546" type="1" gid="316" x="2000" y="256"/>
-<object name="547" type="1" gid="313" x="1904" y="224"/>
-<object name="547" type="1" gid="314" x="1968" y="272"/>
-<object name="548" type="1" gid="309" x="1824" y="208"/>
-<object name="548" type="1" gid="310" x="1824" y="304"/>
-<object name="549" type="1" gid="315" x="208" y="432"/>
-<object name="549" type="1" gid="316" x="208" y="480"/>
-<object name="550" type="1" gid="309" x="192" y="496"/>
-<object name="550" type="1" gid="310" x="96" y="496"/>
-<object name="551" type="1" gid="313" x="144" y="448"/>
-<object name="551" type="1" gid="314" x="128" y="448"/>
-<object name="552" type="2" gid="311" x="288" y="400"/>
-<object name="552" type="2" gid="312" x="288" y="496"/>
-<object name="553" type="2" gid="315" x="448" y="496"/>
-<object name="553" type="2" gid="316" x="336" y="496"/>
-<object name="554" type="1" gid="309" x="432" y="400"/>
-<object name="554" type="1" gid="310" x="432" y="464"/>
-<object name="555" type="1" gid="313" x="640" y="496"/>
-<object name="555" type="1" gid="314" x="592" y="496"/>
-<object name="556" type="2" gid="313" x="624" y="496"/>
-<object name="556" type="2" gid="314" x="528" y="496"/>
-<object name="557" type="2" gid="309" x="528" y="432"/>
-<object name="557" type="2" gid="310" x="688" y="480"/>
-<object name="558" type="1" gid="313" x="784" y="496"/>
-<object name="558" type="1" gid="314" x="784" y="448"/>
-<object name="559" type="1" gid="311" x="928" y="416"/>
-<object name="559" type="1" gid="312" x="960" y="464"/>
-<object name="560" type="1" gid="309" x="896" y="416"/>
-<object name="560" type="1" gid="310" x="832" y="416"/>
-<object name="561" type="1" gid="313" x="1152" y="496"/>
-<object name="561" type="1" gid="314" x="1088" y="496"/>
-<object name="562" type="2" gid="311" x="1056" y="432"/>
-<object name="562" type="2" gid="312" x="1056" y="496"/>
-<object name="563" type="1" gid="309" x="1168" y="384"/>
-<object name="563" type="1" gid="310" x="1184" y="448"/>
-<object name="564" type="2" gid="311" x="1360" y="384"/>
-<object name="564" type="2" gid="312" x="1504" y="416"/>
-<object name="565" type="1" gid="313" x="1408" y="432"/>
-<object name="565" type="1" gid="314" x="1392" y="432"/>
-<object name="566" type="1" gid="313" x="1472" y="384"/>
-<object name="566" type="1" gid="314" x="1488" y="464"/>
-<object name="567" type="2" gid="311" x="1616" y="416"/>
-<object name="567" type="2" gid="312" x="1696" y="416"/>
-<object name="568" type="2" gid="313" x="1568" y="496"/>
-<object name="568" type="2" gid="314" x="1744" y="496"/>
-<object name="569" type="1" gid="309" x="1600" y="448"/>
-<object name="569" type="1" gid="310" x="1728" y="480"/>
-<object name="570" type="1" gid="313" x="1968" y="496"/>
-<object name="570" type="1" gid="314" x="1888" y="496"/>
-<object name="571" type="2" gid="309" x="1840" y="432"/>
-<object name="571" type="2" gid="310" x="1984" y="464"/>
-<object name="572" type="1" gid="311" x="2000" y="400"/>
-<object name="572" type="1" gid="312" x="2000" y="448"/>
-<object gid="19" x="16" y="64"/>
-<object gid="18" x="384" y="64"/>
-<object gid="18" x="720" y="64"/>
-<object gid="18" x="1168" y="48"/>
-<object gid="18" x="1328" y="32"/>
-<object gid="18" x="1744" y="96"/>
-<object gid="18" x="1968" y="64"/>
-<object gid="18" x="368" y="240"/>
-<object gid="18" x="928" y="304"/>
-<object gid="18" x="1216" y="288"/>
-<object gid="18" x="1312" y="240"/>
-<object gid="18" x="1664" y="256"/>
-<object gid="18" x="320" y="480"/>
-<object gid="19" x="656" y="496"/>
-<object gid="18" x="1216" y="400"/>
-<object gid="18" x="1344" y="400"/>
-<object gid="18" x="1808" y="400"/>
-</objectgroup></map>
+  <object name="501" type="1" gid="63" x="208" y="80"/>
+  <object name="501" type="1" gid="64" x="208" y="128"/>
+  <object name="502" type="1" gid="59" x="112" y="64"/>
+  <object name="502" type="1" gid="60" x="32" y="64"/>
+  <object name="503" type="1" gid="57" x="112" y="128"/>
+  <object name="503" type="1" gid="58" x="16" y="128"/>
+  <object name="504" type="1" gid="59" x="416" y="128"/>
+  <object name="504" type="1" gid="60" x="464" y="128"/>
+  <object name="505" type="1" gid="59" x="352" y="128"/>
+  <object name="505" type="1" gid="60" x="272" y="128"/>
+  <object name="506" type="2" gid="57" x="288" y="64"/>
+  <object name="506" type="2" gid="58" x="448" y="64"/>
+  <object name="507" type="2" gid="57" x="688" y="64"/>
+  <object name="507" type="2" gid="58" x="528" y="64"/>
+  <object name="508" type="1" gid="59" x="528" y="128"/>
+  <object name="508" type="1" gid="60" x="576" y="128"/>
+  <object name="509" type="1" gid="59" x="688" y="128"/>
+  <object name="509" type="1" gid="60" x="640" y="128"/>
+  <object name="510" type="1" gid="63" x="944" y="160"/>
+  <object name="510" type="1" gid="64" x="832" y="160"/>
+  <object name="511" type="1" gid="59" x="800" y="64"/>
+  <object name="511" type="1" gid="60" x="800" y="144"/>
+  <object name="512" type="1" gid="57" x="960" y="64"/>
+  <object name="512" type="1" gid="58" x="960" y="144"/>
+  <object name="513" type="1" gid="57" x="1040" y="80"/>
+  <object name="513" type="1" gid="58" x="1120" y="80"/>
+  <object name="514" type="1" gid="59" x="1216" y="112"/>
+  <object name="514" type="1" gid="60" x="1168" y="112"/>
+  <object name="515" type="2" gid="61" x="1232" y="144"/>
+  <object name="515" type="2" gid="62" x="1040" y="144"/>
+  <object name="516" type="2" gid="61" x="1488" y="144"/>
+  <object name="516" type="2" gid="62" x="1296" y="144"/>
+  <object name="517" type="1" gid="57" x="1392" y="96"/>
+  <object name="517" type="1" gid="58" x="1488" y="96"/>
+  <object name="518" type="2" gid="59" x="1376" y="32"/>
+  <object name="518" type="2" gid="60" x="1488" y="16"/>
+  <object name="519" type="1" gid="57" x="1664" y="80"/>
+  <object name="519" type="1" gid="58" x="1728" y="80"/>
+  <object name="520" type="1" gid="59" x="1600" y="96"/>
+  <object name="520" type="1" gid="60" x="1552" y="96"/>
+  <object name="521" type="1" gid="63" x="1648" y="128"/>
+  <object name="521" type="1" gid="64" x="1648" y="48"/>
+  <object name="522" type="1" gid="57" x="1952" y="112"/>
+  <object name="522" type="1" gid="58" x="1888" y="112"/>
+  <object name="523" type="1" gid="59" x="1984" y="64"/>
+  <object name="523" type="1" gid="60" x="1904" y="64"/>
+  <object name="524" type="2" gid="57" x="1824" y="32"/>
+  <object name="524" type="2" gid="58" x="1824" y="128"/>
+  <object name="525" type="1" gid="61" x="112" y="304"/>
+  <object name="525" type="1" gid="62" x="48" y="304"/>
+  <object name="526" type="1" gid="61" x="128" y="224"/>
+  <object name="526" type="1" gid="62" x="128" y="288"/>
+  <object name="527" type="1" gid="61" x="48" y="224"/>
+  <object name="527" type="1" gid="62" x="96" y="272"/>
+  <object name="528" type="2" gid="57" x="352" y="224"/>
+  <object name="528" type="2" gid="58" x="352" y="320"/>
+  <object name="529" type="1" gid="59" x="448" y="240"/>
+  <object name="529" type="1" gid="60" x="448" y="320"/>
+  <object name="530" type="1" gid="57" x="416" y="320"/>
+  <object name="530" type="1" gid="58" x="384" y="320"/>
+  <object name="531" type="1" gid="61" x="672" y="256"/>
+  <object name="531" type="1" gid="62" x="624" y="256"/>
+  <object name="532" type="1" gid="59" x="608" y="256"/>
+  <object name="532" type="1" gid="60" x="576" y="320"/>
+  <object name="533" type="1" gid="57" x="560" y="208"/>
+  <object name="533" type="1" gid="58" x="560" y="320"/>
+  <object name="534" type="1" gid="61" x="944" y="240"/>
+  <object name="534" type="1" gid="62" x="928" y="240"/>
+  <object name="535" type="2" gid="59" x="832" y="208"/>
+  <object name="535" type="2" gid="60" x="912" y="272"/>
+  <object name="536" type="4" gid="57" x="784" y="256"/>
+  <object name="536" type="4" gid="58" x="896" y="320"/>
+  <object name="537" type="1" gid="61" x="1152" y="208"/>
+  <object name="537" type="1" gid="62" x="1152" y="272"/>
+  <object name="538" type="1" gid="57" x="1120" y="240"/>
+  <object name="538" type="1" gid="58" x="1104" y="240"/>
+  <object name="539" type="1" gid="59" x="1072" y="272"/>
+  <object name="539" type="1" gid="60" x="1056" y="272"/>
+  <object name="540" type="2" gid="61" x="1376" y="288"/>
+  <object name="540" type="2" gid="62" x="1488" y="288"/>
+  <object name="541" type="1" gid="59" x="1488" y="256"/>
+  <object name="541" type="1" gid="60" x="1376" y="272"/>
+  <object name="542" type="1" gid="57" x="1328" y="208"/>
+  <object name="542" type="1" gid="58" x="1328" y="256"/>
+  <object name="543" type="1" gid="59" x="1728" y="256"/>
+  <object name="543" type="1" gid="60" x="1616" y="256"/>
+  <object name="544" type="1" gid="61" x="1584" y="224"/>
+  <object name="544" type="1" gid="62" x="1584" y="256"/>
+  <object name="545" type="1" gid="57" x="1568" y="240"/>
+  <object name="545" type="1" gid="58" x="1568" y="272"/>
+  <object name="546" type="1" gid="63" x="1808" y="256"/>
+  <object name="546" type="1" gid="64" x="2000" y="256"/>
+  <object name="547" type="1" gid="61" x="1904" y="224"/>
+  <object name="547" type="1" gid="62" x="1968" y="272"/>
+  <object name="548" type="1" gid="57" x="1824" y="208"/>
+  <object name="548" type="1" gid="58" x="1824" y="304"/>
+  <object name="549" type="1" gid="63" x="208" y="432"/>
+  <object name="549" type="1" gid="64" x="208" y="480"/>
+  <object name="550" type="1" gid="57" x="192" y="496"/>
+  <object name="550" type="1" gid="58" x="96" y="496"/>
+  <object name="551" type="1" gid="61" x="144" y="448"/>
+  <object name="551" type="1" gid="62" x="128" y="448"/>
+  <object name="552" type="2" gid="59" x="288" y="400"/>
+  <object name="552" type="2" gid="60" x="288" y="496"/>
+  <object name="553" type="2" gid="63" x="448" y="496"/>
+  <object name="553" type="2" gid="64" x="336" y="496"/>
+  <object name="554" type="1" gid="57" x="432" y="400"/>
+  <object name="554" type="1" gid="58" x="432" y="464"/>
+  <object name="555" type="1" gid="61" x="640" y="496"/>
+  <object name="555" type="1" gid="62" x="592" y="496"/>
+  <object name="556" type="2" gid="61" x="624" y="496"/>
+  <object name="556" type="2" gid="62" x="528" y="496"/>
+  <object name="557" type="2" gid="57" x="528" y="432"/>
+  <object name="557" type="2" gid="58" x="688" y="480"/>
+  <object name="558" type="1" gid="61" x="784" y="496"/>
+  <object name="558" type="1" gid="62" x="784" y="448"/>
+  <object name="559" type="1" gid="59" x="928" y="416"/>
+  <object name="559" type="1" gid="60" x="960" y="464"/>
+  <object name="560" type="1" gid="57" x="896" y="416"/>
+  <object name="560" type="1" gid="58" x="832" y="416"/>
+  <object name="561" type="1" gid="61" x="1152" y="496"/>
+  <object name="561" type="1" gid="62" x="1088" y="496"/>
+  <object name="562" type="2" gid="59" x="1056" y="432"/>
+  <object name="562" type="2" gid="60" x="1056" y="496"/>
+  <object name="563" type="1" gid="57" x="1168" y="384"/>
+  <object name="563" type="1" gid="58" x="1184" y="448"/>
+  <object name="564" type="2" gid="59" x="1360" y="384"/>
+  <object name="564" type="2" gid="60" x="1504" y="416"/>
+  <object name="565" type="1" gid="61" x="1408" y="432"/>
+  <object name="565" type="1" gid="62" x="1392" y="432"/>
+  <object name="566" type="1" gid="61" x="1472" y="384"/>
+  <object name="566" type="1" gid="62" x="1488" y="464"/>
+  <object name="567" type="2" gid="59" x="1616" y="416"/>
+  <object name="567" type="2" gid="60" x="1696" y="416"/>
+  <object name="568" type="2" gid="61" x="1568" y="496"/>
+  <object name="568" type="2" gid="62" x="1744" y="496"/>
+  <object name="569" type="1" gid="57" x="1600" y="448"/>
+  <object name="569" type="1" gid="58" x="1728" y="480"/>
+  <object name="570" type="1" gid="61" x="1968" y="496"/>
+  <object name="570" type="1" gid="62" x="1888" y="496"/>
+  <object name="571" type="2" gid="57" x="1840" y="432"/>
+  <object name="571" type="2" gid="58" x="1984" y="464"/>
+  <object name="572" type="1" gid="59" x="2000" y="400"/>
+  <object name="572" type="1" gid="60" x="2000" y="448"/>
+  <object gid="19" x="16" y="64"/>
+  <object gid="18" x="384" y="64"/>
+  <object gid="18" x="720" y="64"/>
+  <object gid="18" x="1168" y="48"/>
+  <object gid="18" x="1328" y="32"/>
+  <object gid="18" x="1744" y="96"/>
+  <object gid="18" x="1968" y="64"/>
+  <object gid="18" x="368" y="240"/>
+  <object gid="18" x="928" y="304"/>
+  <object gid="18" x="1216" y="288"/>
+  <object gid="18" x="1312" y="240"/>
+  <object gid="18" x="1664" y="256"/>
+  <object gid="18" x="320" y="480"/>
+  <object gid="19" x="656" y="496"/>
+  <object gid="18" x="1216" y="400"/>
+  <object gid="18" x="1344" y="400"/>
+  <object gid="18" x="1808" y="400"/>
+ </objectgroup>
+</map>

@@ -7,7 +7,7 @@ int main(int argc, char* argv[]){
   int size, scrw, scrh, mapw, maph, lock, i, j, k, l;
   unsigned char type, xi, xe, yi, ye, speed;
   if( argc==1 )
-    printf("\nMap2Tmx v1.01, MAP file (Mappy) to TMX (Tiled) by Antonio Villena, 28 Oct 2013\n\n"),
+    printf("\nMap2Tmx v1.03, MAP file (Mappy) to TMX (Tiled) by Antonio Villena, 31 Oct 2013\n\n"),
     printf("  Map2Tmx       <map_width> <map_height> <screen_width> <screen_height>\n"),
     printf("                <lock> <output_tmx> [<input_map>] [<input_ene>]\n\n"),
     printf("  <map_width>       Map width\n"),
@@ -50,7 +50,7 @@ int main(int argc, char* argv[]){
   fprintf(fo, " <properties><property name=\"lock\" value=\"%d\"/></properties>\n", lock);
   fprintf(fo, " <tileset firstgid=\"1\" name=\"work\" tilewidth=\"16\" tileheight=\"16\">\n");
   fprintf(fo, "  <image source=\"../gfx/work.png\"/></tileset>\n");
-  fprintf(fo, " <tileset firstgid=\"301\" name=\"sprites\" tilewidth=\"16\" tileheight=\"16\">\n");
+  fprintf(fo, " <tileset firstgid=\"49\" name=\"sprites\" tilewidth=\"16\" tileheight=\"16\">\n");
   fprintf(fo, "  <image source=\"../gfx/sprites.png\"/></tileset>\n");
   fprintf(fo, " <layer name=\"map\" %s>\n", tmpstr);
   fprintf(fo, "  <data encoding=\"csv\">\n");
@@ -76,7 +76,7 @@ int main(int argc, char* argv[]){
       printf("\nInput file not found: %s\n", argv[8]),
       exit(-1);
     size= fread(mem, 1, 0x105, fi);
-    l= 501;
+    l= 101;
     for ( i= 0; i<maph; i++ )
       for ( j= 0; j<mapw; j++ )
         for ( k= 0; k<3; k++ ){
@@ -88,13 +88,13 @@ int main(int argc, char* argv[]){
           fread(&speed, 1, 1, fi);
           fread(mem, 2, 1, fi);
           if( type>4 )
-            fprintf(fo, "<object name=\"%d\" type=\"%d\" gid=\"325\" x=\"%d\" y=\"%d\"/>\n",
+            fprintf(fo, "<object name=\"%d\" type=\"%d\" gid=\"73\" x=\"%d\" y=\"%d\"/>\n",
                     type, speed, (xi+j*(scrw+1))<<4, (1+yi+i*(scrh+1))<<4);
           else if( type )
             fprintf(fo, "<object name=\"%d\" type=\"%d\" gid=\"%d\" x=\"%d\" y=\"%d\"/>\n"
                         "<object name=\"%d\" type=\"%d\" gid=\"%d\" x=\"%d\" y=\"%d\"/>\n",
-                    l++, speed, 313+4*type, (xi+j*(scrw+1))<<4, (1+yi+i*(scrh+1))<<4,
-                    l,   speed, 315+4*type, (xe+j*(scrw+1))<<4, (1+ye+i*(scrh+1))<<4);
+                    l++, speed, 61+4*type, (xi+j*(scrw+1))<<4, (1+yi+i*(scrh+1))<<4,
+                    l,   speed, 63+4*type, (xe+j*(scrw+1))<<4, (1+ye+i*(scrh+1))<<4);
         }
     for ( i= 0; i<maph; i++ )
       for ( j= 0; j<mapw; j++ ){
