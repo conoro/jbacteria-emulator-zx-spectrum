@@ -23,7 +23,7 @@ int main(int argc, char* argv[]){
   int size= 0, scrw, scrh, mapw, maph, lock, numlock= 0, tmpi, elem, sum,
       tog= 0, i, j, k, l, type, gid, x, y, name, mapx, mapy, baddies= 0;
   if( argc==1 )
-    printf("\nTmxCnv v1.03, TMX to H generator by Antonio Villena, 31 Oct 2013\n\n"),
+    printf("\nTmxCnv v1.04, TMX to H generator by Antonio Villena, 31 Oct 2013\n\n"),
     printf("  TmxCnv <input_tmx> <output_map_h> [<output_enems_h>]\n\n"),
     printf("  <input_tmx>       Origin .TMX file\n"),
     printf("  <output_map_h>    Generated .H map output file\n"),
@@ -183,7 +183,7 @@ int main(int argc, char* argv[]){
           else{
             enac->xi= x;
             enac->yi= y+1;
-            enac->speed= type ? type : 2;
+            enac->speed= type ? type : 1;
             if( ((gid-61)>>2)-4 )
               baddies++;
           }
@@ -201,9 +201,9 @@ int main(int argc, char* argv[]){
             enac->yi= y+1;
             enac->xe= x;
             enac->ye= y+1;
-            enac->speed= type ? type : 2;
+            enac->speed= type ? type : 1;
           }
-          else if( type ){
+          else if( type || gid>48 ){
             for ( k= 0 ; k<3 && enems[mapy*mapw+mapx][k].type ; k++ );
             if( k==3 )
               printf("\nError: More than 3 enemies in screen (%d, %d).\n", mapx, mapy),
@@ -217,7 +217,7 @@ int main(int argc, char* argv[]){
             else{
               enac->xi= x;
               enac->yi= y+1;
-              enac->speed= type ? type : 2;
+              enac->speed= type ? type : 1;
               if( ((gid-61)>>2)-4 )
                 baddies++;
             }
