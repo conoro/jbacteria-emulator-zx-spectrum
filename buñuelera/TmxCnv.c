@@ -5,6 +5,7 @@
 int main(int argc, char* argv[]){
   unsigned char *mem= (unsigned char *) malloc (0x10000);
   unsigned char *out= (unsigned char *) malloc (0x10000);
+  int freq[256];
   char tmpstr[1000];
   char *fou, *token;
   FILE *fi, *fo;
@@ -43,11 +44,13 @@ int main(int argc, char* argv[]){
   mapw= scrw-size+1;
   scrw= size/mapw;
   fgets(tmpstr, 1000, fi);
+  for ( i= 0; i<16; i++ )
+    freq[i]= 0;
   while ( !strstr(tmpstr, "/layer") ){
     token= (char *) strtok(tmpstr, ",");
     while ( token != NULL ){
       if( tmpi= atoi(token) )
-        mem[size++]= tmpi-1;
+        freq[mem[size++]= tmpi-1]++;
       token= (char *) strtok(NULL, ",");
     }
     fgets(tmpstr, 1000, fi);
@@ -66,5 +69,7 @@ int main(int argc, char* argv[]){
     fwrite(out+i*scrh*scrw, 1, scrh*scrw, fo),
     fclose(fo);
   fclose(fi);
+  for ( i= 0; i<16; i++ )
+    printf("%02d=%04d\n", i, freq[i]);
   printf("\nFile generated successfully\n");
 }

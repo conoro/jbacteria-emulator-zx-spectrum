@@ -27,8 +27,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-//#define MAX_OFFSET  2176  /* range 1..2176 */ // antes de churrera
-#define MAX_OFFSET  144   /* range 1..144 */
+#define MAX_OFFSET  142   /* range 1..144 */
 #define MAX_LEN    65536  /* range 2..65536 */
 
 typedef struct match_t {
@@ -58,8 +57,14 @@ int elias_gamma_bits(int value) {
 }
 
 int count_bits(int offset, int len) {
-//    return 1 + (offset > 128 ? 12 : 8) + elias_gamma_bits(len-1); // antes de churrera
-    return 1 + (offset > 16 ? 8 : 5) + elias_gamma_bits(len-1);
+  if ( offset == 1 )
+    return 3 + elias_gamma_bits(len-1);
+  else if( offset == 15 )
+    return 4 + elias_gamma_bits(len-1);
+  else if( offset < 14 )
+    return 6 + elias_gamma_bits(len-1);
+  else
+    return 10 + elias_gamma_bits(len-1);
 }
 
 Optimal* optimize(unsigned char *input_data, size_t input_size) {
@@ -89,7 +94,6 @@ Optimal* optimize(unsigned char *input_data, size_t input_size) {
     }
 
     /* first byte is always literal */
-//    optimal[0].bits = 8; // antes de churrera
     optimal[0].bits = 4;
 
     /* process remaining bytes */
@@ -177,6 +181,10 @@ unsigned char *compress(Optimal *optimal, unsigned char *input_data, size_t inpu
     int offset1;
     int mask;
     int i;
+  int freq[256];
+  for ( i= 0; i<16; i++ )
+    freq[i]= 0;
+
 
     /* calculate and allocate output buffer */
     input_index = input_size-1;
@@ -210,6 +218,7 @@ unsigned char *compress(Optimal *optimal, unsigned char *input_data, size_t inpu
 
             /* literal value */
 //            write_byte(input_data[input_index]);  // antes de churrera
+            freq[input_data[input_index]]++;
             write_bit(input_data[input_index]&8);
             write_bit(input_data[input_index]&4);
             write_bit(input_data[input_index]&2);
@@ -226,17 +235,25 @@ unsigned char *compress(Optimal *optimal, unsigned char *input_data, size_t inpu
             /* sequence offset */
             offset1 = optimal[input_index].offset-1;
 //            if (offset1 < 128) { // antes de churrera
-            if (offset1 < 16) {
-//              write_byte(offset1); // antes de churrera
+            if( offset1 == 0)
+              write_bit(0),
               write_bit(0);
+            else if( offset1 == 14)
+              write_bit(0),
+              write_bit(0),
+              write_bit(0);
+            else if (offset1 < 13) {
+//              write_byte(offset1); // antes de churrera
+              write_bit(offset1&16);
               write_bit(offset1&8);
               write_bit(offset1&4);
               write_bit(offset1&2);
               write_bit(offset1&1);
             } else {
 //                offset1 -= 128; // antes de churrera
-                offset1 -= 16;
-                write_bit(1);
+                offset1 -= 13;
+                write_bit(offset1&256);
+                write_bit(offset1&128);
                 write_bit(offset1&64);
                 write_bit(offset1&32);
                 write_bit(offset1&16);
@@ -260,6 +277,10 @@ unsigned char *compress(Optimal *optimal, unsigned char *input_data, size_t inpu
         write_bit(0);
     }
     write_bit(1);
+
+    for (i = 0; i < 16; i++)
+      printf("%d,", freq[i]);
+
 
     return output_data;
 }
