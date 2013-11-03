@@ -21,9 +21,19 @@ typedef struct optimal_t {
     int len;
 } Optimal;
 
-Optimal *optimize(unsigned char *input_data, size_t input_size);
-
-unsigned char *compress(Optimal *optimal, unsigned char *input_data, size_t input_size, size_t *output_size);
+void shellSort ( int *a, int *b, int n ){
+  int h, i, j, k, l;
+  for ( h= n; h>>= 1; )
+    for ( i= h; i < n; i++ ){
+      k= a[i];
+      l= b[i];
+      for ( j= i; j >= h && a[j - h] < k; j-= h )
+        a[j]= a[j - h],
+        b[j]= b[j - h];
+      a[j]= k;
+      b[j]= l;
+    }
+}
 
 int elias_gamma_bits(int value) {
     int bits;
@@ -364,24 +374,24 @@ calcfreq(Optimal *optimal, unsigned char *input_data, size_t input_size, int *fr
 
 int main(int argc, char* argv[]){
   unsigned char *mem= (unsigned char *) malloc (0x10000);
-  unsigned char *out= (unsigned char *) malloc (0x10000);
-  unsigned char *input_data;
+  unsigned char *out, *input_data, *image, *imagemod;
+  unsigned error, width, height;//, i, j, k, l, fondo, tinta, outpos= 0;
+
   size_t input_size;
-  int freq[256];
+  int freq[256], order[256], rorder[256];
   char tmpstr[1000];
   char *fou, *token;
   FILE *fi, *fo;
   int size= 0, scrw, scrh, mapw, maph, lock, tmpi, i, j, k, l;
   if( argc==1 )
     printf("\nTmxCompress v0.10, Map compressor by Antonio Villena, 3 Nov 2013\n\n"),
-    printf("  TmxCompress <input_tmx> <input_tileset> <output_compressed> <output_tsbin>\n"
-           "              [<output_tmx>] [<output_tileset>]\n\n"),
+    printf("  TmxCompress <input_tmx> <input_tileset> \n"
+           "              <output_tmx> <output_tileset> <output_compressed>\n\n"),
     printf("  <input_tmx>         Origin .TMX file\n"),
     printf("  <input_tileset>     Origin .PNG tileset\n"),
-    printf("  <output_compressed> Generated binary compressed map\n"),
-    printf("  <output_tsbin>      Generated binary tileset\n"),
     printf("  <output_tmx>        Modified .TMX file\n"),
-    printf("  <output_tileset>    Modified .PNG tileset (reordered)\n\n"),
+    printf("  <output_tileset>    Modified .PNG tileset (reordered)\n"),
+    printf("  <output_compressed> Generated binary compressed map\n\n"),
     exit(0);
 /*  if( argc!=2 )
     printf("\nInvalid number of parameters\n"),
@@ -390,8 +400,13 @@ int main(int argc, char* argv[]){
   if( !fi )
     printf("\nInput file not found: %s\n", argv[1]),
     exit(-1);
+  fo= fopen(argv[3], "wb+");
+  if( !fo )
+    printf("\nCannot create output file: %s\n", argv[3]),
+    exit(-1);
   while ( !feof(fi) && !strstr(tmpstr, "data e") ){
     fgets(tmpstr, 1000, fi);
+    fputs(tmpstr, fo);
     if( fou= (char *) strstr(tmpstr, " width") )
       scrw= atoi(fou+8);
     if( fou= (char *) strstr(tmpstr, " height") )
@@ -409,8 +424,9 @@ int main(int argc, char* argv[]){
   mapw= scrw-size+1;
   scrw= size/mapw;
   fgets(tmpstr, 1000, fi);
-  for ( i= 0; i<16; i++ )
-    freq[i]= 0;
+  for ( i= 0; i<256; i++ )
+    freq[i]= 0,
+    order[i]= i;
   while ( !strstr(tmpstr, "/layer") ){
     token= (char *) strtok(tmpstr, ",");
     while ( token != NULL ){
@@ -423,6 +439,7 @@ int main(int argc, char* argv[]){
   maph= scrh-size/mapw/scrw+1;
   scrh= (scrh-maph+1)/maph;
   tmpi= 0;
+  out= (unsigned char *) malloc (maph*mapw*scrh*scrw);
   for ( i= 0; i<maph; i++ )
     for ( j= 0; j<mapw; j++ )
       for ( k= 0; k<scrh; k++ )
@@ -433,8 +450,57 @@ int main(int argc, char* argv[]){
     input_size= scrh*scrw;
     calcfreq(optimize(input_data, input_size), input_data, input_size, freq);
   }
+  for ( i= 255; !freq[--i]; );
+  shellSort(freq, order, j= i+1);
+  for ( i= 0; i<j; i++ ){
+    for ( k= 0; i!=order[k]; k++ );
+    rorder[i]= k;
+  }
+
+  for ( int i= 0; i<size; i++ ){
+    if( !(i%scrw) && i%(mapw*scrw) )
+      fprintf(fo, "0,");
+    if( i && !(i%(mapw*scrw*scrh)) ){
+      for ( int j= 0; j<mapw*scrw+mapw-1; j++ )
+        fprintf(fo, "0,");
+      fprintf(fo, "\n");
+    }
+    if( i==size-1 )
+      fprintf(fo, "%d\n", rorder[mem[i]]+1);
+    else if( (i+1)%(scrw*mapw) )
+      fprintf(fo, "%d,", rorder[mem[i]]+1);
+    else
+      fprintf(fo, "%d,\n", rorder[mem[i]]+1);
+  }
+
+  free(mem);
+  fprintf(fo, "</data></layer>\n");
+  fgets(tmpstr, 1000, fi);
+  while ( !feof(fi) )
+    fputs(tmpstr, fo),
+    fgets(tmpstr, 1000, fi);
   fclose(fi);
-  for ( i= 0; i<16; i++ )
-    printf("%02d=%04d\n", i, freq[i]);
+  if( error= lodepng_decode32_file(&image, &width, &height, argv[2]) )
+    printf("Error %u: %s\n", error, lodepng_error_text(error)),
+    exit(-1);
+  if( width!= 256 )
+    printf("Error. The width of tiles.png must be 256");
+  imagemod= (unsigned char *) malloc (width*height<<2);
+  memcpy(imagemod, image, width*height<<2);
+  for ( i= 0; i < j; i++ )
+    for ( k= 0; k < 16; k++ )
+      l= order[i],
+      memcpy( imagemod+(((i&15|i>>4<<8)<<6) | k<<10),
+              image+   (((l&15|l>>4<<8)<<6) | k<<10), 64);
+  if( error= lodepng_encode32_file(argv[4], imagemod, width, height) )
+    printf("Error %u: %s\n", error, lodepng_error_text(error)),
+    exit(-1);
+  free(image);
+  free(imagemod);
+
+
+
+  for ( i= 0; i<j; i++ )
+    printf("%02d=%04d,  %02d   %02d\n", i, freq[i], order[i], rorder[i]);
   printf("\nFile generated successfully\n");
 }
