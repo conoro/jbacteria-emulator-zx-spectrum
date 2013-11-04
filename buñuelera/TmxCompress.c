@@ -142,7 +142,7 @@ void write_byte(int value) {
 }
 
 void write_bit(int value) {
- printf("%d", value ? 1 : 0);
+// printf("%d", value ? 1 : 0);
     if (bit_mask == 0) {
         bit_mask = 128;
         bit_index = output_index;
@@ -179,7 +179,7 @@ unsigned char *compress(Optimal *optimal, unsigned char *input_data, size_t inpu
 
     /* calculate and allocate output buffer */
     input_index = input_size-1;
-    *output_size = (optimal[input_index].bits+18+7)/8;
+    *output_size = (optimal[input_index].bits+7)/8;
     output_data = (unsigned char *)malloc(*output_size);
     if (!output_data) {
          fprintf(stderr, "Error: Insufficient memory\n");
@@ -300,88 +300,6 @@ calcfreq(Optimal *optimal, unsigned char *input_data, size_t input_size, int *fr
         freq[input_data[input_index]]++;
 }
 
-/*int main(int argc, char *argv[]) {
-    FILE *ifp;
-    FILE *ofp;
-    unsigned char *input_data;
-    unsigned char *output_data;
-    size_t input_size;
-    size_t output_size;
-    size_t partial_counter;
-    size_t total_counter;
-    char *output_name;
-
-    if (argc == 2) {
-        output_name = (char *)malloc(strlen(argv[1])+5);
-        strcpy(output_name, argv[1]);
-        strcat(output_name, ".zx7");
-    } else if (argc == 3) {
-        output_name = argv[2];
-    } else {
-         fprintf(stderr, "Usage: %s input [output.zx7]\n", argv[0]);
-         exit(1);
-    }
-
-    ifp = fopen(argv[1], "rb");
-    if (!ifp) {
-         fprintf(stderr, "Error: Cannot access input file %s\n", argv[1]);
-         exit(1);
-    }
-
-    fseek(ifp, 0L, SEEK_END);
-    input_size = ftell(ifp);
-    fseek(ifp, 0L, SEEK_SET);
-    if (!input_size) {
-         fprintf(stderr, "Error: Empty input file %s\n", argv[1]);
-         exit(1);
-    }
-
-    input_data = (unsigned char *)malloc(input_size);
-    if (!input_data) {
-         fprintf(stderr, "Error: Insufficient memory\n");
-         exit(1);
-    }
-
-    total_counter = 0;
-    do {
-        partial_counter = fread(input_data+total_counter, sizeof(char), input_size-total_counter, ifp);
-        total_counter += partial_counter;
-    } while (partial_counter > 0);
-
-    if (total_counter != input_size) {
-         fprintf(stderr, "Error: Cannot read input file %s\n", argv[1]);
-         exit(1);
-    }
-
-    fclose(ifp);
-
-    if (fopen(output_name, "rb") != NULL) {
-         fprintf(stderr, "Error: Already existing output file %s\n", output_name);
-         exit(1);
-    }
-
-    ofp = fopen(output_name, "wb");
-    if (!ofp) {
-         fprintf(stderr, "Error: Cannot create output file %s\n", output_name);
-         exit(1);
-    }
-
-    output_data = compress(optimize(input_data, input_size), input_data, input_size, &output_size);
-
-    if (fwrite(output_data, sizeof(char), output_size, ofp) != output_size) {
-         fprintf(stderr, "Error: Cannot write output file %s\n", output_name);
-         exit(1);
-    }
-
-    fclose(ofp);
-
-    printf("Optimal LZ77/LZSS compression by Einar Saukas\nFile converted from %lu to %lu bytes!\n",
-        (unsigned long)input_size, (unsigned long)output_size);
-
-    return 0;
-}*/
-
-
 int main(int argc, char* argv[]){
   unsigned char *mem= (unsigned char *) malloc (0x10000);
   unsigned char *out, *input_data, *image, *imagemod;
@@ -402,9 +320,9 @@ int main(int argc, char* argv[]){
     printf("  <output_tileset>    Modified .PNG tileset (reordered)\n"),
     printf("  <output_compressed> Generated binary compressed map\n\n"),
     exit(0);
-/*  if( argc!=2 )
+  if( argc!=6 )
     printf("\nInvalid number of parameters\n"),
-    exit(-1);*/
+    exit(-1);
   fi= fopen(argv[1], "r");
   if( !fi )
     printf("\nInput file not found: %s\n", argv[1]),
@@ -508,7 +426,7 @@ int main(int argc, char* argv[]){
   if( !fo )
     printf("\nCannot create output file: %s\n", argv[3]),
     exit(-1);
-  for ( i= 0; i<maph*mapw; i++ )
+  for ( i= 0; i<maph*mapw-1; i++ )
     input_data= out+i*scrh*scrw,
     output_data= compress(optimize(input_data, scrh*scrw), input_data, scrh*scrw, &output_size),
     output_data[0]= (unsigned char) output_size,
