@@ -192,7 +192,10 @@ unsigned char *compress(Optimal *optimal, unsigned char *input_data, size_t inpu
     bit_mask = 0;
 
     /* first byte is always literal */
-    write_byte(input_data[0]);
+    write_bit(input_data[0]&8);
+    write_bit(input_data[0]&4);
+    write_bit(input_data[0]&2);
+    write_bit(input_data[0]&1);
 
     /* process remaining bytes */
     while ((input_index = optimal[input_index].bits) > 0) {
