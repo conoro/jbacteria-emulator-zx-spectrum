@@ -142,6 +142,7 @@ void write_byte(int value) {
 }
 
 void write_bit(int value) {
+ printf("%d", value ? 1 : 0);
     if (bit_mask == 0) {
         bit_mask = 128;
         bit_index = output_index;
@@ -154,14 +155,19 @@ void write_bit(int value) {
 }
 
 void write_elias_gamma(int value) {
-    int i;
-
-    for (i = 2; i <= value; i <<= 1) {
-        write_bit(0);
-    }
-    while ((i >>= 1) > 0) {
-        write_bit(value & i);
-    }
+//printf("%d,", value);
+  int bits= 0, rvalue= 0;
+  while ( value>1 )
+    ++bits,
+    rvalue<<= 1,
+    rvalue|= value&1,
+    value>>= 1;
+//printf("%d %d.", bits, rvalue);  0 1 0 1 0 0 1
+  while ( bits-- )
+    write_bit(0),
+    write_bit(rvalue & 1),
+    rvalue>>= 1;
+  write_bit(1);
 }
 
 unsigned char *compress(Optimal *optimal, unsigned char *input_data, size_t input_size, size_t *output_size) {
@@ -502,13 +508,15 @@ int main(int argc, char* argv[]){
   if( !fo )
     printf("\nCannot create output file: %s\n", argv[3]),
     exit(-1);
-  for ( i= 0; i<maph*mapw; i++ ){
-    input_data= out+i*scrh*scrw;
-    output_data= compress(optimize(input_data, scrh*scrw), input_data, scrh*scrw, &output_size);
-    input_data[0]= (unsigned char) output_size;
-    fwrite(input_data, 1, 1, fo);
+  for ( i= 0; i<maph*mapw; i++ )
+    input_data= out+i*scrh*scrw,
+    output_data= compress(optimize(input_data, scrh*scrw), input_data, scrh*scrw, &output_size),
+    output_data[0]= (unsigned char) output_size,
+    fwrite(output_data, 1, 1, fo);
+  for ( i= 0; i<maph*mapw; i++ )
+    input_data= out+i*scrh*scrw,
+    output_data= compress(optimize(input_data, scrh*scrw), input_data, scrh*scrw, &output_size),
     fwrite(output_data, 1, output_size, fo);
-  }
 
   for ( i= 0; i<j; i++ )
     printf("%02d=%04d,  %02d   %02d\n", i, freq[i], order[i], rorder[i]);

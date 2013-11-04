@@ -8,7 +8,7 @@ aki     pop     hl
         ldir
         jp      $8000
 
-        ld      hl, datos+1
+        ld      hl, datos+24
         ld      de, $c000
 
 dzx7_standard:
@@ -19,9 +19,12 @@ repet:  call    gbita
         jr      nc, repet
         ld      (de), a
         inc     de
+conti:  call    gbita
+        rra
+        jr      nc, byte_loop
 
 patro:  push    de
-        xor     a
+        ld      a, 1
 
 ; determine length
 elias_gamma:
@@ -48,9 +51,11 @@ noca:   call    gbita
         jr      nc, noca
 
 sale:   ld      e, a
-sale2:
+sale2:  xor     a
+        ld      d, a
         ld      a, b
-        ld      b, 0
+        ld      b, d
+        inc     e
 ; copy previous sequence
         ex      (sp), hl                ; store source, restore destination
         push    hl                      ; store destination
@@ -60,17 +65,26 @@ sale2:
 dzx7s_exit:
         pop     hl                      ; restore source address (compressed data)
         ld      b, a
-        call    gbita
-        rra
-        jr      c, patro
-        jr      byte_loop
+        jr      conti
 
 naaa:   ld      b, (hl)
         inc     hl
-gbita:  rl      b
+gbita:  and     a
+        rl      b
         jr      z, naaa
         adc     a, a
         ret
+
+
+naaa:   ld      b, (hl)
+        inc     hl
+        db      $30
+gbita:  and     a
+        rl      b
+        jr      z, naaa
+        adc     a, a
+        ret
+
 
 ; -----------------------------------------------------------------------------
 
