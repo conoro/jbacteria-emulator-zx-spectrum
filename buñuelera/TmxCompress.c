@@ -202,8 +202,6 @@ unsigned char *compress(Optimal *optimal, unsigned char *input_data, size_t inpu
             write_bit(0);
 
             /* literal value */
-//            write_byte(input_data[input_index]);  // antes de churrera
-//            freq[input_data[input_index]]++;
             write_bit(input_data[input_index]&8);
             write_bit(input_data[input_index]&4);
             write_bit(input_data[input_index]&2);
@@ -219,49 +217,52 @@ unsigned char *compress(Optimal *optimal, unsigned char *input_data, size_t inpu
 
             /* sequence offset */
             offset1 = optimal[input_index].offset-1;
-//            if (offset1 < 128) { // antes de churrera
             if( offset1 == 0)
+              write_bit(0),
+              write_bit(0);
+            else if( offset1 == 13)
+              write_bit(1),
+              write_bit(1),
+              write_bit(0),
+              write_bit(0),
+              write_bit(0),
+              write_bit(0),
+              write_bit(0),
               write_bit(0),
               write_bit(0);
             else if( offset1 == 14)
               write_bit(0),
-              write_bit(0),
+              write_bit(1),
               write_bit(0);
-            else if (offset1 < 13) {
-//              write_byte(offset1); // antes de churrera
-              write_bit(offset1&16);
-              write_bit(offset1&8);
-              write_bit(offset1&4);
-              write_bit(offset1&2);
+            else if (offset1 < 13)
+              offset1+= 11,
+              write_bit(offset1&16),
+              write_bit(offset1&8),
+              write_bit(offset1&4),
+              write_bit(offset1&2),
               write_bit(offset1&1);
-            } else {
-//                offset1 -= 128; // antes de churrera
-                offset1 -= 13;
-                write_bit(offset1&256);
-                write_bit(offset1&128);
-                write_bit(offset1&64);
-                write_bit(offset1&32);
-                write_bit(offset1&16);
-                write_bit(offset1&8);
-                write_bit(offset1&4);
-                write_bit(offset1&2);
-                write_bit(offset1&1);
-/*                write_byte((offset1 & 127) | 128);  // antes de churrera
-                for (mask = 1024; mask > 127; mask >>= 1) {
-                    write_bit(offset1 & mask);
-                }*/
-            }
+            else
+              offset1+= 114,
+              write_bit(1),
+              write_bit(1),
+              write_bit(offset1&64),
+              write_bit(offset1&32),
+              write_bit(offset1&16),
+              write_bit(offset1&8),
+              write_bit(offset1&4),
+              write_bit(offset1&2),
+              write_bit(offset1&1);
         }
     }
 
     /* sequence indicator */
-    write_bit(1);
+/*    write_bit(1);
 
-    /* end marker > MAX_LEN */
+  
     for (i = 0; i < 16; i++) {
         write_bit(0);
     }
-    write_bit(1);
+    write_bit(1);*/
 
     return output_data;
 }
@@ -376,8 +377,7 @@ int main(int argc, char* argv[]){
   unsigned char *mem= (unsigned char *) malloc (0x10000);
   unsigned char *out, *input_data, *image, *imagemod;
   unsigned error, width, height;//, i, j, k, l, fondo, tinta, outpos= 0;
-
-  size_t input_size;
+  size_t output_size;
   int freq[256], order[256], rorder[256];
   char tmpstr[1000];
   char *fou, *token;
@@ -447,8 +447,8 @@ int main(int argc, char* argv[]){
           out[tmpi++]= mem[i*mapw*scrh*scrw+j*scrw+k*mapw*scrw+l];
   for ( i= 0; i<maph*mapw; i++ ){
     input_data= out+i*scrh*scrw;
-    input_size= scrh*scrw;
-    calcfreq(optimize(input_data, input_size), input_data, input_size, freq);
+//    input_size= scrh*scrw;
+    calcfreq(optimize(input_data, scrh*scrw), input_data, scrh*scrw, freq);
   }
   for ( i= 255; !freq[--i]; );
   shellSort(freq, order, j= i+1);
@@ -456,7 +456,6 @@ int main(int argc, char* argv[]){
     for ( k= 0; i!=order[k]; k++ );
     rorder[i]= k;
   }
-
   for ( int i= 0; i<size; i++ ){
     if( !(i%scrw) && i%(mapw*scrw) )
       fprintf(fo, "0,");
@@ -472,7 +471,6 @@ int main(int argc, char* argv[]){
     else
       fprintf(fo, "%d,\n", rorder[mem[i]]+1);
   }
-
   free(mem);
   fprintf(fo, "</data></layer>\n");
   fgets(tmpstr, 1000, fi);
@@ -497,8 +495,17 @@ int main(int argc, char* argv[]){
     exit(-1);
   free(image);
   free(imagemod);
-
-
+  fo= fopen(argv[5], "wb+");
+  if( !fo )
+    printf("\nCannot create output file: %s\n", argv[3]),
+    exit(-1);
+  for ( i= 0; i<maph*mapw; i++ ){
+    input_data= out+i*scrh*scrw;
+    output_data= compress(optimize(input_data, scrh*scrw), input_data, scrh*scrw, &output_size);
+    input_data[0]= (unsigned char) output_size;
+    fwrite(input_data, 1, 1, fo);
+    fwrite(output_data, 1, output_size, fo);
+  }
 
   for ( i= 0; i<j; i++ )
     printf("%02d=%04d,  %02d   %02d\n", i, freq[i], order[i], rorder[i]);
