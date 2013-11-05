@@ -11,7 +11,7 @@ suma    add     hl, de
         dec     sp
         djnz    suma
 desc1:  ld      sp, 0
-        ld      de, buffer+150
+        ld      de, buffer+149
 
 ; descompresor
         ld      b, $80
@@ -22,7 +22,7 @@ repet:  call    gbita
         ld      (de), a
         dec     de
 conti:  ld      a, e
-        or      a
+        cp      buffer-1 & 255
         ret     z
         call    gbita
         rra

@@ -5,7 +5,7 @@
         DEFINE  scrh  10
 
         DEFINE  bitsymbol 4
-        DEFINE  buffer    $c000
+        DEFINE  buffer    $5df2
 
     MACRO   mult8x8 data
         ld      d, 0
@@ -109,7 +109,7 @@ paint_map:
         ld      hl, $4010-scrw
         ld      bc, $5810-scrw
         exx
-          ld      hl, buffer+1
+          ld      hl, buffer
         ld      bc, hl
         ld      a, scrh
 paint1  ex      af, af'
