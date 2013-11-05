@@ -4,6 +4,8 @@
         DEFINE  scrw  15
         DEFINE  scrh  10
 
+        DEFINE  bitsymbol 4
+
     MACRO   mult8x8 data
         ld      d, 0
         ld      l, d
@@ -98,27 +100,29 @@ pact    jr      bucl
 
 ;       a=      numero pantalla
 paint_map:
+        ld      (paint4+1), sp
         inc     a
         ld      b, a
-        ld      hl, map
-        ld      de, 0
-        ld      ix, map+23
-suma    add     ix, de
-        ld      e, (hl)
-        inc     hl
+        ld      sp, map-1
+        ld      de, $ffff
+        ld      hl, fin
+suma    add     hl, de
+        pop     af
+        ld      e, a
+        dec     sp
         djnz    suma
-        push    ix
-        pop     hl
-        ld      de, $bf6a
+
+        ld      sp, $ff3c
+        ld      de, $c096
 
 ; descompresor
         ld      b, $80
 byte_loop:
-        ld      a, $10
+        ld      a, 256 >> bitsymbol
 repet:  call    gbita
         jr      nc, repet
         ld      (de), a
-        inc     de
+        dec     de
 conti:  ld      a, e
         or      a
         jr      z, sali
@@ -165,21 +169,19 @@ sale2:  xor     a
         inc     e
 ; copy previous sequence
         ex      (sp), hl                ; store source, restore destination
-        push    hl                      ; store destination
-        sbc     hl, de                  ; HL = destination - offset - 1
-        pop     de                      ; DE = destination
-        ldir
-dzx7s_exit:
+        ex      de, hl
+        add     hl, de
+        lddr
         pop     hl                      ; restore source address (compressed data)
         ld      b, a
         jr      conti
-sali:
-
-        ld      (paint4+1), sp
+sali:   ;inc     e
+        ;ex      de, hl
+        ;exx
         ld      hl, $4010-scrw
         ld      bc, $5810-scrw
         exx
-        ld      hl, $bf6a
+          ld      hl, $c001
         ld      bc, hl
         ld      a, scrh
 paint1  ex      af, af'
@@ -326,7 +328,7 @@ paint4  ld      sp, 0
         ret
 
 naaa:   ld      b, (hl)
-        inc     hl
+        dec     hl
         db      $30
 gbita:  and     a
         rl      b

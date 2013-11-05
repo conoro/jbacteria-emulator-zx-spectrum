@@ -1,14 +1,40 @@
+/*
+ * (c) Copyright 2013 by Antonio Villena. All rights reserved.
+ * The compressor is based on ZX7 from Einar Saukas
+ *   http://www.worldofspectrum.org/infoseekid.cgi?id=0027996
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *     * Redistributions of source code must retain the above copyright
+ *       notice, this list of conditions and the following disclaimer.
+ *     * Redistributions in binary form must reproduce the above copyright
+ *       notice, this list of conditions and the following disclaimer in the
+ *       documentation and/or other materials provided with the distribution.
+ *     * The name of its author may not be used to endorse or promote products
+ *       derived from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL <COPYRIGHT HOLDER> BE LIABLE FOR ANY
+ * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-#define MAX_OFFSET  142   /* range 1..144 */
+#define MAX_OFFSET  142   /* range 1..142 */
 #define MAX_LEN    65536  /* range 2..65536 */
+#define BITS_SYMBOL   4
+
+unsigned char* output_data;
+size_t output_index;
+int bit_mask;
 
 typedef struct match_t {
     size_t index;
@@ -84,12 +110,12 @@ Optimal* optimize(unsigned char *input_data, size_t input_size) {
     }
 
     /* first byte is always literal */
-    optimal[0].bits = 4;
+    optimal[0].bits = BITS_SYMBOL;
 
     /* process remaining bytes */
     for (i = 1; i < input_size; i++) {
 
-        optimal[i].bits = optimal[i-1].bits + 5;
+        optimal[i].bits = optimal[i-1].bits + 1 + BITS_SYMBOL;
         match_index = input_data[i-1] << 8 | input_data[i];
         best_len = 1;
         for (match = &matches[match_index]; match->next != NULL && best_len < MAX_LEN; match = match->next) {
@@ -132,37 +158,22 @@ Optimal* optimize(unsigned char *input_data, size_t input_size) {
     return optimal;
 }
 
-unsigned char* output_data;
-size_t output_index;
-size_t bit_index;
-int bit_mask;
-
-void write_byte(int value) {
-    output_data[output_index++] = value;
-}
-
 void write_bit(int value) {
-// printf("%d", value ? 1 : 0);
-    if (bit_mask == 0) {
-        bit_mask = 128;
-        bit_index = output_index;
-        write_byte(0);
-    }
-    if (value > 0) {
-        output_data[bit_index] |= bit_mask;
-    }
-    bit_mask >>= 1;
+  if( bit_mask == 0 )
+    bit_mask= 128,
+    output_data[output_index++]= 0;
+  if (value > 0)
+    output_data[output_index-1] |= bit_mask;
+  bit_mask>>= 1;
 }
 
 void write_elias_gamma(int value) {
-//printf("%d,", value);
   int bits= 0, rvalue= 0;
   while ( value>1 )
     ++bits,
     rvalue<<= 1,
     rvalue|= value&1,
     value>>= 1;
-//printf("%d %d.", bits, rvalue);  0 1 0 1 0 0 1
   while ( bits-- )
     write_bit(0),
     write_bit(rvalue & 1),
@@ -198,10 +209,8 @@ unsigned char *compress(Optimal *optimal, unsigned char *input_data, size_t inpu
     bit_mask = 0;
 
     /* first byte is always literal */
-    write_bit(input_data[0]&8);
-    write_bit(input_data[0]&4);
-    write_bit(input_data[0]&2);
-    write_bit(input_data[0]&1);
+    for ( i= 1<<BITS_SYMBOL-1; i>0; i>>= 1 )
+      write_bit(input_data[0]&i);
 
     /* process remaining bytes */
     while ((input_index = optimal[input_index].bits) > 0) {
@@ -211,10 +220,8 @@ unsigned char *compress(Optimal *optimal, unsigned char *input_data, size_t inpu
             write_bit(0);
 
             /* literal value */
-            write_bit(input_data[input_index]&8);
-            write_bit(input_data[input_index]&4);
-            write_bit(input_data[input_index]&2);
-            write_bit(input_data[input_index]&1);
+            for ( i= 1<<BITS_SYMBOL-1; i>0; i>>= 1 )
+              write_bit(input_data[input_index]&i);
 
         } else {
 
@@ -263,26 +270,12 @@ unsigned char *compress(Optimal *optimal, unsigned char *input_data, size_t inpu
               write_bit(offset1&1);
         }
     }
-
-    /* sequence indicator */
-/*    write_bit(1);
-
-  
-    for (i = 0; i < 16; i++) {
-        write_bit(0);
-    }
-    write_bit(1);*/
-
     return output_data;
 }
 
-
 calcfreq(Optimal *optimal, unsigned char *input_data, size_t input_size, int *freq) {
-    size_t input_index;
-    size_t input_prev;
-    int offset1;
-    int mask;
-    int i;
+    size_t input_index, input_prev;
+    int offset1, mask, i;
 
     /* calculate and allocate output buffer */
     input_index = input_size-1;
@@ -301,17 +294,15 @@ calcfreq(Optimal *optimal, unsigned char *input_data, size_t input_size, int *fr
 }
 
 int main(int argc, char* argv[]){
-  unsigned char *mem= (unsigned char *) malloc (0x10000);
-  unsigned char *out, *input_data, *image, *imagemod;
-  unsigned error, width, height;//, i, j, k, l, fondo, tinta, outpos= 0;
+  unsigned char tmpchar, *mem, *out, *input_data, *image, *imagemod;
   size_t output_size;
-  int freq[256], order[256], rorder[256];
-  char tmpstr[1000];
-  char *fou, *token;
+  int freq[256], order[256], rorder[256], error, width, height, size= 0,
+      scrw, scrh, mapw, maph, lock, tmpi, i, j, k, l;
+  char *fou, *token, tmpstr[1000];
   FILE *fi, *fo;
-  int size= 0, scrw, scrh, mapw, maph, lock, tmpi, i, j, k, l;
+  mem= (unsigned char *) malloc (0x10000);
   if( argc==1 )
-    printf("\nTmxCompress v0.10, Map compressor by Antonio Villena, 3 Nov 2013\n\n"),
+    printf("\nTmxCompress v0.20, Map compressor by Antonio Villena, 5 Nov 2013\n\n"),
     printf("  TmxCompress <input_tmx> <input_tileset> \n"
            "              <output_tmx> <output_tileset> <output_compressed>\n\n"),
     printf("  <input_tmx>         Origin .TMX file\n"),
@@ -372,11 +363,13 @@ int main(int argc, char* argv[]){
       for ( k= 0; k<scrh; k++ )
         for ( l= 0; l<scrw; l++ )
           out[tmpi++]= mem[i*mapw*scrh*scrw+j*scrw+k*mapw*scrw+l];
-  for ( i= 0; i<maph*mapw; i++ ){
-    input_data= out+i*scrh*scrw;
-//    input_size= scrh*scrw;
+  for ( i= 0; i<size>>1; i++ )
+    tmpchar= out[i],
+    out[i]= out[size-1-i],
+    out[size-1-i]= tmpchar;
+  for ( i= 0; i<maph*mapw; i++ )
+    input_data= out+i*scrh*scrw,
     calcfreq(optimize(input_data, scrh*scrw), input_data, scrh*scrw, freq);
-  }
   for ( i= 255; !freq[--i]; );
   shellSort(freq, order, j= i+1);
   for ( i= 0; i<j; i++ ){
@@ -426,16 +419,20 @@ int main(int argc, char* argv[]){
   if( !fo )
     printf("\nCannot create output file: %s\n", argv[3]),
     exit(-1);
-  for ( i= 0; i<maph*mapw-1; i++ )
+  for ( i= maph*mapw-1; i>0; i-- )
     input_data= out+i*scrh*scrw,
     output_data= compress(optimize(input_data, scrh*scrw), input_data, scrh*scrw, &output_size),
-    output_data[0]= (unsigned char) output_size,
-    fwrite(output_data, 1, 1, fo);
-  for ( i= 0; i<maph*mapw; i++ )
-    input_data= out+i*scrh*scrw,
-    output_data= compress(optimize(input_data, scrh*scrw), input_data, scrh*scrw, &output_size),
+    tmpchar= (output_size^0xff)+1,
+    fwrite(&tmpchar, 1, 1, fo);
+  for ( i= 0; i<maph*mapw; i++ ){
+    input_data= out+i*scrh*scrw;
+    output_data= compress(optimize(input_data, scrh*scrw), input_data, scrh*scrw, &output_size);
+    for ( j= 0; j<output_size>>1; j++ )
+      tmpchar= output_data[j],
+      output_data[j]= output_data[output_size-1-j],
+      output_data[output_size-1-j]= tmpchar;
     fwrite(output_data, 1, output_size, fo);
-
+  }
   for ( i= 0; i<j; i++ )
     printf("%02d=%04d,  %02d   %02d\n", i, freq[i], order[i], rorder[i]);
   printf("\nFile generated successfully\n");
