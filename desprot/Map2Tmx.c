@@ -7,20 +7,20 @@ int main(int argc, char* argv[]){
   int size, scrw, scrh, mapw, maph, lock, i, j, k, l;
   unsigned char type, xi, xe, yi, ye, speed;
   if( argc==1 )
-    printf("\nMap2Tmx v1.04, MAP file (Mappy) to TMX (Tiled) by Antonio Villena, 31 Oct 2013\n\n"),
-    printf("  Map2Tmx       <map_width> <map_height> <screen_width> <screen_height>\n"),
-    printf("                <lock> <output_tmx> [<input_map>] [<input_ene>]\n\n"),
-    printf("  <map_width>       Map width\n"),
-    printf("  <map_height>      Map height\n"),
-    printf("  <screen_width>    Screen width\n"),
-    printf("  <screen_height>   Screen height\n"),
-    printf("  <lock>            Tile number of the lock, normally 15\n"),
-    printf("  <output_tmx>      Generated output file\n"),
-    printf("  <input_map>       Origin .map file\n"),
-    printf("  <input_ene>       Origin .ene file\n\n"),
-    printf("Last 2 params are optionally. If not specified will create a black .tmx.\n"),
-    printf("If only the map is specified, the .tmx will have a blank object layer.\n\n"),
-    printf("Example: Map2Tmx 5 4 15 10 15 mapa.tmx trabajobasura.map enems.ene\n"),
+    printf("\nMap2Tmx v1.05, MAP file (Mappy) to TMX (Tiled) by Antonio Villena, 6 Nov 2013\n\n"
+           "  Map2Tmx       <map_width> <map_height> <screen_width> <screen_height>\n"
+           "                <lock> <output_tmx> [<input_map>] [<input_ene>]\n\n"
+           "  <map_width>       Map width\n"
+           "  <map_height>      Map height\n"
+           "  <screen_width>    Screen width\n"
+           "  <screen_height>   Screen height\n"
+           "  <lock>            Tile number of the lock, normally 15\n"
+           "  <output_tmx>      Generated output file\n"
+           "  <input_map>       Origin .map file\n"
+           "  <input_ene>       Origin .ene file\n\n"
+           "Last 2 params are optionally. If not specified will create a black .tmx.\n"
+           "If only the map is specified, the .tmx will have a blank object layer.\n\n"
+           "Example: Map2Tmx 5 4 15 10 15 mapa.tmx trabajobasura.map enems.ene\n"),
     exit(0);
   if( argc<7 || argc>9 )
     printf("\nInvalid number of parameters\n"),
@@ -44,16 +44,15 @@ int main(int argc, char* argv[]){
     fclose(fi);
   }
   sprintf(tmpstr, "width=\"%d\" height=\"%d\"", scrw*mapw+mapw-1, scrh*maph+maph-1);
-  fprintf(fo, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
-  fprintf(fo, "<map version=\"1.0\" orientation=\"orthogonal\" %s ", tmpstr);
-  fprintf(fo, "tilewidth=\"16\" tileheight=\"16\">\n");
-  fprintf(fo, " <properties><property name=\"lock\" value=\"%d\"/></properties>\n", lock);
-  fprintf(fo, " <tileset firstgid=\"1\" name=\"work\" tilewidth=\"16\" tileheight=\"16\">\n");
-  fprintf(fo, "  <image source=\"../gfx/work.png\"/></tileset>\n");
-  fprintf(fo, " <tileset firstgid=\"49\" name=\"sprites\" tilewidth=\"16\" tileheight=\"16\">\n");
-  fprintf(fo, "  <image source=\"../gfx/sprites.png\"/></tileset>\n");
-  fprintf(fo, " <layer name=\"map\" %s>\n", tmpstr);
-  fprintf(fo, "  <data encoding=\"csv\">\n");
+  fprintf(fo, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+              "<map version=\"1.0\" orientation=\"orthogonal\" %s tilewidth=\"16\" tileheight=\"16\">\n"
+              " <properties><property name=\"lock\" value=\"%d\"/></properties>\n"
+              " <tileset firstgid=\"1\" name=\"work\" tilewidth=\"16\" tileheight=\"16\">\n"
+              "  <image source=\"../gfx/work.png\"/></tileset>\n"
+              " <tileset firstgid=\"49\" name=\"sprites\" tilewidth=\"16\" tileheight=\"16\">\n"
+              "  <image source=\"../gfx/sprites.png\"/></tileset>\n"
+              " <layer name=\"map\" %s>\n"
+              "  <data encoding=\"csv\">\n", tmpstr, lock, tmpstr);
   for ( int i= 0; i<size; i++ ){
     if( !(i%scrw) && i%(mapw*scrw) )
       fprintf(fo, "0,");

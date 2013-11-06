@@ -23,12 +23,12 @@ int main(int argc, char* argv[]){
   int size= 0, scrw, scrh, mapw, maph, lock, numlock= 0, tmpi, elem, sum,
       tog= 0, i, j, k, l, type, gid, x, y, name, mapx, mapy, baddies= 0;
   if( argc==1 )
-    printf("\nTmxCnv v1.04, TMX to H generator by Antonio Villena, 31 Oct 2013\n\n"),
-    printf("  TmxCnv <input_tmx> <output_map_h> [<output_enems_h>]\n\n"),
-    printf("  <input_tmx>       Origin .TMX file\n"),
-    printf("  <output_map_h>    Generated .H map output file\n"),
-    printf("  <output_enems_h>  Generated .H enemies output file\n\n"),
-    printf("Example: TmxCnv map\\mapa.tmx dev\\mapa.h dev\\enems.h\n"),
+    printf("\nTmxCnv v1.05, TMX to H generator by Antonio Villena, 6 Nov 2013\n\n"
+           "  TmxCnv <input_tmx> <output_map_h> [<output_enems_h>]\n\n"
+           "  <input_tmx>       Origin .TMX file\n"
+           "  <output_map_h>    Generated .H map output file\n"
+           "  <output_enems_h>  Generated .H enemies output file\n\n"
+           "Example: TmxCnv map\\mapa.tmx dev\\mapa.h dev\\enems.h\n"),
     exit(0);
   if( argc<3 || argc>4 )
     printf("\nInvalid number of parameters\n"),
@@ -76,9 +76,12 @@ int main(int argc, char* argv[]){
     if( mem[i]>tmpi )
       tmpi= mem[i];
   fprintf(fo, "// %s\n", argv[2]);
-  fprintf(fo, "// Generado por TmxCnv de la churrera\n");
-  fprintf(fo, "// Copyleft 2013 The Mojon Twins/Antonio Villena\n\n");
-  fprintf(fo, "unsigned char mapa [] = {");
+  fprintf(fo, "// Generado por TmxCnv de la churrera\n"
+              "// Copyleft 2013 The Mojon Twins/Antonio Villena\n\n"
+              "#ifdef COMPRESSED_MAPS\n"
+              "  unsigned char *mapa;\n"
+              "#else\n"
+              "  unsigned char mapa [] = {");
   if( tmpi>15 )
     for ( i= 0; i<maph; i++ ){
       fprintf(fo, "\n");
@@ -112,10 +115,12 @@ int main(int argc, char* argv[]){
         fprintf(fo, "\n");
       }
     }
-  fprintf(fo, "};\n\n#define MAX_CERROJOS %d\n\n", numlock);
-  fprintf(fo, "typedef struct {\n");
-  fprintf(fo, "    unsigned char np, x, y, st;\n");
-  fprintf(fo, "} CERROJOS;\n\n");
+  fprintf(fo, "};\n"
+              "#endif\n\n"
+              "#define MAX_CERROJOS %d\n\n"
+              "typedef struct {\n"
+              "    unsigned char np, x, y, st;\n"
+              "} CERROJOS;\n\n", numlock);
   if( numlock ){
     fprintf(fo, "CERROJOS cerrojos [MAX_CERROJOS] = {");
     for ( i= 0; i<maph; i++ )
@@ -228,9 +233,16 @@ int main(int argc, char* argv[]){
         }
       }
     }
-    fprintf(fo, "#define BADDIES_COUNT %d\r\n\r\ntypedef struct {\r\n\tint x, y;\r\n\tunsigned char "
-                "x1, y1, x2, y2;\r\n\tchar mx, my;\r\n\tchar t;\r\n#ifdef PLAYER_CAN_FIRE\r\n\tunsig"
-                "ned char life;\r\n#endif\r\n} MALOTE;\r\n\r\nMALOTE malotes [] = {", baddies);
+    fprintf(fo, "#define BADDIES_COUNT %d\r\n\r\n"
+                "typedef struct {\r\n"
+                "\tint x, y;\r\n\tunsigned char x1, y1, x2, y2;\r\n"
+                "\tchar mx, my;\r\n"
+                "\tchar t;\r\n"
+                "#ifdef PLAYER_CAN_FIRE\r\n"
+                "\tunsigned char life;\r\n"
+                "#endif\r\n"
+                "} MALOTE;\r\n\r\n"
+                "MALOTE malotes [] = {", baddies);
     for ( i= 0; i<maph; i++ )
       for ( j= 0; j<mapw; j++ )
         for ( k= 0; k<3; k++ ){
@@ -245,8 +257,10 @@ int main(int argc, char* argv[]){
                   sgn(enac->ye-enac->yi)*enac->speed,
                   enac->type, i==maph-1 && j==mapw-1 && k==2 ? "" : ",");
         }
-    fprintf(fo, "\r\n};\r\n\r\ntypedef struct {\r\n\tunsigned char xy, tipo, act;\r\n} "
-                "HOTSPOT;\r\n\r\nHOTSPOT hotspots [] = {");
+    fprintf(fo, "\r\n};\r\n\r\n"
+                "typedef struct {\r\n\t"
+                "unsigned char xy, tipo, act;\r\n} HOTSPOT;\r\n\r\n"
+                "HOTSPOT hotspots [] = {");
     for ( i= 0; i<maph; i++ )
       for ( j= 0; j<mapw; j++ )
         fprintf(fo, "\r\n\t{%d, %d, 0}%s", 
