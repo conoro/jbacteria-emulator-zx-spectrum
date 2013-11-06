@@ -428,10 +428,10 @@ int main(int argc, char* argv[]){
   for ( i= 0; i<maph*mapw; i++ ){
     input_data= out+i*scrh*scrw;
     output_data= compress(optimize(input_data, scrh*scrw), input_data, scrh*scrw, &output_size);
-    for ( j= 0; j<output_size>>1; j++ )
-      tmpchar= output_data[j],
-      output_data[j]= output_data[output_size-1-j],
-      output_data[output_size-1-j]= tmpchar;
+    for ( k= 0; k<output_size>>1; k++ )
+      tmpchar= output_data[k],
+      output_data[k]= output_data[output_size-1-k],
+      output_data[output_size-1-k]= tmpchar;
     fwrite(output_data, 1, output_size, fo);
   }
   for ( i= 0; i<j; i++ )
