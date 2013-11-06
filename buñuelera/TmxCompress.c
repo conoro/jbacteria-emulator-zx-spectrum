@@ -273,7 +273,7 @@ unsigned char *compress(Optimal *optimal, unsigned char *input_data, size_t inpu
     return output_data;
 }
 
-calcfreq(Optimal *optimal, unsigned char *input_data, size_t input_size, int *freq) {
+void calcfreq(Optimal *optimal, unsigned char *input_data, size_t input_size, int *freq) {
     size_t input_index, input_prev;
     int offset1, mask, i;
 
@@ -309,7 +309,8 @@ int main(int argc, char* argv[]){
     printf("  <input_tileset>     Origin .PNG tileset\n"),
     printf("  <output_tmx>        Modified .TMX file\n"),
     printf("  <output_tileset>    Modified .PNG tileset (reordered)\n"),
-    printf("  <output_compressed> Generated binary compressed map\n\n"),
+    printf("  <output_compressed> Generated binary compressed map\n"),
+    printf("compiled bitsymbol: %i\n\n", BITS_SYMBOL),
     exit(0);
   if( argc!=6 )
     printf("\nInvalid number of parameters\n"),
