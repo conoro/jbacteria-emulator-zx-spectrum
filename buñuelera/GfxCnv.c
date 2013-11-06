@@ -18,12 +18,12 @@ celdagen(){
   pixel= &image[(((j|i<<8)<<4) | k<<8 | l)<<2];
   if( !(check(pixel[0]) && check(pixel[1]) && check(pixel[2]))
     || ((char)pixel[0]*-1 | (char)pixel[1]*-1 | (char)pixel[2]*-1)==65 )
-    printf("The pixel (%d, %d) have an incorrect color\n" , j*16+l, i*16+k),
+    printf("The pixel (%d, %d) has an incorrect color\n" , j*16+l, i*16+k),
     exit(-1);
   if( tinta != tospec(pixel[0], pixel[1], pixel[2]) )
     if( fondo != tospec(pixel[0], pixel[1], pixel[2]) ){
       if( tinta != fondo )
-        printf("The pixel (%d, %d) have a third color in the cell\n", j*16+l, i*16+k),
+        printf("The pixel (%d, %d) has a third color in the cell\n", j*16+l, i*16+k),
         exit(-1);
       tinta= tospec(pixel[0], pixel[1], pixel[2]);
     }
@@ -35,12 +35,12 @@ chargen(){
   pixel= &image[(((j|i<<8)<<3) | k<<8 | l)<<2];
   if( !(check(pixel[0]) && check(pixel[1]) && check(pixel[2]))
     || ((char)pixel[0]*-1 | (char)pixel[1]*-1 | (char)pixel[2]*-1)==65 )
-    printf("El pixel (%d, %d) tiene un color incorrecto\n" , j*16+l, i*16+k),
+    printf("The pixel (%d, %d) has an incorrect color\n" , j*16+l, i*16+k),
     exit(-1);
   if( tinta != tospec(pixel[0], pixel[1], pixel[2]) )
     if( fondo != tospec(pixel[0], pixel[1], pixel[2]) ){
       if( tinta != fondo )
-        printf("El pixel (%d, %d) tiene un tercer color de celda\n", j*16+l, i*16+k),
+        printf("The pixel (%d, %d) has a third color in the cell\n", j*16+l, i*16+k),
         exit(-1);
       tinta= tospec(pixel[0], pixel[1], pixel[2]);
     }
@@ -53,8 +53,8 @@ atrgen(){
   atr<<= 8;
   if( fondo==tinta )
     celdas[k>>4<<1 | l>>4]= 0,
-    atr= tinta==0 ? 7 : tinta&7 | tinta<<3&64;
-  if( fondo<tinta )
+    atr|= tinta==0 ? 7 : tinta&7 | tinta<<3&64;
+  else if( fondo<tinta )
     atr|= fondo<<3 | tinta&7 | tinta<<3&64;
   else
     celdas[k>>4<<1 | l>>4]^= 0xffffffffffffffff,
@@ -92,6 +92,7 @@ int main(int argc, char *argv[]){
       for ( k= 0; k < 8; k++ )
         for ( l= 0; l < 8; l++ )
           chargen();
+      atrgen();
       for ( l= 0; l < 8; l++ )
         output[outpos++]= celdas[0]>>(56-l*8);
     }
@@ -99,15 +100,25 @@ int main(int argc, char *argv[]){
   if( !fo )
     printf("\nCannot create output file: %s\n", argv[4]),
     exit(-1);
-  fwrite(output, 1, outpos, fo);
-  fclose(fo);
-
-
+  fprintf(fo, "// Generado por GfxCnv de la churrera\n"
+              "// Copyleft 2013 The Mojon Twins/Antonio Villena\n\n"
+              "unsigned char tileset [] = {");
+  for ( i= 0; i<64; i++ ){
+    fprintf(fo, "\n");
+    for ( j= 0; j<8; j++ )
+      fprintf(fo, "%3d,", output[j|i<<3]);
+  }
+  outpos= 0;
+  error= lodepng_decode32_file(&image, &width, &height, argv[2]);
   printf("Processing %s...\n", argv[2]);
-
-  for ( i= 0; i < height>>4; i++ )
+  if( error )
+    printf("Error %u: %s\n", error, lodepng_error_text(error)),
+    exit(-1);
+  if( width!= 256 || height!= 48 )
+    printf("Error. Incorrect size on %s, must be 256x48", argv[2]);
+  for ( i= 0; i < 3; i++ )
     for ( j= 0; j < 16; j++ ){
-      celdas[0]= celdas[1]= celdas[2]= celdas[3]= atr= 0;
+      celdas[0]= celdas[1]= celdas[2]= celdas[3]= 0;
       pixel= &image[((j|i<<8)<<4)<<2];
       fondo= tinta= tospec(pixel[0], pixel[1], pixel[2]);
       for ( k= 0; k < 8; k++ )
@@ -135,11 +146,35 @@ int main(int argc, char *argv[]){
       for ( k= 0; k < 4; k++ )
         for ( l= 0; l < 8; l++ )
           output[outpos++]= celdas[k]>>(56-l*8);
-      for ( l= 0; l < 4; l++ )
-        output[outpos++]= atr>>(24-l*8);
     }
-  fo= fopen("tiles.bin", "wb+");
-  fwrite(output, 1, outpos, fo);
+  for ( i= 0; i<192; i++ ){
+    fprintf(fo, "\n");
+    for ( j= 0; j<8; j++ )
+      fprintf(fo, "%3d,", output[j|i<<3]);
+  }
+  outpos= 0;
+  error= lodepng_decode32_file(&image, &width, &height, argv[1]);
+  for ( i= 0; i < 2; i++ )
+    for ( j= 0; j < 32; j++ ){
+      atr= 0;
+      pixel= &image[((j|i<<8)<<3)<<2];
+      fondo= tinta= tospec(pixel[0], pixel[1], pixel[2]);
+      for ( k= 0; k < 8; k++ )
+        for ( l= 0; l < 8; l++ )
+          chargen();
+      atrgen();
+      for ( l= 0; l < 4; l++ )
+        output[outpos++]= atr;
+    }
+  for ( i= 0; i<8; i++ ){
+    fprintf(fo, "\n");
+    for ( j= 0; j<8; j++ )
+      fprintf(fo, "%3d,", output[j|i<<3]);
+  }
+
+
+//  fo= fopen("tiles.bin", "wb+");
+//  fwrite(output, 1, outpos, fo);
   fclose(fo);
   free(image);
   return 0;
