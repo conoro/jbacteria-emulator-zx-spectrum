@@ -40,7 +40,7 @@ int main(int argc, char *argv[]){
   for ( i= 0; i < height>>6; i++ )
     for ( j= 0; j < 32; j++ )
       for ( k= 0; k < 8; k++ ){
-        atr= celda= 0;
+        celda= 0;
         pixel= &image[(i<<14 | j<<3 | k<<11)<<2];
         fondo= tinta= tospec(pixel[0], pixel[1], pixel[2]);
         for ( l= 0; l < 8; l++ )
@@ -60,20 +60,19 @@ int main(int argc, char *argv[]){
             celda<<= 1;
             celda|= fondo != tospec(pixel[0], pixel[1], pixel[2]);
           }
-        atr<<= 8;
         if( fondo==tinta ){
           if( tinta )
             celda= 0xffffffffffffffff,
-            atr|= tinta&7 | tinta<<3&64;
+            atr= tinta&7 | tinta<<3&64;
           else
             celda= 0,
-            atr|= 7;
+            atr= 7;
         }
         else if( fondo<tinta )
-          atr|= fondo<<3 | tinta&7 | tinta<<3&64;
+          atr= fondo<<3 | tinta&7 | tinta<<3&64;
         else
           celda^= 0xffffffffffffffff,
-          atr|= tinta<<3 | fondo&7 | fondo<<3&64;
+          atr= tinta<<3 | fondo&7 | fondo<<3&64;
         for ( l= 0; l < 8; l++ )
           output[outpos++]= celda>>(56-l*8);
         output[outatr | i<<8 | k<<5 | j]= atr;
