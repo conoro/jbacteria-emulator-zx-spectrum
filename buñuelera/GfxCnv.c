@@ -33,9 +33,14 @@ void celdagen(int n){
 
 void atrgen(){
   atr<<= 8;
-  if( fondo==tinta )
-    celdas[k>>4<<1 | l>>4]= 0,
-    atr|= tinta==0 ? 7 : tinta&7 | tinta<<3&64;
+  if( fondo==tinta ){
+    if( tinta )
+      celdas[k>>4<<1 | l>>4]= 0xffffffffffffffff,
+      atr|= tinta&7 | tinta<<3&64;
+    else
+      celdas[k>>4<<1 | l>>4]= 0,
+      atr|= 7;
+  }
   else if( fondo<tinta )
     atr|= fondo<<3 | tinta&7 | tinta<<3&64;
   else
