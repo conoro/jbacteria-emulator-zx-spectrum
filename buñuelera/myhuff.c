@@ -3,18 +3,26 @@ int nodes[512][3];
 
 typedef struct node Node;
 
-int freq[]= {5, 7, 10, 15, 20, 45};
-int elems= 6;
-int i, min1, min2, mind1, mind2;
+int freq[]= {81, 15, 28, 43, 128, 23, 20, 61, 71, 2, 1, 40, 24, 69, 76, 20, 1, 61, 64, 91, 28, 10, 24, 1, 20, 1, 130};
+//int freq[]= {5, 7, 10, 15, 20, 45};
+int pila[16];
+int lenw[16];
+int doble, elems= 27;
+//int doble, elems= 6;
+int i, min1, min2, mind1, mind2, sp= 0;
 
 int main(){
+
+  for ( i= 0; i<16; i++ )
+    lenw[i]= 0;
 
   for ( i= 1; i<elems+1; i++ )
     nodes[i][0]= freq[i-1],
     nodes[i][1]= 0,
     nodes[i][2]= 0;
 
-  while ( ++elems<12 ){
+  doble= elems<<1;
+  while ( ++elems<doble ){
     min1= min2= mind1= mind2= 1e8;
     for ( i= 1; i<elems; i++ )
       if( nodes[i][0] && nodes[i][0]<min2 ){
@@ -32,12 +40,22 @@ int main(){
     nodes[elems][2]= mind2;
     nodes[mind1][0]= nodes[mind2][0]= 0;
   }
-  for ( i= 1; i<12; i++ )
-    printf("[%d,%d,%d] ", nodes[i][0], nodes[i][1], nodes[i][2]);
-/*  Node tree[6*2];
-  for ( i= 0; i<6; i++ )
-    tree[i]->value= freq[i],
-    tree[i]->left= NULL,
-    tree[i]->right= NULL;*/
-
+  pila[sp]= - --elems;
+  elems= nodes[elems][1];
+  while ( sp>=0 ){
+  printf( "%d,%d \n", elems, pila[sp]);
+    if( nodes[elems][1] )
+      pila[++sp]= -elems,
+      elems= nodes[elems][1];
+    else{
+      lenw[sp]++;
+      if( pila[sp]>0 )
+        while ( (elems= pila[--sp])>0 );
+      elems= nodes[-pila[sp]][2];
+      pila[sp]= -pila[sp];
+    }
+      
+  }
+  for ( i= 0; i<16; i++ )
+    printf("%d,", lenw[i]);
 }
