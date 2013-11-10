@@ -1,67 +1,64 @@
-
-        ld      (desc1+1), sp
+        ld      (desc2+1), sp
         inc     a
         ld      b, a
         ld      sp, map-1
         ld      de, $ffff
         ld      hl, fin
-suma    pop     af
+desc1   pop     af
         add     hl, de
         ld      e, a
         dec     sp
-        djnz    suma
-desc1:  ld      sp, 0
+        djnz    desc1
+desc2   ld      sp, 0
         ld      de, buffer+149
-
-; descompresor
         rr      b
-byte_loop:
-        ld      a, 256 >> bitsymbol
-repet:  call    gbitb
-        jr      nc, repet
-        ld      (de), a
+desc3   ld      a, 256 >> bitsym
+desc4   call    gbit3
+        jr      nc, desc4
+      IF bithalf=1
+        rrca
+        jr      nc, desc5
+        add     8
+        call    gbit3
+      ENDIF
+desc5   ld      (de), a
         dec     de
-conti:  ld      a, e
-        cp      buffer-1 & 255
+desc6   ld      a, e
+        or      a
         ret     z
-        call    gbita
+        call    gbit3
         rra
-        jr      nc, byte_loop
-
-patro:  push    de
+        jr      nc, desc3
+        push    de
         ld      a, 1
-
-; determine length
-elias_gamma:
-        call    nc, gbitb
-        call    gbita
+desc7   call    nc, gbit3
+        call    gbit2
         rra
-        jr      nc, elias_gamma
+        jr      nc, desc7
         inc     a
         ld      c, a
-
         xor     a
         ld      de, 15
-        call    gbitb
-        call    gbitb
-        jr      z, sale     ;00 = -1
+        call    gbit3
+        call    gbit3
+        jr      z, desca    ;00 = -1
         dec     a
-        call    gbitb
-        jr      z, sale3    ;010 = -15
+        call    gbit3
+        jr      z, descc    ;010 = -15
         cp      4
-        jr      nc, noca
-        call    gbita       ;[011, 100, 101] xx
+        jr      nc, desc8
+        call    gbit2       ;[011, 100, 101] xx
         dec     a
-        call    gbitb
-        jr      sale2
-noca:   dec     e           ;[110, 111] xxxxxx
-noce:   call    gbitb
-        jr      nc, noce
-        jr      z, sale3
+        call    gbit3
+        jr      descb
+desc8   dec     e           ;[110, 111] xxxxxx
+desc9   call    gbit3
+        jr      nc, desc9
+        jr      z, descc
         add     e
-sale:   inc     a
-sale2:  ld      e, a
-sale3:  ld      a, b
+desca   inc     a
+descb   ld      e, a
+descc   ld      a, b
         ld      b, d
         ex      (sp), hl
         ex      de, hl
@@ -69,13 +66,12 @@ sale3:  ld      a, b
         lddr
         pop     hl
         ld      b, a
-        jr      conti
-
-naaa:   ld      b, (hl)
+        jr      desc6
+gbit1   ld      b, (hl)
         dec     hl
         db      $30
-gbita:  and     a
-gbitb:  rl      b
-        jr      z, naaa
+gbit2   and     a
+gbit3   rl      b
+        jr      z, gbit1
         adc     a, a
         ret

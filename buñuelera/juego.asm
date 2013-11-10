@@ -4,8 +4,9 @@
         DEFINE  scrw  15
         DEFINE  scrh  10
 
-        DEFINE  bitsymbol 6
-        DEFINE  buffer    $5df2
+        DEFINE  bitsym  5
+        DEFINE  bithalf 1
+        DEFINE  buffer  $5b01
 
     MACRO   mult8x8 data
         ld      d, 0
@@ -97,13 +98,10 @@ pact    jr      bucl
 paint_map:
         ld      (paint4+1), sp
         call    descom
-        ;inc     e
-        ;ex      de, hl
-        ;exx
         ld      hl, $4010-scrw
         ld      bc, $5810-scrw
         exx
-          ld      hl, buffer
+        ld      hl, buffer
         ld      bc, hl
         ld      a, scrh
 paint1  ex      af, af'

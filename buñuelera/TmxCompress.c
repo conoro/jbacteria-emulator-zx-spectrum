@@ -30,9 +30,8 @@
 
 #define MAX_OFFSET  142   /* range 1..142 */
 #define MAX_LEN    65536  /* range 2..65536 */
-#define BITS_SYMBOL   6
 
-unsigned char* output_data;
+unsigned char *output_data, bitsymb, bithalf;
 size_t output_index;
 int bit_mask;
 
@@ -87,9 +86,9 @@ Optimal* optimize(unsigned char *input_data, size_t input_size){
   if( !min || !max || !matches || !match_slots || !optimal  )
     fprintf(stderr, "Error: Insufficient memory\n"),
     exit(1);
-  optimal[0].bits= BITS_SYMBOL;
+  optimal[0].bits= bithalf ? (input_data[0]<1<<bitsymb-1?bitsymb:bitsymb+1) : bitsymb;
   for ( i= 1; i < input_size; i++ ){
-    optimal[i].bits= optimal[i-1].bits + 1 + BITS_SYMBOL;
+    optimal[i].bits= optimal[i-1].bits + 1 + (bithalf ? (input_data[i]<1<<bitsymb-1?bitsymb:bitsymb+1) : bitsymb);
     match_index= input_data[i-1] << 8 | input_data[i];
     best_len= 1;
     for ( match= &matches[match_index]
@@ -169,13 +168,41 @@ unsigned char *compress(Optimal *optimal, unsigned char *input_data, size_t inpu
     input_index= input_prev;
   output_index= 0;
   bit_mask= 0;
-  for ( i= 1<<BITS_SYMBOL-1; i>0; i>>= 1 )
-    write_bit(input_data[0]&i);
+  if( bithalf ){
+    if( input_data[0]<1<<bitsymb-1 ){
+      for ( i= 1<<bitsymb-2; i>0; i>>= 1 )
+        write_bit(input_data[0]&i);
+      write_bit(0);
+    }
+    else{
+      for ( i= 1<<bitsymb-1; i>1; i>>= 1 )
+        write_bit(input_data[0]-(1<<bitsymb-1)&i);
+      write_bit(1);
+      write_bit(input_data[0]&1);
+    }
+  }
+  else
+    for ( i= 1<<bitsymb-1; i>0; i>>= 1 )
+      write_bit(input_data[0]&i);
   while ( (input_index = optimal[input_index].bits) > 0 )
     if( optimal[input_index].len == 0 ){
       write_bit(0);
-      for ( i= 1<<BITS_SYMBOL-1; i>0; i>>= 1 )
-        write_bit(input_data[input_index]&i);
+      if( bithalf ){
+        if( input_data[input_index]<1<<bitsymb-1 ){
+          for ( i= 1<<bitsymb-2; i>0; i>>= 1 )
+            write_bit(input_data[input_index]&i);
+          write_bit(0);
+        }
+        else{
+          for ( i= 1<<bitsymb-1; i>1; i>>= 1 )
+            write_bit(input_data[input_index]-(1<<bitsymb-1)&i);
+          write_bit(1);
+          write_bit(input_data[input_index]&1);
+        }
+      }
+      else
+        for ( i= 1<<bitsymb-1; i>0; i>>= 1 )
+          write_bit(input_data[input_index]&i);
     }
     else{
       write_bit(1);
@@ -231,8 +258,7 @@ int main(int argc, char* argv[]){
     printf("\nTmxCompress v1.10, Map compressor by Antonio Villena, 10 Nov 2013\n\n"),
     printf("  TmxCompress <input_tmx> <output_compressed>\n\n"),
     printf("  <input_tmx>         Origin .TMX file\n"),
-    printf("  <output_compressed> Generated binary compressed map\n"),
-    printf("compiled bitsymbol: %i\n\n", BITS_SYMBOL),
+    printf("  <output_compressed> Generated binary compressed map\n\n"),
     exit(0);
   if( argc!=3 )
     printf("\nInvalid number of parameters\n"),
@@ -269,9 +295,14 @@ int main(int argc, char* argv[]){
   }
   maph= scrh-size/mapw/scrw+1;
   scrh= (scrh-maph+1)/maph;
-  tmpi= 0;
+  for ( j= i= 0; i<size; i++ )
+    if( mem[i]>j )
+      j= mem[i];
+  for ( bitsymb= 0, i= j; i ; bitsymb++, i>>= 1 );
+  bithalf= !(1<<bitsymb-2 & j);
+  bithalf && bitsymb--;
   out= (unsigned char *) malloc (maph*mapw*scrh*scrw);
-  for ( i= 0; i<maph; i++ )
+  for ( tmpi= i= 0; i<maph; i++ )
     for ( j= 0; j<mapw; j++ )
       for ( k= 0; k<scrh; k++ )
         for ( l= 0; l<scrw; l++ )
@@ -303,5 +334,6 @@ int main(int argc, char* argv[]){
       output_data[output_size-1-k]= tmpchar;
     fwrite(output_data, 1, output_size, fo);
   }
-  printf("\nFile generated successfully\n");
+  printf("\nFile generated successfully\n  DMAP_BITSYMB = %d\n"
+         "  DMAP_BITHALF = %d\n", bitsymb, bithalf);
 }
