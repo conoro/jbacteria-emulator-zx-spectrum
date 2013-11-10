@@ -4,9 +4,9 @@
         DEFINE  scrw  15
         DEFINE  scrh  10
 
-        DEFINE  bitsym  5
-        DEFINE  bithalf 1
-        DEFINE  buffer  $5b01
+        DEFINE  DMAP_BITSYMB 5
+        DEFINE  DMAP_BITHALF 1
+        DEFINE  DMAP_BUFFER  $5b01
 
     MACRO   mult8x8 data
         ld      d, 0
@@ -101,7 +101,7 @@ paint_map:
         ld      hl, $4010-scrw
         ld      bc, $5810-scrw
         exx
-        ld      hl, buffer
+        ld      hl, DMAP_BUFFER
         ld      bc, hl
         ld      a, scrh
 paint1  ex      af, af'
