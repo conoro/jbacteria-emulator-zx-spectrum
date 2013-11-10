@@ -88,7 +88,7 @@ void salida(int n){
 
 int main(int argc, char *argv[]){
   if( argc==1 )
-    printf("\nGfxCnv v0.99. Chars, tiles and sprites generator by AntonioVillena, 6 Nov 2013\n\n"
+    printf("\nGfxCnv v1.10. Chars, tiles and sprites generator by AntonioVillena,10 Nov 2013\n\n"
            "  GfxCnv <in_chars> <in_tiles> <in_sprites> <out_tileset> <out_sprites>\n\n"
            "  <input_chars>     Normally chars.png\n"
            "  <input_tiles>     Normally tiles.png\n"

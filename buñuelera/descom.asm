@@ -5,8 +5,8 @@
         ld      sp, map-1
         ld      de, $ffff
         ld      hl, fin
-suma    add     hl, de
-        pop     af
+suma    pop     af
+        add     hl, de
         ld      e, a
         dec     sp
         djnz    suma
@@ -14,10 +14,10 @@ desc1:  ld      sp, 0
         ld      de, buffer+149
 
 ; descompresor
-        ld      b, $80
+        rr      b
 byte_loop:
         ld      a, 256 >> bitsymbol
-repet:  call    gbita
+repet:  call    gbitb
         jr      nc, repet
         ld      (de), a
         dec     de
@@ -33,7 +33,7 @@ patro:  push    de
 
 ; determine length
 elias_gamma:
-        call    nc, gbita
+        call    nc, gbitb
         call    gbita
         rra
         jr      nc, elias_gamma
@@ -41,36 +41,33 @@ elias_gamma:
         ld      c, a
 
         xor     a
-        ld      e, 14
-        call    gbita
-        call    gbita
-        jr      z, sale
+        ld      de, 15
+        call    gbitb
+        call    gbitb
+        jr      z, sale     ;00 = -1
         dec     a
-        call    gbita
-        jr      z, sale2
+        call    gbitb
+        jr      z, sale3    ;010 = -15
         cp      4
         jr      nc, noca
-        call    gbita
-        call    gbita
-        sub     3
-        jr      sale
-noca:   dec     e
-noce:   call    gbita
+        call    gbita       ;[011, 100, 101] xx
+        dec     a
+        call    gbitb
+        jr      sale2
+noca:   dec     e           ;[110, 111] xxxxxx
+noce:   call    gbitb
         jr      nc, noce
-        jr      z, sale2
-        add     14
-sale:   ld      e, a
-sale2:  xor     a
-        ld      d, a
-        ld      a, b
+        jr      z, sale3
+        add     e
+sale:   inc     a
+sale2:  ld      e, a
+sale3:  ld      a, b
         ld      b, d
-        inc     e
-; copy previous sequence
-        ex      (sp), hl                ; store source, restore destination
+        ex      (sp), hl
         ex      de, hl
         add     hl, de
         lddr
-        pop     hl                      ; restore source address (compressed data)
+        pop     hl
         ld      b, a
         jr      conti
 
@@ -78,7 +75,7 @@ naaa:   ld      b, (hl)
         dec     hl
         db      $30
 gbita:  and     a
-        rl      b
+gbitb:  rl      b
         jr      z, naaa
         adc     a, a
         ret

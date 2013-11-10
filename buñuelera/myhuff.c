@@ -3,11 +3,13 @@ int nodes[512][3];
 
 typedef struct node Node;
 
-int freq[]= {81, 15, 28, 43, 128, 23, 20, 61, 71, 2, 1, 40, 24, 69, 76, 20, 1, 61, 64, 91, 28, 10, 24, 1, 20, 1, 130};
+int freq[]= {85, 62, 61, 59, 55, 47, 23, 17, 17, 15, 11, 11, 10, 10, 04, 02};
+
+
 //int freq[]= {5, 7, 10, 15, 20, 45};
 int pila[16];
 int lenw[16];
-int doble, elems= 27;
+int doble, elems= 16;
 //int doble, elems= 6;
 int i, min1, min2, mind1, mind2, sp= 0;
 

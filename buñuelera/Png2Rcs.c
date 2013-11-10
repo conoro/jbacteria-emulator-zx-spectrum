@@ -16,7 +16,7 @@ int tospec(int r, int g, int b){
 
 int main(int argc, char *argv[]){
   if( argc==1 )
-    printf("\nPng2Rcs v0.99. Image to ZX Spectrum RCS screen by AntonioVillena, 7 Nov 2013\n\n"
+    printf("\nPng2Rcs v1.10. Image to ZX Spectrum RCS screen by AntonioVillena, 10 Nov 2013\n\n"
            "  Png2Rcs <input_png> <output_rcs> [output_attr]\n\n"
            "  <input_png>     256x64, 256x128 or 256x192 png file\n"
            "  <output_rcs>    ZX spectrum output in RCS format\n"

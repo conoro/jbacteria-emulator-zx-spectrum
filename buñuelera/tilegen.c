@@ -42,7 +42,7 @@ atrgen(){
 
 int main(int argc, char *argv[]){
   output= (unsigned char *) malloc (0x10000);
-  error= lodepng_decode32_file(&image, &width, &height, "work.png");
+  error= lodepng_decode32_file(&image, &width, &height, "tiles.png");
   if( error )
     printf("Error %u: %s\n", error, lodepng_error_text(error)),
     exit(-1);

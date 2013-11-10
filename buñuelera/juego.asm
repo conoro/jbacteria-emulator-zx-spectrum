@@ -1,10 +1,10 @@
 
-        DEFINE  mapw  8
-        DEFINE  maph  3
+        DEFINE  mapw  12
+        DEFINE  maph  2
         DEFINE  scrw  15
         DEFINE  scrh  10
 
-        DEFINE  bitsymbol 4
+        DEFINE  bitsymbol 6
         DEFINE  buffer    $5df2
 
     MACRO   mult8x8 data
@@ -53,16 +53,10 @@ aki     pop     hl
         ld      bc, fin-ini
         ldir
         jp      $8000
-bucl      ld      a, (x)
-          ld      l, a
-          ld      a, (y)
-          add     a, a
-          add     a, a
-          add     a, a
-        ;ld      a, (y)
-        ;ld      e, a
-        ;mult8x8 mapw
-        ;ld      a, (x)
+bucl    ld      a, (y)
+        ld      e, a
+        mult8x8 mapw
+        ld      a, (x)
         add     a, l
         di
         call    paint_map
