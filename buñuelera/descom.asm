@@ -17,48 +17,45 @@ desc4:  call    gbit3
         jr      nc, desc4
       IF DMAP_BITHALF=1
         rrca
-        jr      nc, desc5
-        add     8
-        call    gbit3
+        call    c, gbit1
       ENDIF
-desc5:  ld      (de), a
-        dec     de
-desc6:  ld      a, e
-        or      a
+        ld      (de), a
+desc5:  dec     e
         ret     z
         call    gbit3
         rra
         jr      nc, desc3
         push    de
         ld      a, 1
-desc7:  call    nc, gbit3
-        call    gbit2
+desc6:  call    nc, gbit3
+        and     a
+        call    gbit3
         rra
-        jr      nc, desc7
+        jr      nc, desc6
         inc     a
         ld      c, a
         xor     a
         ld      de, 15
         call    gbit3
         call    gbit3
-        jr      z, desca    ;00 = -1
+        jr      z, desc9    ;00 = -1
         dec     a
         call    gbit3
-        jr      z, descc    ;010 = -15
-        cp      4
+        jr      z, descb    ;010 = -15
+        bit     2, a
+        jr      nz, desc7
+        call    gbit3       ;[011, 100, 101] xx
+        dec     a
+        call    gbit3
+        jr      desca
+desc7:  dec     e           ;[110, 111] xxxxxx
+desc8:  call    gbit3
         jr      nc, desc8
-        call    gbit2       ;[011, 100, 101] xx
-        dec     a
-        call    gbit3
-        jr      descb
-desc8:  dec     e           ;[110, 111] xxxxxx
-desc9:  call    gbit3
-        jr      nc, desc9
-        jr      z, descc
+        jr      z, descb
         add     e
-desca:  inc     a
-descb:  ld      e, a
-descc:  ld      a, b
+desc9:  inc     a
+desca:  ld      e, a
+descb:  ld      a, b
         ld      b, d
         ex      (sp), hl
         ex      de, hl
@@ -66,12 +63,15 @@ descc:  ld      a, b
         lddr
         pop     hl
         ld      b, a
-        jr      desc6
-gbit1:  ld      b, (hl)
+        inc     e
+        jr      desc5
+      IF DMAP_BITHALF=1
+gbit1:  sub     $80 - (1 << DMAP_BITSYMB - 2)
+        defb    $da
+      ENDIF
+gbit2:  ld      b, (hl)
         dec     hl
-        defb    $30
-gbit2:  and     a
 gbit3:  rl      b
-        jr      z, gbit1
+        jr      z, gbit2
         adc     a, a
         ret
