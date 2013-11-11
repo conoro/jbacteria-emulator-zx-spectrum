@@ -1,5 +1,4 @@
 TmxCompress nightmare.tmx mapa_comprimido.bin
-PosterizeZX awork.png tiles.png
 \_Downloads\dm\bin\dmc tilegen.c lodepng.c
 tilegen
 ..\sjasmplus juego.asm
