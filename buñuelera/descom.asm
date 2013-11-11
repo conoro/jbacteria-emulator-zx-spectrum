@@ -3,9 +3,10 @@
         ld      b, a
         ld      sp, map-1
         ld      de, $ffff
-        ld      hl, fin
+        ld      hl, fin-1
 desc1:  pop     af
         add     hl, de
+        inc     hl
         ld      e, a
         dec     sp
         djnz    desc1

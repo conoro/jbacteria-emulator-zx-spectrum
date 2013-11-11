@@ -33,7 +33,7 @@
 
 unsigned char *output_data, bitsymb, bithalf;
 size_t output_index;
-int bit_mask;
+int bit_mask, scrw, scrh;
 
 typedef struct match_t {
   size_t index;
@@ -247,10 +247,18 @@ unsigned char *compress(Optimal *optimal, unsigned char *input_data, size_t inpu
   return output_data;
 }
 
+int empty(unsigned char *input_data){
+  int scrsize= 0;
+  while ( *input_data++ )
+    scrsize++;
+// printf("%d %d, ", scrsize, scrw*scrh);
+  return scrsize == scrw*scrh;
+}
+
 int main(int argc, char* argv[]){
   unsigned char tmpchar, *mem, *out, *input_data;
   size_t output_size;
-  int error, width, height, size= 0, scrw, scrh, mapw, maph, tmpi, i, j, k, l;
+  int error, width, height, size= 0, mapw, maph, tmpi, i, j, k, l;
   char *fou, *token, tmpstr[1000];
   FILE *fi, *fo;
   mem= (unsigned char *) malloc (0x10000);
@@ -320,19 +328,24 @@ int main(int argc, char* argv[]){
   if( !fo )
     printf("\nCannot create output file: %s\n", argv[2]),
     exit(-1);
-  for ( i= maph*mapw-1; i>0; i-- )
-    input_data= out+i*scrh*scrw,
-    output_data= compress(optimize(input_data, scrh*scrw), input_data, scrh*scrw, &output_size),
-    tmpchar= (output_size^0xff)+1,
+  for ( i= maph*mapw-1; i>0; i-- ){
+    if( empty(input_data= out+i*scrh*scrw) )
+      output_size= 0;
+    else
+      output_data= compress(optimize(input_data, scrh*scrw), input_data, scrh*scrw, &output_size);
+    tmpchar= output_size^0xff;
     fwrite(&tmpchar, 1, 1, fo);
+  }
   for ( i= 0; i<maph*mapw; i++ ){
     input_data= out+i*scrh*scrw;
-    output_data= compress(optimize(input_data, scrh*scrw), input_data, scrh*scrw, &output_size);
-    for ( k= 0; k<output_size>>1; k++ )
-      tmpchar= output_data[k],
-      output_data[k]= output_data[output_size-1-k],
-      output_data[output_size-1-k]= tmpchar;
-    fwrite(output_data, 1, output_size, fo);
+    if( !empty(input_data= out+i*scrh*scrw) ){
+      output_data= compress(optimize(input_data, scrh*scrw), input_data, scrh*scrw, &output_size);
+      for ( k= 0; k<output_size>>1; k++ )
+        tmpchar= output_data[k],
+        output_data[k]= output_data[output_size-1-k],
+        output_data[output_size-1-k]= tmpchar;
+      fwrite(output_data, 1, output_size, fo);
+    }
   }
   printf("\nFile generated successfully\n  DMAP_BITSYMB = %d\n"
          "  DMAP_BITHALF = %d\n", bitsymb, bithalf);
