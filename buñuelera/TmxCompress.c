@@ -249,10 +249,9 @@ unsigned char *compress(Optimal *optimal, unsigned char *input_data, size_t inpu
 
 int empty(unsigned char *input_data){
   int scrsize= 0;
-  while ( *input_data++ )
+  while ( !*input_data++ )
     scrsize++;
-// printf("%d %d, ", scrsize, scrw*scrh);
-  return scrsize == scrw*scrh;
+  return scrsize+1 == scrw*scrh;
 }
 
 int main(int argc, char* argv[]){
