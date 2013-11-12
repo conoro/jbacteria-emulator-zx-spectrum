@@ -1,4 +1,3 @@
-        inc     a
         ld      de, map
         ld      hl, fin-1
         ld      bc, 0
@@ -8,7 +7,7 @@ desc1:  sbc     hl, bc
         ex      de, hl
         inc     de
         dec     a
-        jr      nz, desc1
+        jp      p, desc1
         ld      de, DMAP_BUFFER+149
         ld      b, $80          ; marker bit
 desc2:  ld      a, 256 >> DMAP_BITSYMB
