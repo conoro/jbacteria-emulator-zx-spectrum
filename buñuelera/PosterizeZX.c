@@ -20,8 +20,8 @@ unsigned char *image, *pixel, colors[][3]= {
 unsigned error, width, height, i, calc, min, minind, size;
 int main(int argc, char *argv[]){
   if( argc==1 )
-    printf("\nPosterizeZX v1.10. Transform an image to ZX Spectrum colors (no color clash)\n"
-           "                                                by AntonioVillena, 10 Nov 2013\n\n"
+    printf("\nPosterizeZX v1.11. Transform an image to ZX Spectrum colors (no color clash)\n"
+           "                                                by AntonioVillena, 11 Nov 2013\n\n"
            "  PosterizeZX <input_file> <output_file>\n\n"
            "  <input_file>      PNG input file\n"
            "  <output_file>     PNG output file\n\n"

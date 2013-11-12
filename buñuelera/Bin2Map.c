@@ -5,7 +5,7 @@ int main(int argc, char* argv[]){
   FILE *fi, *fo;
   int size, scrw, scrh, mapw, maph, i, j, k, l;
   if( argc==1 )
-    printf("\nBin2Map v1.10, MAP file (Mappy) to TMX (Tiled) by Antonio Villena, 10 Nov 2013\n\n"
+    printf("\nBin2Map v1.11, MAP file (Mappy) to TMX (Tiled) by Antonio Villena, 11 Nov 2013\n\n"
            "  Bin2Map       <map_width> <map_height> <screen_width> <screen_height>\n"
            "                <input_map> <output_tmx>\n\n"
            "  <map_width>       Map width\n"

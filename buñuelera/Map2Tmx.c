@@ -7,7 +7,7 @@ int main(int argc, char* argv[]){
   int size, scrw, scrh, mapw, maph, lock, i, j, k, l;
   unsigned char type, xi, xe, yi, ye, speed;
   if( argc==1 )
-    printf("\nMap2Tmx v1.10, MAP file (Mappy) to TMX (Tiled) by Antonio Villena, 10 Nov 2013\n\n"
+    printf("\nMap2Tmx v1.11, MAP file (Mappy) to TMX (Tiled) by Antonio Villena, 11 Nov 2013\n\n"
            "  Map2Tmx       <map_width> <map_height> <screen_width> <screen_height>\n"
            "                <lock> <output_tmx> [<input_map>] [<input_ene>]\n\n"
            "  <map_width>       Map width\n"

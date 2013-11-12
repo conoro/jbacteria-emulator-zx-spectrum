@@ -7,7 +7,7 @@ FILE *fi;
 
 int main(int argc, char *argv[]){
   if( argc==1 )
-    printf("\nGfxInv v1.10. Chars, tiles and sprites dumper by Antonio Villena, 10 Nov 2013\n\n"
+    printf("\nGfxInv v1.11. Chars, tiles and sprites dumper by Antonio Villena, 11 Nov 2013\n\n"
            "  GfxInv <in_tileset> <in_sprites> <out_chars> <out_tiles> <out_sprites>\n\n"
            "  <input_tileset>  Input binary char+tiles\n"
            "  <input_sprites>  Input binary sprites.h\n"
