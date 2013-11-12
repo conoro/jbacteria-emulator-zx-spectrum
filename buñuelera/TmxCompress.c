@@ -332,7 +332,7 @@ int main(int argc, char* argv[]){
       output_size= 0;
     else
       output_data= compress(optimize(input_data, scrh*scrw), input_data, scrh*scrw, &output_size);
-    tmpchar= output_size^0xff;
+    tmpchar= output_size;
     fwrite(&tmpchar, 1, 1, fo);
   }
   for ( i= 0; i<maph*mapw; i++ ){
