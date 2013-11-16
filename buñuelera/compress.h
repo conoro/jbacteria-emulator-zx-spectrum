@@ -10,7 +10,7 @@ void unpack (unsigned int address, unsigned int destination) {
         inc     hl
         ld      h, (hl)
         ld      l, a
-        jp      $5d44
+        jp      $5d00
   #endasm
 }
 
@@ -64,21 +64,19 @@ desc5:  call    nc, gbit3       ; (Elias gamma coding)
         jr      z, desc8        ; 00 = 1
         dec     a
         call    gbit3
-        jr      z, desca        ; 010 = 15
+        jr      z, desc9        ; 010 = 15
         bit     2, a
         jr      nz, desc6
-        call    gbit3           ; [011, 100, 101] xx = from 2 to 13
-        dec     a
-        call    gbit3
-        jr      desc9
+        add     a, $7c          ; [011, 100, 101] xx = from 2 to 13
+        dec     e
 desc6:  dec     e               ; [110, 111] xxxxxx = 14 and from 16 to 142
 desc7:  call    gbit3
         jr      nc, desc7
-        jr      z, desca
-        add     e
+        jr      z, desc9
+        add     a, e
 desc8:  inc     a
-desc9:  ld      e, a
-desca:  ld      a, b            ; save b (byte reading) on a
+        ld      e, a
+desc9:  ld      a, b            ; save b (byte reading) on a
         ld      b, d            ; b= 0 because lddr moves bc bytes
         ex      (sp), hl        ; store source, restore destination
         ex      de, hl          ; HL = destination + offset + 1
