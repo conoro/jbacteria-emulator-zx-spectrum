@@ -82,7 +82,7 @@ bucl    ld      a, (y)
         call    paint_map
 
 
-        copyline $00, $000
+        copyline $90, $000
         copyline $01, $00c
         copyline $02, $100
         copyline $03, $10c
@@ -114,7 +114,7 @@ bucl    ld      a, (y)
         copyline $1d, $62c
         copyline $1e, $720
         copyline $1f, $72c
-        copyline $20, $040
+        copyline $b0, $040
         copyline $21, $04c
         copyline $22, $140
         copyline $23, $14c
@@ -210,6 +210,134 @@ bucl    ld      a, (y)
         copyline $7d, $6ec
         copyline $7e, $7e0
         copyline $7f, $7ec
+        copyline $80, $800
+        copyline $81, $80c
+        copyline $82, $900
+        copyline $83, $90c
+        copyline $84, $a00
+        copyline $85, $a0c
+        copyline $86, $b00
+        copyline $87, $b0c
+        copyline $88, $c00
+        copyline $89, $c0c
+        copyline $8a, $d00
+        copyline $8b, $d0c
+        copyline $8c, $e00
+        copyline $8d, $e0c
+        copyline $8e, $f00
+        copyline $8f, $f0c
+        copyline $90, $800
+        copyline $91, $80c
+        copyline $92, $920
+        copyline $93, $92c
+        copyline $94, $a20
+        copyline $95, $a2c
+        copyline $96, $b20
+        copyline $97, $b2c
+        copyline $98, $c20
+        copyline $99, $c2c
+        copyline $9a, $d20
+        copyline $9b, $d2c
+        copyline $9c, $e20
+        copyline $9d, $e2c
+        copyline $9e, $f20
+        copyline $9f, $f2c
+        copyline $a0, $840
+        copyline $a1, $84c
+        copyline $a2, $940
+        copyline $a3, $94c
+        copyline $a4, $a40
+        copyline $a5, $a4c
+        copyline $a6, $b40
+        copyline $a7, $b4c
+        copyline $a8, $c40
+        copyline $a9, $c4c
+        copyline $aa, $d40
+        copyline $ab, $d4c
+        copyline $ac, $e40
+        copyline $ad, $e4c
+        copyline $ae, $f40
+        copyline $af, $f4c
+        copyline $b0, $860
+        copyline $b1, $86c
+        copyline $b2, $960
+        copyline $b3, $96c
+        copyline $b4, $a60
+        copyline $b5, $a6c
+        copyline $b6, $b60
+        copyline $b7, $b6c
+        copyline $b8, $c60
+        copyline $b9, $c6c
+        copyline $ba, $d60
+        copyline $bb, $d6c
+        copyline $bc, $e60
+        copyline $bd, $e6c
+        copyline $be, $f60
+        copyline $bf, $f6c
+        copyline $c0, $880
+        copyline $c1, $88c
+        copyline $c2, $980
+        copyline $c3, $98c
+        copyline $c4, $a80
+        copyline $c5, $a8c
+        copyline $c6, $b80
+        copyline $c7, $b8c
+        copyline $c8, $c80
+        copyline $c9, $c8c
+        copyline $ca, $d80
+        copyline $cb, $d8c
+        copyline $cc, $e80
+        copyline $cd, $e8c
+        copyline $ce, $f80
+        copyline $cf, $f8c
+        copyline $d0, $8a0
+        copyline $d1, $8ac
+        copyline $d2, $9a0
+        copyline $d3, $9ac
+        copyline $d4, $aa0
+        copyline $d5, $aac
+        copyline $d6, $ba0
+        copyline $d7, $bac
+        copyline $d8, $ca0
+        copyline $d9, $cac
+        copyline $da, $da0
+        copyline $db, $dac
+        copyline $dc, $ea0
+        copyline $dd, $eac
+        copyline $de, $fa0
+        copyline $df, $fac
+        copyline $e0, $8c0
+        copyline $e1, $8cc
+        copyline $e2, $9c0
+        copyline $e3, $9cc
+        copyline $e4, $ac0
+        copyline $e5, $acc
+        copyline $e6, $bc0
+        copyline $e7, $bcc
+        copyline $e8, $cc0
+        copyline $e9, $ccc
+        copyline $ea, $dc0
+        copyline $eb, $dcc
+        copyline $ec, $ec0
+        copyline $ed, $ecc
+        copyline $ee, $fc0
+        copyline $ef, $fcc
+        copyline $f0, $8e0
+        copyline $f1, $8ec
+        copyline $f2, $9e0
+        copyline $f3, $9ec
+        copyline $f4, $ae0
+        copyline $f5, $aec
+        copyline $f6, $be0
+        copyline $f7, $bec
+        copyline $f8, $ce0
+        copyline $f9, $cec
+        copyline $fa, $de0
+        copyline $fb, $dec
+        copyline $fc, $ee0
+        copyline $fd, $eec
+        copyline $fe, $fe0
+        copyline $ff, $fec
 
         ei
 here    call    $10a8
