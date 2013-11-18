@@ -5,7 +5,7 @@ int main(int argc, char* argv[]){
   FILE *fi, *fo;
   int size, scrw, scrh, mapw, maph, i, j, k, l;
   if( argc==1 )
-    printf("\nBin2Map v1.11, MAP file (Mappy) to TMX (Tiled) by Antonio Villena, 11 Nov 2013\n\n"
+    printf("\nBin2Map v1.11, BIN file (dump) to MAP (Mappy) by Antonio Villena, 11 Nov 2013\n\n"
            "  Bin2Map       <map_width> <map_height> <screen_width> <screen_height>\n"
            "                <input_map> <output_tmx>\n\n"
            "  <map_width>       Map width\n"
@@ -14,7 +14,7 @@ int main(int argc, char* argv[]){
            "  <screen_height>   Screen height\n"
            "  <input_bin>       Origin binary file\n"
            "  <output_map>      Generated .map output file\n\n"
-           "Example: Map2Tmx 5 4 15 10 mapa.bin mapa.map\n"),
+           "Example: Bin2Map 5 4 15 10 mapa.bin mapa.map\n"),
     exit(0);
   if( argc!=7 )
     printf("\nInvalid number of parameters\n"),
@@ -39,10 +39,10 @@ int main(int argc, char* argv[]){
     exit(-1);
   out= malloc (mapw*maph*scrw*scrh);
   size= 0;
-  for ( int i= 0; i<maph; i++ )
-    for ( int j= 0; j<mapw; j++ )
-      for ( int k= 0; k<scrh; k++ )
-        for ( int l= 0; l<scrw; l++ )
+  for ( i= 0; i<maph; i++ )
+    for ( j= 0; j<mapw; j++ )
+      for ( k= 0; k<scrh; k++ )
+        for ( l= 0; l<scrw; l++ )
           out[i*mapw*scrh*scrw+j*scrw+k*mapw*scrw+l]= mem[size++];
   fwrite(out, 1, size, fo);
   fclose(fo);

@@ -253,7 +253,7 @@ int main(int argc, char* argv[]){
   FILE *fi, *fo;
   mem= (unsigned char *) malloc (0x10000);
   if( argc==1 )
-    printf("\nTmxCompress v1.11b, Map compressor by Antonio Villena, 11 Nov 2013\n\n"),
+    printf("\nTmxCompress v1.12, Map compressor by Antonio Villena, 18 Nov 2013\n\n"),
     printf("  TmxCompress <input_tmx> <output_compressed>\n\n"),
     printf("  <input_tmx>         Origin .TMX file\n"),
     printf("  <output_compressed> Generated binary compressed map\n\n"),
