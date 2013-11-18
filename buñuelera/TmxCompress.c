@@ -57,9 +57,9 @@ int elias_gamma_bits(int value){
 int count_bits(int offset, int len){
   if ( offset == 1 )
     return 3 + elias_gamma_bits(len-1);
-  else if( offset == 15 )
+  else if( offset == scrw )
     return 4 + elias_gamma_bits(len-1);
-  else if( offset < 14 )
+  else if( offset < (scrw<14?15:14) )
     return 6 + elias_gamma_bits(len-1);
   else
     return 10 + elias_gamma_bits(len-1);
@@ -211,29 +211,20 @@ unsigned char *compress(Optimal *optimal, unsigned char *input_data, size_t inpu
       if( offset1 == 0)
         write_bit(0),
         write_bit(0);
-      else if( offset1 == 13)
-        write_bit(1),
-        write_bit(1),
-        write_bit(0),
-        write_bit(0),
-        write_bit(0),
-        write_bit(0),
-        write_bit(0),
-        write_bit(0),
-        write_bit(0);
-      else if( offset1 == 14)
+      else if( offset1 == scrw-1)
         write_bit(0),
         write_bit(1),
         write_bit(0);
-      else if (offset1 < 13)
-        offset1+= 11,
+      else if( offset1 < (scrw<14?14:13) ){
+        offset1+= 11-(offset1<scrw?0:1),
         write_bit(offset1&16),
         write_bit(offset1&8),
         write_bit(offset1&4),
         write_bit(offset1&2),
         write_bit(offset1&1);
+      }
       else
-        offset1+= 114,
+        offset1+= 114-(offset1<scrw?1:0),
         write_bit(1),
         write_bit(1),
         write_bit(offset1&64),
@@ -302,6 +293,7 @@ int main(int argc, char* argv[]){
   }
   maph= scrh-size/mapw/scrw+1;
   scrh= (scrh-maph+1)/maph;
+ printf("%d %d ", scrw, scrh);
   for ( j= i= 0; i<size; i++ )
     if( mem[i]>j )
       j= mem[i];

@@ -1,12 +1,13 @@
 
         DEFINE  mapw  12
         DEFINE  maph  2
-        DEFINE  scrw  15
-        DEFINE  scrh  10
+        DEFINE  scrw  12
+        DEFINE  scrh  8
 
         DEFINE  DMAP_BITSYMB 5
         DEFINE  DMAP_BITHALF 1
         DEFINE  DMAP_BUFFER  $5b01
+        DEFINE  WINDOW       $4000
 
     MACRO   copyline from, to
         ld      sp, WINDOW+12*from
@@ -17,7 +18,7 @@
         pop     bc
         pop     de
         pop     hl
-        ld      sp, to+16
+        ld      sp, to+$4010
         pop     hl
         push    de
         push    bc
@@ -81,8 +82,8 @@ bucl    ld      a, (y)
         di
         call    paint_map
 
-
-        copyline $90, $000
+      IF 0=1
+        copyline $00, $000
         copyline $01, $00c
         copyline $02, $100
         copyline $03, $10c
@@ -338,6 +339,7 @@ bucl    ld      a, (y)
         copyline $fd, $eec
         copyline $fe, $fe0
         copyline $ff, $fec
+      ENDIF
 
         ei
 here    call    $10a8
@@ -354,9 +356,9 @@ noq     cp      'a'
         ld      a, maph
         inc     (hl)
         cp      (hl)
-        jr      nz, bucl
+        jp      nz, bucl
         dec     (hl)
-        jr      bucl
+        jp      bucl
 noa     dec     hl
         cp      'o'
         jr      nz, noo
@@ -364,19 +366,19 @@ noa     dec     hl
         jp      p, noo
         inc     (hl)
 noo     cp      'p'
-        jr      nz, bucl
+        jp      nz, bucl
         ld      a, mapw
         inc     (hl)
         cp      (hl)
-        jr      nz, bucl
+        jp      nz, bucl
         dec     (hl)
-pact    jr      bucl
+pact    jp      bucl
 
 ;       a=      numero pantalla
 paint_map:
         ld      (paint4+1), sp
-        call    descom
-        ld      hl, $4010-scrw
+        call    descom12
+        ld      hl, WINDOW+$10-scrw
         ld      bc, $5810-scrw
         exx
         ld      hl, DMAP_BUFFER
