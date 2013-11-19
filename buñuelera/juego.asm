@@ -79,8 +79,14 @@ bucl    ld      a, (y)
         mult8x8 mapw
         ld      a, (x)
         add     a, l
+        halt
         di
         call    paint_map
+        ld      (spkb+1), sp
+
+repet   in      a, ($ff)
+        inc     a
+        jr      z, repet
 
       IF 0=0
         copyline $00, $000
@@ -115,7 +121,7 @@ bucl    ld      a, (y)
         copyline $1d, $62c
         copyline $1e, $720
         copyline $1f, $72c
-        copyline $b0, $040
+        copyline $20, $040
         copyline $21, $04c
         copyline $22, $140
         copyline $23, $14c
@@ -228,8 +234,8 @@ bucl    ld      a, (y)
         copyline $8d, $e0c
         copyline $8e, $f00
         copyline $8f, $f0c
-        copyline $90, $800
-        copyline $91, $80c
+        copyline $90, $820
+        copyline $91, $82c
         copyline $92, $920
         copyline $93, $92c
         copyline $94, $a20
@@ -342,6 +348,7 @@ bucl    ld      a, (y)
         copyline $ff, $fec
       ENDIF
 
+spkb    ld      sp, 0  
         ei
 here    call    $10a8
         jr      nc, here
@@ -379,8 +386,9 @@ pact    jp      bucl
 paint_map:
         ld      (paint4+1), sp
         call    descom
+        ld      hl, $5810-scrw
+        ld      (attr), hl
         ld      hl, WINDOW
-;        ld      bc, $5810-scrw
         exx
         ld      hl, DMAP_BUFFER
         ld      bc, hl
@@ -494,15 +502,15 @@ paint2  ld      hl, bc
         ex      de, hl
         ld      hl, (attr)
         pop     bc
-;        ld      (hl), c
+        ld      (hl), c
         inc     hl
-;        ld      (hl), b
+        ld      (hl), b
         ld      bc, $001f
         add     hl, bc
         pop     bc
-;        ld      (hl), c
+        ld      (hl), c
         inc     hl
-;        ld      (hl), b
+        ld      (hl), b
         ld      bc, $ffe1
         add     hl, bc
         ld      (attr), hl
@@ -527,7 +535,7 @@ paint4  ld      sp, 0
         ret
 
 
-attr    dw      0
+attr    dw      $5810-scrw
 x       db      0
 y       db      0
 descom  include descom12.asm

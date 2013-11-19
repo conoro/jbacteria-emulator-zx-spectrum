@@ -46,7 +46,7 @@ desc5:  call    nc, gbit3       ; (Elias gamma coding)
         jr      nz, desc7
         call    gbit3           ; [011, 100, 101] xx = from 2 to 11 and from 13 to 14
         call    gbit3
-        cp      12
+        cp      14
         sbc     a, 2
         jr      desc8
 desc7:  call    gbit3           ; [110, 111] xxxxxx = from 15 to 142
