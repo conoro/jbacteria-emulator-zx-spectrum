@@ -7,7 +7,7 @@
         DEFINE  DMAP_BITSYMB 5
         DEFINE  DMAP_BITHALF 1
         DEFINE  DMAP_BUFFER  $5b01
-        DEFINE  WINDOW       $4000
+        DEFINE  WINDOW       $c000
 
     MACRO   copyline from, to
         ld      sp, WINDOW+12*from
@@ -19,7 +19,7 @@
         pop     de
         pop     hl
         ld      sp, to+$4010
-        pop     hl
+        push    hl
         push    de
         push    bc
         exx
@@ -82,7 +82,7 @@ bucl    ld      a, (y)
         di
         call    paint_map
 
-      IF 0=1
+      IF 0=0
         copyline $00, $000
         copyline $01, $00c
         copyline $02, $100
@@ -99,8 +99,8 @@ bucl    ld      a, (y)
         copyline $0d, $60c
         copyline $0e, $700
         copyline $0f, $70c
-        copyline $10, $000
-        copyline $11, $00c
+        copyline $10, $020
+        copyline $11, $02c
         copyline $12, $120
         copyline $13, $12c
         copyline $14, $220
@@ -211,6 +211,7 @@ bucl    ld      a, (y)
         copyline $7d, $6ec
         copyline $7e, $7e0
         copyline $7f, $7ec
+
         copyline $80, $800
         copyline $81, $80c
         copyline $82, $900
@@ -377,9 +378,9 @@ pact    jp      bucl
 ;       a=      numero pantalla
 paint_map:
         ld      (paint4+1), sp
-        call    descom12
-        ld      hl, WINDOW+$10-scrw
-        ld      bc, $5810-scrw
+        call    descom
+        ld      hl, WINDOW
+;        ld      bc, $5810-scrw
         exx
         ld      hl, DMAP_BUFFER
         ld      bc, hl
@@ -400,109 +401,111 @@ paint2  ld      hl, bc
         add     hl, de
         ld      sp, hl
         exx
+        ld      bc, 24
+        
   ;celda 1
         pop     de
         ld      (hl), e
-        inc     h
+        add     hl, bc
         ld      (hl), d
-        inc     h
+        add     hl, bc
         pop     de
         ld      (hl), e
-        inc     h
+        add     hl, bc
         ld      (hl), d
-        inc     h
+        add     hl, bc
         pop     de
         ld      (hl), e
-        inc     h
+        add     hl, bc
         ld      (hl), d
-        inc     h
+        add     hl, bc
         pop     de
         ld      (hl), e
-        inc     h
+        add     hl, bc
         ld      (hl), d
-        ld      de, $f901
+        ld      de, -167
         add     hl, de
   ;celda 2
         pop     de
         ld      (hl), e
-        inc     h
+        add     hl, bc
         ld      (hl), d
-        inc     h
+        add     hl, bc
         pop     de
         ld      (hl), e
-        inc     h
+        add     hl, bc
         ld      (hl), d
-        inc     h
+        add     hl, bc
         pop     de
         ld      (hl), e
-        inc     h
+        add     hl, bc
         ld      (hl), d
-        inc     h
+        add     hl, bc
         pop     de
         ld      (hl), e
-        inc     h
+        add     hl, bc
         ld      (hl), d
-        ld      de, $f91f
+        ld      de, 23
         add     hl, de
   ;celda 3
         pop     de
         ld      (hl), e
-        inc     h
+        add     hl, bc
         ld      (hl), d
-        inc     h
+        add     hl, bc
         pop     de
         ld      (hl), e
-        inc     h
+        add     hl, bc
         ld      (hl), d
-        inc     h
+        add     hl, bc
         pop     de
         ld      (hl), e
-        inc     h
+        add     hl, bc
         ld      (hl), d
-        inc     h
+        add     hl, bc
         pop     de
         ld      (hl), e
-        inc     h
+        add     hl, bc
         ld      (hl), d
-        ld      de, $f901
+        ld      de, -167
         add     hl, de
   ;celda 4
         pop     de
         ld      (hl), e
-        inc     h
+        add     hl, bc
         ld      (hl), d
-        inc     h
+        add     hl, bc
         pop     de
         ld      (hl), e
-        inc     h
+        add     hl, bc
         ld      (hl), d
-        inc     h
+        add     hl, bc
         pop     de
         ld      (hl), e
-        inc     h
+        add     hl, bc
         ld      (hl), d
-        inc     h
+        add     hl, bc
         pop     de
         ld      (hl), e
-        inc     h
+        add     hl, bc
         ld      (hl), d
-        ld      de, $f8e1
+        ld      de, -359
         add     hl, de
         ex      de, hl
-        ld      hl, bc
+        ld      hl, (attr)
         pop     bc
-        ld      (hl), c
+;        ld      (hl), c
         inc     hl
-        ld      (hl), b
+;        ld      (hl), b
         ld      bc, $001f
         add     hl, bc
         pop     bc
-        ld      (hl), c
+;        ld      (hl), c
         inc     hl
-        ld      (hl), b
+;        ld      (hl), b
         ld      bc, $ffe1
         add     hl, bc
-        ld      bc, hl
+        ld      (attr), hl
         ex      de, hl
         exx
         inc     bc
@@ -512,15 +515,11 @@ paint2  ld      hl, bc
         ex      de, hl
         ld      bc, $40-(scrw*2)
         add     hl, bc
-        ld      bc, hl
+        ld      (attr), hl
         ex      de, hl
-        ld      de, $40-(scrw*2)
+        ld      de, $168
         add     hl, de
-        bit     0, h
-        jr      z, paint3
-        ld      de, $0700
-        add     hl, de
-paint3  exx
+        exx
         ex      af, af'
         dec     a
         jp      nz, paint1
@@ -528,10 +527,10 @@ paint4  ld      sp, 0
         ret
 
 
-
+attr    dw      0
 x       db      0
 y       db      0
-descom  include descom.asm
+descom  include descom12.asm
 tiles   incbin  tiles.bin
 map     incbin  mapa_comprimido.bin
 fin
