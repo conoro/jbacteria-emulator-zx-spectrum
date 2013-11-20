@@ -1,3 +1,21 @@
+;  -aaa-bbb   a=longitud b=skip
+;  -cccddee   c=repeticion, dd=offset, ee=ancho
+;
+; sprite 0 rotacion 0
+; sprite 0 rotacion 1
+; sprite 0 rotacion 2
+; sprite 0 rotacion 3
+; sprite 1 rotacion 0
+; sprite 1 rotacion 1
+; sprite 1 rotacion 2
+; sprite 1 rotacion 3
+; sprite 2 rotacion 0
+;...
+; sprite 15 rotacion 0
+; sprite 15 rotacion 1
+; sprite 15 rotacion 2
+; sprite 15 rotacion 3
+
 
         DEFINE  mapw  12
         DEFINE  maph  2
