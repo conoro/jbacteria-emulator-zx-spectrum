@@ -1,5 +1,5 @@
 @echo off
-chcp 65001
+rem chcp 65001
 SETLOCAL
 call c:\z88dk10\setenv.bat
 set nombre=Dogmole

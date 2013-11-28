@@ -243,6 +243,16 @@ screen  copy $00c
         copy $eec
         copy $fec
 
+; calculo origen sprite
+        ld      a, (x)
+        and     06h
+        add     a, a
+        ld      c, a
+        ld      b, 0
+        ld      hl, sprmeta
+        add     hl, bc
+        
+
 spkb    ld      sp, 0  
         ei
 here    call    $10a8
@@ -433,6 +443,28 @@ paint4  ld      sp, 0
 attr    dw      $5810-scrw
 x       db      0
 y       db      0
+
+sprmeta dw      spr0r0
+        dw      spr0r1
+        dw      spr0r2
+        dw      spr0r3
+        dw      spr1r0
+
+spr0r0  db      $70         ; longitud=8, skip= 0
+        db      %11100001   ; rep=8, offset=0, ancho=16
+        db      %11111111, %00000000, %11111111, %00000000
+        db      %11110000, %00000000, %00000011, %00000000
+
+;        db      %11111000, %00000000, %00000000, %00000000
+;        db      %00001111, %00000000, %00000011, %00000000
+
+spr0r1
+spr0r2
+spr0r3
+spr1r0
+
+
+
 descom  include descom12.asm
 tiles   incbin  tiles.bin
 map     incbin  mapa_comprimido.bin
