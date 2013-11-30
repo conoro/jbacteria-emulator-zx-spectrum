@@ -1,4 +1,4 @@
-;  -aaa-bbb   a=longitud b=skip
+;  aaa-bbbb   a=longitud b=skip
 ;  -cccddee   c=repeticion, dd=offset, ee=ancho
 ;
 ; sprite 0 rotacion 0
@@ -243,15 +243,34 @@ screen  copy $00c
         copy $eec
         copy $fec
 
+        call    cline
 ; calculo origen sprite
-        ld      a, (x)
+        ld      a, (corx)
         and     06h
         add     a, a
         ld      c, a
         ld      b, 0
         ld      hl, sprmeta
         add     hl, bc
-        
+        ld      sp, hl
+        pop     hl
+        ld      sp, hl
+        pop     hl
+          ld      b, l
+          ld      l, 0
+          add     hl, de
+          ex      de, hl
+;        dec     sp
+;        pop     af
+;        and     $f
+;        add     a, d
+;        ld      d, a
+;        ld      a, (hl)
+;        rlca
+;        rlca
+;        rlca
+;        and     $7
+;        inc     a
 
 spkb    ld      sp, 0  
         ei
@@ -439,10 +458,39 @@ paint2  ld      hl, bc
 paint4  ld      sp, 0
         ret
 
+; calculo línea
+cline:  ld      a,(cory)
+        ld      h,a
+        and     0c0h
+        srl     a
+        srl     a
+        srl     a
+        or      40h
+        ld      d,a
+        ld      a,h
+        and     38h
+        add     a,a
+        add     a,a
+        ld      e,a
+        ld      a,h
+        and     06h
+        or      d
+        ld      d,a
+        ld      a,(corx)
+        and     0f8h
+        srl     a
+        srl     a
+        srl     a
+        or      e
+        ld      e,a
+        ret     
 
 attr    dw      $5810-scrw
 x       db      0
 y       db      0
+corx    db      0
+cory    db      0
+
 
 sprmeta dw      spr0r0
         dw      spr0r1
@@ -450,7 +498,7 @@ sprmeta dw      spr0r0
         dw      spr0r3
         dw      spr1r0
 
-spr0r0  db      $70         ; longitud=8, skip= 0
+spr0r0  db      $e0         ; longitud=8, skip= 0
         db      %11100001   ; rep=8, offset=0, ancho=16
         db      %11111111, %00000000, %11111111, %00000000
         db      %00001111, %00000000, %11111100, %00000000
