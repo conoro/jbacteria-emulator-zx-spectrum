@@ -93,13 +93,15 @@
 
         output  juego.bin
         org     $8000-22
-ini     ld      de, $8000+fin-bucl-1
+ini     ld      de, $8000+fin-empe-1
         nop
         db      $de, $c0, $37, $0e, $8f, $39, $96 ;OVER USR 7 ($5ccb)
 aki     ld      hl, $5ccb+fin-ini-1
-        ld      bc, fin-bucl
+        ld      bc, fin-empe
         lddr
         jp      $8000
+empe    ld      hl, $0110        ; The keyboard repeat and delay values are 
+        ld      ($5c09), hl      ; loaded to REPDEL and REPPER.
 bucl    ld      a, (y)
         ld      e, a
         mult8x8 mapw
@@ -243,10 +245,35 @@ screen  copy $00c
         copy $eec
         copy $fec
 
-        call    cline
+  ; cline
+        ld      a, (cory)
+        ld      h, a
+        and     $c0
+        srl     a
+        srl     a
+        srl     a
+        or      $40
+        ld      d, a
+        ld      a, h
+        and     $38
+        add     a, a
+        add     a, a
+        ld      e, a
+        ld      a, h
+        and     $06
+        or      d
+        ld      d, a
+        ld      a, (corx)
+        and     $f8
+        srl     a
+        srl     a
+        srl     a
+        or      e
+        ld      e, a
+
 ; calculo origen sprite
         ld      a, (corx)
-        and     06h
+        and     $06
         add     a, a
         ld      c, a
         ld      b, 0
@@ -256,41 +283,157 @@ screen  copy $00c
         pop     hl
         ld      sp, hl
         pop     hl
-          ld      b, l
-          ld      l, 0
-          add     hl, de
-          ex      de, hl
-;        dec     sp
-;        pop     af
-;        and     $f
-;        add     a, d
-;        ld      d, a
-;        ld      a, (hl)
-;        rlca
-;        rlca
-;        rlca
-;        and     $7
-;        inc     a
-
+        ld      a, l
+        add     hl, de
+        ld      l, e
+spr1    ex      af, af'
+        pop     bc
+        ld      a, c
+        and     $03
+        add     a, l
+        dec     a
+        ld      l, a
+        bit     2, c
+        jr      nz, ncol24
+col24:  pop     de
+        ld      a, (hl)
+        and     d
+        or      e
+        ld      (hl), a
+        inc     l
+        pop     de
+        ld      a, (hl)
+        and     d
+        or      e
+        ld      (hl), a
+        inc     l
+        pop     de
+        ld      a, (hl)
+        and     d
+        or      e
+        ld      (hl), a
+        inc     h
+        pop     de
+        ld      a, (hl)
+        and     d
+        or      e
+        ld      (hl), a
+        dec     l
+        pop     de
+        ld      a, (hl)
+        and     d
+        or      e
+        ld      (hl), a
+        dec     l
+        pop     de
+        ld      a, (hl)
+        and     d
+        or      e
+        ld      (hl), a
+        inc     h
+        ld      a, h
+        and     $06
+        jr      nz, col24a
+        ld      a, l
+        add     a, $20
+        ld      l, a
+        jr      c, col24a
+        ld      a, h
+        sub     $08
+        ld      h, a
+col24a  djnz    col24
+        jr      fini
+ncol24  bit     3, c
+        jr      nz, col8
+col16   pop     de
+        ld      a, (hl)
+        and     d
+        or      e
+        ld      (hl), a
+        inc     l
+        pop     de
+        ld      a, (hl)
+        and     d
+        or      e
+        ld      (hl), a
+        inc     h
+        pop     de
+        ld      a, (hl)
+        and     d
+        or      e
+        ld      (hl), a
+        dec     l
+        pop     de
+        ld      a, (hl)
+        and     d
+        or      e
+        ld      (hl), a
+        inc     h
+        ld      a, h
+        and     $06
+        jr      nz, col16a
+        ld      a, l
+        add     a, $20
+        ld      l, a
+        jr      c, col16a
+        ld      a, h
+        sub     $08
+        ld      h, a
+col16a: djnz    col16
+        jr      fini
+col8    pop     de
+        ld      a, (hl)
+        and     d
+        or      e
+        ld      (hl), a
+        inc     h
+        pop     de
+        ld      a, (hl)
+        and     d
+        or      e
+        ld      (hl), a
+        inc     h
+        ld      a, h
+        and     $06
+        jr      nz, col8a
+        ld      a, l
+        add     a, $20
+        ld      l, a
+        jr      c, col8a
+        ld      a, h
+        sub     $08
+        ld      h, a
+col8a   djnz    col8
+fini    ex      af, af'
+        dec     a
+        jp      nz, spr1
 spkb    ld      sp, 0  
         ei
 here    call    $10a8
         jr      nc, here
         ld      a, ($5c08)
-        cp      'q'
         ld      hl, y
+        ld      ix, bucl
+        ld      bc, maph | mapw<<8
+        bit     5, a
+        jr      nz, cona
+        ld      hl, cory
+        ld      ix, repet
+        ld      bc, 128-15 | 128<<8
+        set     5, a
+cona    cp      'q'
         jr      nz, noq
         dec     (hl)
         jp      p, noq
         inc     (hl)
 noq     cp      'a'
         jr      nz, noa
-        ld      a, maph
+        ld      a, c
         inc     (hl)
         cp      (hl)
-        jp      nz, bucl
+        jr      nz, noqt
         dec     (hl)
-        jp      bucl
+noqt    jp      (ix)
 noa     dec     hl
         cp      'o'
         jr      nz, noo
@@ -298,13 +441,13 @@ noa     dec     hl
         jp      p, noo
         inc     (hl)
 noo     cp      'p'
-        jp      nz, bucl
-        ld      a, mapw
+        jr      nz, noqt
+        ld      a, b
         inc     (hl)
         cp      (hl)
-        jp      nz, bucl
+        jr      nz, pact
         dec     (hl)
-pact    jp      bucl
+pact    jp      (ix)
 
 ;       a=      numero pantalla
 paint_map:
@@ -458,37 +601,10 @@ paint2  ld      hl, bc
 paint4  ld      sp, 0
         ret
 
-; calculo línea
-cline:  ld      a,(cory)
-        ld      h,a
-        and     0c0h
-        srl     a
-        srl     a
-        srl     a
-        or      40h
-        ld      d,a
-        ld      a,h
-        and     38h
-        add     a,a
-        add     a,a
-        ld      e,a
-        ld      a,h
-        and     06h
-        or      d
-        ld      d,a
-        ld      a,(corx)
-        and     0f8h
-        srl     a
-        srl     a
-        srl     a
-        or      e
-        ld      e,a
-        ret     
-
 attr    dw      $5810-scrw
 x       db      0
 y       db      0
-corx    db      0
+corx    db      32
 cory    db      0
 
 
@@ -498,24 +614,24 @@ sprmeta dw      spr0r0
         dw      spr0r3
         dw      spr1r0
 
-spr0r0  db      $e0         ; longitud=8, skip= 0
-        db      %11100001   ; rep=8, offset=0, ancho=16
-        db      %11111111, %00000000, %11111111, %00000000
-        db      %00001111, %00000000, %11111100, %00000000
-        db      %11111000, %00000011, %00000111, %11110000
+spr0r0  db      1, 0        ; longitud=8, skip= 0
+        db      %0101, 8    ; rep=8, offset=0, ancho=16
+        db      %00000000, %11111111, %00000000, %11111111
+        db      %00000000, %00001111, %00000000, %11111100
         db      %00000011, %11111000, %11110000, %00000111
-        db      %11110000, %00000100, %00000011, %11001000
-        db      %00000011, %11101000, %11110000, %00000101
-        db      %11100000, %00000011, %00000111, %00110000
-        db      %00000001, %11110000, %11000000, %00011101
-        db      %10000000, %00100001, %00000000, %01010110
-        db      %00000000, %10100110, %10000000, %00100010
-        db      %11000000, %00011001, %00000001, %11011000
-        db      %00100111, %10000000, %11000010, %00011000
-        db      %11100110, %00000000, %00110111, %10000000
-        db      %00000011, %11001000, %11110000, %00000001
-        db      %11100000, %00001110, %00000011, %00111000
-        db      %00000111, %00000000, %11100001, %00001000
+        db      %11111000, %00000011, %00000111, %11110000
+        db      %00000100, %11110000, %11001000, %00000011
+        db      %11101000, %00000011, %00000101, %11110000
+        db      %00000011, %11100000, %00110000, %00000111
+        db      %11110000, %00000001, %00011101, %11000000
+        db      %00100001, %10000000, %01010110, %00000000
+        db      %10100110, %00000000, %00100010, %10000000
+        db      %00011001, %11000000, %11011000, %00000001
+        db      %10000000, %00100111, %00011000, %11000010
+        db      %00000000, %11100110, %10000000, %00110111
+        db      %11001000, %00000011, %00000001, %11110000
+        db      %00001110, %11100000, %00111000, %00000011
+        db      %00000000, %00000111, %00001000, %11100001
 
 spr0r1
 spr0r2
