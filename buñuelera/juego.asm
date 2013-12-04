@@ -245,8 +245,22 @@ screen  copy $00c
         copy $eec
         copy $fec
 
+; calculo origen sprite
+        ld      a, (corx)
+        and     $06
+;        add     a, a
+        ld      c, a
+        ld      b, 0
+        ld      hl, sprites
+        add     hl, bc
+        ld      sp, hl
+        pop     hl
+        ld      sp, hl
+        pop     hl
+
   ; cline
         ld      a, (cory)
+        add     a, h
         ld      h, a
         and     $c0
         srl     a
@@ -270,22 +284,8 @@ screen  copy $00c
         srl     a
         or      e
         ld      e, a
-
-; calculo origen sprite
-        ld      a, (corx)
-        and     $06
-        add     a, a
-        ld      c, a
-        ld      b, 0
-        ld      hl, sprmeta
-        add     hl, bc
-        ld      sp, hl
-        pop     hl
-        ld      sp, hl
-        pop     hl
         ld      a, l
-        add     hl, de
-        ld      l, e
+        ex      de, hl
 spr1    ex      af, af'
         pop     bc
         ld      a, c
@@ -293,9 +293,9 @@ spr1    ex      af, af'
         add     a, l
         dec     a
         ld      l, a
-        bit     2, c
-        jr      nz, ncol24
-col24:  pop     de
+        bit     3, c
+        jr      z, ncol24
+col24:  pop     de          ; 00= 8   01=16   1x=24 
         ld      a, (hl)
         and     d
         or      e
@@ -343,8 +343,8 @@ col24:  pop     de
         ld      h, a
 col24a  djnz    col24
         jr      fini
-ncol24  bit     3, c
-        jr      nz, col8
+ncol24  bit     2, c
+        jr      z, col8
 col16   pop     de
         ld      a, (hl)
         and     d
@@ -607,39 +607,9 @@ y       db      0
 corx    db      32
 cory    db      0
 
+        display $
 
-sprmeta dw      spr0r0
-        dw      spr0r1
-        dw      spr0r2
-        dw      spr0r3
-        dw      spr1r0
-
-spr0r0  db      1, 0        ; longitud=8, skip= 0
-        db      %0101, 8    ; rep=8, offset=0, ancho=16
-        db      %00000000, %11111111, %00000000, %11111111
-        db      %00000000, %00001111, %00000000, %11111100
-        db      %00000011, %11111000, %11110000, %00000111
-        db      %11111000, %00000011, %00000111, %11110000
-        db      %00000100, %11110000, %11001000, %00000011
-        db      %11101000, %00000011, %00000101, %11110000
-        db      %00000011, %11100000, %00110000, %00000111
-        db      %11110000, %00000001, %00011101, %11000000
-        db      %00100001, %10000000, %01010110, %00000000
-        db      %10100110, %00000000, %00100010, %10000000
-        db      %00011001, %11000000, %11011000, %00000001
-        db      %10000000, %00100111, %00011000, %11000010
-        db      %00000000, %11100110, %10000000, %00110111
-        db      %11001000, %00000011, %00000001, %11110000
-        db      %00001110, %11100000, %00111000, %00000011
-        db      %00000000, %00000111, %00001000, %11100001
-
-spr0r1
-spr0r2
-spr0r3
-spr1r0
-
-
-
+sprites incbin  salida.bin
 descom  include descom12.asm
 tiles   incbin  tiles.bin
 map     incbin  mapa_comprimido.bin
