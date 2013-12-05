@@ -102,6 +102,11 @@ aki     ld      hl, $5ccb+fin-ini-1
         jp      $8000
 empe    ld      hl, $0110        ; The keyboard repeat and delay values are 
         ld      ($5c09), hl      ; loaded to REPDEL and REPPER.
+        ld      hl, $5800
+        ld      de, $5801
+        ld      bc, $01ff
+        ld      (hl), l
+        ldir
 bucl    ld      a, (y)
         ld      e, a
         mult8x8 mapw
@@ -247,8 +252,8 @@ screen  copy $00c
 
 ; calculo origen sprite
         ld      a, (corx)
-        and     $06
-;        add     a, a
+        and     $03
+        add     a, a
         ld      c, a
         ld      b, 0
         ld      hl, sprites
@@ -256,36 +261,37 @@ screen  copy $00c
         ld      sp, hl
         pop     hl
         ld      sp, hl
-        pop     hl
+        pop     de
 
   ; cline
         ld      a, (cory)
-        add     a, h
-        ld      h, a
+        add     a, a
+        add     a, d
+        ld      b, a
         and     $c0
         srl     a
         srl     a
         srl     a
         or      $40
-        ld      d, a
-        ld      a, h
+        ld      h, a
+        ld      a, b
         and     $38
         add     a, a
         add     a, a
-        ld      e, a
-        ld      a, h
+        ld      l, a
+        ld      a, b
         and     $06
-        or      d
-        ld      d, a
+        or      h
+        ld      h, a
         ld      a, (corx)
+        add     a, a
         and     $f8
         srl     a
         srl     a
         srl     a
-        or      e
-        ld      e, a
-        ld      a, l
-        ex      de, hl
+        or      l
+        ld      l, a
+        ld      a, e
 spr1    ex      af, af'
         pop     bc
         ld      a, c
@@ -412,42 +418,67 @@ spkb    ld      sp, 0
 here    call    $10a8
         jr      nc, here
         ld      a, ($5c08)
-        ld      hl, y
-        ld      ix, bucl
-        ld      bc, maph | mapw<<8
-        bit     5, a
-        jr      nz, cona
         ld      hl, cory
-        ld      ix, repet
-        ld      bc, 128-15 | 128<<8
-        set     5, a
+        ld      ix, y
+        ld      c, $37
 cona    cp      'q'
         jr      nz, noq
         dec     (hl)
-        jp      p, noq
+        jp      p, pact
+        dec     (ix)
+        jp      p, cres
         inc     (hl)
+        inc     (ix)
+        jr      pact
+cres    ld      (hl), c
+        jr      tbucl
 noq     cp      'a'
         jr      nz, noa
         ld      a, c
         inc     (hl)
         cp      (hl)
-        jr      nz, noqt
+        jr      nc, pact
+        inc     (ix)
+        ld      a, (ix)
+        cp      maph
+        jr      nz, bpes
         dec     (hl)
-noqt    jp      (ix)
-noa     dec     hl
+        dec     (ix)
+        jr      pact
+bpes    ld      (hl), 0
+        jr      tbucl
+noa     ld      bc, $0a6e
+        dec     l
+        dec     ixl
         cp      'o'
         jr      nz, noo
         dec     (hl)
-        jp      p, noo
+        ld      a, (hl)
+        cp      b
+        jr      nc, pact
+        dec     (ix)
+        jp      p, pres
         inc     (hl)
+        inc     (ix)
+pact    jp      repet
+pres    ld      (hl), c
+        jr      tbucl
 noo     cp      'p'
-        jr      nz, noqt
-        ld      a, b
+        jr      nz, pact
+        ld      a, c
         inc     (hl)
         cp      (hl)
-        jr      nz, pact
+        jr      nc, pact
+        inc     (ix)
+        ld      a, (ix)
+        cp      mapw
+        jr      nz, apes
         dec     (hl)
-pact    jp      (ix)
+        dec     (ix)
+        jr      pact
+apes    ld      (hl), b
+tbucl   jp      bucl
+
 
 ;       a=      numero pantalla
 paint_map:
@@ -604,10 +635,11 @@ paint4  ld      sp, 0
 attr    dw      $5810-scrw
 x       db      0
 y       db      0
-corx    db      32
+corx    db      16
 cory    db      0
 
-        display $
+        block   $9c00-$
+;        display $
 
 sprites incbin  salida.bin
 descom  include descom12.asm
