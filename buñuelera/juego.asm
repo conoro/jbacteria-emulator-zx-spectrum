@@ -1,33 +1,13 @@
-;  aaa-bbbb   a=longitud b=skip
-;  -cccddee   c=repeticion, dd=offset, ee=ancho
-;
-; sprite 0 rotacion 0
-; sprite 0 rotacion 1
-; sprite 0 rotacion 2
-; sprite 0 rotacion 3
-; sprite 1 rotacion 0
-; sprite 1 rotacion 1
-; sprite 1 rotacion 2
-; sprite 1 rotacion 3
-; sprite 2 rotacion 0
-;...
-; sprite 15 rotacion 0
-; sprite 15 rotacion 1
-; sprite 15 rotacion 2
-; sprite 15 rotacion 3
-
-
         DEFINE  mapw  12
         DEFINE  maph  2
         DEFINE  scrw  12
         DEFINE  scrh  8
-
         DEFINE  DMAP_BITSYMB 5
         DEFINE  DMAP_BITHALF 1
         DEFINE  DMAP_BUFFER  $5b01
 
     MACRO   copy  to
-        ld      sp, to+$4010
+        ld      sp, $401c+to*16
         ld      hl, 0
         push    hl
         ld      hl, 0
@@ -94,7 +74,7 @@
         output  juego.bin
         org     $8000-22
 ini     ld      de, $8000+fin-empe-1
-        nop
+        di
         db      $de, $c0, $37, $0e, $8f, $39, $96 ;OVER USR 7 ($5ccb)
 aki     ld      hl, $5ccb+fin-ini-1
         ld      bc, fin-empe
@@ -107,188 +87,301 @@ empe    ld      hl, $0110        ; The keyboard repeat and delay values are
         ld      bc, $01ff
         ld      (hl), l
         ldir
+        ld      (paint4+1), sp
 bucl    ld      a, (y)
         ld      e, a
         mult8x8 mapw
         ld      a, (x)
         add     a, l
-        halt
-        di
-        call    paint_map
-        ld      (spkb+1), sp
-
+        call    descom
+        ld      hl, $5810-scrw
+        ld      (attr), hl
+        ld      hl, screen+12*4
+        exx
+        ld      hl, DMAP_BUFFER
+        ld      bc, hl
+        ld      a, scrh
+paint1  ex      af, af'
+        ld      a, scrw
+paint2  ld      hl, bc
+        ld      l, (hl)
+        ld      h, 0
+        add     hl, hl
+        add     hl, hl
+        ld      de, hl
+        add     hl, hl
+        add     hl, hl
+        add     hl, hl
+        add     hl, de
+        ld      de, tiles
+        add     hl, de
+        ld      sp, hl
+        exx
+        ld      bc, 51
+        pop     de
+        ld      (hl), e
+        add     hl, bc
+        ld      (hl), d
+        add     hl, bc
+        pop     de
+        ld      (hl), e
+        add     hl, bc
+        ld      (hl), d
+        add     hl, bc
+        pop     de
+        ld      (hl), e
+        add     hl, bc
+        ld      (hl), d
+        add     hl, bc
+        pop     de
+        ld      (hl), e
+        add     hl, bc
+        ld      (hl), d
+        ld      de, -357+1
+        add     hl, de
+        pop     de
+        ld      (hl), e
+        add     hl, bc
+        ld      (hl), d
+        add     hl, bc
+        pop     de
+        ld      (hl), e
+        add     hl, bc
+        ld      (hl), d
+        add     hl, bc
+        pop     de
+        ld      (hl), e
+        add     hl, bc
+        ld      (hl), d
+        add     hl, bc
+        pop     de
+        ld      (hl), e
+        add     hl, bc
+        ld      (hl), d
+        ld      de, 51-1
+        add     hl, de
+        pop     de
+        ld      (hl), e
+        add     hl, bc
+        ld      (hl), d
+        add     hl, bc
+        pop     de
+        ld      (hl), e
+        add     hl, bc
+        ld      (hl), d
+        add     hl, bc
+        pop     de
+        ld      (hl), e
+        add     hl, bc
+        ld      (hl), d
+        add     hl, bc
+        pop     de
+        ld      (hl), e
+        add     hl, bc
+        ld      (hl), d
+        ld      de, -357+1
+        add     hl, de
+        pop     de
+        ld      (hl), e
+        add     hl, bc
+        ld      (hl), d
+        add     hl, bc
+        pop     de
+        ld      (hl), e
+        add     hl, bc
+        ld      (hl), d
+        add     hl, bc
+        pop     de
+        ld      (hl), e
+        add     hl, bc
+        ld      (hl), d
+        add     hl, bc
+        pop     de
+        ld      (hl), e
+        add     hl, bc
+        ld      (hl), d
+        ld      de, -765-5
+        add     hl, de
+        ex      de, hl
+        ld      hl, (attr)
+        pop     bc
+        ld      (hl), c
+        inc     hl
+        ld      (hl), b
+        ld      bc, $001f
+        add     hl, bc
+        pop     bc
+        ld      (hl), c
+        inc     hl
+        ld      (hl), b
+        ld      bc, $ffe1
+        add     hl, bc
+        ld      (attr), hl
+        ex      de, hl
+        exx
+        inc     bc
+        dec     a
+        jp      nz, paint2
+        exx
+        ex      de, hl
+        ld      bc, $40-(scrw*2)
+        add     hl, bc
+        ld      (attr), hl
+        ex      de, hl
+        ld      de, 816+48
+        add     hl, de
+        exx
+        ex      af, af'
+        dec     a
+        jp      nz, paint1
 repet   in      a, ($ff)
         inc     a
         jr      z, repet
-
-screen  copy $00c
-        copy $10c
-        copy $20c
-        copy $30c
-        copy $40c
-        copy $50c
-        copy $60c
-        copy $70c
-        copy $02c
-        copy $12c
-        copy $22c
-        copy $32c
-        copy $42c
-        copy $52c
-        copy $62c
-        copy $72c
-        copy $04c
-        copy $14c
-        copy $24c
-        copy $34c
-        copy $44c
-        copy $54c
-        copy $64c
-        copy $74c
-        copy $06c
-        copy $16c
-        copy $26c
-        copy $36c
-        copy $46c
-        copy $56c
-        copy $66c
-        copy $76c
-        copy $08c
-        copy $18c
-        copy $28c
-        copy $38c
-        copy $48c
-        copy $58c
-        copy $68c
-        copy $78c
-        copy $0ac
-        copy $1ac
-        copy $2ac
-        copy $3ac
-        copy $4ac
-        copy $5ac
-        copy $6ac
-        copy $7ac
-        copy $0cc
-        copy $1cc
-        copy $2cc
-        copy $3cc
-        copy $4cc
-        copy $5cc
-        copy $6cc
-        copy $7cc
-        copy $0ec
-        copy $1ec
-        copy $2ec
-        copy $3ec
-        copy $4ec
-        copy $5ec
-        copy $6ec
-        copy $7ec
-        copy $80c
-        copy $90c
-        copy $a0c
-        copy $b0c
-        copy $c0c
-        copy $d0c
-        copy $e0c
-        copy $f0c
-        copy $82c
-        copy $92c
-        copy $a2c
-        copy $b2c
-        copy $c2c
-        copy $d2c
-        copy $e2c
-        copy $f2c
-        copy $84c
-        copy $94c
-        copy $a4c
-        copy $b4c
-        copy $c4c
-        copy $d4c
-        copy $e4c
-        copy $f4c
-        copy $86c
-        copy $96c
-        copy $a6c
-        copy $b6c
-        copy $c6c
-        copy $d6c
-        copy $e6c
-        copy $f6c
-        copy $88c
-        copy $98c
-        copy $a8c
-        copy $b8c
-        copy $c8c
-        copy $d8c
-        copy $e8c
-        copy $f8c
-        copy $8ac
-        copy $9ac
-        copy $aac
-        copy $bac
-        copy $cac
-        copy $dac
-        copy $eac
-        copy $fac
-        copy $8cc
-        copy $9cc
-        copy $acc
-        copy $bcc
-        copy $ccc
-        copy $dcc
-        copy $ecc
-        copy $fcc
-        copy $8ec
-        copy $9ec
-        copy $aec
-        copy $bec
-        copy $cec
-        copy $dec
-        copy $eec
-        copy $fec
+screen  copy    $00
+        copy    $10
+        copy    $20
+        copy    $30
+        copy    $40
+        copy    $50
+        copy    $60
+        copy    $70
+        copy    $02
+        copy    $12
+        copy    $22
+        copy    $32
+        copy    $42
+        copy    $52
+        copy    $62
+        copy    $72
+        copy    $04
+        copy    $14
+        copy    $24
+        copy    $34
+        copy    $44
+        copy    $54
+        copy    $64
+        copy    $74
+        copy    $06
+        copy    $16
+        copy    $26
+        copy    $36
+        copy    $46
+        copy    $56
+        copy    $66
+        copy    $76
+        copy    $08
+        copy    $18
+        copy    $28
+        copy    $38
+        copy    $48
+        copy    $58
+        copy    $68
+        copy    $78
+        copy    $0a
+        copy    $1a
+        copy    $2a
+        copy    $3a
+        copy    $4a
+        copy    $5a
+        copy    $6a
+        copy    $7a
+        copy    $0c
+        copy    $1c
+        copy    $2c
+        copy    $3c
+        copy    $4c
+        copy    $5c
+        copy    $6c
+        copy    $7c
+        copy    $0e
+        copy    $1e
+        copy    $2e
+        copy    $3e
+        copy    $4e
+        copy    $5e
+        copy    $6e
+        copy    $7e
+        copy    $80
+        copy    $90
+        copy    $a0
+        copy    $b0
+        copy    $c0
+        copy    $d0
+        copy    $e0
+        copy    $f0
+        copy    $82
+        copy    $92
+        copy    $a2
+        copy    $b2
+        copy    $c2
+        copy    $d2
+        copy    $e2
+        copy    $f2
+        copy    $84
+        copy    $94
+        copy    $a4
+        copy    $b4
+        copy    $c4
+        copy    $d4
+        copy    $e4
+        copy    $f4
+        copy    $86
+        copy    $96
+        copy    $a6
+        copy    $b6
+        copy    $c6
+        copy    $d6
+        copy    $e6
+        copy    $f6
+        copy    $88
+        copy    $98
+        copy    $a8
+        copy    $b8
+        copy    $c8
+        copy    $d8
+        copy    $e8
+        copy    $f8
+        copy    $8a
+        copy    $9a
+        copy    $aa
+        copy    $ba
+        copy    $ca
+        copy    $da
+        copy    $ea
+        copy    $fa
+        copy    $8c
+        copy    $9c
+        copy    $ac
+        copy    $bc
+        copy    $cc
+        copy    $dc
+        copy    $ec
+        copy    $fc
+        copy    $8e
+        copy    $9e
+        copy    $ae
+        copy    $be
+        copy    $ce
+        copy    $de
+        copy    $ee
+        copy    $fe
 
 ; calculo origen sprite
         ld      a, (corx)
         and     $03
         add     a, a
-        ld      c, a
-        ld      b, 0
-        ld      hl, sprites
-        add     hl, bc
-        ld      sp, hl
-        pop     hl
-        ld      sp, hl
+        ld      (cspr+2), a
+cspr    ld      sp, (sprites)
         pop     de
-
-  ; cline
         ld      a, (cory)
         add     a, a
         add     a, d
-        ld      b, a
-        and     $c0
-        srl     a
-        srl     a
-        srl     a
-        or      $40
-        ld      h, a
-        ld      a, b
-        and     $38
-        add     a, a
-        add     a, a
-        ld      l, a
-        ld      a, b
-        and     $06
-        or      h
-        ld      h, a
+        ld      (clin+1), a
+clin    ld      hl, (lookt)
         ld      a, (corx)
-        add     a, a
-        and     $f8
-        srl     a
-        srl     a
-        srl     a
+        and     $7c
+        rra
+        rra
         or      l
         ld      l, a
         ld      a, e
@@ -301,7 +394,7 @@ spr1    ex      af, af'
         ld      l, a
         bit     3, c
         jr      z, ncol24
-col24:  pop     de          ; 00= 8   01=16   1x=24 
+col24   pop     de
         ld      a, (hl)
         and     d
         or      e
@@ -385,7 +478,7 @@ col16   pop     de
         ld      a, h
         sub     $08
         ld      h, a
-col16a: djnz    col16
+col16a  djnz    col16
         jr      fini
 col8    pop     de
         ld      a, (hl)
@@ -413,232 +506,70 @@ col8a   djnz    col8
 fini    ex      af, af'
         dec     a
         jp      nz, spr1
-spkb    ld      sp, 0  
-        ei
-here    call    $10a8
-        jr      nc, here
-        ld      a, ($5c08)
+paint4  ld      sp, 0
         ld      hl, cory
         ld      ix, y
-        ld      c, $37
-cona    cp      'q'
-        jr      nz, noq
-        dec     (hl)
-        jp      p, pact
-        dec     (ix)
-        jp      p, cres
-        inc     (hl)
-        inc     (ix)
-        jr      pact
-cres    ld      (hl), c
-        jr      tbucl
-noq     cp      'a'
-        jr      nz, noa
-        ld      a, c
-        inc     (hl)
-        cp      (hl)
-        jr      nc, pact
-        inc     (ix)
-        ld      a, (ix)
-        cp      maph
-        jr      nz, bpes
-        dec     (hl)
-        dec     (ix)
-        jr      pact
-bpes    ld      (hl), 0
-        jr      tbucl
-noa     ld      bc, $0a6e
+        ld      bc, $0137
+        ld      de, $fd | maph<<8
+        call    key_process
+        jr      c, tbucl
+        cp      $03
+        jr      nz, pact
+        ld      bc, $0a6e
         dec     l
         dec     ixl
-        cp      'o'
-        jr      nz, noo
+        ld      de, $df | mapw<<8
+        call    key_process
+tbucl   jp      c, bucl
+pact    jp      repet
+
+key_process:
+        ld      a, e
+        in      a, ($fe)
+        and     $03
+        cp      $02
+        jr      z, key2
+        ret     nc
         dec     (hl)
         ld      a, (hl)
         cp      b
-        jr      nc, pact
+        ret     nc
         dec     (ix)
-        jp      p, pres
+        jp      p, key1
         inc     (hl)
         inc     (ix)
-pact    jp      repet
-pres    ld      (hl), c
-        jr      tbucl
-noo     cp      'p'
-        jr      nz, pact
-        ld      a, c
+        and     a
+        ret
+key1    ld      (hl), c
+        ret
+key2    ld      a, c
         inc     (hl)
         cp      (hl)
-        jr      nc, pact
+        ret     nc
         inc     (ix)
         ld      a, (ix)
-        cp      mapw
-        jr      nz, apes
+        cp      d
+        jr      nz, key3
         dec     (hl)
         dec     (ix)
-        jr      pact
-apes    ld      (hl), b
-tbucl   jp      bucl
-
-
-;       a=      numero pantalla
-paint_map:
-        ld      (paint4+1), sp
-        call    descom
-        ld      hl, $5810-scrw
-        ld      (attr), hl
-        ld      hl, screen+12*4
-        exx
-        ld      hl, DMAP_BUFFER
-        ld      bc, hl
-        ld      a, scrh
-paint1  ex      af, af'
-        ld      a, scrw
-paint2  ld      hl, bc
-        ld      l, (hl)
-        ld      h, 0
-        add     hl, hl
-        add     hl, hl
-        ld      de, hl
-        add     hl, hl
-        add     hl, hl
-        add     hl, hl
-        add     hl, de
-        ld      de, tiles
-        add     hl, de
-        ld      sp, hl
-        exx
-        ld      bc, 51
-        
-  ;celda 1
-        pop     de
-        ld      (hl), e
-        add     hl, bc
-        ld      (hl), d
-        add     hl, bc
-        pop     de
-        ld      (hl), e
-        add     hl, bc
-        ld      (hl), d
-        add     hl, bc
-        pop     de
-        ld      (hl), e
-        add     hl, bc
-        ld      (hl), d
-        add     hl, bc
-        pop     de
-        ld      (hl), e
-        add     hl, bc
-        ld      (hl), d
-        ld      de, -357+1
-        add     hl, de
-  ;celda 2
-        pop     de
-        ld      (hl), e
-        add     hl, bc
-        ld      (hl), d
-        add     hl, bc
-        pop     de
-        ld      (hl), e
-        add     hl, bc
-        ld      (hl), d
-        add     hl, bc
-        pop     de
-        ld      (hl), e
-        add     hl, bc
-        ld      (hl), d
-        add     hl, bc
-        pop     de
-        ld      (hl), e
-        add     hl, bc
-        ld      (hl), d
-        ld      de, 51-1
-        add     hl, de
-  ;celda 3
-        pop     de
-        ld      (hl), e
-        add     hl, bc
-        ld      (hl), d
-        add     hl, bc
-        pop     de
-        ld      (hl), e
-        add     hl, bc
-        ld      (hl), d
-        add     hl, bc
-        pop     de
-        ld      (hl), e
-        add     hl, bc
-        ld      (hl), d
-        add     hl, bc
-        pop     de
-        ld      (hl), e
-        add     hl, bc
-        ld      (hl), d
-        ld      de, -357+1
-        add     hl, de
-  ;celda 4
-        pop     de
-        ld      (hl), e
-        add     hl, bc
-        ld      (hl), d
-        add     hl, bc
-        pop     de
-        ld      (hl), e
-        add     hl, bc
-        ld      (hl), d
-        add     hl, bc
-        pop     de
-        ld      (hl), e
-        add     hl, bc
-        ld      (hl), d
-        add     hl, bc
-        pop     de
-        ld      (hl), e
-        add     hl, bc
-        ld      (hl), d
-        ld      de, -765-5
-        add     hl, de
-        ex      de, hl
-        ld      hl, (attr)
-        pop     bc
-        ld      (hl), c
-        inc     hl
-        ld      (hl), b
-        ld      bc, $001f
-        add     hl, bc
-        pop     bc
-        ld      (hl), c
-        inc     hl
-        ld      (hl), b
-        ld      bc, $ffe1
-        add     hl, bc
-        ld      (attr), hl
-        ex      de, hl
-        exx
-        inc     bc
-        dec     a
-        jp      nz, paint2
-        exx
-        ex      de, hl
-        ld      bc, $40-(scrw*2)
-        add     hl, bc
-        ld      (attr), hl
-        ex      de, hl
-        ld      de, 816+48
-        add     hl, de
-        exx
-        ex      af, af'
-        dec     a
-        jp      nz, paint1
-paint4  ld      sp, 0
+        and     a
+        ret
+key3    ld      (hl), 0
         ret
 
 attr    dw      $5810-scrw
 x       db      0
 y       db      0
 corx    db      16
-cory    db      0
+cory    db      1
+ene0x   db      12
+ene0y   db      12
+
 
         block   $9c00-$
+lookt   incbin  table.bin
+        block   $9d00-$
+
 ;        display $
 
 sprites incbin  salida.bin
