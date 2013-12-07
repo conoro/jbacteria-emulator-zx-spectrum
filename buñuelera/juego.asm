@@ -1,10 +1,13 @@
-        DEFINE  mapw  12
-        DEFINE  maph  2
-        DEFINE  scrw  12
-        DEFINE  scrh  8
-        DEFINE  DMAP_BITSYMB 5
-        DEFINE  DMAP_BITHALF 1
-        DEFINE  DMAP_BUFFER  $5b01
+        DEFINE  mapw  12              ; map width is 12
+        DEFINE  maph  2               ; map height is 2, our demo has 12x2 screens
+        DEFINE  scrw  12              ; screen width is 12
+        DEFINE  scrh  8               ; screen height is 8, our window is 12x8 tiles (exactly half of the screen area)
+        DEFINE  DMAP_BITSYMB 5        ; these 3 constants are for the map decompressor
+        DEFINE  DMAP_BITHALF 1        ; BITSYMB and BITHALF declares 5.5 bits per symbol (16 tiles with 5 bits and 32 with 6 bits)
+        DEFINE  DMAP_BUFFER  $5b01    ; BUFFER points to where is decoded the uncompressed screen
+
+; This macro copies a line from immediate value (data is embed in code) to
+; the stack, that correspond with a line (32 bytes) in the screen memory
 
     MACRO   copy  to
         ld      sp, $401c+to*16
@@ -33,6 +36,10 @@
         ld      hl, 0
         push    hl
     ENDM
+
+; This macro multiplies two 8 bits numbers (second one is a constant)
+; Factor 1 is on E register, Factor 2 is the constant data (macro parameter)
+; Result is returned on HL
 
     MACRO   mult8x8 data
         ld      d, 0
@@ -71,6 +78,7 @@
       ENDIF
     ENDM
 
+; Paolo Ferraris' shortest loader, then we move all the code to $8000
         output  juego.bin
         org     $8000-22
 ini     ld      de, $8000+fin-empe-1
@@ -80,34 +88,50 @@ aki     ld      hl, $5ccb+fin-ini-1
         ld      bc, fin-empe
         lddr
         jp      $8000
-empe    ld      hl, $0110        ; The keyboard repeat and delay values are 
-        ld      ($5c09), hl      ; loaded to REPDEL and REPPER.
-        ld      hl, $5800
+
+; First we clear the 2 upper thirds of the screen (our game area)
+; Note that ink=paper=0, this is to hide the sprites over the edges
+
+empe    ld      hl, $5800
         ld      de, $5801
         ld      bc, $01ff
         ld      (hl), l
         ldir
+
+; These self modifying code saves the correct value of the stack (out an into the routine)
         ld      (paint3+1), sp
         push    af
         ld      (paint4+1), sp
+
+; Main loop. This loop is executed when the main character exits over the edge of the screen
+; so we must generate the whole screen (into embed code) according to the map
+; First we calculate 12*y+x
 bucl    ld      a, (y)
         ld      e, a
         mult8x8 mapw
         ld      a, (x)
         add     a, l
+
+; Pass the calculated actual screen (from 0 to 23) to the decompressor (after this we have the actual screen at $5801)
         call    descom
+
+; Put the centered initial position (in attribute area) into attr variable because we haven't free registers
         ld      hl, $5810-scrw
         ld      (attr), hl
+; Points to the data (in reality is code because is embed) where we paint the tiles
         ld      hl, screen+12*4
         exx
-        ld      hl, DMAP_BUFFER
-        ld      bc, hl
+; BC points to the uncompressed buffer
+        ld      bc, DMAP_BUFFER 
+; The count of tiles is saved in A and A' registers
         ld      a, scrh
 paint1  ex      af, af'
         ld      a, scrw
+; Read the tile number in HL
 paint2  ld      hl, bc
         ld      l, (hl)
         ld      h, 0
+; HL= HL*36
         add     hl, hl
         add     hl, hl
         ld      de, hl
@@ -118,8 +142,10 @@ paint2  ld      hl, bc
         ld      de, tiles
         add     hl, de
         ld      sp, hl
+; Now SP points to the 36 bytes of the tile that we must to print
         exx
         ld      bc, 51
+; Prints the first cell (there are 4 cells to print)
         pop     de
         ld      (hl), e
         add     hl, bc
@@ -141,6 +167,7 @@ paint2  ld      hl, bc
         ld      (hl), d
         ld      de, -357+1
         add     hl, de
+; Prints the second cell 
         pop     de
         ld      (hl), e
         add     hl, bc
@@ -162,6 +189,7 @@ paint2  ld      hl, bc
         ld      (hl), d
         ld      de, 51-1
         add     hl, de
+; Prints the third cell 
         pop     de
         ld      (hl), e
         add     hl, bc
@@ -183,6 +211,7 @@ paint2  ld      hl, bc
         ld      (hl), d
         ld      de, -357+1
         add     hl, de
+; Prints the fourth cell 
         pop     de
         ld      (hl), e
         add     hl, bc
@@ -205,6 +234,7 @@ paint2  ld      hl, bc
         ld      de, -765-5
         add     hl, de
         ex      de, hl
+; Now we must print the 4 bytes of the attributes
         ld      hl, (attr)
         pop     bc
         ld      (hl), c
@@ -216,29 +246,40 @@ paint2  ld      hl, bc
         ld      (hl), c
         inc     hl
         ld      (hl), b
+; This code updates the attr pointer to the next position
         ld      bc, $ffe1
         add     hl, bc
         ld      (attr), hl
         ex      de, hl
         exx
         inc     bc
+; Repeat 12 times (12 tiles per line)
         dec     a
         jp      nz, paint2
         exx
         ex      de, hl
+; When a line of tiles is printed, the attr pointer must point to the first row on the next line
         ld      bc, $40-(scrw*2)
         add     hl, bc
         ld      (attr), hl
         ex      de, hl
+; Do the same with the other pointer
         ld      de, 816+48
         add     hl, de
         exx
         ex      af, af'
+; Repeat 8 times (8 lines of tiles)
         dec     a
         jp      nz, paint1
+
+; Second main loop, in this case we only redraw the actual screen for erasing all the sprites
+; Wait to cycle 14400 (approx), when the electron beam points the first non-border pixel
 repet   in      a, ($ff)
         inc     a
         jr      z, repet
+; Now we generate the playing area of pre-generated tiles to erase the sprites
+; This is not visible because speed of generation is slower than the electron beam
+; We must generate the lines in the same non linear order than the electrom beam (this takes about 40000 cycles)
 screen  copy    $00
         copy    $10
         copy    $20
@@ -367,30 +408,39 @@ screen  copy    $00
         copy    $de
         copy    $ee
         copy    $fe
+; Restores the stack, we need it for do CALLs
 paint3  ld      sp, 0
+; We will paint 12 enemies, storing the actual value in sprind (variable embed into code)
         ld      a, 11
 busp    ld      (sprind+1), a
+; Point HL to the parameters (4 bytes) of actual enemy
         add     a, a
         add     a, a
         ld      l, a
         ld      h, ene0 >> 8
+; Reads X and Y position
         ld      c, (hl)
         inc     l
         ld      b, (hl)
         inc     l
+; Test vertical direction
         bit     0, (hl)
         jr      nz, binc
+; If direction is up, decrement Y and test upper edge
         dec     b
         dec     b
         jr      nz, bfin
+; If upper edge detected invert vertical direction (inc (hl) also works)
         set     0, (hl)
         jr      bfin
+; If direction is down, increment Y, test and process lower edge
 binc    inc     b
         inc     b
         ld      a, $70
         cp      b
         jr      nz, bfin
         res     0, (hl)
+; Do the same in horizontal direction
 bfin    bit     1, (hl)
         jr      nz, cinc
         dec     c
@@ -406,20 +456,26 @@ cinc    inc     c
         cp      c
         jr      nz, cfin
         res     1, (hl)
+; Read sprite picture to use in A
 cfin    inc     l
         ld      a, (hl)
         dec     l
         dec     l
+; Update X and Y to memory
         ld      (hl), b
         dec     l
         ld      (hl), c
-        call    ruti
+; Paint the enemy sprite
+        call    put_sprite
+; Repeat 12 times
 sprind  ld      a, 0
         dec     a
         jp      p, busp
+; Paint the main character sprite
         ld      bc, (corx)
         xor     a
-        call    ruti
+        call    put_sprite
+; Points HL and IX to vertical variables, BC with upper and lower limits, DE with input port and vertical map dimension
         ld      hl, cory
         ld      ix, y
         ld      bc, $026e
@@ -428,15 +484,21 @@ sprind  ld      a, 0
         jr      c, tbucl
         cp      $03
         jr      nz, pact
+; Do the same with horizontal stuff
         ld      bc, $14dc
         dec     l
         dec     ixl
         ld      de, $df | mapw<<8
         call    key_process
+; If main character croses an edge jump to bucl (main loop), else jump to repet (2nd main loop)
 tbucl   jp      c, bucl
 pact    jp      repet
 
-ruti    xor     c
+; Paint a sprite
+; A register is the sprite number (must be multiple of 8)
+; BC register is X and Y coordinates
+put_sprite:
+        xor     c
         and     $f8
         xor     c
         ld      (cspr+2), a
@@ -578,6 +640,7 @@ fini    ex      af, af'
 paint4  ld      sp, 0
         ret
 
+; This routine tests the keys and moves the main character
 key_process:
         ld      a, e
         in      a, ($fe)
@@ -616,14 +679,18 @@ key2    ld      a, c
 key3    ld      (hl), 0
         ret
 
+; Some variables
 attr    dw      $5810-scrw
 x       db      0
 y       db      0
 corx    db      32
 cory    db      2
 
+; Look up table, from Y coordinate to memory address, 256 byte aligned
         block   $9c00-$
 lookt   incbin  table.bin
+
+; Enemy table. For each item: X, Y, direction and sprite number, 256 byte aligned
         block   $9d00-$
 ene0    db      $42, $12, %01, 0<<3 | $40
         db      $60, $60, %10, 1<<3 | $40
@@ -637,10 +704,17 @@ ene0    db      $42, $12, %01, 0<<3 | $40
         db      $12, $42, %01, 0<<3 | $40
         db      $40, $60, %10, 1<<3 | $40
         db      $a8, $10, %11, 2<<3 | $40
-        block   $9e00-$
 
-sprites incbin  salida.bin
+; Sprites file. Generated externally with GfxBu.c from sprites.png
+        block   $9e00-$
+sprites incbin  sprites.bin
+
+; Decompressor code
 descom  include descom12.asm
+
+; Tiles file. Generated externally with tilegen.c from tiles.png
 tiles   incbin  tiles.bin
-map     incbin  mapa_comprimido.bin
+
+; Map file. Generated externally with TmxCompress.c from map.tmx
+map     incbin  map_compressed.bin
 fin

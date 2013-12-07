@@ -5,7 +5,7 @@ unsigned char *image, *pixel, output[0x6000];
 unsigned error, width, height, i, j, k, l, min, max, nmin, nmax, amin, amax, param,
           mask, pics, amask, apics, inipos, reppos, outpos= 128;
 long long atr, celdas[4];
-FILE *fo, *fok;
+FILE *fo;
 
 int main(int argc, char *argv[]){
   if( argc==1 )
@@ -25,7 +25,6 @@ int main(int argc, char *argv[]){
     printf("\nError %u: %s\n", error, lodepng_error_text(error)),
     exit(-1);
   fo= fopen(argv[2], "wb+");
-  fok= fopen("salida.bin", "wb+");
   if( !fo )
     printf("\nCannot create output file: %s\n", argv[2]),
     exit(-1);
@@ -65,8 +64,6 @@ int main(int argc, char *argv[]){
             if( nmin>2 )
               output[inipos+1]+= 2;
           }
-          fprintf(fo, " %06x, %06x, %06x, %06x, %d, %d, %d\n", apics, amask, pics, mask, min, max,
-                      (nmin==min) && (nmax==max));
           nmin= min;
           nmax= max;
         }
@@ -80,12 +77,9 @@ int main(int argc, char *argv[]){
         outpos-= 2;
         goto salir;
       }
-      fprintf(fo, "\n");
     }
 salir:
- fwrite(output, 1, outpos, fok);
- fclose(fok);
-
+  fwrite(output, 1, outpos, fo);
   fclose(fo);
   printf("Done\n"
          "Files generated successfully\n", argv[4], argv[5]);
