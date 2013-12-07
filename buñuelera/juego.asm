@@ -87,6 +87,8 @@ empe    ld      hl, $0110        ; The keyboard repeat and delay values are
         ld      bc, $01ff
         ld      (hl), l
         ldir
+        ld      (paint3+1), sp
+        push    af
         ld      (paint4+1), sp
 bucl    ld      a, (y)
         ld      e, a
@@ -367,19 +369,40 @@ screen  copy    $00
         copy    $fe
 
 ; calculo origen sprite
-        ld      a, (corx)
-        and     $03
-        add     a, a
+paint3  ld      sp, 0
+        ld      bc, (corx)
+        xor     a
+        call    ruti
+        ld      hl, cory
+        ld      ix, y
+        ld      bc, $026e
+        ld      de, $fd | maph<<8
+        call    key_process
+        jr      c, tbucl
+        cp      $03
+        jr      nz, pact
+        ld      bc, $14dc
+        dec     l
+        dec     ixl
+        ld      de, $df | mapw<<8
+        call    key_process
+tbucl   jp      c, bucl
+pact    jp      repet
+
+
+ruti    xor     c
+        and     $f8
+        xor     c
         ld      (cspr+2), a
 cspr    ld      sp, (sprites)
         pop     de
-        ld      a, (cory)
-        add     a, a
+        ld      a, b
         add     a, d
         ld      (clin+1), a
 clin    ld      hl, (lookt)
-        ld      a, (corx)
-        and     $7c
+        ld      a, c
+        and     $f8
+        rra
         rra
         rra
         or      l
@@ -507,21 +530,7 @@ fini    ex      af, af'
         dec     a
         jp      nz, spr1
 paint4  ld      sp, 0
-        ld      hl, cory
-        ld      ix, y
-        ld      bc, $0137
-        ld      de, $fd | maph<<8
-        call    key_process
-        jr      c, tbucl
-        cp      $03
-        jr      nz, pact
-        ld      bc, $0a6e
-        dec     l
-        dec     ixl
-        ld      de, $df | mapw<<8
-        call    key_process
-tbucl   jp      c, bucl
-pact    jp      repet
+        ret
 
 key_process:
         ld      a, e
@@ -531,11 +540,13 @@ key_process:
         jr      z, key2
         ret     nc
         dec     (hl)
+        dec     (hl)
         ld      a, (hl)
         cp      b
         ret     nc
         dec     (ix)
         jp      p, key1
+        inc     (hl)
         inc     (hl)
         inc     (ix)
         and     a
@@ -544,12 +555,14 @@ key1    ld      (hl), c
         ret
 key2    ld      a, c
         inc     (hl)
+        inc     (hl)
         cp      (hl)
         ret     nc
         inc     (ix)
         ld      a, (ix)
         cp      d
         jr      nz, key3
+        dec     (hl)
         dec     (hl)
         dec     (ix)
         and     a
@@ -560,8 +573,8 @@ key3    ld      (hl), 0
 attr    dw      $5810-scrw
 x       db      0
 y       db      0
-corx    db      16
-cory    db      1
+corx    db      32
+cory    db      2
 ene0x   db      12
 ene0y   db      12
 
