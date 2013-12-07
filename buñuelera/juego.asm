@@ -367,9 +367,56 @@ screen  copy    $00
         copy    $de
         copy    $ee
         copy    $fe
-
-; calculo origen sprite
 paint3  ld      sp, 0
+        ld      a, 11
+busp    ld      (sprind+1), a
+        add     a, a
+        add     a, a
+        ld      l, a
+        ld      h, ene0 >> 8
+        ld      c, (hl)
+        inc     l
+        ld      b, (hl)
+        inc     l
+        bit     0, (hl)
+        jr      nz, binc
+        dec     b
+        dec     b
+        jr      nz, bfin
+        set     0, (hl)
+        jr      bfin
+binc    inc     b
+        inc     b
+        ld      a, $70
+        cp      b
+        jr      nz, bfin
+        res     0, (hl)
+bfin    bit     1, (hl)
+        jr      nz, cinc
+        dec     c
+        dec     c
+        ld      a, $1e
+        cp      c
+        jr      nz, cfin
+        set     1, (hl)
+        jr      cfin
+cinc    inc     c
+        inc     c
+        ld      a, $d2
+        cp      c
+        jr      nz, cfin
+        res     1, (hl)
+cfin    inc     l
+        ld      a, (hl)
+        dec     l
+        dec     l
+        ld      (hl), b
+        dec     l
+        ld      (hl), c
+        call    ruti
+sprind  ld      a, 0
+        dec     a
+        jp      p, busp
         ld      bc, (corx)
         xor     a
         call    ruti
@@ -388,7 +435,6 @@ paint3  ld      sp, 0
         call    key_process
 tbucl   jp      c, bucl
 pact    jp      repet
-
 
 ruti    xor     c
         and     $f8
@@ -575,15 +621,23 @@ x       db      0
 y       db      0
 corx    db      32
 cory    db      2
-ene0x   db      12
-ene0y   db      12
-
 
         block   $9c00-$
 lookt   incbin  table.bin
         block   $9d00-$
-
-;        display $
+ene0    db      $42, $12, %01, 0<<3 | $40
+        db      $60, $60, %10, 1<<3 | $40
+        db      $a8, $48, %11, 2<<3 | $40
+        db      $22, $02, %01, 3<<3 | $40
+        db      $d0, $6e, %10, 4<<3 | $40
+        db      $b6, $34, %11, 5<<3 | $40
+        db      $32, $32, %01, 6<<3 | $40
+        db      $52, $5e, %00, 7<<3 | $40
+        db      $72, $04, %11, $38
+        db      $12, $42, %01, 0<<3 | $40
+        db      $40, $60, %10, 1<<3 | $40
+        db      $a8, $10, %11, 2<<3 | $40
+        block   $9e00-$
 
 sprites incbin  salida.bin
 descom  include descom12.asm
