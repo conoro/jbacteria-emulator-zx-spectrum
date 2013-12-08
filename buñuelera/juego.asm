@@ -42,9 +42,8 @@
 ; Result is returned on HL
 
     MACRO   mult8x8 data
-        ld      d, 0
-        ld      l, d
-        add     hl, hl
+        ld      hl, 0
+        ld      d, l
       IF  data & %10000000
         add     hl, de
       ENDIF
@@ -128,13 +127,15 @@ bucl    ld      a, (y)
 paint1  ex      af, af'
         ld      a, scrw
 ; Read the tile number in HL
-paint2  ld      hl, bc
+paint2  ld      h, b
+        ld      l, c
         ld      l, (hl)
         ld      h, 0
 ; HL= HL*36
         add     hl, hl
         add     hl, hl
-        ld      de, hl
+        ld      d, h
+        ld      e, l
         add     hl, hl
         add     hl, hl
         add     hl, hl
@@ -428,10 +429,9 @@ busp    ld      (sprind+1), a
         jr      nz, binc
 ; If direction is up, decrement Y and test upper edge
         dec     b
-        dec     b
-        jr      nz, bfin
-; If upper edge detected invert vertical direction (inc (hl) also works)
-        set     0, (hl)
+        djnz    bfin
+; If upper edge detected invert vertical direction
+        inc     (hl)
         jr      bfin
 ; If direction is down, increment Y, test and process lower edge
 binc    inc     b
@@ -439,7 +439,7 @@ binc    inc     b
         ld      a, $70
         cp      b
         jr      nz, bfin
-        res     0, (hl)
+        dec     (hl)
 ; Do the same in horizontal direction
 bfin    bit     1, (hl)
         jr      nz, cinc
