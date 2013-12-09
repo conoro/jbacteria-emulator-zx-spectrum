@@ -65,6 +65,26 @@ empe    ld      hl, $5800
         ld      bc, $01ff
         ld      (hl), l
         ldir
+        ld      hl, $5000
+        ld      de, $5001
+        ld      c, $1f
+        ld      (hl), $66
+        ldir
+        ld      hl, $5100
+        ld      de, $5101
+        ld      c, $1f
+        ld      (hl), $99
+        ldir
+        ld      hl, $5a00
+        ld      de, $5a01
+        ld      c, $5
+        ld      (hl), $66
+        ldir
+        ld      hl, $5a06
+        ld      de, $5a07
+        ld      c, $19
+        ld      (hl), $99
+        ldir
 
 ; These self modifying code saves the correct value of the stack (out an into the routine)
         ld      (paint3+1), sp
@@ -246,11 +266,30 @@ pain25  exx
         dec     a
         jp      nz, paint1
 
+;raca    ld      b, 32
+;raca1   in      a, ($ff)
+;        inc     a
+;        jr      nz, raca
+;        djnz    raca1
+
 ; Second main loop, in this case we only redraw the actual screen for erasing all the sprites
 ; Wait to cycle 14400 (approx), when the electron beam points the first non-border pixel
-repet   in      a, ($ff)
-        inc     a
-        jr      z, repet
+repet   ld      de, $6699
+repet1  ld      b, 9
+repet2  in      a, ($ff)      ;11
+        cp      d             ;4
+        jp      nz, repet2    ;10   25
+repet3  in      a, ($ff)      ;11
+        cp      e             ;4
+        jr      z, repet4     ;7
+        djnz    repet3        ;13   35
+        jr      repet1
+repet4
+
+;11110000111100001111000010000000100000001000000010000000100000001000000010000000100000001000000010000000100000001000000010000000
+;abcd    ijkl    qrst    y       h       p       x       g       o       w       f       n       v       e       m       u       
+;                         c       k       s       1       9ab     hij     pqr     xy0     678    defg    lmno    tuvw    2345    
+;10100000101000001010000011110000111100001111000011110000111100001111000011110000111100001111000011110000111100001111000011110000
 
 ; Restores the stack, we need it for do CALLs
 paint3  ld      sp, 0
