@@ -8,41 +8,59 @@
 
 ; This macro multiplies two 8 bits numbers (second one is a constant)
 ; Factor 1 is on E register, Factor 2 is the constant data (macro parameter)
-; Result is returned on HL
+; Result is returned on HL (Macro optimized by Metalbrain & Einar Saukas)
 
     MACRO   mult8x8 data
+      IF  data = 0
         ld      hl, 0
-        ld      d, l
-      IF  data & %10000000
-        add     hl, de
-      ENDIF
-        add     hl, hl
-      IF  data & %01000000
-        add     hl, de
-      ENDIF
-        add     hl, hl
-      IF  data & %00100000
-        add     hl, de
-      ENDIF
-        add     hl, hl
-      IF  data & %00010000
-        add     hl, de
-      ENDIF
-        add     hl, hl
-      IF  data & %00001000
-        add     hl, de
-      ENDIF
-        add     hl, hl
-      IF  data & %00000100
-        add     hl, de
-      ENDIF
-        add     hl, hl
-      IF  data & %00000010
-        add     hl, de
-      ENDIF
-        add     hl, hl
-      IF  data & %00000001
-        add     hl, de
+      ELSE
+        ld      h, 0
+        ld      l, e
+        IF  data != 1 || data != 2 || data != 4 || data != 8 || data != 16 || data != 32 || data != 64 || data != 128
+          ld      d, h
+        ENDIF
+        IF  data & %10000000
+          add     hl, hl
+          IF  data & %01000000
+            add     hl, de
+          ENDIF
+        ENDIF
+        IF  data & %11000000
+          add     hl, hl
+          IF  data & %00100000
+            add     hl, de
+          ENDIF
+        ENDIF
+        IF  data & %11100000
+          add     hl, hl
+          IF  data & %00010000
+            add     hl, de
+          ENDIF
+        ENDIF
+        IF  data & %11110000
+          add     hl, hl
+          IF  data & %00001000
+            add     hl, de
+          ENDIF
+        ENDIF
+        IF  data & %11111000
+          add     hl, hl
+          IF  data & %00000100
+            add     hl, de
+          ENDIF
+        ENDIF
+        IF  data & %11111100
+          add     hl, hl
+          IF  data & %00000010
+            add     hl, de
+          ENDIF
+        ENDIF
+        IF  data & %11111110
+          add     hl, hl
+          IF  data & %00000001
+            add     hl, de
+          ENDIF
+        ENDIF
       ENDIF
     ENDM
 
