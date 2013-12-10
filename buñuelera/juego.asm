@@ -41,59 +41,33 @@
 ; Factor 1 is on E register, Factor 2 is the constant data (macro parameter)
 ; Result is returned on HL (Macro optimized by Metalbrain & Einar Saukas)
 
-    MACRO   mult8x8 data
-      IF  data = 0
+  MACRO multsub first, second
+    IF  data & first
+        add     hl, hl
+      IF  data & second
+        add     hl, de
+      ENDIF
+    ENDIF
+  ENDM
+
+  MACRO mult8x8 data
+    IF  data = 0
         ld      hl, 0
-      ELSE
+    ELSE
         ld      h, 0
         ld      l, e
-        IF  data != 1 || data != 2 || data != 4 || data != 8 || data != 16 || data != 32 || data != 64 || data != 128
-          ld      d, h
-        ENDIF
-        IF  data & %10000000
-          add     hl, hl
-          IF  data & %01000000
-            add     hl, de
-          ENDIF
-        ENDIF
-        IF  data & %11000000
-          add     hl, hl
-          IF  data & %00100000
-            add     hl, de
-          ENDIF
-        ENDIF
-        IF  data & %11100000
-          add     hl, hl
-          IF  data & %00010000
-            add     hl, de
-          ENDIF
-        ENDIF
-        IF  data & %11110000
-          add     hl, hl
-          IF  data & %00001000
-            add     hl, de
-          ENDIF
-        ENDIF
-        IF  data & %11111000
-          add     hl, hl
-          IF  data & %00000100
-            add     hl, de
-          ENDIF
-        ENDIF
-        IF  data & %11111100
-          add     hl, hl
-          IF  data & %00000010
-            add     hl, de
-          ENDIF
-        ENDIF
-        IF  data & %11111110
-          add     hl, hl
-          IF  data & %00000001
-            add     hl, de
-          ENDIF
-        ENDIF
+      IF (data-1)*(data-2)*(data-4)*(data-8)*(data-16)*(data-32)*(data-64)*(data-128)
+        ld      d, h
       ENDIF
-    ENDM
+        multsub %10000000, %01000000
+        multsub %11000000, %00100000
+        multsub %11100000, %00010000
+        multsub %11110000, %00001000
+        multsub %11111000, %00000100
+        multsub %11111100, %00000010
+        multsub %11111110, %00000001
+    ENDIF
+  ENDM
 
 ; Paolo Ferraris' shortest loader, then we move all the code to $8000
         output  juego.bin

@@ -1,7 +1,7 @@
         DEFINE  mapw  12              ; map width is 12
         DEFINE  maph  2               ; map height is 2, our demo has 12x2 screens
-        DEFINE  scrw  12              ; screen width is 12
-        DEFINE  scrh  8               ; screen height is 8, our window is 12x8 tiles (exactly half of the screen area)
+        DEFINE  scrw  15              ; screen width is 12
+        DEFINE  scrh  10              ; screen height is 8, our window is 12x8 tiles (exactly half of the screen area)
         DEFINE  DMAP_BITSYMB 5        ; these 3 constants are for the map decompressor
         DEFINE  DMAP_BITHALF 1        ; BITSYMB and BITHALF declares 5.5 bits per symbol (16 tiles with 5 bits and 32 with 6 bits)
         DEFINE  DMAP_BUFFER  $5b01    ; BUFFER points to where is decoded the uncompressed screen
@@ -10,59 +10,33 @@
 ; Factor 1 is on E register, Factor 2 is the constant data (macro parameter)
 ; Result is returned on HL (Macro optimized by Metalbrain & Einar Saukas)
 
-    MACRO   mult8x8 data
-      IF  data = 0
+  MACRO multsub first, second
+    IF  data & first
+        add     hl, hl
+      IF  data & second
+        add     hl, de
+      ENDIF
+    ENDIF
+  ENDM
+
+  MACRO mult8x8 data
+    IF  data = 0
         ld      hl, 0
-      ELSE
+    ELSE
         ld      h, 0
         ld      l, e
-        IF  data != 1 || data != 2 || data != 4 || data != 8 || data != 16 || data != 32 || data != 64 || data != 128
-          ld      d, h
-        ENDIF
-        IF  data & %10000000
-          add     hl, hl
-          IF  data & %01000000
-            add     hl, de
-          ENDIF
-        ENDIF
-        IF  data & %11000000
-          add     hl, hl
-          IF  data & %00100000
-            add     hl, de
-          ENDIF
-        ENDIF
-        IF  data & %11100000
-          add     hl, hl
-          IF  data & %00010000
-            add     hl, de
-          ENDIF
-        ENDIF
-        IF  data & %11110000
-          add     hl, hl
-          IF  data & %00001000
-            add     hl, de
-          ENDIF
-        ENDIF
-        IF  data & %11111000
-          add     hl, hl
-          IF  data & %00000100
-            add     hl, de
-          ENDIF
-        ENDIF
-        IF  data & %11111100
-          add     hl, hl
-          IF  data & %00000010
-            add     hl, de
-          ENDIF
-        ENDIF
-        IF  data & %11111110
-          add     hl, hl
-          IF  data & %00000001
-            add     hl, de
-          ENDIF
-        ENDIF
+      IF  data != 1 && data != 2 && data != 4 && data != 8 && data != 16 && data != 32 && data != 64 && data != 128
+        ld      d, h
       ENDIF
-    ENDM
+        multsub %10000000, %01000000
+        multsub %11000000, %00100000
+        multsub %11100000, %00010000
+        multsub %11110000, %00001000
+        multsub %11111000, %00000100
+        multsub %11111100, %00000010
+        multsub %11111110, %00000001
+    ENDIF
+  ENDM
 
 ; Paolo Ferraris' shortest loader, then we move all the code to $8000
         output  engine48.bin
@@ -80,26 +54,26 @@ aki     ld      hl, $5ccb+fin-ini-1
 
 empe    ld      hl, $5800
         ld      de, $5801
-        ld      bc, $01ff
+        ld      bc, $02ff
         ld      (hl), l
         ldir
-        ld      hl, $5000
-        ld      de, $5001
+        ld      hl, $5080
+        ld      de, $5081
         ld      c, $1f
         ld      (hl), $66
         ldir
-        ld      hl, $5100
-        ld      de, $5101
+        ld      hl, $5180
+        ld      de, $5181
         ld      c, $1f
         ld      (hl), $99
         ldir
-        ld      hl, $5a00
-        ld      de, $5a01
+        ld      hl, $5a80
+        ld      de, $5a81
         ld      c, $5
         ld      (hl), $66
         ldir
-        ld      hl, $5a06
-        ld      de, $5a07
+        ld      hl, $5a86
+        ld      de, $5a87
         ld      c, $19
         ld      (hl), $99
         ldir
@@ -355,48 +329,74 @@ clin    ld      hl, (lookt)
         rra
         or      l
         ld      l, a
+        ld      bc, backup
+        ld      (bc), a
+        dec     bc
+        ld      a, h
+        ld      (bc), a
+        dec     bc
         ld      a, e
+        ld      (bc), a
+        dec     bc
 spr1    ex      af, af'
-        pop     bc
-        ld      a, c
+        pop     de
+        ld      a, d
+        ld      ixl, a
+        ld      (bc), a
+        dec     bc
+        ld      a, e
+        ld      (bc), a
+        dec     bc
         and     $03
         add     a, l
         dec     a
         ld      l, a
-        bit     3, c
+        bit     3, e
         jr      z, ncol24
 col24   pop     de
         ld      a, (hl)
+        ld      (bc), a
+        dec     bc
         and     d
         or      e
         ld      (hl), a
         inc     l
         pop     de
         ld      a, (hl)
+        ld      (bc), a
+        dec     bc
         and     d
         or      e
         ld      (hl), a
         inc     l
         pop     de
         ld      a, (hl)
+        ld      (bc), a
+        dec     bc
         and     d
         or      e
         ld      (hl), a
         inc     h
         pop     de
         ld      a, (hl)
+        ld      (bc), a
+        dec     bc
         and     d
         or      e
         ld      (hl), a
         dec     l
         pop     de
         ld      a, (hl)
+        ld      (bc), a
+        dec     bc
         and     d
         or      e
         ld      (hl), a
         dec     l
         pop     de
         ld      a, (hl)
+        ld      (bc), a
+        dec     bc
         and     d
         or      e
         ld      (hl), a
@@ -411,30 +411,39 @@ col24   pop     de
         ld      a, h
         sub     $08
         ld      h, a
-col24a  djnz    col24
+col24a  dec     ixl
+        jr      nz, col24
         jr      fini
-ncol24  bit     2, c
+ncol24  bit     2, e
         jr      z, col8
 col16   pop     de
         ld      a, (hl)
+        ld      (bc), a
+        dec     bc
         and     d
         or      e
         ld      (hl), a
         inc     l
         pop     de
         ld      a, (hl)
+        ld      (bc), a
+        dec     bc
         and     d
         or      e
         ld      (hl), a
         inc     h
         pop     de
         ld      a, (hl)
+        ld      (bc), a
+        dec     bc
         and     d
         or      e
         ld      (hl), a
         dec     l
         pop     de
         ld      a, (hl)
+        ld      (bc), a
+        dec     bc
         and     d
         or      e
         ld      (hl), a
@@ -449,16 +458,21 @@ col16   pop     de
         ld      a, h
         sub     $08
         ld      h, a
-col16a  djnz    col16
+col16a  dec     ixl
+        jr      nz, col16
         jr      fini
 col8    pop     de
         ld      a, (hl)
+        ld      (bc), a
+        dec     bc
         and     d
         or      e
         ld      (hl), a
         inc     h
         pop     de
         ld      a, (hl)
+        ld      (bc), a
+        dec     bc
         and     d
         or      e
         ld      (hl), a
@@ -473,7 +487,8 @@ col8    pop     de
         ld      a, h
         sub     $08
         ld      h, a
-col8a   djnz    col8
+col8a   dec     ixl
+        jr      nz, col8
 fini    ex      af, af'
         dec     a
         jp      nz, spr1
@@ -548,8 +563,11 @@ ene0    db      $42, $12, %01, 0<<3 | $40
         block   $9e00-$
 sprites incbin  sprites.bin
 
+        block   $200
+backup  db      0
+
 ; Decompressor code
-descom  include descom12.asm
+descom  include descom15.asm
 
 ; Tiles file. Generated externally with tilegen.c from tiles.png
 tiles   incbin  tiles.bin

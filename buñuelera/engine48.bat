@@ -1,6 +1,6 @@
 rem TableGen
 rem TileGen
-rem TmxCompress map.tmx map_compressed.bin
+TmxCompress map.tmx map_compressed.bin
 \_Downloads\dm\bin\dmc tilegen.c lodepng.c
 GfxBu sprites.png sprites.bin 9e00
 \emuscriptoria\sjasmplus engine48.asm

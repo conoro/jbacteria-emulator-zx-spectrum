@@ -224,7 +224,7 @@ unsigned char *compress(Optimal *optimal, unsigned char *input_data, size_t inpu
         write_bit(offset1&1);
       }
       else
-        offset1+= 114-(offset1<scrw?1:0),
+        offset1+= 114+(offset1<scrw?1:0),
         write_bit(1),
         write_bit(1),
         write_bit(offset1&64),
@@ -253,7 +253,7 @@ int main(int argc, char* argv[]){
   FILE *fi, *fo;
   mem= (unsigned char *) malloc (0x10000);
   if( argc==1 )
-    printf("\nTmxCompress v1.12, Map compressor by Antonio Villena, 18 Nov 2013\n\n"),
+    printf("\nTmxCompress v1.12b, Map compressor by Antonio Villena, 18 Nov 2013\n\n"),
     printf("  TmxCompress <input_tmx> <output_compressed>\n\n"),
     printf("  <input_tmx>         Origin .TMX file\n"),
     printf("  <output_compressed> Generated binary compressed map\n\n"),
