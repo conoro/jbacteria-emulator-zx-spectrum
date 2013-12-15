@@ -1,4 +1,6 @@
-rem TableGen
+\_Downloads\dm\bin\dmc TableGen.c
+\_Downloads\dm\bin\dmc GfxBu.c lodepng.c
+TableGen
 rem TileGen
 TmxCompress map.tmx map_compressed.bin
 \_Downloads\dm\bin\dmc tilegen.c lodepng.c
