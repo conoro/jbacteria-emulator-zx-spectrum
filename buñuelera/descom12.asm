@@ -1,5 +1,5 @@
         ld      de, map
-        ld      hl, fin-1
+        ld      hl, mapend-1
         ld      bc, 0
 desc1:  sbc     hl, bc
         ex      de, hl

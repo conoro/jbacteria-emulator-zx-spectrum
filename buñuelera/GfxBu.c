@@ -3,7 +3,7 @@
 #include <stdlib.h>
 unsigned char *image, *pixel, output[0x6000];
 unsigned error, width, height, i, j, k, l, min, max, nmin, nmax, amin, amax, param,
-          mask, pics, amask, apics, inipos, reppos, outpos= 128;
+          mask, pics, amask, apics, inipos, reppos, outpos= 256;
 long long atr, celdas[4];
 FILE *fo;
 
@@ -30,9 +30,9 @@ int main(int argc, char *argv[]){
     exit(-1);
   param= strtol(argv[3], NULL, 16);
   for ( i= 0; i < 16; i++ )
-    for ( j= 0; j < 8; j+= 2 ){
-      output[j|i<<3]= outpos+param;
-      output[1|j|i<<3]= outpos+param>>8;
+    for ( j= 0; j < 8; j++ ){
+      output[j<<1|i<<4]= outpos+param;
+      output[1|j<<1|i<<4]= outpos+param>>8;
       output[inipos= outpos]= 0;
       outpos+= 2;
       nmin= nmax= 4;

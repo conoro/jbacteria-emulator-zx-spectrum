@@ -38,75 +38,179 @@
     ENDIF
   ENDM
 
+      MACRO updremove
+        ld      a, h
+        and     $07
+        jp      nz, .upd
+        ld      a, l
+        sub     $20
+        ld      l, a
+        jr      c, .upd
+        ld      a, h
+        add     a, $08
+        ld      h, a
+.upd
+      ENDM
+
+      MACRO updpaint
+        ld      a, h
+        and     $07
+        jp      nz, .upd
+        ld      a, l
+        add     a, $20
+        ld      l, a
+        jr      c, .upd
+        ld      a, h
+        sub     $08
+        ld      h, a
+.upd
+      ENDM
+
 ; Paolo Ferraris' shortest loader, then we move all the code to $8000
         output  engine48.bin
         org     $8000-22
-ini     ld      de, $8000+fin-empe-1
+begin   ld      de, $8000+endd-start-1
         di
         db      $de, $c0, $37, $0e, $8f, $39, $96 ;OVER USR 7 ($5ccb)
-aki     ld      hl, $5ccb+fin-ini-1
-        ld      bc, fin-empe
+        ld      hl, $5ccb+endd-begin-1
+        ld      bc, endd-start
         lddr
         jp      $8000
 
-; First we clear the 2 upper thirds of the screen (our game area)
+; First we clear the screen
 ; Note that ink=paper=0, this is to hide the sprites over the edges
-
-empe    ld      hl, $5800
+start   ld      hl, $5800
         ld      de, $5801
         ld      bc, $02ff
         ld      (hl), l
         ldir
-        ld      hl, $5080
-        ld      de, $5081
-        ld      c, $1f
-        ld      (hl), $66
-        ldir
-        ld      hl, $5180
-        ld      de, $5181
-        ld      c, $1f
-        ld      (hl), $99
-        ldir
-        ld      hl, $5a80
-        ld      de, $5a81
-        ld      c, $5
-        ld      (hl), $66
-        ldir
-        ld      hl, $5a86
-        ld      de, $5a87
-        ld      c, $19
-        ld      (hl), $99
-        ldir
+; These self modifying code saves the correct value of the stack
+        ld      (drawd+1), sp
+        pop     af
+; Print the background
+        call    print_screen
 
-; These self modifying code saves the correct value of the stack (out an into the routine)
-        ld      (paint3+1), sp
-        push    af
-        ld      (paint4+1), sp
+; This is the main loop
+main_loop
+        call    do_sprites
+        ld      b, 7
+        ld      hl, ene0+4
+main1   inc     l
+        inc     l
+        inc     l
+        bit     0, (hl)
+        jr      nz, main2
+        dec     l
+        dec     (hl)
+        set     0, l
+        jr      nz, main3
+        inc     (hl)
+        jr      main3
+main2   dec     l
+        inc     (hl)
+        ld      a, $90
+        cp      (hl)
+        set     0, l
+        jr      nz, main3
+        dec     (hl)
+main3   bit     1, (hl)
+        jr      nz, main4
+        dec     l
+        dec     l
+        dec     (hl)
+        ld      a, $08
+        cp      (hl)
+        set     1, l
+        jr      nz, main5
+        set     1, (hl)
+        jr      main5
+main4   dec     l
+        dec     l
+        inc     (hl)
+        ld      a, $e8
+        cp      (hl)
+        set     1, l
+        jr      nz, main5
+        res     1, (hl)
+main5   inc     l
+        djnz    main1
+; Points HL and IX to vertical variables, BC with upper and lower limits, DE with input port and vertical map dimension
+        ld      hl, ene0+2
+        ld      ix, y
+        ld      bc, $028e
+        ld      de, $fd | maph<<8
+        call    key_process
+        jr      c, main6
+        cp      $03
+        jr      nz, main_loop
+; Do the same with horizontal stuff
+        ld      bc, $02ee
+        dec     l
+        dec     ixl
+        ld      de, $df | mapw<<8
+        call    key_process
+; If main character croses an edge call to print_screen, else jump to main_loop
+main6   call    c, print_screen
+        jr      main_loop
 
-; Main loop. This loop is executed when the main character exits over the edge of the screen
-; so we must generate the whole screen (into embed code) according to the map
-; First we calculate 12*y+x
-bucl    ld      a, (y)
+; This routine tests the keys and moves the main character
+key_process
+        ld      a, e
+        in      a, ($fe)
+        and     $03
+        cp      $02
+        jr      z, key2
+        ret     nc
+        dec     (hl)
+        ld      a, (hl)
+        cp      b
+        ret     nc
+        dec     (ix)
+        jp      p, key1
+        inc     (hl)
+        inc     (ix)
+        and     a
+        ret
+key1    ld      (hl), c
+        ret
+key2    ld      a, c
+        inc     (hl)
+        cp      (hl)
+        ret     nc
+        inc     (ix)
+        ld      a, (ix)
+        cp      d
+        jr      nz, key3
+        dec     (hl)
+        dec     (ix)
+        and     a
+        ret
+key3    ld      (hl), 0
+        ret
+
+print_screen
+        ld      (prin4+1), sp
+        ld      a, do3-2-do2
+        ld      (do2+1), a
+        ld      a, (y)
         ld      e, a
         mult8x8 mapw
         ld      a, (x)
         add     a, l
-
 ; Pass the calculated actual screen (from 0 to 23) to the decompressor (after this we have the actual screen at $5801)
         call    descom
-
 ; Points to screen point where we paint the tiles
-        ld      hl, $4010-scrw
-        ld      bc, $5810-scrw
+        ld      hl, $4090-scrw
+        ld      bc, $5890-scrw
         exx
 ; BC points to the uncompressed buffer
         ld      bc, DMAP_BUFFER 
 ; The count of tiles is saved in A and A' registers
         ld      a, scrh
-paint1  ex      af, af'
+prin1   ex      af, af'
         ld      a, scrw
 ; Read the tile number in HL
-paint2  ld      h, b
+prin2   ld      h, b
         ld      l, c
         ld      l, (hl)
         ld      h, 0
@@ -236,7 +340,7 @@ paint2  ld      h, b
         inc     bc
 ; Repeat 12 times (12 tiles per line)
         dec     a
-        jp      nz, paint2
+        jp      nz, prin2
         exx
         ex      de, hl
 ; When a line of tiles is printed, the attr pointer must point to the first row on the next line
@@ -249,322 +353,309 @@ paint2  ld      h, b
         ld      de, $40-(scrw*2)
         add     hl, de
         bit     0, h
-        jr      z, pain25
+        jr      z, prin3
         ld      de, $0700
         add     hl, de
-pain25  exx
+prin3   exx
         ex      af, af'
 ; Repeat 8 times (8 lines of tiles)
         dec     a
-        jp      nz, paint1
+        jp      nz, prin1
+prin4   ld      sp, 0
+        ret
 
-;raca    ld      b, 32
-;raca1   in      a, ($ff)
-;        inc     a
-;        jr      nz, raca
-;        djnz    raca1
+do_sprites
+        ld      b, 20
+do1     in      a, ($ff)
+        inc     a
+        jr      nz, do_sprites
+        djnz    do1
+do2     jr      delete_sprites
+do3     ld      a, delete_sprites-2-do2
+        ld      (do2+1), a
+        jp      draw_sprites
 
-; Second main loop, in this case we only redraw the actual screen for erasing all the sprites
-; Wait to cycle 14400 (approx), when the electron beam points the first non-border pixel
-repet   ld      de, $6699
-repet1  ld      b, 9
-repet2  in      a, ($ff)      ;11
-        cp      d             ;4
-        jp      nz, repet2    ;10   25
-repet3  in      a, ($ff)      ;11
-        cp      e             ;4
-        jr      z, repet4     ;7
-        djnz    repet3        ;13   35
-        jr      repet1
-repet4
-
-;11110000111100001111000010000000100000001000000010000000100000001000000010000000100000001000000010000000100000001000000010000000
-;abcd    ijkl    qrst    y       h       p       x       g       o       w       f       n       v       e       m       u       
-;                         c       k       s       1       9ab     hij     pqr     xy0     678    defg    lmno    tuvw    2345    
-;10100000101000001010000011110000111100001111000011110000111100001111000011110000111100001111000011110000111100001111000011110000
-
-; Restores the stack, we need it for do CALLs
-paint3  ld      sp, 0
-; Paint the main character sprite
-        ld      bc, (corx)
-        xor     a
-        call    put_sprite
-; Points HL and IX to vertical variables, BC with upper and lower limits, DE with input port and vertical map dimension
-        ld      hl, cory
-        ld      ix, y
-        ld      bc, $026e
-        ld      de, $fd | maph<<8
-        call    key_process
-        jr      c, tbucl
-        cp      $03
-        jr      nz, pact
-; Do the same with horizontal stuff
-        ld      bc, $14dc
-        dec     l
-        dec     ixl
-        ld      de, $df | mapw<<8
-        call    key_process
-; If main character croses an edge jump to bucl (main loop), else jump to repet (2nd main loop)
-tbucl   jp      c, bucl
-pact    jp      repet
-
-; Paint a sprite
-; A register is the sprite number (must be multiple of 8)
-; BC register is X and Y coordinates
-put_sprite:
-        xor     c
-        and     $f8
-        xor     c
-        ld      (cspr+2), a
-cspr    ld      sp, (sprites)
+delete_sprites
+        ld      sp, 0
+        pop     bc
+        ld      ixl, b
+del1    pop     hl
+del2    pop     bc
+        bit     3, c
+        jr      z, del4
+del3    updremove
         pop     de
-        ld      a, b
+        dec     h
+        ld      (hl), e
+        inc     l
+        ld      (hl), d
+        inc     l
+        pop     de
+        ld      (hl), e
+        updremove
+        dec     h
+        ld      (hl), d
+        dec     l
+        pop     de
+        ld      (hl), e
+        dec     l
+        ld      (hl), d
+        djnz    del3
+        jr      del9
+del4    bit     2, c
+        jr      z, del8
+del5    updremove
+        pop     de
+        dec     h
+        ld      (hl), e
+        inc     l
+        ld      (hl), d
+        updremove
+        dec     h
+        pop     de
+        ld      (hl), e
+        dec     l
+        ld      (hl), d
+        djnz    del5
+        jr      del9
+del6    ld      (del7+1), a
+del7    ld      hl, (lookt+$100)
+        jr      draw4
+del8    updremove
+        pop     de
+        dec     h
+        ld      (hl), e
+        updremove
+        dec     h
+        ld      (hl), d
+        djnz    del8
+del9    ld      a, c
+        cpl
+        and     $03
+        add     a, l
+        sub     2
+        ld      l, a
+        dec     ixl
+        jp      nz, del2
+        pop     bc
+        ld      ixl, b
+        inc     b
+        jp      nz, del1
+
+draw_sprites
+        ld      a, 7
+        ld      bc, lookt-2
+draw1   ld      (drawc+1), a
+        add     a, a
+        add     a, a
+        add     a, $40
+        ld      l, a
+        ld      h, ene0 >> 8
+        ld      a, (hl)
+        add     a, a
+        jp      c, drawc
+        add     a, a
+        add     a, a
+        inc     l
+        ld      e, (hl)
+        inc     l
+        xor     e
+        and     $f8
+        xor     e
+        add     a, a
+        ld      (draw2+2), a
+        ld      a, e
+        ld      (draw4+1), a
+draw2   ld      sp, (sprites)
+        pop     de
+        ld      a, (hl)
         add     a, d
-        ld      (clin+1), a
-clin    ld      hl, (lookt)
-        ld      a, c
+        add     a, a
+        jr      c, del6
+        ld      (draw3+1), a
+draw3   ld      hl, (lookt)
+draw4   ld      a, 0
         and     $f8
         rra
         rra
         rra
         or      l
         ld      l, a
-        ld      bc, backup
-        ld      (bc), a
-        dec     bc
-        ld      a, h
-        ld      (bc), a
-        dec     bc
         ld      a, e
-        ld      (bc), a
-        dec     bc
-spr1    ex      af, af'
+        ld      (drawb+1), a
+draw5   ex      af, af'
         pop     de
-        ld      a, d
-        ld      ixl, a
-        ld      (bc), a
-        dec     bc
+        ld      ixl, d
+        ld      iyh, d
+        ld      iyl, e
         ld      a, e
-        ld      (bc), a
-        dec     bc
         and     $03
         add     a, l
         dec     a
         ld      l, a
         bit     3, e
-        jr      z, ncol24
-col24   pop     de
+        jr      z, draw7
+draw6   pop     de
         ld      a, (hl)
-        ld      (bc), a
         dec     bc
+        ld      (bc), a
         and     d
         or      e
         ld      (hl), a
         inc     l
         pop     de
         ld      a, (hl)
+        dec     c
         ld      (bc), a
-        dec     bc
         and     d
         or      e
         ld      (hl), a
         inc     l
         pop     de
         ld      a, (hl)
-        ld      (bc), a
         dec     bc
+        ld      (bc), a
         and     d
         or      e
         ld      (hl), a
         inc     h
+        updpaint
         pop     de
         ld      a, (hl)
+        dec     c
         ld      (bc), a
-        dec     bc
         and     d
         or      e
         ld      (hl), a
         dec     l
         pop     de
         ld      a, (hl)
-        ld      (bc), a
         dec     bc
+        ld      (bc), a
         and     d
         or      e
         ld      (hl), a
         dec     l
         pop     de
         ld      a, (hl)
+        dec     c
         ld      (bc), a
-        dec     bc
         and     d
         or      e
         ld      (hl), a
         inc     h
-        ld      a, h
-        and     $06
-        jr      nz, col24a
-        ld      a, l
-        add     a, $20
-        ld      l, a
-        jr      c, col24a
-        ld      a, h
-        sub     $08
-        ld      h, a
-col24a  dec     ixl
-        jr      nz, col24
-        jr      fini
-ncol24  bit     2, e
-        jr      z, col8
-col16   pop     de
+        updpaint
+        dec     ixl
+        jr      nz, draw6
+        jr      drawa
+draw7   bit     2, e
+        jr      z, draw9
+draw8   pop     de
         ld      a, (hl)
-        ld      (bc), a
         dec     bc
+        ld      (bc), a
         and     d
         or      e
         ld      (hl), a
         inc     l
         pop     de
         ld      a, (hl)
+        dec     c
         ld      (bc), a
-        dec     bc
         and     d
         or      e
         ld      (hl), a
         inc     h
+        updpaint
         pop     de
         ld      a, (hl)
-        ld      (bc), a
         dec     bc
+        ld      (bc), a
         and     d
         or      e
         ld      (hl), a
         dec     l
         pop     de
         ld      a, (hl)
+        dec     c
         ld      (bc), a
-        dec     bc
         and     d
         or      e
         ld      (hl), a
         inc     h
-        ld      a, h
-        and     $06
-        jr      nz, col16a
-        ld      a, l
-        add     a, $20
-        ld      l, a
-        jr      c, col16a
-        ld      a, h
-        sub     $08
-        ld      h, a
-col16a  dec     ixl
-        jr      nz, col16
-        jr      fini
-col8    pop     de
+        updpaint
+        dec     ixl
+        jr      nz, draw8
+        jr      drawa
+draw9   pop     de
         ld      a, (hl)
-        ld      (bc), a
         dec     bc
+        ld      (bc), a
         and     d
         or      e
         ld      (hl), a
         inc     h
+        updpaint
         pop     de
         ld      a, (hl)
+        dec     c
         ld      (bc), a
-        dec     bc
         and     d
         or      e
         ld      (hl), a
         inc     h
-        ld      a, h
-        and     $06
-        jr      nz, col8a
-        ld      a, l
-        add     a, $20
-        ld      l, a
-        jr      c, col8a
-        ld      a, h
-        sub     $08
-        ld      h, a
-col8a   dec     ixl
-        jr      nz, col8
-fini    ex      af, af'
+        updpaint
+        dec     ixl
+        jr      nz, draw9
+drawa   ld      a, iyh
+        dec     bc
+        ld      (bc), a
+        ld      a, iyl
+        dec     c
+        ld      (bc), a
+        ex      af, af'
         dec     a
-        jp      nz, spr1
-paint4  ld      sp, 0
-        ret
-
-; This routine tests the keys and moves the main character
-key_process:
-        ld      a, e
-        in      a, ($fe)
-        and     $03
-        cp      $02
-        jr      z, key2
-        ret     nc
-        dec     (hl)
-        dec     (hl)
-        ld      a, (hl)
-        cp      b
-        ret     nc
-        dec     (ix)
-        jp      p, key1
-        inc     (hl)
-        inc     (hl)
-        inc     (ix)
-        and     a
-        ret
-key1    ld      (hl), c
-        ret
-key2    ld      a, c
-        inc     (hl)
-        inc     (hl)
-        cp      (hl)
-        ret     nc
-        inc     (ix)
-        ld      a, (ix)
-        cp      d
-        jr      nz, key3
-        dec     (hl)
-        dec     (hl)
-        dec     (ix)
-        and     a
-        ret
-key3    ld      (hl), 0
+        jp      nz, draw5
+        ld      a, h
+        dec     bc
+        ld      (bc), a
+        ld      a, l
+        dec     c
+        ld      (bc), a
+drawb   ld      a, 0
+        dec     bc
+        ld      (bc), a
+        dec     c
+drawc   ld      a, 0
+        dec     a
+        jp      p, draw1
+drawd   ld      sp, 0
+        ld      (delete_sprites+1), bc
         ret
 
 ; Some variables
 x       db      0
 y       db      0
-corx    db      32
-cory    db      2
 
 ; Look up table, from Y coordinate to memory address, 256 byte aligned
-        block   $9c00-$
+        block   $9bfe-$
+        defb    $ff, $ff
 lookt   incbin  table.bin
 
 ; Enemy table. For each item: X, Y, direction and sprite number, 256 byte aligned
-        block   $9d00-$
-ene0    db      $42, $12, %01, 0<<3 | $40
-        db      $60, $60, %10, 1<<3 | $40
-        db      $a8, $48, %11, 2<<3 | $40
-        db      $22, $02, %01, 3<<3 | $40
-        db      $d0, $6e, %10, 4<<3 | $40
-        db      $b6, $34, %11, 5<<3 | $40
-        db      $32, $32, %01, 6<<3 | $40
-        db      $52, $5e, %00, 7<<3 | $40
-        db      $72, $04, %11, $38
-        db      $12, $42, %01, 0<<3 | $40
-        db      $40, $60, %10, 1<<3 | $40
-        db      $a8, $10, %11, 2<<3 | $40
+        block   $9d40-$
+ene0    db      $00, $42, $11, 0
+        db      $08, $60, $60, %10
+        db      $09, $a8, $48, %11
+        db      $0a, $22, $02, %01
+        db      $0b, $d0, $6e, %10
+        db      $0c, $b6, $34, %11
+        db      $0d, $32, $32, %01
+        db      $04, $52, $5e, %00
 
 ; Sprites file. Generated externally with GfxBu.c from sprites.png
         block   $9e00-$
 sprites incbin  sprites.bin
-
-        block   $200
-backup  db      0
 
 ; Decompressor code
 descom  include descom15.asm
@@ -574,4 +665,5 @@ tiles   incbin  tiles.bin
 
 ; Map file. Generated externally with TmxCompress.c from map.tmx
 map     incbin  map_compressed.bin
-fin
+mapend
+endd
