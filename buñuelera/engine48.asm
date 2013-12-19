@@ -5,6 +5,9 @@
         DEFINE  DMAP_BITSYMB 5        ; these 3 constants are for the map decompressor
         DEFINE  DMAP_BITHALF 1        ; BITSYMB and BITHALF declares 5.5 bits per symbol (16 tiles with 5 bits and 32 with 6 bits)
         DEFINE  DMAP_BUFFER  $5b01    ; BUFFER points to where is decoded the uncompressed screen
+        DEFINE  sylo  $66
+        DEFINE  syhi  $c0
+        DEFINE  smooth  0
 
 ; This macro multiplies two 8 bits numbers (second one is a constant)
 ; Factor 1 is on E register, Factor 2 is the constant data (macro parameter)
@@ -77,22 +80,56 @@ begin   ld      de, $8000+endd-start-1
         lddr
         jp      $8000
 
-; First we clear the screen
+; First we clear the 2 upper thirds of the screen (our game area)
 ; Note that ink=paper=0, this is to hide the sprites over the edges
 start   ld      hl, $5800
         ld      de, $5801
         ld      bc, $02ff
         ld      (hl), l
         ldir
-; These self modifying code saves the correct value of the stack
+        ld      sp, $50a0
+        ld      de, sylo | syhi<<8
+        ld      h, e
+        ld      l, e
+        ld      b, 10
+emp1    push    de
+        djnz    emp1
+        ld      b, 6
+emp2    push    hl
+        djnz    emp2
+        ld      sp, $51a0
+        push    de
+        push    de
+        push    de
+        ld      e, d
+        ld      b, 13
+emp3    push    de
+        djnz    emp3
+        ld      sp, $52a0
+        ld      b, 16
+emp4    push    de
+        djnz    emp4
+        ld      sp, $5aa0
+        ld      b, 16
+emp5    push    de
+        djnz    emp5
+; Print the background
+        ld      sp, $fe00
         ld      (drawd+1), sp
         pop     af
-; Print the background
         call    print_screen
 
-; This is the main loop
+; Main loop. This loop is executed when the main character exits over the edge of the screen
+; so we must generate the whole screen (into embed code) according to the map
+; First we calculate 12*y+x
 main_loop
         call    do_sprites
+ ld a, (ene0+2)
+  inc   a
+  jr  nz, caca
+  nop
+caca
+
         ld      b, 7
         ld      hl, ene0+4
 main1   inc     l
@@ -137,7 +174,7 @@ main5   inc     l
 ; Points HL and IX to vertical variables, BC with upper and lower limits, DE with input port and vertical map dimension
         ld      hl, ene0+2
         ld      ix, y
-        ld      bc, $028e
+        ld      bc, $01a0
         ld      de, $fd | maph<<8
         call    key_process
         jr      c, main6
@@ -149,7 +186,6 @@ main5   inc     l
         dec     ixl
         ld      de, $df | mapw<<8
         call    key_process
-; If main character croses an edge call to print_screen, else jump to main_loop
 main6   call    c, print_screen
         jr      main_loop
 
@@ -185,13 +221,13 @@ key2    ld      a, c
         dec     (ix)
         and     a
         ret
-key3    ld      (hl), 0
+key3    ld      (hl), b
         ret
 
 print_screen
         ld      (prin4+1), sp
-        ld      a, do3-2-do2
-        ld      (do2+1), a
+        ld      a, do5-2-do4
+        ld      (do4+1), a
         ld      a, (y)
         ld      e, a
         mult8x8 mapw
@@ -200,8 +236,8 @@ print_screen
 ; Pass the calculated actual screen (from 0 to 23) to the decompressor (after this we have the actual screen at $5801)
         call    descom
 ; Points to screen point where we paint the tiles
-        ld      hl, $4090-scrw
-        ld      bc, $5890-scrw
+        ld      hl, $4010-scrw
+        ld      bc, $5810-scrw
         exx
 ; BC points to the uncompressed buffer
         ld      bc, DMAP_BUFFER 
@@ -365,14 +401,19 @@ prin4   ld      sp, 0
         ret
 
 do_sprites
-        ld      b, 20
-do1     in      a, ($ff)
-        inc     a
-        jr      nz, do_sprites
-        djnz    do1
-do2     jr      delete_sprites
-do3     ld      a, delete_sprites-2-do2
-        ld      (do2+1), a
+        ld      de, syhi | sylo<<8
+do1     ld      b, 9
+do2     in      a, ($ff)
+        cp      d
+        jp      nz, do2
+do3     in      a, ($ff)
+        cp      e
+        jr      z, do4
+        djnz    do3
+        jr      do1
+do4     jr      delete_sprites
+do5     ld      a, delete_sprites-2-do4
+        ld      (do4+1), a
         jp      draw_sprites
 
 delete_sprites
@@ -392,7 +433,9 @@ del3    updremove
         inc     l
         pop     de
         ld      (hl), e
+      IF smooth=1
         updremove
+      ENDIF
         dec     h
         ld      (hl), d
         dec     l
@@ -410,7 +453,9 @@ del5    updremove
         ld      (hl), e
         inc     l
         ld      (hl), d
+      IF smooth=1
         updremove
+      ENDIF
         dec     h
         pop     de
         ld      (hl), e
@@ -418,14 +463,20 @@ del5    updremove
         ld      (hl), d
         djnz    del5
         jr      del9
-del6    ld      (del7+1), a
+      IF smooth=1
+del6    cp      $90
+        jp      nc, craw3
+        ld      (del7+1), a
 del7    ld      hl, (lookt+$100)
         jr      draw4
+      ENDIF
 del8    updremove
         pop     de
         dec     h
         ld      (hl), e
+      IF smooth=1
         updremove
+      ENDIF
         dec     h
         ld      (hl), d
         djnz    del8
@@ -436,19 +487,26 @@ del9    ld      a, c
         sub     2
         ld      l, a
         dec     ixl
+      IF smooth=0
+        jr      nz, del2
+      ELSE
         jp      nz, del2
+      ENDIF
         pop     bc
         ld      ixl, b
         inc     b
+      IF smooth=0
+        jr      nz, del1
+      ELSE
         jp      nz, del1
+      ENDIF
 
 draw_sprites
         ld      a, 7
-        ld      bc, lookt-2
+        ld      bc, staspr
 draw1   ld      (drawc+1), a
         add     a, a
         add     a, a
-        add     a, $40
         ld      l, a
         ld      h, ene0 >> 8
         ld      a, (hl)
@@ -458,20 +516,32 @@ draw1   ld      (drawc+1), a
         add     a, a
         inc     l
         ld      e, (hl)
+      IF smooth=0
+        res     0, e
+      ENDIF
         inc     l
         xor     e
         and     $f8
         xor     e
+      IF smooth=1
         add     a, a
+      ENDIF
         ld      (draw2+2), a
         ld      a, e
         ld      (draw4+1), a
 draw2   ld      sp, (sprites)
         pop     de
         ld      a, (hl)
+      IF smooth=0
+        and     $fe
+        add     a, d
+        cp      $f8
+        jp      nc, craw3
+      ELSE
         add     a, d
         add     a, a
         jr      c, del6
+      ENDIF
         ld      (draw3+1), a
 draw3   ld      hl, (lookt)
 draw4   ld      a, 0
@@ -519,7 +589,9 @@ draw6   pop     de
         or      e
         ld      (hl), a
         inc     h
+      IF smooth=1
         updpaint
+      ENDIF
         pop     de
         ld      a, (hl)
         dec     c
@@ -566,7 +638,9 @@ draw8   pop     de
         or      e
         ld      (hl), a
         inc     h
+      IF smooth=1
         updpaint
+      ENDIF
         pop     de
         ld      a, (hl)
         dec     bc
@@ -595,7 +669,9 @@ draw9   pop     de
         or      e
         ld      (hl), a
         inc     h
+      IF smooth=1
         updpaint
+      ENDIF
         pop     de
         ld      a, (hl)
         dec     c
@@ -632,6 +708,202 @@ drawc   ld      a, 0
 drawd   ld      sp, 0
         ld      (delete_sprites+1), bc
         ret
+      IF smooth=0
+craw3   ld      (craw35+1), a
+craw35  ld      hl, (lookt)
+        cpl
+        add     $08
+      ELSE
+craw3   ld      (craw35+1), a
+craw35  ld      hl, (lookt+$100)
+        rrca
+        cpl
+        sub     $a8
+      ENDIF
+        rra
+        ld      ixh, a
+craw4   ld      a, (draw4+1)
+        and     $f8
+        rra
+        rra
+        rra
+        or      l
+        ld      l, a
+        ld      a, e
+        ld      (drawb+1), a
+craw5   ex      af, af'
+        pop     de
+        ld      ixl, d
+        ld      iyh, d
+        ld      iyl, e
+        ld      a, e
+        and     $03
+        add     a, l
+        dec     a
+        ld      l, a
+        bit     3, e
+        jr      z, craw7
+craw6   pop     de
+        ld      a, (hl)
+        dec     bc
+        ld      (bc), a
+        and     d
+        or      e
+        ld      (hl), a
+        inc     l
+        pop     de
+        ld      a, (hl)
+        dec     c
+        ld      (bc), a
+        and     d
+        or      e
+        ld      (hl), a
+        inc     l
+        pop     de
+        ld      a, (hl)
+        dec     bc
+        ld      (bc), a
+        and     d
+        or      e
+        ld      (hl), a
+        inc     h
+      IF smooth=1
+        updpaint
+      ENDIF
+        pop     de
+        ld      a, (hl)
+        dec     c
+        ld      (bc), a
+        and     d
+        or      e
+        ld      (hl), a
+        dec     l
+        pop     de
+        ld      a, (hl)
+        dec     bc
+        ld      (bc), a
+        and     d
+        or      e
+        ld      (hl), a
+        dec     l
+        pop     de
+        ld      a, (hl)
+        dec     c
+        ld      (bc), a
+        and     d
+        or      e
+        ld      (hl), a
+        inc     h
+        updpaint
+        dec     ixh
+        jp      z, crawfin
+        dec     ixl
+        jr      nz, craw6
+      IF smooth=0
+        jr      crawa
+      ELSE
+        jp      crawa
+      ENDIF
+craw7   bit     2, e
+        jr      z, craw9
+craw8   pop     de
+        ld      a, (hl)
+        dec     bc
+        ld      (bc), a
+        and     d
+        or      e
+        ld      (hl), a
+        inc     l
+        pop     de
+        ld      a, (hl)
+        dec     c
+        ld      (bc), a
+        and     d
+        or      e
+        ld      (hl), a
+        inc     h
+      IF smooth=1
+        updpaint
+      ENDIF
+        pop     de
+        ld      a, (hl)
+        dec     bc
+        ld      (bc), a
+        and     d
+        or      e
+        ld      (hl), a
+        dec     l
+        pop     de
+        ld      a, (hl)
+        dec     c
+        ld      (bc), a
+        and     d
+        or      e
+        ld      (hl), a
+        inc     h
+        updpaint
+        dec     ixh
+        jp      z, crawfin
+        dec     ixl
+        jr      nz, craw8
+        jr      crawa
+craw9   pop     de
+        ld      a, (hl)
+        dec     bc
+        ld      (bc), a
+        and     d
+        or      e
+        ld      (hl), a
+        inc     h
+      IF smooth=1
+        updpaint
+      ENDIF
+        pop     de
+        ld      a, (hl)
+        dec     c
+        ld      (bc), a
+        and     d
+        or      e
+        ld      (hl), a
+        inc     h
+        updpaint
+        dec     ixh
+        jp      z, crawfin
+        dec     ixl
+        jr      nz, craw9
+crawa   ld      a, iyh
+        dec     bc
+        ld      (bc), a
+        ld      a, iyl
+        dec     c
+        ld      (bc), a
+        ex      af, af'
+        dec     a
+        jp      nz, craw5
+        jr      crawf2
+crawfin ld      a, iyh
+        sub     ixl
+        inc     a
+        dec     bc
+        ld      (bc), a
+        ld      a, iyl
+        dec     c
+        ld      (bc), a
+crawf2  ld      a, h
+        dec     bc
+        ld      (bc), a
+        ld      a, l
+        dec     c
+        ld      (bc), a
+        ex      af, af'
+        ld      e, a
+        ld      a, (drawb+1)
+        sub     e
+        inc     a
+        dec     bc
+        ld      (bc), a
+        dec     c
+        jp      drawc
 
 ; Some variables
 x       db      0
@@ -639,19 +911,21 @@ y       db      0
 
 ; Look up table, from Y coordinate to memory address, 256 byte aligned
         block   $9bfe-$
-        defb    $ff, $ff
-lookt   incbin  table.bin
+staspr  defb    $ff, $ff
 
 ; Enemy table. For each item: X, Y, direction and sprite number, 256 byte aligned
-        block   $9d40-$
-ene0    db      $00, $42, $11, 0
+        block   $9c00-$
+ene0    db      $00, $42, $12, 0
         db      $08, $60, $60, %10
         db      $09, $a8, $48, %11
         db      $0a, $22, $02, %01
         db      $0b, $d0, $6e, %10
-        db      $0c, $b6, $34, %11
-        db      $0d, $32, $32, %01
-        db      $04, $52, $5e, %00
+        db      $8c, $b6, $34, %11
+        db      $8d, $32, $32, %01
+        db      $84, $52, $5e, %00
+
+        block   $9c5e-$
+lookt   incbin  table.bin
 
 ; Sprites file. Generated externally with GfxBu.c from sprites.png
         block   $9e00-$

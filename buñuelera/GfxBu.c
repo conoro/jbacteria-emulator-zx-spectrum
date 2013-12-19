@@ -3,22 +3,24 @@
 #include <stdlib.h>
 unsigned char *image, *pixel, output[0x6000];
 unsigned error, width, height, i, j, k, l, min, max, nmin, nmax, amin, amax, param,
-          mask, pics, amask, apics, inipos, reppos, outpos= 256;
+          mask, pics, amask, apics, inipos, reppos, smooth, outpos;
 long long atr, celdas[4];
 FILE *fo;
 
 int main(int argc, char *argv[]){
   if( argc==1 )
     printf("\nGfxBu v1.11. Bu Sprites generator by AntonioVillena, 20 Nov 2013\n\n"
-           "  GfxBu <input_sprites> <output_sprites> <table_address>\n\n"
+           "  GfxBu <input_sprites> <output_sprites> <table_address> [smooth]\n\n"
            "  <input_sprites>   Normally sprites.png\n"
            "  <output_sprites>  Output binary file\n"
            "  <table_address>   In hexadecimal, address of the table\n\n"
            "Example: GfxBu sprites.png sprites.bin b000\n"),
     exit(0);
-  if( argc!=4 )
+  if( argc!=4 && argc!=5 )
     printf("\nInvalid number of parameters\n"),
     exit(-1);
+  smooth= argc&1;
+  outpos= 128<<smooth;
   error= lodepng_decode32_file(&image, &width, &height, argv[1]);
   printf("Processing %s...", argv[1]);
   if( error )
@@ -30,10 +32,11 @@ int main(int argc, char *argv[]){
     exit(-1);
   param= strtol(argv[3], NULL, 16);
   for ( i= 0; i < 16; i++ )
-    for ( j= 0; j < 8; j++ ){
-      output[j<<1|i<<4]= outpos+param;
-      output[1|j<<1|i<<4]= outpos+param>>8;
+    for ( j= 0; j < 8; j+= 2-smooth ){
+      output[(j|i<<3)<<smooth]= outpos+param;
+      output[1|(j|i<<3)<<smooth]= outpos+param>>8;
       output[inipos= outpos]= 0;
+      output[inipos+1]= smooth ? 0x2f : 0x5e;
       outpos+= 2;
       nmin= nmax= 4;
       for ( k= 0; k < 16; k++ ){
@@ -82,6 +85,16 @@ salir:
   fwrite(output, 1, outpos, fo);
   fclose(fo);
   printf("Done\n"
-         "Files generated successfully\n", argv[4], argv[5]);
+         "Files generated successfully\n");
   free(image);
+  unsigned short table[0xa2];
+  fo= fopen("table.bin", "wb+");
+  if( smooth )
+    for ( int i= 0x38; i<0xda; i++ )
+      table[i-0x38]= 0x3800 + (i<<8&0x700) + (i<<2&0xe0) + (i<<5&0x1800);
+  else
+    for ( int i= 0x1c; i<0x6d; i++ )
+      table[i-0x1c]= 0x3800 + (i<<9&0x700) + (i<<3&0xe0) + (i<<6&0x1800);
+  fwrite(table, 1, 0xa2<<smooth, fo);
+  fclose(fo);
 }
