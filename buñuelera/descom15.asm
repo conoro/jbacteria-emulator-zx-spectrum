@@ -1,6 +1,8 @@
+      IFNDEF initregs
         ld      de, map
         ld      hl, mapend-1
         ld      bc, 0
+      ENDIF
 desc1:  sbc     hl, bc
         ex      de, hl
         ld      c, (hl)

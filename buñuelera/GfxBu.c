@@ -36,7 +36,7 @@ int main(int argc, char *argv[]){
       output[(j|i<<3)<<smooth]= outpos+param;
       output[1|(j|i<<3)<<smooth]= outpos+param>>8;
       output[inipos= outpos]= 0;
-      output[inipos+1]= smooth ? 0x2f : 0x5e;
+      output[inipos+1]= smooth ? 0x28 : 0x50;
       outpos+= 2;
       nmin= nmax= 4;
       for ( k= 0; k < 16; k++ ){
@@ -63,10 +63,8 @@ int main(int argc, char *argv[]){
               output[outpos++]= pics>>(3-l<<3),
               output[outpos++]= mask>>(3-l<<3)^0xff;
           }
-          else{
-            if( nmin>2 )
-              output[inipos+1]+= 2;
-          }
+          else if( nmin==4 )
+            output[inipos+1]+= 2;
           nmin= min;
           nmax= max;
         }
@@ -87,14 +85,14 @@ salir:
   printf("Done\n"
          "Files generated successfully\n");
   free(image);
-  unsigned short table[0xa2];
+  unsigned short table[0xb0];
   fo= fopen("table.bin", "wb+");
   if( smooth )
-    for ( int i= 0x38; i<0xda; i++ )
+    for ( int i= 0x38; i<0xe8; i++ )
       table[i-0x38]= 0x3800 + (i<<8&0x700) + (i<<2&0xe0) + (i<<5&0x1800);
   else
-    for ( int i= 0x1c; i<0x6d; i++ )
+    for ( int i= 0x1c; i<0x7c; i++ )
       table[i-0x1c]= 0x3800 + (i<<9&0x700) + (i<<3&0xe0) + (i<<6&0x1800);
-  fwrite(table, 1, 0xa2<<smooth, fo);
+  fwrite(table, 1, 0xb0<<smooth, fo);
   fclose(fo);
 }
