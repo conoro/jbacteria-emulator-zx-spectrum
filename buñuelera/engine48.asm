@@ -16,7 +16,8 @@
         DEFINE  sylo  $66
         DEFINE  syhi  $c0
         DEFINE  smooth  1
-        DEFINE  clipen  1
+        DEFINE  clipup  1
+        DEFINE  clipdn  1
         DEFINE  safeco  1
         DEFINE  initregs
 
@@ -80,17 +81,12 @@
 .upd
       ENDM
 
-      MACRO updpaind
-        ld      a, d
+      MACRO updclip
+        ld      a, h
         and     $07
         jp      nz, .upd
-        ld      a, e
-        add     a, $20
-        ld      e, a
-        jr      c, .upd
-        ld      a, d
-        sub     $08
-        ld      d, a
+        ld      de, $f820
+        add     hl, de
 .upd
       ENDM
 
@@ -241,13 +237,20 @@ do5     ld      a, delete_sprites-2-do4
         jp      draw_sprites
 
 delete_sprites
-        jp      del8
-;        pop     bc
-;        ld      ixl, b
+        pop     bc
+        ld      ixl, b
+        inc     b
+      IF smooth=0
+        jr      z, update_complete
+      ELSE
+        jp      z, update_complete
+      ENDIF
 del1    pop     hl
 del2    pop     bc
-        bit     3, c
-        jr      z, del4
+        ld      a, c
+        and     %00001100
+        jr      z, del5
+        jp      po, del4
 del3    updremove
         pop     de
         dec     h
@@ -268,10 +271,8 @@ del3    updremove
         dec     l
         ld      (hl), d
         djnz    del3
-        jr      del7
-del4    bit     2, c
-        jr      z, del6
-del5    updremove
+        jr      del6
+del4    updremove
         pop     de
         dec     h
         ld      (hl), e
@@ -285,9 +286,9 @@ del5    updremove
         ld      (hl), e
         dec     l
         ld      (hl), d
-        djnz    del5
-        jr      del7
-del6    updremove
+        djnz    del4
+        jr      del6
+del5    updremove
         pop     de
         dec     h
         ld      (hl), e
@@ -296,8 +297,8 @@ del6    updremove
       ENDIF
         dec     h
         ld      (hl), d
-        djnz    del6
-del7    ld      a, c
+        djnz    del5
+del6    ld      a, c
         cpl
         and     $03
         add     a, l
@@ -309,7 +310,7 @@ del7    ld      a, c
       ELSE
         jp      nz, del2
       ENDIF
-del8    pop     bc
+        pop     bc
         ld      ixl, b
         inc     b
       IF smooth=0
@@ -319,6 +320,7 @@ del8    pop     bc
       ENDIF
 
 ;Complete background update
+update_complete
         ld      hl, $5b00
         ld      a, (hl)
         cp      c
@@ -564,22 +566,22 @@ draw1   ld      (drawh+1), a
       ENDIF
         ld      (draw2+2), a
         ld      a, e
-        ld      (draw7+1), a
+        ld      (draw8+1), a
 draw2   ld      sp, (sprites)
         pop     de
         ld      a, (hl)
   IF smooth=0
         and     $fe
-    IF clipen=0
+    IF clipdn=0
       IF safeco=1
-        cp      $98
+        cp      $98+1
         jr      c, draw3
         ld      a, $98
       ENDIF
 draw3   add     a, d
     ELSE
       IF safeco=1
-        cp      $a0
+        cp      $a0+1
         jr      c, draw3
         ld      a, $a0
       ENDIF
@@ -587,28 +589,52 @@ draw3   add     a, d
         cp      $ea
         jp      nc, craw1
     ENDIF
-  ELSE
+    IF clipup=0
       IF safeco=1
-        cp      $a0
+        cp      $58
+        jr      nc, draw6
+        ld      a, $58
+      ENDIF
+    ELSE
+        cp      $58
+        jp      c, braw1
+    ENDIF
+  ELSE
+    IF safeco=1
+      IF clipdn=0
+        cp      $98+1
+        jr      c, draw3
+        ld      a, $98
+      ELSE
+        cp      $a0+1
         jr      c, draw3
         ld      a, $a0
       ENDIF
+    ENDIF
 draw3   add     a, d
-      IF clipen=1
-      cp  $08+$28
-      jp  c, clipup
-clipre  add     a, a
-        jr      nc, draw5
+    IF clipup=0
+      IF safeco=1
+        cp      $30
+        jr      nc, draw4
+        ld      a, $30
+      ENDIF
+    ELSE
+        cp      $30
+        jp      c, braw1
+    ENDIF
+draw4   add     a, a
+        jr      nc, draw6
+      IF clipdn=1
         cp      $82
         jp      nc, craw1
       ENDIF
-        ld      (draw4+1), a
-draw4   ld      hl, (lookt+$100)
-        jr      draw7
+        ld      (draw5+1), a
+draw5   ld      hl, (lookt+$100)
+        jr      draw8
   ENDIF
-draw5   ld      (draw6+1), a
-draw6   ld      hl, (lookt)
-draw7   ld      a, 0
+draw6   ld      (draw7+1), a
+draw7   ld      hl, (lookt)
+draw8   ld      a, 0
         and     $f8
         rra
         rra
@@ -617,7 +643,7 @@ draw7   ld      a, 0
         ld      l, a
         ld      a, e
         ld      (drawg+1), a
-draw8   ex      af, af'
+draw9   ex      af, af'
         pop     de
         ld      ixl, d
         ld      iyh, d
@@ -627,9 +653,15 @@ draw8   ex      af, af'
         add     a, l
         dec     a
         ld      l, a
-        bit     3, e
-        jr      z, drawa
-draw9   pop     de
+        ld      a, e
+        and     %00001100
+      IF smooth=0
+        jr      z, drawc
+      ELSE
+        jp      z, drawc
+      ENDIF
+        jp      po, drawb
+drawa   pop     de
         ld      a, (hl)
         dec     bc
         ld      (bc), a
@@ -680,12 +712,10 @@ draw9   pop     de
         or      e
         ld      (hl), a
         inc     h
-draw99  updpaint
+        updpaint
         dec     ixl
-        jr      nz, draw9
+        jr      nz, drawa
         jr      drawd
-drawa   bit     2, e
-        jr      z, drawc
 drawb   pop     de
         ld      a, (hl)
         dec     bc
@@ -721,7 +751,7 @@ drawb   pop     de
         or      e
         ld      (hl), a
         inc     h
-drawbb  updpaint
+        updpaint
         dec     ixl
         jr      nz, drawb
         jr      drawd
@@ -744,7 +774,7 @@ drawc   pop     de
         or      e
         ld      (hl), a
         inc     h
-drawcc  updpaint
+        updpaint
         dec     ixl
         jr      nz, drawc
 drawd   ld      a, iyh
@@ -755,7 +785,7 @@ drawe   dec     bc
         ld      (bc), a
         ex      af, af'
         dec     a
-        jp      nz, draw8
+        jp      nz, draw9
 drawf   ld      a, h
         dec     bc
         ld      (bc), a
@@ -773,16 +803,23 @@ drawi   ld      sp, 0
         ld      (delspr+1), bc
         ret
 
-clipup  ld      (savebc+1), bc  
+    IF clipup=1
+braw1   ld      (brawa+1), bc  
+      IF smooth=1
         add     a, a
-        ld      (braw6+1), a
-braw6   ld      hl, (lookt)
+      ENDIF
+        ld      (braw2+1), a
+braw2   ld      hl, (lookt)
         rrca
         cpl
+      IF smooth=0
+        sub     $d3
+      ELSE
         sub     $ce
         rra
+      ENDIF
         ld      ixh, a
-        ld      a, (draw7+1)
+        ld      a, (draw8+1)
         and     $f8
         rra
         rra
@@ -791,87 +828,74 @@ braw6   ld      hl, (lookt)
         ld      l, a
         ld      a, e
         ex      de, hl
-braw8   ex      af, af'
+braw3   ex      af, af'
         pop     bc
-;       ld      iyh, b
-        ld      iyl, c
         ld      a, c
         and     $03
         add     a, e
         dec     a
         ld      e, a
-        bit     3, c
-        jr      z, brawa
-braw9   ld      hl, 12
+        ld      a, c
+        and     %00001100
+        jr      z, braw6
+        jp      po, braw5
+braw4   ld      hl, 12
         add     hl, sp
         ld      sp, hl
         inc     d
-      IF smooth=1
-        updpaind
-      ENDIF
         inc     d
-        updpaind
         dec     ixh
-        jr      z, salir
-        djnz    braw9
-        jr      brawd
-brawa   bit     2, c
-        jr      z, brawc
-brawb   ld      hl, 8
+        jr      z, braw8
+        djnz    braw4
+        jr      braw7
+braw5   ld      hl, 8
         add     hl, sp
         ld      sp, hl
         inc     d
-      IF smooth=1
-        updpaind
-      ENDIF
         inc     d
-        updpaind
         dec     ixh
-        jr      z, salir
-        djnz    brawb
-        jr      brawd
-brawc   pop     hl
+        jr      z, braw8
+        djnz    braw5
+        jr      braw7
+braw6   pop     hl
         pop     hl
         inc     d
-      IF smooth=1
-        updpaind
-      ENDIF
         inc     d
-        updpaind
         dec     ixh
-        jr      z, salir
-        djnz    brawc
-brawd   ex      af, af'
+        jr      z, braw8
+        djnz    braw6
+braw7   ex      af, af'
         dec     a
-        jp      nz, braw8
-brawf   ld      bc, (savebc+1)
+        jp      nz, braw3
+        ld      bc, (brawa+1)
         jp      drawh
-
-salir   djnz    salir2
+braw8   ld      a, e
+        add     a, $20
+        ld      e, a
+        djnz    braw9
         ex      de, hl
-        ld      bc, (savebc+1)
+        ld      bc, (brawa+1)
         ex      af, af'
         dec     a
         ld      (drawg+1), a
-        jp      nz, draw8
+        jp      nz, draw9
         jp      drawh
-
-salir2  ld      ixl, b
+braw9   ld      ixl, b
         ld      iyh, b
+        ld      iyl, c
         ex      af, af'
         ld      (drawg+1), a
         ex      af, af'
         ex      de, hl
         ld      a, c
-savebc  ld      bc, 0
-       bit     3, a
-        jp      nz, draw9
-       bit     2, a
-        jp      nz, drawb
-        jp      drawc
+brawa   ld      bc, 0
+        and     %00001100
+        jp      z, drawc
+        jp      po, drawb
+        jp      drawa
+    ENDIF
 
-
-    IF clipen=1
+    IF clipdn=1
 craw1   ld      (craw2+1), a
       IF smooth=0
 craw2   ld      hl, (lookt)
@@ -885,7 +909,7 @@ craw2   ld      hl, (lookt+$100)
       ENDIF
         rra
         ld      ixh, a
-        ld      a, (draw7+1)
+        ld      a, (draw8+1)
         and     $f8
         rra
         rra
@@ -904,8 +928,11 @@ craw3   ex      af, af'
         add     a, l
         dec     a
         ld      l, a
-        bit     3, e
-        jr      z, craw5
+
+        ld      a, e
+        and     %00001100
+        jp      z, craw6
+        jp      po, craw5
 craw4   pop     de
         ld      a, (hl)
         dec     bc
@@ -931,7 +958,7 @@ craw4   pop     de
         ld      (hl), a
         inc     h
       IF smooth=1
-        updpaint
+        updclip
       ENDIF
         pop     de
         ld      a, (hl)
@@ -957,19 +984,17 @@ craw4   pop     de
         or      e
         ld      (hl), a
         inc     h
-        updpaint
+        updclip
         dec     ixh
-        jp      z, craw9
+        jp      z, craw8
         dec     ixl
         jr      nz, craw4
       IF smooth=0
-        jr      craw8
+        jr      craw7
       ELSE
-        jp      craw8
+        jp      craw7
       ENDIF
-craw5   bit     2, e
-        jr      z, craw7
-craw6   pop     de
+craw5   pop     de
         ld      a, (hl)
         dec     bc
         ld      (bc), a
@@ -986,7 +1011,7 @@ craw6   pop     de
         ld      (hl), a
         inc     h
       IF smooth=1
-        updpaint
+        updclip
       ENDIF
         pop     de
         ld      a, (hl)
@@ -1004,13 +1029,13 @@ craw6   pop     de
         or      e
         ld      (hl), a
         inc     h
-        updpaint
+        updclip
         dec     ixh
-        jp      z, craw9
+        jp      z, craw8
         dec     ixl
-        jr      nz, craw6
-        jr      craw8
-craw7   pop     de
+        jr      nz, craw5
+        jr      craw7
+craw6   pop     de
         ld      a, (hl)
         dec     bc
         ld      (bc), a
@@ -1019,7 +1044,7 @@ craw7   pop     de
         ld      (hl), a
         inc     h
       IF smooth=1
-        updpaint
+        updclip
       ENDIF
         pop     de
         ld      a, (hl)
@@ -1029,12 +1054,12 @@ craw7   pop     de
         or      e
         ld      (hl), a
         inc     h
-        updpaint
+        updclip
         dec     ixh
-        jp      z, craw9
+        jp      z, craw8
         dec     ixl
-        jr      nz, craw7
-craw8   ld      a, iyh
+        jr      nz, craw6
+craw7   ld      a, iyh
         dec     bc
         ld      (bc), a
         ld      a, iyl
@@ -1044,7 +1069,7 @@ craw8   ld      a, iyh
         dec     a
         jp      nz, craw3
         jp      drawf
-craw9   ld      a, 1
+craw8   ld      a, 1
         ex      af, af'
         ld      e, a
         ld      a, (drawg+1)
@@ -1055,7 +1080,7 @@ craw9   ld      a, 1
         sub     ixl
         inc     a
         jp      drawe
-      ENDIF
+    ENDIF
 
 init    ld      (ini7+1), sp
         ld      a, 20
@@ -1111,14 +1136,14 @@ staspr  defb    $ff, $ff
 
 ; Enemy table. For each item: X, Y, direction and sprite number, 256 byte aligned
         block   $9c00-$
-ene0    db      $08, $44, $12, 0
-        db      $08, $60, $60, %10
-        db      $09, $a8, $48, %11
-        db      $0a, $22, $02, %01
-        db      $0b, $d0, $6e, %10
-        db      $0c, $b6, $34, %11
-        db      $0d, $32, $32, %01
-        db      $04, $52, $5e, %00
+ene0    db      $00, $44, $12, 0
+        db      $88, $60, $60, %10
+        db      $89, $a8, $48, %11
+        db      $8a, $22, $02, %01
+        db      $8b, $d0, $6e, %10
+        db      $8c, $b6, $34, %11
+        db      $8d, $32, $32, %01
+        db      $8e, $52, $5e, %00
 
         block   $9c50-$
 lookt   incbin  table.bin
