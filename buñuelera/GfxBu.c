@@ -107,6 +107,34 @@ int main(int argc, char *argv[]){
       for ( l= 0; l < 4; l++ )
         output[outpos++]= atr>>(24-l*8);
     }
+  pics= outpos/36;
+  inipos= 0x3000;
+  for ( reppos= i= 0; i < pics; i++ ){
+    for ( j= 0; j < i; j++ ){
+      for ( k= l= 0; k < 32; k++ )
+        l+= output[i*36+k]-output[j*36+k];
+      if( !l )
+        break;
+    }
+    output[inipos++]= j<i ? output[0x3000|j] : reppos++;
+  }
+  inipos= 0x4000;
+  for ( apics= i= 0; i < pics; i++ ){
+    for ( j= 0; j < i; j++ ){
+      for ( k= l= 0; k < 4; k++ )
+        l+= output[i*36+32+k]-output[j*36+32+k];
+      if( !l )
+        break;
+    }
+    output[inipos++]= j<i ? output[0x4000|j] : apics++;
+  }
+  printf("\nno index     %d\n", pics*36);
+  printf("index bitmap %d\n", reppos*32+pics*5);
+  printf("index attr   %d\n", apics*4+pics*33);
+  printf("full index   %d\n", reppos*32+apics*4+pics*2);
+  for ( i= 0; i < pics; i++ ){
+    printf("%2d %2d %2d, ", i, output[0x3000 | i], output[0x4000 | i]);
+  }
   fo= fopen(argv[3], "wb+");
   if( !fo )
     printf("\nCannot create output file: %s\n", argv[3]),

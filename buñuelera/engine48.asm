@@ -350,14 +350,14 @@ upba3   ld      h, b
         ld      l, c
         ld      l, (hl)
         ld      h, 0
-        add     hl, hl
-        add     hl, hl
         ld      d, h
         ld      e, l
         add     hl, hl
         add     hl, hl
         add     hl, hl
         add     hl, de
+        add     hl, hl
+        add     hl, hl
         ld      de, tiles
         add     hl, de
         ld      sp, hl
@@ -476,12 +476,16 @@ upba4   ld      bc, 0
         ld      c, l
         ex      de, hl
 upba5   ld      de, 0
-        add     hl, de
-        bit     0, h
-        jr      z, upba6
-        ld      de, $0700
-        add     hl, de
-upba6   exx
+        ld      a, l
+         add     a, a
+         jr      nc, upba6
+         jp      p, upba6
+;        or      %00111111
+;        inc     a
+;        jr      nz, upba6
+        ld      d, 7
+upba6   add     hl, de
+        exx
         ex      af, af'
         dec     a
         jp      nz, upba2
