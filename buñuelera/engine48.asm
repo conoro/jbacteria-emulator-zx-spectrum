@@ -6,11 +6,12 @@
 ; 5c40-5c4f balas (16 bytes) no implementado
 ; 5c50-5d00 tabla (176 bytes) 4 rotaciones
 ; 5c50-5db0 tabla (352 bytes) 8 rotaciones
+        include define.asm
         DEFINE  mapw  12              ; map width is 12
         DEFINE  maph  2               ; map height is 2, our demo has 12x2 screens
         DEFINE  scrw  15              ; screen width is 12
         DEFINE  scrh  10              ; screen height is 8, our window is 12x8 tiles (exactly half of the screen area)
-        DEFINE  DMAP_BITSYMB 5        ; these 3 constants are for the map decompressor
+        DEFINE  DMAP_BITSYMB 6        ; these 3 constants are for the map decompressor
         DEFINE  DMAP_BITHALF 1        ; BITSYMB and BITHALF declares 5.5 bits per symbol (16 tiles with 5 bits and 32 with 6 bits)
         DEFINE  DMAP_BUFFER  $5b01    ; BUFFER points to where is decoded the uncompressed screen
         DEFINE  sylo  $66
@@ -88,6 +89,30 @@
         ld      de, $f820
         add     hl, de
 .upd
+      ENDM
+
+      MACRO cellprint addition
+        pop     de
+        ld      (hl), e
+        inc     h
+        ld      (hl), d
+        inc     h
+        pop     de
+        ld      (hl), e
+        inc     h
+        ld      (hl), d
+        inc     h
+        pop     de
+        ld      (hl), e
+        inc     h
+        ld      (hl), d
+        inc     h
+        pop     de
+        ld      (hl), e
+        inc     h
+        ld      (hl), d
+        ld      de, addition
+        add     hl, de
       ENDM
 
 ; Paolo Ferraris' shortest loader, then we move all the code to $8000
@@ -337,19 +362,31 @@ update_complete
         add     a, a
         cpl
         sub     $bf
-        ld      (upba4+1), a
-        ld      (upba5+1), a
+        ld      (upba6+1), a
+        ld      (upba7+1), a
         ld      bc, $5810-scrw
         ld      hl, $4010-scrw
 upba1   exx
+      IF  tmode=3
+        xor     a
+        ld      (upba4+1), a
+      ELSE
         ld      bc, DMAP_BUFFER 
+      ENDIF
         ld      a, 0
 upba2   ex      af, af'
         ld      a, 0
-upba3   ld      h, b
+upba3 IF  tmode=3
+        ld      hl, upba4+1
+        inc     (hl)
+upba4   ld      hl, DMAP_BUFFER 
+      ELSE
+        ld      h, b
         ld      l, c
+      ENDIF
         ld      l, (hl)
         ld      h, 0
+      IF  tmode=0
         ld      d, h
         ld      e, l
         add     hl, hl
@@ -358,94 +395,101 @@ upba3   ld      h, b
         add     hl, de
         add     hl, hl
         add     hl, hl
-        ld      de, tiles
+        ld      de, tiladdr
         add     hl, de
         ld      sp, hl
         exx
-        pop     de
-        ld      (hl), e
-        inc     h
-        ld      (hl), d
-        inc     h
-        pop     de
-        ld      (hl), e
-        inc     h
-        ld      (hl), d
-        inc     h
-        pop     de
-        ld      (hl), e
-        inc     h
-        ld      (hl), d
-        inc     h
-        pop     de
-        ld      (hl), e
-        inc     h
-        ld      (hl), d
-        ld      de, $f901
+        cellprint $f901
+        cellprint $f91f
+        cellprint $f901
+        cellprint $f8e1
+      ENDIF
+      IF  tmode=1
+        ld      d, h
+        ld      e, l
+        add     hl, hl
+        add     hl, hl
         add     hl, de
-        pop     de
-        ld      (hl), e
-        inc     h
-        ld      (hl), d
-        inc     h
-        pop     de
-        ld      (hl), e
-        inc     h
-        ld      (hl), d
-        inc     h
-        pop     de
-        ld      (hl), e
-        inc     h
-        ld      (hl), d
-        inc     h
-        pop     de
-        ld      (hl), e
-        inc     h
-        ld      (hl), d
-        ld      de, $f91f
+        ld      de, tiladdr
         add     hl, de
-        pop     de
-        ld      (hl), e
-        inc     h
-        ld      (hl), d
-        inc     h
-        pop     de
-        ld      (hl), e
-        inc     h
-        ld      (hl), d
-        inc     h
-        pop     de
-        ld      (hl), e
-        inc     h
-        ld      (hl), d
-        inc     h
-        pop     de
-        ld      (hl), e
-        inc     h
-        ld      (hl), d
-        ld      de, $f901
+        ld      (upba5+1), hl
+        ld      de, 4
         add     hl, de
-        pop     de
-        ld      (hl), e
-        inc     h
-        ld      (hl), d
-        inc     h
-        pop     de
-        ld      (hl), e
-        inc     h
-        ld      (hl), d
-        inc     h
-        pop     de
-        ld      (hl), e
-        inc     h
-        ld      (hl), d
-        inc     h
-        pop     de
-        ld      (hl), e
-        inc     h
-        ld      (hl), d
-        ld      de, $f8e1
+        ld      l, (hl)
+        ld      h, d
+        ld      de, tiladdr+tiles*5
+        add     hl, hl
+        add     hl, hl
+        add     hl, hl
+        add     hl, hl
+        add     hl, hl
         add     hl, de
+        ld      sp, hl
+        exx
+        cellprint $f901
+        cellprint $f91f
+        cellprint $f901
+        cellprint $f8e1
+upba5   ld      sp, 0
+      ENDIF
+      IF  tmode=2
+        ld      d, h
+        ld      e, l
+        add     hl, hl
+        add     hl, hl
+        add     hl, hl
+        add     hl, hl
+        add     hl, hl
+        add     hl, de
+        ld      de, tiladdr
+        add     hl, de
+        ld      e, (hl)
+        inc     hl
+        ld      sp, hl
+        ex      de, hl
+        ld      h, 0
+        add     hl, hl
+        add     hl, hl
+        ld      de, tiladdr+tiles*33
+        add     hl, de
+        ld      (upba5+1), hl
+        exx
+        cellprint $f901
+        cellprint $f91f
+        cellprint $f901
+        cellprint $f8e1
+upba5   ld      sp, 0
+      ENDIF
+      IF  tmode=3
+        add     hl, hl
+        ld      de, tiladdr
+        add     hl, de
+        ld      e, (hl)
+        inc     hl
+        ld      l, (hl)
+        ld      h, 0
+        ld      d, h
+        add     hl, hl
+        add     hl, hl
+        ld      bc, tiladdr+tiles*2+bmaps*32
+        add     hl, bc
+        ld      (upba5+1), hl
+        ex      de, hl
+        add     hl, hl
+        add     hl, hl
+        add     hl, hl
+        add     hl, hl
+        add     hl, hl
+        ld      bc, tiladdr+tiles*2
+        add     hl, bc
+        ld      sp, hl
+        exx
+        cellprint $f901
+        cellprint $f91f
+        cellprint $f901
+        cellprint $f8e1
+upba5   ld      sp, 0
+      ENDIF
         ex      de, hl
         ld      h, b
         ld      l, c
@@ -465,26 +509,25 @@ upba3   ld      h, b
         ld      c, l
         ex      de, hl
         exx
-        inc     bc
+      IF  tmode<3
+        inc     c
+      ENDIF
         dec     a
         jp      nz, upba3
         exx
         ex      de, hl
-upba4   ld      bc, 0
+upba6   ld      bc, 0
         add     hl, bc
         ld      b, h
         ld      c, l
         ex      de, hl
-upba5   ld      de, 0
+upba7   ld      de, 0
         ld      a, l
-         add     a, a
-         jr      nc, upba6
-         jp      p, upba6
-;        or      %00111111
-;        inc     a
-;        jr      nz, upba6
+        add     a, a
+        jr      nc, upba8
+        jp      p, upba8
         ld      d, 7
-upba6   add     hl, de
+upba8   add     hl, de
         exx
         ex      af, af'
         dec     a
@@ -499,8 +542,8 @@ uppa1   ld      b, a
         add     a, a
         cpl
         sub     $bf
-        ld      (upba4+1), a
-        ld      (upba5+1), a
+        ld      (upba6+1), a
+        ld      (upba7+1), a
         ld      a, b
         rlca
         rlca
@@ -932,7 +975,6 @@ craw3   ex      af, af'
         add     a, l
         dec     a
         ld      l, a
-
         ld      a, e
         and     %00001100
         jp      z, craw6
@@ -1160,7 +1202,7 @@ sprites incbin  sprites.bin
 descom  include descom15.asm
 
 ; Tiles file. Generated externally with tilegen.c from tiles.png
-tiles   incbin  tiles.bin
+tiladdr incbin  tiles.bin
 
 ; Map file. Generated externally with TmxCompress.c from map.tmx
 map     incbin  map_compressed.bin

@@ -3,9 +3,9 @@
 #include <stdlib.h>
 unsigned char *image, *pixel, output[0x10000];
 unsigned error, width, height, i, j, k, l, min, max, nmin, nmax, amin, amax, param,
-          mask, pics, amask, apics, inipos, reppos, smooth, outpos, fondo, tinta;
+          mask, pics, amask, apics, inipos, reppos, smooth, outpos, fondo, tinta, tilemode;
 long long atr, celdas[4];
-FILE *fo;
+FILE *fo, *ft;
 
 int check(int value){
   return value==0 || value==192 || value==255;
@@ -52,23 +52,27 @@ atrgen(){
 int main(int argc, char *argv[]){
   if( argc==1 )
     printf("\nGfxBu v1.11. Bu Sprites generator by AntonioVillena, 20 Nov 2013\n\n"
-           "  GfxBu <input_tiles> <input_sprites> <output_tiles> <output_sprites> <table_address> [smooth]\n\n"
+           "  GfxBu <input_tiles> <input_sprites> <output_tiles> <output_sprites>\n"
+           "        <table_address> <tileindex_mode> [smooth]\n\n"
            "  <input_tiles>     Normally tiles.png\n"
            "  <input_sprites>   Normally sprites.png\n"
            "  <output_tiles>    Output binary tiles\n"
            "  <output_sprites>  Output binary sprites\n"
-           "  <table_address>   In hexadecimal, address of the table\n\n"
-           "Example: GfxBu tiles.png sprites.png tiles.bin sprites.bin b000\n"),
+           "  <table_address>   In hexadecimal, address of the table\n"
+           "  <tileindex_mode>  0=no index, 1=bitmap, 2=attr, 3=full index\n"
+           "  <smooth>          optionally, if present smooth sprite movement\n\n"
+           "Example: GfxBu tiles.png sprites.png tiles.bin sprites.bin b000 4\n"),
     exit(0);
-  if( argc!=6 && argc!=7 )
+  if( argc!=7 && argc!=8 )
     printf("\nInvalid number of parameters\n"),
     exit(-1);
-  smooth= argc&1;
+  tilemode= atoi(argv[6]);
+  smooth= argc+1&1;
 
 // tiles
 
   error= lodepng_decode32_file(&image, &width, &height, argv[1]);
-  printf("Processing %14s...", argv[1]);
+  printf("Processing %14s...Done\n", argv[1]);
   if( error )
     printf("Error %u: %s\n", error, lodepng_error_text(error)),
     exit(-1);
@@ -112,37 +116,63 @@ int main(int argc, char *argv[]){
   for ( reppos= i= 0; i < pics; i++ ){
     for ( j= 0; j < i; j++ ){
       for ( k= l= 0; k < 32; k++ )
-        l+= output[i*36+k]-output[j*36+k];
+        l+= output[i*36+k]!=output[j*36+k];
       if( !l )
         break;
     }
+    if( j==i )
+      for ( k= 0; k < 32; k++ )
+        output[0x6000+reppos*32+k]= output[i*36+k];
     output[inipos++]= j<i ? output[0x3000|j] : reppos++;
   }
   inipos= 0x4000;
   for ( apics= i= 0; i < pics; i++ ){
     for ( j= 0; j < i; j++ ){
       for ( k= l= 0; k < 4; k++ )
-        l+= output[i*36+32+k]-output[j*36+32+k];
+        l+= output[i*36+32+k]!=output[j*36+32+k];
       if( !l )
         break;
     }
+    if( j==i )
+      for ( k= 0; k < 4; k++ )
+        output[0x5000+apics*4+k]= output[i*36+32+k];
     output[inipos++]= j<i ? output[0x4000|j] : apics++;
   }
-  printf("\nno index     %d\n", pics*36);
-  printf("index bitmap %d\n", reppos*32+pics*5);
-  printf("index attr   %d\n", apics*4+pics*33);
-  printf("full index   %d\n", reppos*32+apics*4+pics*2);
-  for ( i= 0; i < pics; i++ ){
-    printf("%2d %2d %2d, ", i, output[0x3000 | i], output[0x4000 | i]);
-  }
+  ft= fopen("define.asm", "wb+");
+  fprintf(ft, "        DEFINE  tmode  %d\n"
+              "        DEFINE  tiles  %d\n"
+              "        DEFINE  bmaps  %d\n"
+              "        DEFINE  attrs  %d\n", tilemode, pics, reppos, apics);
+  fclose(ft);
+  printf("no index     %d bytes\n", pics*36);
+  printf("index bitmap %d bytes\n", pics*5+reppos*32);
+  printf("index attr   %d bytes\n", pics*33+apics*4);
+  printf("full index   %d bytes\n", pics*2+reppos*32+apics*4);
   fo= fopen(argv[3], "wb+");
   if( !fo )
     printf("\nCannot create output file: %s\n", argv[3]),
     exit(-1);
-  fwrite(output, 1, outpos, fo);
+  switch( tilemode ){
+    case 0: fwrite(output, 1, outpos, fo);
+            break;
+    case 1: for ( i= 0; i < pics; i++ )
+              fwrite(output+36*i+32,  1, 4, fo),
+              fwrite(output+0x3000+i, 1, 1, fo);
+            fwrite(output+0x6000, 1, reppos*32, fo);
+            break;
+    case 2: for ( i= 0; i < pics; i++ )
+              fwrite(output+0x4000+i, 1, 1, fo),
+              fwrite(output+36*i, 1, 32, fo);
+            fwrite(output+0x5000, 1, apics*4, fo);
+            break;
+    case 3: for ( i= 0; i < pics; i++ )
+              fwrite(output+0x3000+i, 1, 1, fo),
+              fwrite(output+0x4000+i, 1, 1, fo);
+            fwrite(output+0x6000, 1, reppos*32, fo);
+            fwrite(output+0x5000, 1, apics*4, fo);
+  }
   fclose(fo);
   free(image);
-  printf("Done\n");
 
 // sprites
 
