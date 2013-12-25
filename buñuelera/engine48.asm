@@ -16,11 +16,15 @@
         DEFINE  DMAP_BUFFER  $5b01    ; BUFFER points to where is decoded the uncompressed screen
         DEFINE  sylo  $66
         DEFINE  syhi  $c0
-        DEFINE  smooth  1
+        DEFINE  smooth  0
         DEFINE  clipup  1
         DEFINE  clipdn  1
         DEFINE  safeco  1
         DEFINE  initregs
+        DEFINE  sprites $5c00
+        DEFINE  tiladdr $5c80+smooth*$80
+        DEFINE  enems   $fe00
+
 
 ; This macro multiplies two 8 bits numbers (second one is a constant)
 ; Factor 1 is on E register, Factor 2 is the constant data (macro parameter)
@@ -71,7 +75,7 @@
       MACRO updpaint
         ld      a, h
         and     $07
-        jp      nz, .upd
+        jp      nz, .upd&$ffff
         ld      a, l
         add     a, $20
         ld      l, a
@@ -85,7 +89,7 @@
       MACRO updclip
         ld      a, h
         and     $07
-        jp      nz, .upd
+        jp      nz, .upd&$ffff
         ld      de, $f820
         add     hl, de
 .upd
@@ -117,135 +121,11 @@
 
 ; Paolo Ferraris' shortest loader, then we move all the code to $8000
         output  engine48.bin
-        org     $8000-22
-begin   ld      de, $8000+endd-start-1
-        di
-        db      $de, $c0, $37, $0e, $8f, $39, $96 ;OVER USR 7 ($5ccb)
-        ld      hl, $5ccb+endd-begin-1
-        ld      bc, endd-start
-        lddr
-        jp      $8000
-
-start   ld      sp, $fe00
-        call    init
-        xor     a
-        ld      ($5b00), a
-
-; Main loop. This loop is executed when the main character exits over the edge of the screen
-; so we must generate the whole screen (into embed code) according to the map
-; First we calculate 12*y+x
-main_loop
-        call    do_sprites
-
-        ld      b, 150
-        ld      hl, $5b01
-main0   inc     (hl)
-        res     4, (hl)
-        inc     l
-        djnz    main0
-
-        ld      b, 7
-        ld      hl, ene0+4
-main1   inc     l
-        inc     l
-        inc     l
-        bit     0, (hl)
-        jr      nz, main2
-        dec     l
-        dec     (hl)
-        set     0, l
-        jr      nz, main3
-        inc     (hl)
-        jr      main3
-main2   dec     l
-        inc     (hl)
-        ld      a, $90
-        cp      (hl)
-        set     0, l
-        jr      nz, main3
-        dec     (hl)
-main3   bit     1, (hl)
-        jr      nz, main4
-        dec     l
-        dec     l
-        dec     (hl)
-        ld      a, $08
-        cp      (hl)
-        set     1, l
-        jr      nz, main5
-        set     1, (hl)
-        jr      main5
-main4   dec     l
-        dec     l
-        inc     (hl)
-        ld      a, $e8
-        cp      (hl)
-        set     1, l
-        jr      nz, main5
-        res     1, (hl)
-main5   inc     l
-        djnz    main1
-; Points HL and IX to vertical variables, BC with upper and lower limits, DE with input port and vertical map dimension
-        ld      hl, ene0+2
-        ld      ix, y
-        ld      bc, $01a0
-        ld      de, $fd | maph<<8
-        call    key_process
-        jr      c, main6
-        cp      $03
-        jr      nz, main_loop
-; Do the same with horizontal stuff
-        ld      bc, $02ee
-        dec     l
-        dec     ixl
-        ld      de, $df | mapw<<8
-        call    key_process
-main6   jr      nc, main_loop
-        ld      a, (y)
-        ld      e, a
-        mult8x8 mapw
-        ld      a, (x)
-        add     a, l
-        ld      ($5b00), a
-        jp      main_loop
-
-; This routine tests the keys and moves the main character
-key_process
-        ld      a, e
-        in      a, ($fe)
-        and     $03
-        cp      $02
-        jr      z, key2
-        ret     nc
-        dec     (hl)
-        ld      a, (hl)
-        cp      b
-        ret     nc
-        dec     (ix)
-        jp      p, key1
-        inc     (hl)
-        inc     (ix)
-        and     a
-        ret
-key1    ld      (hl), c
-        ret
-key2    ld      a, c
-        inc     (hl)
-        cp      (hl)
-        ret     nc
-        inc     (ix)
-        ld      a, (ix)
-        cp      d
-        jr      nz, key3
-        dec     (hl)
-        dec     (ix)
-        and     a
-        ret
-key3    ld      (hl), b
-        ret
-
+        org     staspr+enems-lookt-$
+staspr  defb    $ff, $ff
+        nop
 do_sprites
-        ld      (drawi+1), sp
+        ld      (drawi+1&$ffff), sp
 delspr  ld      sp, 0
         ld      de, syhi | sylo<<8
 do1     ld      b, 9
@@ -257,9 +137,9 @@ do3     in      a, ($ff)
 do4     jr      z, do5
         djnz    do3
         jr      do1
-do5     ld      a, delete_sprites-2-do4
+do5     ld      a, delete_sprites-2-do4&$ff
         ld      (do4+1), a
-        jp      draw_sprites
+        jp      draw_sprites&$ffff
 
 delete_sprites
         pop     bc
@@ -349,13 +229,74 @@ update_complete
         ld      hl, $5b00
         ld      a, (hl)
         cp      c
-        jp      z, update_partial
+        jp      z, update_partial&$ffff
         ld      (hl), c
-        ld      sp, (drawi+1)
-        ld      de, map
-        ld      hl, mapend+$ff
-        call    descom
-        ld      a, scrh
+        ld      sp, (drawi+1&$ffff)
+        ld      de, map&$ffff
+        ld      hl, lookt+$ff&$ffff
+desc1   sbc     hl, bc
+        ex      de, hl
+        ld      c, (hl)
+        ex      de, hl
+        inc     de
+        dec     a
+        jp      p, desc1
+        ld      de, DMAP_BUFFER+149
+        ld      b, $80          ; marker bit
+desc2   ld      a, 256 >> DMAP_BITSYMB
+desc3   call    gbit3&$ffff     ; load DMAP_BITSYMB bits (literal)
+        jr      nc, desc3
+      IF DMAP_BITHALF=1
+        rrca                    ; half bit implementation (ie 48 tiles)
+        call    c, gbit1&$ffff
+      ELSE
+        and     a
+      ENDIF
+        ld      (de), a         ; write literal
+desc4   dec     e               ; test end of file (map is always 150 bytes)
+        jr      z, desca
+        call    gbit3&$ffff     ; read one bit
+        rra
+        jr      nc, desc2       ; test if literal or sequence
+        push    de              ; if sequence put de in stack
+        ld      a, 1            ; determine number of bits used for length
+desc5   call    nc, gbit3&$ffff ; (Elias gamma coding)
+        and     a
+        call    gbit3&$ffff
+        rra
+        jr      nc, desc5       ; check end marker
+        inc     a               ; adjust length
+        ld      c, a            ; save lenth to c
+        xor     a
+        ld      de, 15          ; initially point to 15
+        call    gbit3&$ffff     ; get two bits
+        call    gbit3&$ffff
+        jr      z, desc8        ; 00 = 1
+        dec     a
+        call    gbit3&$ffff
+        jr      z, desc9        ; 010 = 15
+        bit     2, a
+        jr      nz, desc6
+        add     a, $7c          ; [011, 100, 101] xx = from 2 to 13
+        dec     e
+desc6   dec     e               ; [110, 111] xxxxxx = 14 and from 16 to 142
+desc7   call    gbit3&$ffff
+        jr      nc, desc7
+        jr      z, desc9
+        add     a, e
+desc8   inc     a
+        ld      e, a
+desc9   ld      a, b            ; save b (byte reading) on a
+        ld      b, d            ; b= 0 because lddr moves bc bytes
+        ex      (sp), hl        ; store source, restore destination
+        ex      de, hl          ; HL = destination + offset + 1
+        add     hl, de          ; DE = destination
+        lddr
+        pop     hl              ; restore source address (compressed data)
+        ld      b, a            ; restore b register
+        inc     e               ; prepare test of end of file
+        jr      desc4           ; jump to main loop
+desca   ld      a, scrh
         ld      (upba2-1), a
         ld      a, scrw
         ld      (upba3-1), a
@@ -589,14 +530,14 @@ update_partial
 draw_sprites
         ld      a, 7
         ld      bc, staspr
-draw1   ld      (drawh+1), a
+draw1   ld      (drawh+1&$ffff), a
         add     a, a
         add     a, a
         ld      l, a
-        ld      h, ene0 >> 8
+        ld      h, enems >> 8
         ld      a, (hl)
         add     a, a
-        jp      c, drawh
+        jp      c, drawh&$ffff
         add     a, a
         add     a, a
         inc     l
@@ -611,9 +552,9 @@ draw1   ld      (drawh+1), a
       IF smooth=1
         add     a, a
       ENDIF
-        ld      (draw2+2), a
+        ld      (draw2+2&$ffff), a
         ld      a, e
-        ld      (draw8+1), a
+        ld      (draw8+1&$ffff), a
 draw2   ld      sp, (sprites)
         pop     de
         ld      a, (hl)
@@ -634,7 +575,7 @@ draw3   add     a, d
       ENDIF
 draw3   add     a, d
         cp      $ea
-        jp      nc, craw1
+        jp      nc, craw1&$ffff
     ENDIF
     IF clipup=0
       IF safeco=1
@@ -644,7 +585,7 @@ draw3   add     a, d
       ENDIF
     ELSE
         cp      $58
-        jp      c, braw1
+        jp      c, braw1&$ffff
     ENDIF
   ELSE
     IF safeco=1
@@ -667,20 +608,20 @@ draw3   add     a, d
       ENDIF
     ELSE
         cp      $30
-        jp      c, braw1
+        jp      c, braw1&$ffff
     ENDIF
 draw4   add     a, a
         jr      nc, draw6
       IF clipdn=1
         cp      $82
-        jp      nc, craw1
+        jp      nc, craw1&$ffff
       ENDIF
         ld      (draw5+1), a
-draw5   ld      hl, (lookt+$100)
+draw5   ld      hl, (lookt+$100&$ffff)
         jr      draw8
   ENDIF
-draw6   ld      (draw7+1), a
-draw7   ld      hl, (lookt)
+draw6   ld      (draw7+1&$ffff), a
+draw7   ld      hl, (lookt&$ffff)
 draw8   ld      a, 0
         and     $f8
         rra
@@ -689,7 +630,7 @@ draw8   ld      a, 0
         or      l
         ld      l, a
         ld      a, e
-        ld      (drawg+1), a
+        ld      (drawg+1&$ffff), a
 draw9   ex      af, af'
         pop     de
         ld      ixl, d
@@ -705,9 +646,9 @@ draw9   ex      af, af'
       IF smooth=0
         jr      z, drawc
       ELSE
-        jp      z, drawc
+        jp      z, drawc&$ffff
       ENDIF
-        jp      po, drawb
+        jp      po, drawb&$ffff
 drawa   pop     de
         ld      a, (hl)
         dec     bc
@@ -851,12 +792,12 @@ drawi   ld      sp, 0
         ret
 
     IF clipup=1
-braw1   ld      (brawa+1), bc  
+braw1   ld      (brawa+1&$ffff), bc  
       IF smooth=1
         add     a, a
       ENDIF
-        ld      (braw2+1), a
-braw2   ld      hl, (lookt)
+        ld      (braw2+1&$ffff), a
+braw2   ld      hl, (lookt&$ffff)
         rrca
         cpl
       IF smooth=0
@@ -885,7 +826,7 @@ braw3   ex      af, af'
         ld      a, c
         and     %00001100
         jr      z, braw6
-        jp      po, braw5
+        jp      po, braw5&$ffff
 braw4   ld      hl, 12
         add     hl, sp
         ld      sp, hl
@@ -914,14 +855,14 @@ braw6   pop     hl
 braw7   ex      af, af'
         dec     a
         jp      nz, braw3
-        ld      bc, (brawa+1)
+        ld      bc, (brawa+1&$ffff)
         jp      drawh
 braw8   ld      a, e
         add     a, $20
         ld      e, a
-        djnz    braw9
-        ex      de, hl
-        ld      bc, (brawa+1)
+        defb    $10, braw9-braw85
+braw85  ex      de, hl
+        ld      bc, (brawa+1&$ffff)
         ex      af, af'
         dec     a
         ld      (drawg+1), a
@@ -943,13 +884,13 @@ brawa   ld      bc, 0
     ENDIF
 
     IF clipdn=1
-craw1   ld      (craw2+1), a
+craw1   ld      (craw2+1&$ffff), a
       IF smooth=0
-craw2   ld      hl, (lookt)
+craw2   ld      hl, (lookt&$ffff)
         cpl
         sub     $06
       ELSE
-craw2   ld      hl, (lookt+$100)
+craw2   ld      hl, (lookt+$100&$ffff)
         rrca
         cpl
         sub     $af
@@ -977,8 +918,8 @@ craw3   ex      af, af'
         ld      l, a
         ld      a, e
         and     %00001100
-        jp      z, craw6
-        jp      po, craw5
+        jp      z, craw6&$ffff
+        jp      po, craw5&$ffff
 craw4   pop     de
         ld      a, (hl)
         dec     bc
@@ -1032,13 +973,13 @@ craw4   pop     de
         inc     h
         updclip
         dec     ixh
-        jp      z, craw8
+        jp      z, craw8&$ffff
         dec     ixl
         jr      nz, craw4
       IF smooth=0
         jr      craw7
       ELSE
-        jp      craw7
+        jp      craw7&$ffff
       ENDIF
 craw5   pop     de
         ld      a, (hl)
@@ -1077,7 +1018,7 @@ craw5   pop     de
         inc     h
         updclip
         dec     ixh
-        jp      z, craw8
+        jp      z, craw8&$ffff
         dec     ixl
         jr      nz, craw5
         jr      craw7
@@ -1102,7 +1043,7 @@ craw6   pop     de
         inc     h
         updclip
         dec     ixh
-        jp      z, craw8
+        jp      z, craw8&$ffff
         dec     ixl
         jr      nz, craw6
 craw7   ld      a, iyh
@@ -1128,7 +1069,7 @@ craw8   ld      a, 1
         jp      drawe
     ENDIF
 
-init    ld      (ini7+1), sp
+init    ld      (ini7+1&$ffff), sp
         ld      a, 20
         ld      de, $0020
         ld      b, d
@@ -1172,39 +1113,35 @@ ini6    push    de
 ini7    ld      sp, 0
         ret
 
-; Some variables
-x       db      0
-y       db      0
-
-; Look up table, from Y coordinate to memory address, 256 byte aligned
-        block   $9bfe-$
-staspr  defb    $ff, $ff
-
-; Enemy table. For each item: X, Y, direction and sprite number, 256 byte aligned
-        block   $9c00-$
-ene0    db      $00, $44, $12, 0
-        db      $88, $60, $60, %10
-        db      $89, $a8, $48, %11
-        db      $8a, $22, $02, %01
-        db      $8b, $d0, $6e, %10
-        db      $8c, $b6, $34, %11
-        db      $8d, $32, $32, %01
-        db      $8e, $52, $5e, %00
-
-        block   $9c50-$
-lookt   incbin  table.bin
-
-; Sprites file. Generated externally with GfxBu.c from sprites.png
-        block   $9e00-$
-sprites incbin  sprites.bin
-
-; Decompressor code
-descom  include descom15.asm
-
-; Tiles file. Generated externally with tilegen.c from tiles.png
-tiladdr incbin  tiles.bin
+      IF DMAP_BITHALF=1
+gbit1   sub     $80 - (1 << DMAP_BITSYMB - 2)
+        defb    $da             ; second part of half bit implementation
+gbit2   ld      b, (hl)         ; load another group of 8 bits
+        dec     hl
+gbit3   rl      b               ; get next bit
+        jr      z, gbit2        ; no more bits left?
+        adc     a, a            ; put bit in a
+        ret
+      ENDIF
 
 ; Map file. Generated externally with TmxCompress.c from map.tmx
 map     incbin  map_compressed.bin
-mapend
-endd
+lookt   block   $fe50-$&$ffff
+      IF smooth=0
+        incbin  table0.bin
+      ELSE
+        incbin  table1.bin
+      ENDIF
+        block   $fff1-$&$ffff
+frame   jp      do_sprites
+      IF DMAP_BITHALF=0
+gbit2   ld      b, (hl)         ; load another group of 8 bits
+        dec     hl
+gbit3   rl      b               ; get next bit
+        jr      z, gbit2        ; no more bits left?
+        adc     a, a            ; put bit in a
+        ret
+      ENDIF
+        block   $fffc-$&$ffff
+tinit   jp      init
+        defb    $ff

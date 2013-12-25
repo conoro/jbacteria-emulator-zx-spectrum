@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 unsigned char *image, *pixel, output[0x10000];
-unsigned error, width, height, i, j, k, l, min, max, nmin, nmax, amin, amax, param,
+unsigned error, width, height, i, j, k, l, min, max, nmin, nmax, amin, amax,
           mask, pics, amask, apics, inipos, reppos, smooth, outpos, fondo, tinta, tilemode;
 long long atr, celdas[4];
 FILE *fo, *ft;
@@ -53,21 +53,20 @@ int main(int argc, char *argv[]){
   if( argc==1 )
     printf("\nGfxBu v1.11. Bu Sprites generator by AntonioVillena, 20 Nov 2013\n\n"
            "  GfxBu <input_tiles> <input_sprites> <output_tiles> <output_sprites>\n"
-           "        <table_address> <tileindex_mode> [smooth]\n\n"
+           "        <tileindex_mode> [smooth]\n\n"
            "  <input_tiles>     Normally tiles.png\n"
            "  <input_sprites>   Normally sprites.png\n"
            "  <output_tiles>    Output binary tiles\n"
            "  <output_sprites>  Output binary sprites\n"
-           "  <table_address>   In hexadecimal, address of the table\n"
            "  <tileindex_mode>  0=no index, 1=bitmap, 2=attr, 3=full index\n"
            "  <smooth>          optionally, if present smooth sprite movement\n\n"
            "Example: GfxBu tiles.png sprites.png tiles.bin sprites.bin b000 4\n"),
     exit(0);
-  if( argc!=7 && argc!=8 )
+  if( argc!=6 && argc!=7 )
     printf("\nInvalid number of parameters\n"),
     exit(-1);
-  tilemode= atoi(argv[6]);
-  smooth= argc+1&1;
+  tilemode= atoi(argv[5]);
+  smooth= argc&1;
 
 // tiles
 
@@ -176,7 +175,8 @@ int main(int argc, char *argv[]){
 
 // sprites
 
-  outpos= 128<<smooth;
+  inipos= 0;
+  outpos= 64<<smooth;
   error= lodepng_decode32_file(&image, &width, &height, argv[2]);
   printf("Processing %14s...", argv[2]);
   if( error )
@@ -186,11 +186,10 @@ int main(int argc, char *argv[]){
   if( !fo )
     printf("\nCannot create output file: %s\n", argv[4]),
     exit(-1);
-  param= strtol(argv[5], NULL, 16);
   for ( i= 0; i < 16; i++ )
     for ( j= 0; j < 8; j+= 2-smooth ){
-      output[(j|i<<3)<<smooth]= outpos+param;
-      output[1|(j|i<<3)<<smooth]= outpos+param>>8;
+      if( inipos )
+        output[((j|i<<3)>>(1-smooth))-1]= outpos-inipos;
       output[inipos= outpos]= 0;
       output[inipos+1]= smooth ? 0x28 : 0x50;
       outpos+= 2;
@@ -236,6 +235,7 @@ int main(int argc, char *argv[]){
       }
     }
 salir:
+  output[(64<<smooth)-1]= outpos-inipos;
   fwrite(output, 1, outpos, fo);
   fclose(fo);
   printf("Done\n"
@@ -246,13 +246,14 @@ salir:
 // table
 
   unsigned short table[0xb0];
-  fo= fopen("table.bin", "wb+");
-  if( smooth )
-    for ( int i= 0x38; i<0xe8; i++ )
-      table[i-0x38]= 0x3800 + (i<<8&0x700) + (i<<2&0xe0) + (i<<5&0x1800);
-  else
-    for ( int i= 0x1c; i<0x7c; i++ )
-      table[i-0x1c]= 0x3800 + (i<<9&0x700) + (i<<3&0xe0) + (i<<6&0x1800);
-  fwrite(table, 1, 0xb0<<smooth, fo);
+  fo= fopen("table0.bin", "wb+");
+  for ( int i= 0x1c; i<0x7c; i++ )
+    table[i-0x1c]= 0x3800 + (i<<9&0x700) + (i<<3&0xe0) + (i<<6&0x1800);
+  fwrite(table, 1, 0xb0, fo);
+  fclose(fo);
+  fo= fopen("table1.bin", "wb+");
+  for ( int i= 0x38; i<0xe8; i++ )
+    table[i-0x38]= 0x3800 + (i<<8&0x700) + (i<<2&0xe0) + (i<<5&0x1800);
+  fwrite(table, 1, 0x160, fo);
   fclose(fo);
 }
