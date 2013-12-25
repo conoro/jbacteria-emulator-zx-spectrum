@@ -122,8 +122,7 @@
 ; Paolo Ferraris' shortest loader, then we move all the code to $8000
         output  engine48.bin
         org     staspr+enems-lookt-$
-staspr  defb    $ff, $ff
-        nop
+staspr  defb    $ff, $ff, $ff
 do_sprites
         ld      (drawi+1&$ffff), sp
 delspr  ld      sp, 0
@@ -529,7 +528,7 @@ update_partial
 
 draw_sprites
         ld      a, 7
-        ld      bc, staspr
+        ld      bc, staspr+1&0xfffe
 draw1   ld      (drawh+1&$ffff), a
         add     a, a
         add     a, a

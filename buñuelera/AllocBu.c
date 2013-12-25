@@ -32,7 +32,8 @@ int main(int argc, char *argv[]){
   fi= fopen("engine48.bin", "rb");
   fseek(fi, 0, SEEK_END);
   scode= ftell(fi);
-  fseek(fi, 0, SEEK_SET);
+  fseek(fi, scode&1, SEEK_SET);
+  scode&= 0xfffe;
   fread(mem+0x10000-scode, 1, 0x1000, fi);
   fclose(fi);
   smooth= mem[0xfe53]&1;
