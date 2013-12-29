@@ -30,6 +30,7 @@ int main(int argc, char *argv[]){
   fread(mem+0x8000, 1, 0x8000, fi);
   fclose(fi);
   fi= fopen("engine48.bin", "rb");
+//  fi= fopen("engine128.bin", "rb");
   fseek(fi, 0, SEEK_END);
   scode= ftell(fi);
   fseek(fi, scode&1, SEEK_SET);
@@ -105,9 +106,20 @@ int main(int argc, char *argv[]){
   mem[0xf000]= 0x00;
   mem[0xf001]= 0x80;
   fclose(fi);
-  fi= fopen("dump.sna", "wb+");
+  fi= fopen("dump48.sna", "wb+");
   fwrite(snaheader, 1, 0x1b, fi);
   fwrite(mem+0x4000, 1, 0xc000, fi);
+  fclose(fi);
+  fi= fopen("dump128.sna", "wb+");
+  fwrite(snaheader, 1, 0x1b, fi);
+  fwrite(mem+0x4000, 1, 0xc000, fi);
+  snaheader[0]= 0x00;
+  snaheader[1]= 0x80;
+  snaheader[2]= 0x10;
+  snaheader[3]= 0x00;
+  fwrite(snaheader, 1, 4, fi);
+  fwrite(mem+0x4000, 1, 0xc000, fi);
+  fwrite(mem+0x4000, 1, 0x8000, fi);
   fclose(fi);
 
   for ( i= 0; i<0x40; i++ )
