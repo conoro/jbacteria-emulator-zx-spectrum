@@ -2,7 +2,7 @@
         DEFINE  maph  2               ; map height is 2, our demo has 12x2 screens
         DEFINE  frame $fff1
         DEFINE  init  $fffc
-        DEFINE  enems $fe00
+        DEFINE  enems $5c00
       
 
 ; This macro multiplies two 8 bits numbers (second one is a constant)

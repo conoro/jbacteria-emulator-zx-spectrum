@@ -16,14 +16,19 @@
         DEFINE  DMAP_BUFFER  $5b01    ; BUFFER points to where is decoded the uncompressed screen
         DEFINE  sylo  $66
         DEFINE  syhi  $c0
-        DEFINE  smooth  0
+        DEFINE  smooth  1
         DEFINE  clipup  1
         DEFINE  clipdn  1
         DEFINE  safeco  1
         DEFINE  initregs
-        DEFINE  sprites $5c00
-        DEFINE  tiladdr $5c80+smooth*$80
-        DEFINE  enems   $fe00
+        DEFINE  sprites $fe00
+        DEFINE  tiladdr $5c50
+        DEFINE  enems   $5c00
+      IF  smooth=0
+        DEFINE  final   $fd50
+      ELSE
+        DEFINE  final   $fc21
+      ENDIF
 
 ; This macro multiplies two 8 bits numbers (second one is a constant)
 ; Factor 1 is on E register, Factor 2 is the constant data (macro parameter)
@@ -125,7 +130,7 @@
 
 ; Paolo Ferraris' shortest loader, then we move all the code to $8000
         output  engine48.bin
-        org     staspr+enems-lookt-$
+        org     staspr+final-mapend-$
 staspr  defb    $ff, $ff, $ff
 do_sprites
         ld      (drawi+1&$ffff), sp
@@ -236,7 +241,7 @@ update_complete
         ld      (hl), c
         ld      sp, (drawi+1&$ffff)
         ld      de, map&$ffff
-        ld      hl, dzx7+$ff&$ffff
+        ld      hl, mapend+$ff&$ffff
 desc1   sbc     hl, bc
         ex      de, hl
         ld      c, (hl)
@@ -605,18 +610,18 @@ draw3   add     a, d
 draw3   add     a, d
     IF clipup=0
       IF safeco=1
-        cp      $30
+        cp      $58
         jr      nc, draw4
-        ld      a, $30
+        ld      a, $58
       ENDIF
     ELSE
-        cp      $30
+        cp      $58
         jp      c, braw1&$ffff
     ENDIF
 draw4   add     a, a
         jr      nc, draw6
       IF clipdn=1
-        cp      $82
+        cp      $d2
         jp      nc, craw1&$ffff
       ENDIF
         ld      (draw5+1), a
@@ -806,7 +811,7 @@ braw2   ld      hl, (lookt&$ffff)
       IF smooth=0
         sub     $d3
       ELSE
-        sub     $ce
+        sub     $a6
         rra
       ENDIF
         ld      ixh, a
@@ -896,7 +901,7 @@ craw2   ld      hl, (lookt&$ffff)
 craw2   ld      hl, (lookt+$100&$ffff)
         rrca
         cpl
-        sub     $af
+        sub     $87 ;af
       ENDIF
         rra
         ld      ixh, a
@@ -1129,106 +1134,19 @@ gbit3   rl      b               ; get next bit
 
 ; Map file. Generated externally with TmxCompress.c from map.tmx
 map     incbin  map_compressed.bin
-
-; -----------------------------------------------------------------------------
-; ZX7 Backwards+DRCS by Einar Saukas, Antonio Villena
-; Parameters:
-;   HL: source address (compressed data)
-;   DE: destination address (decompressing)
-; -----------------------------------------------------------------------------
-dzx7    ld      bc, $8000
-        ld      a, b
-copyby  inc     c
-        ldd
-mainlo  add     a, a
-        call    z, getbit&$ffff
-        jr      nc, copyby
-        push    de
-        ld      d, c
-        defb    $30
-lenval  add     a, a
-        call    z, getbit&$ffff
-        rl      c
-        rl      b
-        add     a, a
-        call    z, getbit&$ffff
-        jr      nc, lenval
-        inc     c
-        jr      z, exitdz
-        ld      e, (hl)
-        dec     hl
-        sll     e
-        jr      nc, offend
-        ld      d, $10
-nexbit  add     a, a
-        call    z, getbit&$ffff
-        rl      d
-        jr      nc, nexbit
-        inc     d
-        srl     d
-offend  rr      e
-        ex      (sp), hl
-        ex      de, hl
-        adc     hl, de
-        lddr
-exitdz  pop     hl
-        jr      nc, mainlo
-        ld      a, $41
-        sub     h
-        ret     c
-        ld      b, a
-drcsne  ld      de, $4001
-drcslo  ld      h, d
-        ld      a, e
-        ndjnz   drcsco
-        rrca
-        rrca
-        ld      c, a
-        xor     d
-        and     $07
-        xor     d
-        ld      h, a
-        xor     d
-        xor     c
-drcsco  ld      l, a
-        rlca
-        rrc     h
-        rla
-        rl      h
-        ld      c, a
-        xor     l
-        and     $05
-        xor     l
-        rrca
-        rrca
-        xor     c
-        and     $67
-        xor     c
-        ld      l, a
-        sbc     hl, de
-        jr      nc, drcssk
-        add     hl, de
-        ld      c, (hl)
-        ld      a, (de)
-        ld      (hl), a
-        ld      a, c
-        ld      (de), a
-drcssk  inc     b
-        inc     de
-        ld      a, d
-        cp      $58
-        jr      nz, drcslo
-        djnz    drcsne
-getbit  ld      a, (hl)
-        dec     hl
-        adc     a, a
-        ret
-
-lookt   block   $fe50-$&$ffff
+mapend
       IF smooth=0
-        incbin  table0.bin
+        block   $fd50-$&$ffff
+lookt   incbin  table0.bin
+        block   $fe80-$&$ffff
+        incbin  dzx7b_rcs_0.bin
+        defb    $ff
       ELSE
-        incbin  table1.bin
+        block   $fc21-$&$ffff
+        incbin  dzx7b_rcs_1.bin
+lookt   incbin  table1.bin
+        block   $ff00-$&$ffff
+        defb    $ff
       ENDIF
         block   $fff1-$&$ffff
 frame   jp      do_sprites
@@ -1242,4 +1160,4 @@ gbit3   rl      b               ; get next bit
       ENDIF
         block   $fffc-$&$ffff
 tinit   jp      init
-        defb    $ff
+        defb    $18

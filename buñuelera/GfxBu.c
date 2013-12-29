@@ -191,7 +191,7 @@ int main(int argc, char *argv[]){
       if( inipos )
         output[((j|i<<3)>>(1-smooth))-1]= outpos-inipos;
       output[inipos= outpos]= 0;
-      output[inipos+1]= smooth ? 0x28 : 0x50;
+      output[inipos+1]= 0x50;
       outpos+= 2;
       nmin= nmax= 4;
       for ( k= 0; k < 16; k++ ){

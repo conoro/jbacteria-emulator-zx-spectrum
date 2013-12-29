@@ -37,24 +37,36 @@ int main(int argc, char *argv[]){
   scode&= 0xfffe;
   fread(mem+0x10000-scode, 1, 0x1000, fi);
   fclose(fi);
-  smooth= mem[0xfe53]&1;
+  smooth= mem[0xfdff]&1;
   fi= fopen("tiles.bin", "rb");
-  stiles= fread(mem+0x5c80+smooth*128, 1, 0x2400, fi);
+  stiles= fread(mem+0x5c50, 1, 0x2400, fi);
   fclose(fi);
   nsprites= smooth ? 0x80 : 0x40;
   ssprites-= nsprites;
-  blocks[1].len= (smooth ? 241 : 65)>>1;
-  blocks[1].addr= smooth ? 0xff00 : 0xffb0;
-  blocks[2].len= (0x2380-smooth*128-stiles)>>1;
-  blocks[2].addr= 0x5c80+smooth*128+stiles;
-  blocks[3].len= (ssprites+1>>1)-blocks[0].len-blocks[1].len-blocks[2].len;
-  blocks[3].addr= 0xfe00-scode-(((ssprites+1>>1)-blocks[0].len-blocks[1].len-blocks[2].len)<<1);
-  nblocks= blocks[3].len>0 ? 4 : 3;
   saccum[0]= 0;
   for ( i= 0; i<nsprites; i++ )
     sorder[i]= i,
     sblocks[i]= sprites[i]>>1,
     saccum[i+1]= saccum[i]+sprites[i];
+  if( smooth ){
+    ssprites-= sprites[--nsprites];
+    if( i==0x80)
+      --i;
+    blocks[1].len= (239-sprites[nsprites])>>1;
+    blocks[1].addr= 0xff01+sprites[nsprites];
+    mem[0xfefe]= 0x01;
+    mem[0xfeff]= 0xff;
+    for ( l= 0; l<sprites[nsprites]; l++ )
+      mem[0xff01+l]= sprites[saccum[nsprites]+64+smooth*64+l];
+  }
+  else
+    blocks[1].len= 239>>1,
+    blocks[1].addr= 0xff01;
+  blocks[2].len= (0x23b0-stiles)>>1;
+  blocks[2].addr= 0x5c50+stiles;
+  blocks[3].len= (ssprites+1>>1)-blocks[0].len-blocks[1].len-blocks[2].len;
+  blocks[3].addr= (smooth?0xfc21:0xfd50)-scode-(((ssprites+1>>1)-blocks[0].len-blocks[1].len-blocks[2].len)<<1);
+  nblocks= blocks[3].len>0 ? 4 : 3;
   while ( !sprites[--i] );
   nsprites= ++i;
   for ( i= 0; i < nblocks; i++ ){
@@ -81,8 +93,8 @@ int main(int argc, char *argv[]){
           if( j >= sblocks[k] ){
             j-= sblocks[k];
             printf("[%d,%d]--->%x\n", j, k, sblocks[k]*2);
-            mem[0x5c00|sorder[k]<<1]= blocks[i].addr&0xff;
-            mem[0x5c01|sorder[k]<<1]= blocks[i].addr>>8;
+            mem[0xfe00|sorder[k]<<1]= blocks[i].addr&0xff;
+            mem[0xfe01|sorder[k]<<1]= blocks[i].addr>>8;
             for ( l= 0; l<sblocks[k]; l++ )
               mem[blocks[i].addr+(l<<1)]= sprites[saccum[sorder[k]]+64+smooth*64+(l<<1)],
               mem[blocks[i].addr+(l<<1)+1]= sprites[saccum[sorder[k]]+65+smooth*64+(l<<1)];
