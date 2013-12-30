@@ -14,14 +14,20 @@
         DEFINE  DMAP_BITSYMB 6        ; these 3 constants are for the map decompressor
         DEFINE  DMAP_BITHALF 1        ; BITSYMB and BITHALF declares 5.5 bits per symbol (16 tiles with 5 bits and 32 with 6 bits)
         DEFINE  DMAP_BUFFER  $5b01    ; BUFFER points to where is decoded the uncompressed screen
-        DEFINE  smooth  0
+        DEFINE  smooth  1
         DEFINE  clipup  1
         DEFINE  clipdn  1
         DEFINE  safeco  1
         DEFINE  initregs
-        DEFINE  sprites $5c00
-        DEFINE  tiladdr $5c80+smooth*$80
-        DEFINE  enems   $fe00
+        DEFINE  port    $5b97
+        DEFINE  sprites $fe00
+        DEFINE  tiladdr $5c50
+        DEFINE  enems   $5c00
+      IF  smooth=0
+        DEFINE  final   $fd50
+      ELSE
+        DEFINE  final   $fc21
+      ENDIF
 
 ; This macro multiplies two 8 bits numbers (second one is a constant)
 ; Factor 1 is on E register, Factor 2 is the constant data (macro parameter)
@@ -95,22 +101,38 @@
       MACRO cellprint addition
         pop     de
         ld      (hl), e
+        set     7, h
+        ld      (hl), e
         inc     h
+        ld      (hl), d
+        res     7, h
         ld      (hl), d
         inc     h
         pop     de
         ld      (hl), e
+        set     7, h
+        ld      (hl), e
         inc     h
+        ld      (hl), d
+        res     7, h
         ld      (hl), d
         inc     h
         pop     de
         ld      (hl), e
+        set     7, h
+        ld      (hl), e
         inc     h
+        ld      (hl), d
+        res     7, h
         ld      (hl), d
         inc     h
         pop     de
         ld      (hl), e
+        set     7, h
+        ld      (hl), e
         inc     h
+        ld      (hl), d
+        res     7, h
         ld      (hl), d
         ld      de, addition
         add     hl, de
@@ -123,7 +145,7 @@
 
 ; Paolo Ferraris' shortest loader, then we move all the code to $8000
         output  engine128.bin
-        org     staspr+enems-lookt-$
+        org     staspr+final-mapend-$
 staspr  defb    $ff, $ff, $ff
 do_sprites
         ld      (drawi+1&$ffff), sp
@@ -135,57 +157,14 @@ do1     cp      (hl)
         jr      nz, do1
         ld      bc, $7ffd
         ld      a, (port&$ffff)
-        xor     $0d
-        ld      (port&$ffff), a
-        and     $08
-        xor     $1f
-        out     (c), a
-do2     jr      delete_sprites
-do3     ld      a, do4-2-do2&$ff
-        ld      (do2+1), a
-        ld      a, $c6
+        xor     $80
         ld      (port&$ffff), a
         ld      a, $1f
-        out     (c), a
-        ld      hl, $4000
-        ld      de, $c000
-        ld      b, $d8
-do35    ld      c, h
-        ldi
-        ldi
-        ldi
-        ldi
-        ldi
-        ldi
-        ldi
-        ldi
-        ldi
-        ldi
-        ldi
-        ldi
-        ldi
-        ldi
-        ldi
-        ldi
-        ldi
-        ldi
-        ldi
-        ldi
-        ldi
-        ldi
-        ldi
-        ldi
-        ldi
-        ldi
-        ldi
-        ldi
-        ldi
-        ldi
-        ldi
-        ldi
-        djnz    do35
-        jp      draw_sprites&$ffff
-do4     ld      a, delete_sprites-2-do2&$ff
+        jp      m, do15
+        ld      a, $10
+do15    out     (c), a
+do2     jr      delete_sprites
+do3     ld      a, delete_sprites-2-do2&$ff
         ld      (do2+1), a
         jp      draw_sprites&$ffff
 
@@ -275,12 +254,14 @@ del6    ld      a, c
 
 ;Complete background update
 update_complete
+        ld      a, (port)
+        rla
+        jp      nc, draw_sprites&$ffff
         ld      hl, $5b00
         ld      a, (hl)
         cp      c
         jp      z, update_partial&$ffff
         ld      (hl), c
-        ld      sp, (drawi+1&$ffff)
         ld      de, map&$ffff
         ld      hl, mapend+$ff&$ffff
 desc1   sbc     hl, bc
@@ -290,6 +271,16 @@ desc1   sbc     hl, bc
         inc     de
         dec     a
         jp      p, desc1
+
+        ld      bc, $7ffd
+        ld      a, $18
+        out     (c), a
+        xor     a
+        ld      (do2+1), a
+        ld      sp, (drawi+1&$ffff)
+        ld      a, $1f
+        out     (c), a
+        
         ld      de, DMAP_BUFFER+149
         ld      b, $80          ; marker bit
 desc2   ld      a, 256 >> DMAP_BITSYMB
@@ -485,13 +476,21 @@ upba5   ld      sp, 0
         ld      l, c
         pop     bc
         ld      (hl), c
+        set     7, h
+        ld      (hl), c
         inc     l
+        ld      (hl), b
+        res     7, h
         ld      (hl), b
         ld      bc, $001f
         add     hl, bc
         pop     bc
         ld      (hl), c
+        set     7, h
+        ld      (hl), c
         inc     l
+        ld      (hl), b
+        res     7, h
         ld      (hl), b
         ld      bc, $ffe1
         add     hl, bc
@@ -651,22 +650,22 @@ draw3   add     a, d
 draw3   add     a, d
     IF clipup=0
       IF safeco=1
-        cp      $30
+        cp      $58
         jr      nc, draw4
-        ld      a, $30
+        ld      a, $58
       ENDIF
     ELSE
-        cp      $30
-        jp      c, braw1
+        cp      $58
+        jp      c, braw1&$ffff
     ENDIF
 draw4   add     a, a
         jr      nc, draw6
       IF clipdn=1
-        cp      $82
-        jp      nc, craw1
+        cp      $d2
+        jp      nc, craw1&$ffff
       ENDIF
         ld      (draw5+1), a
-draw5   ld      hl, (lookt+$100)
+draw5   ld      hl, (lookt+$100&$ffff)
         jr      draw8
   ENDIF
 draw6   ld      (draw7+1&$ffff), a
@@ -678,7 +677,9 @@ draw8   ld      a, 0
         rra
         or      l
         ld      l, a
-port    set     7, h
+      ld      a, (port)
+      or      h
+      ld      h, a
         ld      a, e
         ld      (drawg+1&$ffff), a
 draw9   ex      af, af'
@@ -696,7 +697,7 @@ draw9   ex      af, af'
       IF smooth=0
         jr      z, drawc
       ELSE
-        jp      z, drawc
+        jp      z, drawc&$ffff
       ENDIF
         jp      po, drawb&$ffff
 drawa   pop     de
@@ -837,13 +838,15 @@ drawg   ld      a, 0
 drawh   ld      a, 0
         dec     a
         jp      p, draw1
-drawi   ld      sp, 0
         ld      (delete_sprites+1), bc
         ld      bc, $7ffd
         ld      a, (port)
-        and     $08
-        set     4, a
-        out     (c), a
+        rla
+        ld      a, $18
+        jr      c, drawhh
+        ld      a, $10
+drawhh  out     (c), a
+drawi   ld      sp, 0
         ret
 
     IF clipup=1
@@ -858,7 +861,7 @@ braw2   ld      hl, (lookt&$ffff)
       IF smooth=0
         sub     $d3
       ELSE
-        sub     $ce
+        sub     $a6
         rra
       ENDIF
         ld      ixh, a
@@ -869,6 +872,9 @@ braw2   ld      hl, (lookt&$ffff)
         rra
         or      l
         ld      l, a
+      ld      a, (port)
+      or      h
+      ld      h, a
         ld      a, e
         ex      de, hl
 braw3   ex      af, af'
@@ -945,10 +951,10 @@ craw2   ld      hl, (lookt&$ffff)
         cpl
         sub     $06
       ELSE
-craw2   ld      hl, (lookt+$100)
+craw2   ld      hl, (lookt+$100&$ffff)
         rrca
         cpl
-        sub     $af
+        sub     $87
       ENDIF
         rra
         ld      ixh, a
@@ -959,6 +965,9 @@ craw2   ld      hl, (lookt+$100)
         rra
         or      l
         ld      l, a
+      ld      a, (port)
+      or      h
+      ld      h, a
         ld      a, e
         ld      (drawg+1), a
 craw3   ex      af, af'
@@ -1034,7 +1043,7 @@ craw4   pop     de
       IF smooth=0
         jr      craw7
       ELSE
-        jp      craw7
+        jp      craw7&$ffff
       ENDIF
 craw5   pop     de
         ld      a, (hl)
@@ -1137,14 +1146,15 @@ ini1    ld      sp, hl
         jp      p, ini1
         ld      ($5b00), a
         ld      ($5bfe), a
-        ld      a, do3-2-do2
+        xor     a
         ld      (do2+1), a
+        ld      (port), a
         ld      hl, ini3&$ffff
-        ld      de, $5b00
+        ld      de, $4000
         ld      c, inif-ini3
         ldir
         ld      hl, $db00
-        call    $5b00
+        call    $4000
 ;        ld      hl, $ffff
 ;        ld      ($feff), hl
 ;        ld      ($7ffe), hl
@@ -1154,7 +1164,7 @@ ini1    ld      sp, hl
 ;        ld      ($fffe), hl
 ;        ld      a, $10
 ;        out     (c), a
-        ld      a, $fc
+        ld      a, $fe
         ld      i, a
         im      2
 ini2    ld      sp, 0
@@ -1175,20 +1185,20 @@ ini3    ld      bc, $ff+ini3-inif&$ff
         ex      de, hl
         ld      c, $ff+ini3-inif&$ff
         add     hl, bc
-        ret     c
         ld      bc, $7ffd
         ld      a, $10
         out     (c), a
-        jr      ini3
+        jr      nc, ini3
+        ret
 inif
 
       IF DMAP_BITHALF=1
-gbit1:  sub     $80 - (1 << DMAP_BITSYMB - 2)
+gbit1   sub     $80 - (1 << DMAP_BITSYMB - 2)
         defb    $da             ; second part of half bit implementation
       ENDIF
-gbit2:  ld      b, (hl)         ; load another group of 8 bits
+gbit2   ld      b, (hl)         ; load another group of 8 bits
         dec     hl
-gbit3:  rl      b               ; get next bit
+gbit3   rl      b               ; get next bit
         jr      z, gbit2        ; no more bits left?
         adc     a, a            ; put bit in a
         ret
@@ -1196,116 +1206,19 @@ gbit3:  rl      b               ; get next bit
 ; Map file. Generated externally with TmxCompress.c from map.tmx
 map     incbin  map_compressed.bin
 mapend
-        defb    $ff, $ff
-        defb    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-        defb    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-        defb    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-        defb    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-        defb    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-        defb    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-        defb    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-        defb    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-
-; -----------------------------------------------------------------------------
-; ZX7 Backwards+DRCS by Einar Saukas, Antonio Villena
-; Parameters:
-;   HL: source address (compressed data)
-;   DE: destination address (decompressing)
-; -----------------------------------------------------------------------------
-dzx7    ld      bc, $8000
-        ld      a, b
-copyby  inc     c
-        ldd
-mainlo  add     a, a
-        call    z, getbit&$ffff
-        jr      nc, copyby
-        push    de
-        ld      d, c
-        defb    $30
-lenval  add     a, a
-        call    z, getbit&$ffff
-        rl      c
-        rl      b
-        add     a, a
-        call    z, getbit&$ffff
-        jr      nc, lenval
-        inc     c
-        jr      z, exitdz
-        ld      e, (hl)
-        dec     hl
-        sll     e
-        jr      nc, offend
-        ld      d, $10
-nexbit  add     a, a
-        call    z, getbit&$ffff
-        rl      d
-        jr      nc, nexbit
-        inc     d
-        srl     d
-offend  rr      e
-        ex      (sp), hl
-        ex      de, hl
-        adc     hl, de
-        lddr
-exitdz  pop     hl
-        jr      nc, mainlo
-        ld      a, $41
-        sub     h
-        ret     c
-        ld      b, a
-drcsne  ld      de, $4001
-drcslo  ld      h, d
-        ld      a, e
-        ndjnz   drcsco
-        rrca
-        rrca
-        ld      c, a
-        xor     d
-        and     $07
-        xor     d
-        ld      h, a
-        xor     d
-        xor     c
-drcsco  ld      l, a
-        rlca
-        rrc     h
-        rla
-        rl      h
-        ld      c, a
-        xor     l
-        and     $05
-        xor     l
-        rrca
-        rrca
-        xor     c
-        and     $67
-        xor     c
-        ld      l, a
-        sbc     hl, de
-        jr      nc, drcssk
-        add     hl, de
-        ld      c, (hl)
-        ld      a, (de)
-        ld      (hl), a
-        ld      a, c
-        ld      (de), a
-drcssk  inc     b
-        inc     de
-        ld      a, d
-        cp      $58
-        jr      nz, drcslo
-        djnz    drcsne
-getbit  ld      a, (hl)
-        dec     hl
-        adc     a, a
-        ret
-
-lookt   block   $fe50-$&$ffff
       IF smooth=0
-        incbin  table0.bin
+        block   $fd50-$&$ffff
+lookt   incbin  table0.bin
+        block   $fe80-$&$ffff
+        incbin  dzx7b_rcs_0.bin
+        defb    $ff
       ELSE
-        incbin  table1.bin
+        block   $fc21-$&$ffff
+        incbin  dzx7b_rcs_1.bin
+lookt   incbin  table1.bin
       ENDIF
+        block   $ff00-$&$ffff
+        defb    $ff
         block   $fff1-$&$ffff
 frame   jp      do_sprites
         push    af

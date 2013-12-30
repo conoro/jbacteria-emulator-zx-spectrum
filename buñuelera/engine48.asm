@@ -901,7 +901,7 @@ craw2   ld      hl, (lookt&$ffff)
 craw2   ld      hl, (lookt+$100&$ffff)
         rrca
         cpl
-        sub     $87 ;af
+        sub     $87
       ENDIF
         rra
         ld      ixh, a
@@ -1124,13 +1124,13 @@ ini7    ld      sp, 0
       IF DMAP_BITHALF=1
 gbit1   sub     $80 - (1 << DMAP_BITSYMB - 2)
         defb    $da             ; second part of half bit implementation
+      ENDIF
 gbit2   ld      b, (hl)         ; load another group of 8 bits
         dec     hl
 gbit3   rl      b               ; get next bit
         jr      z, gbit2        ; no more bits left?
         adc     a, a            ; put bit in a
         ret
-      ENDIF
 
 ; Map file. Generated externally with TmxCompress.c from map.tmx
 map     incbin  map_compressed.bin
@@ -1145,19 +1145,16 @@ lookt   incbin  table0.bin
         block   $fc21-$&$ffff
         incbin  dzx7b_rcs_1.bin
 lookt   incbin  table1.bin
+      ENDIF
         block   $ff00-$&$ffff
         defb    $ff
-      ENDIF
         block   $fff1-$&$ffff
 frame   jp      do_sprites
-      IF DMAP_BITHALF=0
-gbit2   ld      b, (hl)         ; load another group of 8 bits
-        dec     hl
-gbit3   rl      b               ; get next bit
-        jr      z, gbit2        ; no more bits left?
-        adc     a, a            ; put bit in a
+        push    af
+        xor     a
+        ld      (flag&$ffff), a
+        pop     af
         ret
-      ENDIF
-        block   $fffc-$&$ffff
+flag    defb    0
 tinit   jp      init
         defb    $18
