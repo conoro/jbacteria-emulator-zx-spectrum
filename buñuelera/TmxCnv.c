@@ -23,7 +23,7 @@ int main(int argc, char* argv[]){
   int size= 0, scrw, scrh, mapw, maph, lock, numlock= 0, tmpi, elem, sum,
       tog= 0, i, j, k, l, type, gid, x, y, name, mapx, mapy, baddies= 0;
   if( argc==1 )
-    printf("\nTmxCnv v1.11, TMX to H generator by Antonio Villena, 11 Nov 2013\n\n"
+    printf("\nTmxCnv v1.12, TMX to H generator by Antonio Villena, 30 Dec 2013\n\n"
            "  TmxCnv <input_tmx> <output_map_h> [<output_enems_h>]\n\n"
            "  <input_tmx>       Origin .TMX file\n"
            "  <output_map_h>    Generated .H map output file\n"
@@ -229,7 +229,7 @@ int main(int argc, char* argv[]){
           }
           else
             hotspots[mapy*mapw+mapx].xy= y | x<<4,
-            hotspots[mapy*mapw+mapx].type= gid-17;
+            hotspots[mapy*mapw+mapx].type= gid-17 ? gid-17 : 3;
         }
       }
     }
