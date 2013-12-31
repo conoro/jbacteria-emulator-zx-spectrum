@@ -203,19 +203,14 @@ do4     ld      a, update_complete-2-do3&$ff
 
 ;Complete background update
 update_complete
-      IF  machine=1
-        ld      a, (port)
-        rla
-        jp      nc, delete_sprites&$ffff
-      ENDIF
         ld      hl, $5b00
         ld      a, (hl)
         inc     a
-        jp      z, update_partial&$ffff
+        jp      z, delete_sprites&$ffff
       IF  machine=1
         ld      bc, $00ff
         ld      (hl), c
-        ld      hl, mapend+$ff&$ffff
+        ld      hl, mapend+$fe&$ffff
       ELSE
         ld      b, l
         ld      (hl), $ff
@@ -489,67 +484,15 @@ upba8   add     hl, de
         jp      nz, upba2
         jp      draw_sprites
 
-;Partial background update
-uppa1   ld      b, a
-        and     $0f
-        inc     a
-        ld      (upba3-1), a
-        add     a, a
-        cpl
-        sub     $bf
-        ld      (upba6+1), a
-        ld      (upba7+1), a
-        ld      a, b
-        rlca
-        rlca
-        rlca
-        rlca
-        and     $0f
-        inc     a
-        ld      (upba2-1), a
-        ld      a, c
-        and     $f0
-        ld      b, $58 >> 2
-        rla
-        rl      b
-        rla
-        rl      b
-        ld      (hl), l
-        rl      c
-        xor     c
-        and     %11100001
-        xor     c
-      IF  scrw=15
-        inc     a
-      ELSE
-        add     a, $10-scrw
-      ENDIF
-        ld      c, a
-        ld      l, a
-        ld      a, b
-        rlca
-        rlca
-        rlca
-        and     %01111000
-        ld      h, a
-        jp      upba1
-update_partial
-        dec     l
-        ld      a, (hl)
-        dec     l
-        ld      c, (hl)
-        sub     c
-        jr      nc, uppa1
-
 delete_sprites
         ld      sp, 0
         pop     bc
         ld      ixl, b
         inc     b
       IF smooth=0
-        jr      z, draw_sprites
+        jr      z, update_partial
       ELSE
-        jp      z, draw_sprites
+        jp      z, update_partial
       ENDIF
 del1    pop     hl
 del2    pop     bc
@@ -624,6 +567,59 @@ del6    ld      a, c
       ELSE
         jp      nz, del1
       ENDIF
+
+update_partial
+        ld      hl, $5bff
+        ld      a, (hl)
+        dec     l
+        ld      c, (hl)
+        sub     c
+        jr      c, draw_sprites
+
+;Partial background update
+uppa1   ld      b, a
+        and     $0f
+        inc     a
+        ld      (upba3-1), a
+        add     a, a
+        cpl
+        sub     $bf
+        ld      (upba6+1), a
+        ld      (upba7+1), a
+        ld      a, b
+        rlca
+        rlca
+        rlca
+        rlca
+        and     $0f
+        inc     a
+        ld      (upba2-1), a
+        ld      a, c
+        and     $f0
+        ld      b, $58 >> 2
+        rla
+        rl      b
+        rla
+        rl      b
+        ld      (hl), l
+        rl      c
+        xor     c
+        and     %11100001
+        xor     c
+      IF  scrw=15
+        inc     a
+      ELSE
+        add     a, $10-scrw
+      ENDIF
+        ld      c, a
+        ld      l, a
+        ld      a, b
+        rlca
+        rlca
+        rlca
+        and     %01111000
+        ld      h, a
+        jp      upba1
 
 draw_sprites
         ld      a, 7

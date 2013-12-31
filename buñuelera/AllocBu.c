@@ -29,8 +29,7 @@ int main(int argc, char *argv[]){
   fi= fopen("main.bin", "rb");
   fread(mem+0x8000, 1, 0x8000, fi);
   fclose(fi);
-  fi= fopen("engine48.bin", "rb");
-//  fi= fopen("engine128.bin", "rb");
+  fi= fopen("engine.bin", "rb");
   fseek(fi, 0, SEEK_END);
   scode= ftell(fi);
   fseek(fi, scode&1, SEEK_SET);
