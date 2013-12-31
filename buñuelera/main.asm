@@ -39,7 +39,7 @@
 
         org     $8000
         output  main.bin
-        ld      sp, $f000
+        ld      sp, $ef00
         ld      hl, ene0
         ld      de, enems
         ld      bc, 32
@@ -52,12 +52,16 @@
 main_loop
         call    frame
 
+aaaaa   ld      a, 0
+        inc     a
+        jr      nz, mmmmm
         ld      b, 150
         ld      hl, $5b01
 main0   inc     (hl)
         res     4, (hl)
         inc     l
         djnz    main0
+mmmmm   ld      (aaaaa+1), a
 
         ld      b, 7
         ld      hl, enems+4
@@ -168,7 +172,7 @@ ene0    db      $00, $42, $11, 0
         db      $08, $60, $60, %10
         db      $09, $a8, $48, %11
         db      $0a, $22, $02, %01
-        db      $8b, $d0, $6e, %10
-        db      $8c, $b6, $34, %11
-        db      $8d, $32, $32, %01
-        db      $84, $52, $5e, %00
+        db      $0b, $d0, $6e, %10
+        db      $0c, $b6, $34, %11
+        db      $0d, $32, $32, %01
+        db      $04, $52, $5e, %00

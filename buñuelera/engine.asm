@@ -23,38 +23,6 @@
         DEFINE  final   $fc21
       ENDIF
 
-; This macro multiplies two 8 bits numbers (second one is a constant)
-; Factor 1 is on E register, Factor 2 is the constant data (macro parameter)
-; Result is returned on HL (Macro optimized by Metalbrain & Einar Saukas)
-
-  MACRO multsub first, second
-    IF  data & first
-        add     hl, hl
-      IF  data & second
-        add     hl, de
-      ENDIF
-    ENDIF
-  ENDM
-
-  MACRO mult8x8 data
-    IF  data = 0
-        ld      hl, 0
-    ELSE
-        ld      h, 0
-        ld      l, e
-      IF  data != 1 && data != 2 && data != 4 && data != 8 && data != 16 && data != 32 && data != 64 && data != 128
-        ld      d, h
-      ENDIF
-        multsub %10000000, %01000000
-        multsub %11000000, %00100000
-        multsub %11100000, %00010000
-        multsub %11110000, %00001000
-        multsub %11111000, %00000100
-        multsub %11111100, %00000010
-        multsub %11111110, %00000001
-    ENDIF
-  ENDM
-
       MACRO updremove
         ld      a, h
         and     $07
@@ -92,47 +60,6 @@
 .upd
       ENDM
 
-    IF  machine=1
-      MACRO cellprint addition
-        pop     de
-        ld      (hl), e
-        set     7, h
-        ld      (hl), e
-        inc     h
-        ld      (hl), d
-        res     7, h
-        ld      (hl), d
-        inc     h
-        pop     de
-        ld      (hl), e
-        set     7, h
-        ld      (hl), e
-        inc     h
-        ld      (hl), d
-        res     7, h
-        ld      (hl), d
-        inc     h
-        pop     de
-        ld      (hl), e
-        set     7, h
-        ld      (hl), e
-        inc     h
-        ld      (hl), d
-        res     7, h
-        ld      (hl), d
-        inc     h
-        pop     de
-        ld      (hl), e
-        set     7, h
-        ld      (hl), e
-        inc     h
-        ld      (hl), d
-        res     7, h
-        ld      (hl), d
-        ld      de, addition
-        add     hl, de
-      ENDM
-    ELSE
       MACRO cellprint addition
         pop     de
         ld      (hl), e
@@ -156,7 +83,6 @@
         ld      de, addition
         add     hl, de
       ENDM
-    ENDIF
 
       MACRO ndjnz addr
         defb    $10, addr-.ndj
@@ -180,9 +106,9 @@ do1     cp      (hl)
         ld      a, (port&$ffff)
         xor     $80
         ld      (port&$ffff), a
-        ld      a, $10
+        ld      a, $18
         jr      z, do2
-        ld      a, $1f
+        ld      a, $17
 do2     out     (c), a
 do3     jr      update_complete
       ELSE
@@ -200,6 +126,9 @@ do3     jr      z, do4
 do4     ld      a, update_complete-2-do3&$ff
         ld      (do3+1), a
         jp      draw_sprites&$ffff
+do5     ld      a, update_complete-2-do3&$ff
+        ld      (do3+1), a
+        jp      descb
 
 ;Complete background update
 update_complete
@@ -226,18 +155,25 @@ desc1   sbc     hl, bc
         jr      nz, desc1
       IF  machine=1
         ld      bc, $7ffd
-        ld      de, $1f18
-        out     (c), e
+        ld      a, (port)
+        rla
+        ld      e, $18
+        jr      c, desc2
+        ld      e, $17
+desc2   out     (c), e
+        ld      a, do5-2-do3
         ld      (do3+1), a
-        out     (c), d
+        ld      a, e
+        xor     $07
+        out     (c), a
         inc     b
       ELSE
         ld      b, $80          ; marker bit
       ENDIF
         ld      de, DMAP_BUFFER+149
-desc2   ld      a, 256 >> DMAP_BITSYMB
-desc3   call    gbit3&$ffff     ; load DMAP_BITSYMB bits (literal)
-        jr      nc, desc3
+desc3   ld      a, 256 >> DMAP_BITSYMB
+desc4   call    gbit3&$ffff     ; load DMAP_BITSYMB bits (literal)
+        jr      nc, desc4
       IF DMAP_BITHALF=1
         rrca                    ; half bit implementation (ie 48 tiles)
         call    c, gbit1&$ffff
@@ -245,40 +181,40 @@ desc3   call    gbit3&$ffff     ; load DMAP_BITSYMB bits (literal)
         and     a
       ENDIF
         ld      (de), a         ; write literal
-desc4   dec     e               ; test end of file (map is always 150 bytes)
-        jr      z, desca
+desc5   dec     e               ; test end of file (map is always 150 bytes)
+        jr      z, descb
         call    gbit3&$ffff     ; read one bit
         rra
-        jr      nc, desc2       ; test if literal or sequence
+        jr      nc, desc3       ; test if literal or sequence
         push    de              ; if sequence put de in stack
         ld      a, 1            ; determine number of bits used for length
-desc5   call    nc, gbit3&$ffff ; (Elias gamma coding)
+desc6   call    nc, gbit3&$ffff ; (Elias gamma coding)
         and     a
         call    gbit3&$ffff
         rra
-        jr      nc, desc5       ; check end marker
+        jr      nc, desc6       ; check end marker
         inc     a               ; adjust length
         ld      c, a            ; save lenth to c
         xor     a
         ld      de, 15          ; initially point to 15
         call    gbit3&$ffff     ; get two bits
         call    gbit3&$ffff
-        jr      z, desc8        ; 00 = 1
+        jr      z, desc9        ; 00 = 1
         dec     a
         call    gbit3&$ffff
-        jr      z, desc9        ; 010 = 15
+        jr      z, desca        ; 010 = 15
         bit     2, a
-        jr      nz, desc6
+        jr      nz, desc7
         add     a, $7c          ; [011, 100, 101] xx = from 2 to 13
         dec     e
-desc6   dec     e               ; [110, 111] xxxxxx = 14 and from 16 to 142
-desc7   call    gbit3&$ffff
-        jr      nc, desc7
-        jr      z, desc9
+desc7   dec     e               ; [110, 111] xxxxxx = 14 and from 16 to 142
+desc8   call    gbit3&$ffff
+        jr      nc, desc8
+        jr      z, desca
         add     a, e
-desc8   inc     a
+desc9   inc     a
         ld      e, a
-desc9   ld      a, b            ; save b (byte reading) on a
+desca   ld      a, b            ; save b (byte reading) on a
         ld      b, d            ; b= 0 because lddr moves bc bytes
         ex      (sp), hl        ; store source, restore destination
         ex      de, hl          ; HL = destination + offset + 1
@@ -287,8 +223,8 @@ desc9   ld      a, b            ; save b (byte reading) on a
         pop     hl              ; restore source address (compressed data)
         ld      b, a            ; restore b register
         inc     e               ; prepare test of end of file
-        jr      desc4           ; jump to main loop
-desca   ld      a, scrh
+        jr      desc5           ; jump to main loop
+descb   ld      a, scrh
         ld      (upba2-1), a
         ld      a, scrw
         ld      (upba3-1), a
@@ -297,7 +233,16 @@ desca   ld      a, scrh
         ld      (upba7+1), a
         ld      bc, $5810-scrw
         ld      hl, $4010-scrw
-upba1   exx
+upba1
+      IF  machine=1
+        ld      a, (port)
+        xor     b
+        ld      b, a
+        and     $80
+        xor     h
+        ld      h, a
+      ENDIF
+        exx
       IF  tmode=3
         xor     a
         ld      (upba4+1), a
@@ -569,7 +514,16 @@ del6    ld      a, c
       ENDIF
 
 update_partial
-        ld      hl, $5bff
+      IF  machine=1
+        jr      uppa3
+        ld      a, uppa3-update_partial-2&$ff
+        ld      (update_partial+1), a
+uppa1   ld      l, 0
+uppa2   ld      c, 0
+        jr      uppa5
+      ENDIF
+
+uppa3   ld      hl, $5bff
         ld      a, (hl)
         dec     l
         ld      c, (hl)
@@ -577,7 +531,28 @@ update_partial
         jr      c, draw_sprites
 
 ;Partial background update
-uppa1   ld      b, a
+        ld      (hl), l
+        ld      l, a
+      IF  machine=1
+        ld      h, c
+        ld      bc, $7ffd
+        ld      a, (port)
+        rla
+        ld      e, $18
+        jr      c, uppa4
+        ld      e, $17
+uppa4   out     (c), e
+        ld      (update_partial+1), a
+        ld      a, l
+        ld      (uppa1+1), a
+        ld      a, h
+        ld      (uppa2+1), a
+        ld      a, e
+        xor     $07
+        out     (c), a
+        ld      c, h
+uppa5   ld      a, l
+      ENDIF
         and     $0f
         inc     a
         ld      (upba3-1), a
@@ -586,7 +561,7 @@ uppa1   ld      b, a
         sub     $bf
         ld      (upba6+1), a
         ld      (upba7+1), a
-        ld      a, b
+        ld      a, l
         rlca
         rlca
         rlca
@@ -601,7 +576,6 @@ uppa1   ld      b, a
         rl      b
         rla
         rl      b
-        ld      (hl), l
         rl      c
         xor     c
         and     %11100001
