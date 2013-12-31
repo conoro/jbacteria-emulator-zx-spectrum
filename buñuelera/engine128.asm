@@ -1,11 +1,3 @@
-; 5b00      numero de pantalla a pintar (1 byte)
-; 5b01-5b96 tiles (150 bytes)
-; 5b97-5bfd libre (103 bytes)
-; 5bfe-5bff coord repintado (2 bytes)
-; 5c00-5c3f sprites (64 bytes)
-; 5c40-5c4f balas (16 bytes) no implementado
-; 5c50-5d00 tabla (176 bytes) 4 rotaciones
-; 5c50-5db0 tabla (352 bytes) 8 rotaciones
         include define.asm
         DEFINE  mapw  12              ; map width is 12
         DEFINE  maph  2               ; map height is 2, our demo has 12x2 screens
@@ -148,7 +140,7 @@
         org     staspr+final-mapend-$
 staspr  defb    $ff, $ff, $ff
 do_sprites
-        ld      (drawi+1&$ffff), sp
+        ld      (drawj+1&$ffff), sp
         ld      hl, flag&$ffff
         inc     (hl)
         xor     a
@@ -159,108 +151,25 @@ do1     cp      (hl)
         ld      a, (port&$ffff)
         xor     $80
         ld      (port&$ffff), a
-        ld      a, $1f
-        jp      m, do15
         ld      a, $10
-do15    out     (c), a
-do2     jr      delete_sprites
-do3     ld      a, delete_sprites-2-do2&$ff
-        ld      (do2+1), a
+        jr      z, do2
+        ld      a, $1f
+do2     out     (c), a
+do3     jr      update_complete
+        ld      a, update_complete-2-do3&$ff
+        ld      (do3+1), a
         jp      draw_sprites&$ffff
-
-delete_sprites
-        ld      sp, 0
-        pop     bc
-        ld      ixl, b
-        inc     b
-      IF smooth=0
-        jr      z, update_complete
-      ELSE
-        jp      z, update_complete
-      ENDIF
-del1    pop     hl
-del2    pop     bc
-        ld      a, c
-        and     %00001100
-        jr      z, del5
-        jp      po, del4
-del3    updremove
-        pop     de
-        dec     h
-        ld      (hl), e
-        inc     l
-        ld      (hl), d
-        inc     l
-        pop     de
-        ld      (hl), e
-      IF smooth=1
-        updremove
-      ENDIF
-        dec     h
-        ld      (hl), d
-        dec     l
-        pop     de
-        ld      (hl), e
-        dec     l
-        ld      (hl), d
-        djnz    del3
-        jr      del6
-del4    updremove
-        pop     de
-        dec     h
-        ld      (hl), e
-        inc     l
-        ld      (hl), d
-      IF smooth=1
-        updremove
-      ENDIF
-        dec     h
-        pop     de
-        ld      (hl), e
-        dec     l
-        ld      (hl), d
-        djnz    del4
-        jr      del6
-del5    updremove
-        pop     de
-        dec     h
-        ld      (hl), e
-      IF smooth=1
-        updremove
-      ENDIF
-        dec     h
-        ld      (hl), d
-        djnz    del5
-del6    ld      a, c
-        cpl
-        and     $03
-        add     a, l
-        sub     2
-        ld      l, a
-        dec     ixl
-      IF smooth=0
-        jr      nz, del2
-      ELSE
-        jp      nz, del2
-      ENDIF
-        pop     bc
-        ld      ixl, b
-        inc     b
-      IF smooth=0
-        jr      nz, del1
-      ELSE
-        jp      nz, del1
-      ENDIF
 
 ;Complete background update
 update_complete
         ld      a, (port)
         rla
-        jp      nc, draw_sprites&$ffff
+        jp      nc, delete_sprites&$ffff
         ld      hl, $5b00
         ld      a, (hl)
-        cp      c
+        inc     a
         jp      z, update_partial&$ffff
+        ld      bc, $00ff
         ld      (hl), c
         ld      de, map&$ffff
         ld      hl, mapend+$ff&$ffff
@@ -270,19 +179,14 @@ desc1   sbc     hl, bc
         ex      de, hl
         inc     de
         dec     a
-        jp      p, desc1
-
+        jr      nz, desc1
         ld      bc, $7ffd
-        ld      a, $18
-        out     (c), a
-        xor     a
-        ld      (do2+1), a
-        ld      sp, (drawi+1&$ffff)
-        ld      a, $1f
-        out     (c), a
-        
+        ld      de, $1f18
+        out     (c), e
+        ld      (do3+1), a
+        out     (c), d
         ld      de, DMAP_BUFFER+149
-        ld      b, $80          ; marker bit
+        inc     b
 desc2   ld      a, 256 >> DMAP_BITSYMB
 desc3   call    gbit3&$ffff     ; load DMAP_BITSYMB bits (literal)
         jr      nc, desc3
@@ -340,9 +244,7 @@ desca   ld      a, scrh
         ld      (upba2-1), a
         ld      a, scrw
         ld      (upba3-1), a
-        add     a, a
-        cpl
-        sub     $bf
+        ld      a, $40-scrw*2
         ld      (upba6+1&$ffff), a
         ld      (upba7+1&$ffff), a
         ld      bc, $5810-scrw
@@ -521,7 +423,7 @@ upba8   add     hl, de
         ex      af, af'
         dec     a
         jp      nz, upba2
-        jr      draw_sprites
+        jp      draw_sprites
 
 ;Partial background update
 uppa1   ld      b, a
@@ -574,6 +476,90 @@ update_partial
         ld      c, (hl)
         sub     c
         jr      nc, uppa1
+
+delete_sprites
+        ld      sp, 0
+        pop     bc
+        ld      ixl, b
+        inc     b
+      IF smooth=0
+        jr      z, draw_sprites
+      ELSE
+        jp      z, draw_sprites
+      ENDIF
+del1    pop     hl
+del2    pop     bc
+        ld      a, c
+        and     %00001100
+        jr      z, del5
+        jp      po, del4
+del3    updremove
+        pop     de
+        dec     h
+        ld      (hl), e
+        inc     l
+        ld      (hl), d
+        inc     l
+        pop     de
+        ld      (hl), e
+      IF smooth=1
+        updremove
+      ENDIF
+        dec     h
+        ld      (hl), d
+        dec     l
+        pop     de
+        ld      (hl), e
+        dec     l
+        ld      (hl), d
+        djnz    del3
+        jr      del6
+del4    updremove
+        pop     de
+        dec     h
+        ld      (hl), e
+        inc     l
+        ld      (hl), d
+      IF smooth=1
+        updremove
+      ENDIF
+        dec     h
+        pop     de
+        ld      (hl), e
+        dec     l
+        ld      (hl), d
+        djnz    del4
+        jr      del6
+del5    updremove
+        pop     de
+        dec     h
+        ld      (hl), e
+      IF smooth=1
+        updremove
+      ENDIF
+        dec     h
+        ld      (hl), d
+        djnz    del5
+del6    ld      a, c
+        cpl
+        and     $03
+        add     a, l
+        sub     2
+        ld      l, a
+        dec     ixl
+      IF smooth=0
+        jr      nz, del2
+      ELSE
+        jp      nz, del2
+      ENDIF
+        pop     bc
+        ld      ixl, b
+        inc     b
+      IF smooth=0
+        jr      nz, del1
+      ELSE
+        jp      nz, del1
+      ENDIF
 
 draw_sprites
         ld      a, 7
@@ -677,9 +663,9 @@ draw8   ld      a, 0
         rra
         or      l
         ld      l, a
-      ld      a, (port)
-      or      h
-      ld      h, a
+        ld      a, (port)
+        or      h
+        ld      h, a
         ld      a, e
         ld      (drawg+1&$ffff), a
 draw9   ex      af, af'
@@ -843,10 +829,10 @@ drawh   ld      a, 0
         ld      a, (port)
         rla
         ld      a, $18
-        jr      c, drawhh
+        jr      c, drawi
         ld      a, $10
-drawhh  out     (c), a
-drawi   ld      sp, 0
+drawi   out     (c), a
+drawj   ld      sp, 0
         ret
 
     IF clipup=1
@@ -872,9 +858,9 @@ braw2   ld      hl, (lookt&$ffff)
         rra
         or      l
         ld      l, a
-      ld      a, (port)
-      or      h
-      ld      h, a
+        ld      a, (port)
+        or      h
+        ld      h, a
         ld      a, e
         ex      de, hl
 braw3   ex      af, af'
@@ -965,9 +951,9 @@ craw2   ld      hl, (lookt+$100&$ffff)
         rra
         or      l
         ld      l, a
-      ld      a, (port)
-      or      h
-      ld      h, a
+        ld      a, (port)
+        or      h
+        ld      h, a
         ld      a, e
         ld      (drawg+1), a
 craw3   ex      af, af'
@@ -1147,35 +1133,25 @@ ini1    ld      sp, hl
         ld      ($5b00), a
         ld      ($5bfe), a
         xor     a
-        ld      (do2+1), a
+        ld      (do3+1), a
         ld      (port), a
         ld      hl, ini3&$ffff
         ld      de, $4000
-        ld      c, inif-ini3
+        ld      c, ini4-ini3
         ldir
         ld      hl, $db00
         call    $4000
-;        ld      hl, $ffff
-;        ld      ($feff), hl
-;        ld      ($7ffe), hl
-;        ld      bc, $7ffd
-;        ld      a, $17
-;        out     (c), a
-;        ld      ($fffe), hl
-;        ld      a, $10
-;        out     (c), a
         ld      a, $fe
         ld      i, a
         im      2
 ini2    ld      sp, 0
         ret
-
-ini3    ld      bc, $ff+ini3-inif&$ff
+ini3    ld      bc, $ff+ini3-ini4&$ff
         ldir
         ld      bc, $7ffd
         ld      a, $17
         out     (c), a
-        ld      bc, $ff+ini3-inif&$ff
+        ld      bc, $ff+ini3-ini4&$ff
         ex      de, hl
         dec     e
         dec     l
@@ -1183,14 +1159,14 @@ ini3    ld      bc, $ff+ini3-inif&$ff
         inc     e
         inc     l
         ex      de, hl
-        ld      c, $ff+ini3-inif&$ff
+        ld      c, $ff+ini3-ini4&$ff
         add     hl, bc
         ld      bc, $7ffd
         ld      a, $10
         out     (c), a
         jr      nc, ini3
         ret
-inif
+ini4
 
       IF DMAP_BITHALF=1
 gbit1   sub     $80 - (1 << DMAP_BITSYMB - 2)
@@ -1229,5 +1205,3 @@ frame   jp      do_sprites
 flag    defb    0
 tinit   jp      init
         defb    $18
-
-

@@ -29,8 +29,8 @@ int main(int argc, char *argv[]){
   fi= fopen("main.bin", "rb");
   fread(mem+0x8000, 1, 0x8000, fi);
   fclose(fi);
-//  fi= fopen("engine48.bin", "rb");
-  fi= fopen("engine128.bin", "rb");
+  fi= fopen("engine48.bin", "rb");
+//  fi= fopen("engine128.bin", "rb");
   fseek(fi, 0, SEEK_END);
   scode= ftell(fi);
   fseek(fi, scode&1, SEEK_SET);
@@ -84,7 +84,7 @@ int main(int argc, char *argv[]){
     if( !subset[sum][nsprites] )
       while( !subset[--sum][nsprites] );
 
-    printf(" %d %d %x \n", i, nsprites, sum*2);
+//    printf(" %d %d %x \n", i, nsprites, sum*2);
 
     nnsprites= nsprites;
     for ( j= sum; j > 0; j-- )
@@ -92,7 +92,7 @@ int main(int argc, char *argv[]){
         while ( !subset[j][k] ){
           if( j >= sblocks[k] ){
             j-= sblocks[k];
-            printf("[%d,%d]--->%x\n", j, k, sblocks[k]*2);
+//            printf("[%d,%d]--->%x\n", j, k, sblocks[k]*2);
             mem[0xfe00|sorder[k]<<1]= blocks[i].addr&0xff;
             mem[0xfe01|sorder[k]<<1]= blocks[i].addr>>8;
             for ( l= 0; l<sblocks[k]; l++ )
@@ -110,9 +110,9 @@ int main(int argc, char *argv[]){
             k--;
         }
     nsprites= nnsprites;
-    for ( l= 0; l<64; l++ )
+/*    for ( l= 0; l<64; l++ )
       printf("%x,", sblocks[l]*2);
-    printf(" %d\n", nblocks);
+    printf(" %d\n", nblocks);*/
 
   }
   mem[0xf000]= 0x00;
@@ -134,10 +134,10 @@ int main(int argc, char *argv[]){
   fwrite(mem+0x4000, 1, 0x8000, fi);
   fclose(fi);
 
-  for ( i= 0; i<0x40; i++ )
+/*  for ( i= 0; i<0x40; i++ )
     printf("%4x,", saccum[i]);
 
-/*  printf("%x\n", nsprites);
+  printf("%x\n", nsprites);
   for ( i= 0; i<nsprites; i++ )
     printf("%x,", sblocks[i]);
   printf("\n%d, %d, %d, %d ", longl[0], longl[1], longl[2], longl[3]);

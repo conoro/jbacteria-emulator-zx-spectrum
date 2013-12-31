@@ -7,8 +7,8 @@ rem \emuscriptoria\sjasmplus dzx7b_rcs.asm
 rem echo  org     $fc20           >  deforg.asm
 rem echo  output  dzx7b_rcs_1.bin >> deforg.asm
 rem \emuscriptoria\sjasmplus dzx7b_rcs.asm
-rem \emuscriptoria\sjasmplus engine48.asm
-\emuscriptoria\sjasmplus engine128.asm
+\emuscriptoria\sjasmplus engine48.asm
+rem \emuscriptoria\sjasmplus engine128.asm
 \emuscriptoria\sjasmplus main.asm
 AllocBu dummy
 rem \emuscriptoria\desprot\gentape engine48.tap basic 'engine48' 0 engine48.bin
