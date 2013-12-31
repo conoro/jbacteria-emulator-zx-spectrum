@@ -1,4 +1,3 @@
-; quitar ld sp, de update_back
         include define.asm
         DEFINE  mapw  12              ; map width is 12
         DEFINE  maph  2               ; map height is 2, our demo has 12x2 screens
@@ -149,8 +148,8 @@ update_complete
         jp      z, update_partial&$ffff
         ld      b, l
         ld      (hl), $ff
-        ld      de, map&$ffff
         ld      hl, mapend+syhi-1&$ffff
+        ld      de, map&$ffff
 desc1   sbc     hl, bc
         ex      de, hl
         ld      c, (hl)
@@ -158,8 +157,8 @@ desc1   sbc     hl, bc
         inc     de
         dec     a
         jr      nz, desc1
-        ld      de, DMAP_BUFFER+149
         ld      b, $80          ; marker bit
+        ld      de, DMAP_BUFFER+149
 desc2   ld      a, 256 >> DMAP_BITSYMB
 desc3   call    gbit3&$ffff     ; load DMAP_BITSYMB bits (literal)
         jr      nc, desc3

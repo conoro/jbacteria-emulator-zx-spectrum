@@ -6,6 +6,8 @@
         DEFINE  DMAP_BITSYMB 6        ; these 3 constants are for the map decompressor
         DEFINE  DMAP_BITHALF 1        ; BITSYMB and BITHALF declares 5.5 bits per symbol (16 tiles with 5 bits and 32 with 6 bits)
         DEFINE  DMAP_BUFFER  $5b01    ; BUFFER points to where is decoded the uncompressed screen
+        DEFINE  sylo  $66
+        DEFINE  syhi  $c0
         DEFINE  smooth  1
         DEFINE  clipup  1
         DEFINE  clipdn  1
@@ -90,6 +92,7 @@
 .upd
       ENDM
 
+    IF  machine=1
       MACRO cellprint addition
         pop     de
         ld      (hl), e
@@ -129,6 +132,31 @@
         ld      de, addition
         add     hl, de
       ENDM
+    ELSE
+      MACRO cellprint addition
+        pop     de
+        ld      (hl), e
+        inc     h
+        ld      (hl), d
+        inc     h
+        pop     de
+        ld      (hl), e
+        inc     h
+        ld      (hl), d
+        inc     h
+        pop     de
+        ld      (hl), e
+        inc     h
+        ld      (hl), d
+        inc     h
+        pop     de
+        ld      (hl), e
+        inc     h
+        ld      (hl), d
+        ld      de, addition
+        add     hl, de
+      ENDM
+    ENDIF
 
       MACRO ndjnz addr
         defb    $10, addr-.ndj
@@ -136,11 +164,12 @@
       ENDM
 
 ; Paolo Ferraris' shortest loader, then we move all the code to $8000
-        output  engine128.bin
+        output  engine.bin
         org     staspr+final-mapend-$
 staspr  defb    $ff, $ff, $ff
 do_sprites
         ld      (drawj+1&$ffff), sp
+      IF  machine=1
         ld      hl, flag&$ffff
         inc     (hl)
         xor     a
@@ -156,22 +185,42 @@ do1     cp      (hl)
         ld      a, $1f
 do2     out     (c), a
 do3     jr      update_complete
-        ld      a, update_complete-2-do3&$ff
+      ELSE
+        ld      bc, syhi | sylo<<8
+do1     in      a, ($ff)
+        cp      b
+        jp      nz, do1
+        ld      b, 9
+do2     in      a, ($ff)
+        cp      c
+do3     jr      z, do4
+        djnz    do2
+        jr      do1
+      ENDIF
+do4     ld      a, update_complete-2-do3&$ff
         ld      (do3+1), a
         jp      draw_sprites&$ffff
 
 ;Complete background update
 update_complete
+      IF  machine=1
         ld      a, (port)
         rla
         jp      nc, delete_sprites&$ffff
+      ENDIF
         ld      hl, $5b00
         ld      a, (hl)
         inc     a
         jp      z, update_partial&$ffff
+      IF  machine=1
         ld      bc, $00ff
         ld      (hl), c
         ld      hl, mapend+$ff&$ffff
+      ELSE
+        ld      b, l
+        ld      (hl), $ff
+        ld      hl, mapend+syhi-1&$ffff
+      ENDIF
         ld      de, map&$ffff
 desc1   sbc     hl, bc
         ex      de, hl
@@ -180,12 +229,16 @@ desc1   sbc     hl, bc
         inc     de
         dec     a
         jr      nz, desc1
+      IF  machine=1
         ld      bc, $7ffd
         ld      de, $1f18
         out     (c), e
         ld      (do3+1), a
         out     (c), d
         inc     b
+      ELSE
+        ld      b, $80          ; marker bit
+      ENDIF
         ld      de, DMAP_BUFFER+149
 desc2   ld      a, 256 >> DMAP_BITSYMB
 desc3   call    gbit3&$ffff     ; load DMAP_BITSYMB bits (literal)
@@ -245,8 +298,8 @@ desca   ld      a, scrh
         ld      a, scrw
         ld      (upba3-1), a
         ld      a, $40-scrw*2
-        ld      (upba6+1&$ffff), a
-        ld      (upba7+1&$ffff), a
+        ld      (upba6+1), a
+        ld      (upba7+1), a
         ld      bc, $5810-scrw
         ld      hl, $4010-scrw
 upba1   exx
@@ -378,6 +431,7 @@ upba5   ld      sp, 0
         ld      l, c
         pop     bc
         ld      (hl), c
+      IF  machine=1
         set     7, h
         ld      (hl), c
         inc     l
@@ -394,6 +448,16 @@ upba5   ld      sp, 0
         ld      (hl), b
         res     7, h
         ld      (hl), b
+      ELSE
+        inc     l
+        ld      (hl), b
+        ld      bc, $001f
+        add     hl, bc
+        pop     bc
+        ld      (hl), c
+        inc     l
+        ld      (hl), b
+      ENDIF
         ld      bc, $ffe1
         add     hl, bc
         ld      b, h
@@ -416,7 +480,7 @@ upba7   ld      de, 0
         ld      a, l
         add     a, a
         jr      nc, upba8
-        jp      p, upba8&$ffff
+        jp      p, upba8
         ld      d, 7
 upba8   add     hl, de
         exx
@@ -663,9 +727,11 @@ draw8   ld      a, 0
         rra
         or      l
         ld      l, a
+      IF  machine=1
         ld      a, (port)
         or      h
         ld      h, a
+      ENDIF
         ld      a, e
         ld      (drawg+1&$ffff), a
 draw9   ex      af, af'
@@ -824,6 +890,7 @@ drawg   ld      a, 0
 drawh   ld      a, 0
         dec     a
         jp      p, draw1
+      IF  machine=1
         ld      (delete_sprites+1), bc
         ld      bc, $7ffd
         ld      a, (port)
@@ -833,6 +900,10 @@ drawh   ld      a, 0
         ld      a, $10
 drawi   out     (c), a
 drawj   ld      sp, 0
+      ELSE
+drawj   ld      sp, 0
+        ld      (delete_sprites+1), bc
+      ENDIF
         ret
 
     IF clipup=1
@@ -858,9 +929,11 @@ braw2   ld      hl, (lookt&$ffff)
         rra
         or      l
         ld      l, a
+      IF  machine=1
         ld      a, (port)
         or      h
         ld      h, a
+      ENDIF
         ld      a, e
         ex      de, hl
 braw3   ex      af, af'
@@ -951,9 +1024,11 @@ craw2   ld      hl, (lookt+$100&$ffff)
         rra
         or      l
         ld      l, a
+      IF  machine=1
         ld      a, (port)
         or      h
         ld      h, a
+      ENDIF
         ld      a, e
         ld      (drawg+1), a
 craw3   ex      af, af'
@@ -1132,6 +1207,7 @@ ini1    ld      sp, hl
         jp      p, ini1
         ld      ($5b00), a
         ld      ($5bfe), a
+      IF  machine=1
         xor     a
         ld      (do3+1), a
         ld      (port), a
@@ -1167,6 +1243,38 @@ ini3    ld      bc, $ff+ini3-ini4&$ff
         jr      nc, ini3
         ret
 ini4
+      ELSE
+        ld      sp, $50a0
+        ld      de, sylo | syhi<<8
+        ld      h, e
+        ld      l, e
+        ld      b, 10
+ini2    push    de
+        djnz    ini2
+        ld      b, 6
+ini3    push    hl
+        djnz    ini3
+        ld      sp, $51a0
+        push    de
+        push    de
+        push    de
+        ld      e, d
+        ld      b, 13
+ini4    push    de
+        djnz    ini4
+        ld      sp, $52a0
+        ld      b, 16
+ini5    push    de
+        djnz    ini5
+        ld      sp, $5aa0
+        ld      b, 16
+ini6    push    de
+        djnz    ini6
+        ld      a, do4-2-do3
+        ld      (do3+1), a
+ini7    ld      sp, 0
+        ret
+      ENDIF
 
       IF DMAP_BITHALF=1
 gbit1   sub     $80 - (1 << DMAP_BITSYMB - 2)
