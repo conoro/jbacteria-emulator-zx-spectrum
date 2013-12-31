@@ -95,6 +95,18 @@
 staspr  defb    $ff, $ff, $ff
 do_sprites
         ld      (drawj+1&$ffff), sp
+      IF  machine=0
+        ld      bc, syhi | sylo<<8
+do1     in      a, ($ff)
+        cp      b
+        jp      nz, do1
+        ld      b, 9
+do2     in      a, ($ff)
+        cp      c
+do3     jr      z, do5
+        djnz    do2
+        jr      do1
+      ENDIF
       IF  machine=1
         ld      hl, flag&$ffff
         inc     (hl)
@@ -111,24 +123,24 @@ do1     cp      (hl)
         ld      a, $17
 do2     out     (c), a
 do3     jr      update_complete
-      ELSE
-        ld      bc, syhi | sylo<<8
-do1     in      a, ($ff)
-        cp      b
-        jp      nz, do1
-        ld      b, 9
-do2     in      a, ($ff)
-        cp      c
-do3     jr      z, do4
-        djnz    do2
-        jr      do1
       ENDIF
-do4     ld      a, update_complete-2-do3&$ff
-        ld      (do3+1), a
-        jp      draw_sprites&$ffff
+      IF  machine=2
+        ld      hl, flag&$ffff
+        inc     (hl)
+        xor     a
+        ei
+do1     cp      (hl)
+        jr      nz, do1
+do3     jr      update_complete
+      ENDIF
 do5     ld      a, update_complete-2-do3&$ff
         ld      (do3+1), a
+        jp      draw_sprites&$ffff
+      IF  machine=1
+do4     ld      a, update_complete-2-do3&$ff
+        ld      (do3+1), a
         jp      descb
+      ENDIF
 
 ;Complete background update
 update_complete
@@ -136,14 +148,14 @@ update_complete
         ld      a, (hl)
         inc     a
         jp      z, delete_sprites&$ffff
-      IF  machine=1
-        ld      bc, $00ff
-        ld      (hl), c
-        ld      hl, mapend+$fe&$ffff
-      ELSE
+      IF  machine=0
         ld      b, l
         ld      (hl), $ff
         ld      hl, mapend+syhi-1&$ffff
+      ELSE
+        ld      bc, $00ff
+        ld      (hl), c
+        ld      hl, mapend+$fe&$ffff
       ENDIF
         ld      de, map&$ffff
 desc1   sbc     hl, bc
@@ -161,7 +173,7 @@ desc1   sbc     hl, bc
         jr      c, desc2
         ld      e, $17
 desc2   out     (c), e
-        ld      a, do5-2-do3
+        ld      a, do4-2-do3
         ld      (do3+1), a
         ld      a, e
         xor     $07
@@ -1177,6 +1189,38 @@ ini1    ld      sp, hl
         jp      p, ini1
         ld      ($5b00), a
         ld      ($5bfe), a
+      IF  machine=0
+        ld      sp, $50a0
+        ld      de, sylo | syhi<<8
+        ld      h, e
+        ld      l, e
+        ld      b, 10
+ini2    push    de
+        djnz    ini2
+        ld      b, 6
+ini3    push    hl
+        djnz    ini3
+        ld      sp, $51a0
+        push    de
+        push    de
+        push    de
+        ld      e, d
+        ld      b, 13
+ini4    push    de
+        djnz    ini4
+        ld      sp, $52a0
+        ld      b, 16
+ini5    push    de
+        djnz    ini5
+        ld      sp, $5aa0
+        ld      b, 16
+ini6    push    de
+        djnz    ini6
+        ld      a, do5-2-do3
+        ld      (do3+1), a
+ini7    ld      sp, 0
+        ret
+      ENDIF
       IF  machine=1
         xor     a
         ld      (do3+1), a
@@ -1213,35 +1257,13 @@ ini3    ld      bc, $ff+ini3-ini4&$ff
         jr      nc, ini3
         ret
 ini4
-      ELSE
-        ld      sp, $50a0
-        ld      de, sylo | syhi<<8
-        ld      h, e
-        ld      l, e
-        ld      b, 10
-ini2    push    de
-        djnz    ini2
-        ld      b, 6
-ini3    push    hl
-        djnz    ini3
-        ld      sp, $51a0
-        push    de
-        push    de
-        push    de
-        ld      e, d
-        ld      b, 13
-ini4    push    de
-        djnz    ini4
-        ld      sp, $52a0
-        ld      b, 16
-ini5    push    de
-        djnz    ini5
-        ld      sp, $5aa0
-        ld      b, 16
-ini6    push    de
-        djnz    ini6
-        ld      a, do4-2-do3
+      ENDIF
+      IF  machine=2
+        dec     a
+        ld      i, a
+        xor     a
         ld      (do3+1), a
+        im      2
 ini7    ld      sp, 0
         ret
       ENDIF

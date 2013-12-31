@@ -12,9 +12,15 @@ copy define.asm define2.asm
 echo    DEFINE  machine 0 >> define.asm
 echo    DEFINE  machine 1 >> define1.asm
 echo    DEFINE  machine 2 >> define2.asm
+
 \emuscriptoria\sjasmplus engine.asm
+
 rem copy define1.asm define.asm
 rem \emuscriptoria\sjasmplus engine.asm
+
+rem copy define2.asm define.asm
+rem \emuscriptoria\sjasmplus engine.asm
+
 \emuscriptoria\sjasmplus main.asm
 AllocBu dummy
 rem \emuscriptoria\desprot\gentape engine48.tap basic 'engine48' 0 engine48.bin
