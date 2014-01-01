@@ -13,7 +13,7 @@
         DEFINE  clipdn  1
         DEFINE  safeco  1
         DEFINE  initregs
-        DEFINE  port    $5b97
+        DEFINE  port    $5bf8
         DEFINE  sprites $fe00
         DEFINE  tiladdr $5c50
         DEFINE  enems   $5c00

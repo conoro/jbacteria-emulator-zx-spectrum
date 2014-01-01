@@ -1,15 +1,16 @@
 #include <stdio.h>
 #include <stdlib.h>
-FILE *fi;
+FILE *fi, *fi2;
 unsigned char mem[0x10000], sprites[0x8000], sblocks[0x81], sorder[0x81], subset[0x1200][0x81],
   snaheader[0x1b]= {0x3f, 0x58, 0x27, 0x9b, 0x36, 0x96, 0xb9, 0x1e, 0xd5, 0x02, 0xf0, 0x44, 0xd5,
                     0x00, 0x00, 0x3a, 0x5c, 0x00, 0xf0, 0x00, 0x73, 0x45, 0x01, 0x00, 0xf0, 0x01, 0};
-unsigned saccum[0x81], stiles, ssprites, scode, smooth, nblocks, nsprites, nnsprites, sum, tmp;
+unsigned  saccum[0x81], stiles, ssprites, scode, scode1, scode2, smooth, nblocks, nsprites,
+          nnsprites, sum, tmp, init0, init1, frame0, frame1;
 int longl[4], i, j, k, l;
 struct blockentry {
   int len;
   unsigned addr;
-} blocks[4]=  { { 99>>1, 0x5b98}
+} blocks[4]=  { { 99>>1, 0x5b97}
               , {     0,      0}
               , {     0,      0}
               , {     0,      0}};
@@ -29,13 +30,15 @@ int main(int argc, char *argv[]){
   fi= fopen("main.bin", "rb");
   fread(mem+0x8000, 1, 0x8000, fi);
   fclose(fi);
-  fi= fopen("engine.bin", "rb");
+  fi= fopen("engine0.bin", "rb");
   fseek(fi, 0, SEEK_END);
   scode= ftell(fi);
   fseek(fi, scode&1, SEEK_SET);
   scode&= 0xfffe;
   fread(mem+0x10000-scode, 1, 0x1000, fi);
   fclose(fi);
+  init0= mem[0xfffd] | mem[0xfffe]<<8;
+  frame0= mem[0xfff2] | mem[0xfff3]<<8;
   smooth= mem[0xfdff]&1;
   fi= fopen("tiles.bin", "rb");
   stiles= fread(mem+0x5c50, 1, 0x2400, fi);
@@ -121,7 +124,64 @@ int main(int argc, char *argv[]){
   fwrite(snaheader, 1, 0x1b, fi);
   fwrite(mem+0x4000, 1, 0xc000, fi);
   fclose(fi);
-  fi= fopen("dump128.sna", "wb+");
+  fi= fopen("map_compressed.bin", "rb");
+  fseek(fi, 0, SEEK_END);
+  tmp= ftell(fi);
+  fclose(fi);
+  fi= fopen("block1.bin", "wb+");
+  fwrite(mem+0x5b97, 1, 0x2469, fi);
+  if( smooth )
+    fwrite(mem+0xfca0, 1, 0x360, fi),
+    fwrite(mem+0x10000-scode, 1, scode-0x3df-tmp, fi);
+  else
+    fwrite(mem+0xfd50, 1, 0x130, fi),
+    fwrite(mem+0xfeff, 1, 0x101, fi),
+    fwrite(mem+0x10000-scode, 1, scode-0x2b0-tmp, fi);
+  fi2= fopen("engine1.bin", "rb");
+  fseek(fi2, 0, SEEK_END);
+  scode1= ftell(fi2);
+  fseek(fi2, scode1&1, SEEK_SET);
+  scode1&= 0xfffe;
+  fread(mem+0x10000-scode1, 1, 0x1000, fi2);
+  fclose(fi2);
+  init1= mem[0xfffd] | mem[0xfffe]<<8;
+  frame1= mem[0xfff2] | mem[0xfff3]<<8;
+  if( smooth )
+    fwrite(mem+0x10000-scode1, 1, scode1-0x3df-tmp, fi);
+  else
+    fwrite(mem+0x10000-scode1, 1, scode1-0x2b0-tmp, fi);
+  fi2= fopen("engine2.bin", "rb");
+  fseek(fi2, 0, SEEK_END);
+  scode2= ftell(fi2);
+  fseek(fi2, scode2&1, SEEK_SET);
+  scode2&= 0xfffe;
+  fread(mem+0x10000-scode2, 1, 0x1000, fi2);
+  fclose(fi2);
+  if( smooth )
+    fwrite(mem+0x10000-scode2, 1, scode2-0x3df-tmp, fi),
+    scode-= 0x3df+tmp,
+    scode1-= 0x3df+tmp,
+    scode2-= 0x3df+tmp;
+  else
+    fwrite(mem+0x10000-scode2, 1, scode2-0x2b0-tmp, fi),
+    scode-= 0x2b0+tmp,
+    scode1-= 0x2b0+tmp,
+    scode2-= 0x2b0+tmp;
+  fclose(fi);
+  fi= fopen("defload.asm", "wb+");
+  fprintf(fi, "        DEFINE  smooth  %d\n"
+              "        DEFINE  maplen  %d\n"
+              "        DEFINE  codel0  %d\n"
+              "        DEFINE  codel1  %d\n"
+              "        DEFINE  codel2  %d\n"
+              "        DEFINE  init0   %d\n"
+              "        DEFINE  init1   %d\n"
+              "        DEFINE  frame0  %d\n"
+              "        DEFINE  frame1  %d\n", smooth, tmp, scode, scode1, scode2, init0, init1, frame0, frame1);
+  fclose(fi);
+
+
+/*  fi= fopen("dump128.sna", "wb+");
   fwrite(snaheader, 1, 0x1b, fi);
   fwrite(mem+0x4000, 1, 0xc000, fi);
   snaheader[0]= 0x00;
@@ -131,7 +191,7 @@ int main(int argc, char *argv[]){
   fwrite(snaheader, 1, 4, fi);
   fwrite(mem+0x4000, 1, 0xc000, fi);
   fwrite(mem+0x4000, 1, 0x8000, fi);
-  fclose(fi);
+  fclose(fi);*/
 
 /*  for ( i= 0; i<0x40; i++ )
     printf("%4x,", saccum[i]);
