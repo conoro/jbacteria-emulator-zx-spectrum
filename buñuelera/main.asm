@@ -39,7 +39,7 @@
 
         org     $8000
         output  main.bin
-        ld      sp, $ef00
+        ld      sp, $e0d2-$1a0
         ld      hl, ene0
         ld      de, enems
         ld      bc, 32

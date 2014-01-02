@@ -3,9 +3,9 @@
 FILE *fi, *fi2;
 unsigned char mem[0x10000], sprites[0x8000], sblocks[0x81], sorder[0x81], subset[0x1200][0x81],
   snaheader[0x1b]= {0x3f, 0x58, 0x27, 0x9b, 0x36, 0x96, 0xb9, 0x1e, 0xd5, 0x02, 0xf0, 0x44, 0xd5,
-                    0x00, 0x00, 0x3a, 0x5c, 0x00, 0xf0, 0x00, 0x73, 0x45, 0x01, 0x00, 0xf0, 0x01, 0};
+                    0x00, 0x00, 0x3a, 0x5c, 0x00, 0xf0, 0x00, 0x73, 0x45, 0x01, 0x00, 0x40, 0x01, 0};
 unsigned  saccum[0x81], stiles, ssprites, scode, scode1, scode2, smooth, nblocks, nsprites,
-          nnsprites, sum, tmp, init0, init1, frame0, frame1;
+          nnsprites, sum, tmp, init0, init1, frame0, frame1, point, stasp;
 int longl[4], i, j, k, l;
 struct blockentry {
   int len;
@@ -30,12 +30,25 @@ int main(int argc, char *argv[]){
   fi= fopen("main.bin", "rb");
   fread(mem+0x8000, 1, 0x8000, fi);
   fclose(fi);
+  fi= fopen("engine1.bin", "rb");
+  fseek(fi, 0, SEEK_END);
+  scode1= ftell(fi);
+  fclose(fi);
+  fi= fopen("engine2.bin", "rb");
+  fseek(fi, 0, SEEK_END);
+  scode2= ftell(fi);
+  fclose(fi);
   fi= fopen("engine0.bin", "rb");
   fseek(fi, 0, SEEK_END);
-  scode= ftell(fi);
-  fseek(fi, scode&1, SEEK_SET);
+  stasp= scode= ftell(fi);
+  stasp= stasp<scode1 ? scode1 : stasp;
+  stasp= stasp<scode2 ? scode2 : stasp;
+  stasp= stasp-2&0xfffe;
+  fseek(fi, 0, SEEK_SET);
+  fread(&point, 1, 2, fi);
+  fseek(fi, (scode&1)+2, SEEK_SET);
   scode&= 0xfffe;
-  fread(mem+0x10000-scode, 1, 0x1000, fi);
+  fread(mem+0x10002-scode, 1, 0x1000, fi);
   fclose(fi);
   init0= mem[0xfffd] | mem[0xfffe]<<8;
   frame0= mem[0xfff2] | mem[0xfff3]<<8;
@@ -66,11 +79,19 @@ int main(int argc, char *argv[]){
     blocks[1].addr= 0xff01;
   blocks[2].len= (0x23b0-stiles)>>1;
   blocks[2].addr= 0x5c50+stiles;
-  blocks[3].len= (ssprites+1>>1)-blocks[0].len-blocks[1].len-blocks[2].len;
-  blocks[3].addr= (smooth?0xfc21:0xfd50)-scode-(((ssprites+1>>1)-blocks[0].len-blocks[1].len-blocks[2].len)<<1);
+  blocks[3].len= (ssprites>>1)-blocks[0].len-blocks[1].len-blocks[2].len;
+  stasp= blocks[3].len>0 ? stasp+(blocks[3].len<<1): stasp;
+  blocks[3].addr= 0x10000-stasp;
+  mem[0xffff-stasp]= 0xff;
+  mem[0xfffe-stasp]= 0xff;
+  mem[point]= 0xfffe-stasp&0xff;
+  mem[point+1]= 0xfffe-stasp>>8;
   nblocks= blocks[3].len>0 ? 4 : 3;
   while ( !sprites[--i] );
   nsprites= ++i;
+
+    printf(" %x %x \n", point, 0xfffe-stasp);
+
   for ( i= 0; i < nblocks; i++ ){
     sum= blocks[i].len;
     for ( j= 0; j <= nsprites; j++ )
@@ -85,8 +106,6 @@ int main(int argc, char *argv[]){
       }
     if( !subset[sum][nsprites] )
       while( !subset[--sum][nsprites] );
-
-//    printf(" %d %d %x \n", i, nsprites, sum*2);
 
     nnsprites= nsprites;
     for ( j= sum; j > 0; j-- )
@@ -117,8 +136,8 @@ int main(int argc, char *argv[]){
     printf(" %d\n", nblocks);*/
 
   }
-  mem[0xf000]= 0x00;
-  mem[0xf001]= 0x80;
+  mem[0x4000]= 0x00;
+  mem[0x4001]= 0x80;
   fclose(fi);
   fi= fopen("dump48.sna", "wb+");
   fwrite(snaheader, 1, 0x1b, fi);
@@ -132,10 +151,12 @@ int main(int argc, char *argv[]){
   fwrite(mem+0x5b97, 1, 0x2469, fi);
   if( smooth )
     fwrite(mem+0xfca0, 1, 0x360, fi),
+    fwrite(mem+blocks[3].addr, 1, blocks[3].len, fi),
     fwrite(mem+0x10000-scode, 1, scode-0x3df-tmp, fi);
   else
     fwrite(mem+0xfd50, 1, 0x130, fi),
     fwrite(mem+0xfeff, 1, 0x101, fi),
+    fwrite(mem+blocks[3].addr, 1, blocks[3].len, fi),
     fwrite(mem+0x10000-scode, 1, scode-0x2b0-tmp, fi);
   fi2= fopen("engine1.bin", "rb");
   fseek(fi2, 0, SEEK_END);
@@ -177,7 +198,9 @@ int main(int argc, char *argv[]){
               "        DEFINE  init0   %d\n"
               "        DEFINE  init1   %d\n"
               "        DEFINE  frame0  %d\n"
-              "        DEFINE  frame1  %d\n", smooth, tmp, scode, scode1, scode2, init0, init1, frame0, frame1);
+              "        DEFINE  frame1  %d\n"
+              "        DEFINE  bl3len  %d\n", smooth, tmp, scode, scode1,
+              scode2, init0, init1, frame0, frame1, blocks[3].len);
   fclose(fi);
 
 

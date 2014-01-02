@@ -92,7 +92,8 @@
 ; Paolo Ferraris' shortest loader, then we move all the code to $8000
         output  engine.bin
         org     staspr+final-mapend-$
-staspr  defb    $ff, $ff, $ff
+staspr  defw    draw_sprites+3
+        nop
 do_sprites
         ld      (drawj+1&$ffff), sp
       IF  machine=0
@@ -609,7 +610,7 @@ uppa5   ld      a, l
 
 draw_sprites
         ld      a, 7
-        ld      bc, staspr+1&0xfffe
+        ld      bc, 0
 draw1   ld      (drawh+1&$ffff), a
         add     a, a
         add     a, a
@@ -1278,6 +1279,17 @@ gbit3   rl      b               ; get next bit
         jr      z, gbit2        ; no more bits left?
         adc     a, a            ; put bit in a
         ret
+
+      IF  machine=2
+ini8    ld      c, 5
+ini9    in      a, ($ff)
+        inc     a
+        ret     nz
+        djnz    ini9
+        dec     c
+        jr      nz, ini9
+        ret
+      ENDIF
 
 ; Map file. Generated externally with TmxCompress.c from map.tmx
 map     incbin  map_compressed.bin
