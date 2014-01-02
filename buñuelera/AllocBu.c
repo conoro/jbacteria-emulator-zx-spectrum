@@ -152,39 +152,47 @@ int main(int argc, char *argv[]){
   if( smooth )
     fwrite(mem+0xfca0, 1, 0x360, fi),
     fwrite(mem+blocks[3].addr, 1, blocks[3].len, fi),
-    fwrite(mem+0x10000-scode, 1, scode-0x3df-tmp, fi);
+    fwrite(mem+0x10002-scode, 1, scode-2-0x3df-tmp, fi);
   else
     fwrite(mem+0xfd50, 1, 0x130, fi),
     fwrite(mem+0xfeff, 1, 0x101, fi),
     fwrite(mem+blocks[3].addr, 1, blocks[3].len, fi),
-    fwrite(mem+0x10000-scode, 1, scode-0x2b0-tmp, fi);
+    fwrite(mem+0x10002-scode, 1, scode-2-0x2b0-tmp, fi);
   fi2= fopen("engine1.bin", "rb");
   fseek(fi2, 0, SEEK_END);
   scode1= ftell(fi2);
-  fseek(fi2, scode1&1, SEEK_SET);
+  fseek(fi2, 0, SEEK_SET);
+  fread(&point, 1, 2, fi2);
+  fseek(fi2, (scode1&1)+2, SEEK_SET);
   scode1&= 0xfffe;
-  fread(mem+0x10000-scode1, 1, 0x1000, fi2);
+  fread(mem+0x10002-scode1, 1, 0x1000, fi2);
   fclose(fi2);
   init1= mem[0xfffd] | mem[0xfffe]<<8;
   frame1= mem[0xfff2] | mem[0xfff3]<<8;
+  mem[point]= 0xfffe-stasp&0xff;
+  mem[point+1]= 0xfffe-stasp>>8;
   if( smooth )
-    fwrite(mem+0x10000-scode1, 1, scode1-0x3df-tmp, fi);
+    fwrite(mem+0x10002-scode1, 1, scode1-2-0x3df-tmp, fi);
   else
-    fwrite(mem+0x10000-scode1, 1, scode1-0x2b0-tmp, fi);
+    fwrite(mem+0x10002-scode1, 1, scode1-2-0x2b0-tmp, fi);
   fi2= fopen("engine2.bin", "rb");
   fseek(fi2, 0, SEEK_END);
   scode2= ftell(fi2);
-  fseek(fi2, scode2&1, SEEK_SET);
+  fseek(fi2, 0, SEEK_SET);
+  fread(&point, 1, 2, fi2);
+  fseek(fi2, (scode2&1)+2, SEEK_SET);
   scode2&= 0xfffe;
-  fread(mem+0x10000-scode2, 1, 0x1000, fi2);
+  fread(mem+0x10002-scode2, 1, 0x1000, fi2);
   fclose(fi2);
+  mem[point]= 0xfffe-stasp&0xff;
+  mem[point+1]= 0xfffe-stasp>>8;
   if( smooth )
-    fwrite(mem+0x10000-scode2, 1, scode2-0x3df-tmp, fi),
+    fwrite(mem+0x10002-scode2, 1, scode2-2-0x3df-tmp, fi),
     scode-= 0x3df+tmp,
     scode1-= 0x3df+tmp,
     scode2-= 0x3df+tmp;
   else
-    fwrite(mem+0x10000-scode2, 1, scode2-0x2b0-tmp, fi),
+    fwrite(mem+0x10002-scode2, 1, scode2-2-0x2b0-tmp, fi),
     scode-= 0x2b0+tmp,
     scode1-= 0x2b0+tmp,
     scode2-= 0x2b0+tmp;
@@ -199,8 +207,8 @@ int main(int argc, char *argv[]){
               "        DEFINE  init1   %d\n"
               "        DEFINE  frame0  %d\n"
               "        DEFINE  frame1  %d\n"
-              "        DEFINE  bl3len  %d\n", smooth, tmp, scode, scode1,
-              scode2, init0, init1, frame0, frame1, blocks[3].len);
+              "        DEFINE  bl3len  %d\n", smooth, tmp, scode-2, scode1-2,
+              scode2-2, init0, init1, frame0, frame1, blocks[3].len);
   fclose(fi);
 
 

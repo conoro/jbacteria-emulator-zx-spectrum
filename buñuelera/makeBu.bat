@@ -25,14 +25,13 @@ copy engine.bin engine2.bin
 \emuscriptoria\sjasmplus main.asm
 AllocBu dummy
 zx7b block1.bin block1.zx7
-rem zx7b main.bin main.zx7
-copy /b map_compressed.bin+block1.zx7 engine.zx7
+zx7b main.bin main.zx7
+copy /b map_compressed.bin+main.zx7+block1.zx7 engine.zx7
 for /f %%i in ("engine.zx7") do echo  define engcomp_size %%~zi >> defload.asm
-rem for /f %%i in ("main.zx7") do echo  define maincomp_size %%~zi >> defload.asm
+for /f %%i in ("main.zx7") do echo  define maincomp_size %%~zi >> defload.asm
 for /f %%i in ("main.bin") do echo  define main_size %%~zi >> defload.asm
 \emuscriptoria\sjasmplus loader.asm
 \emuscriptoria\desprot\gentape game.tap  ^
     basic 'game' 0  loader.bin           ^
-     data           engine.zx7           ^
-     data           main.bin
+     data           engine.zx7
 rem engine48.tap
