@@ -90,7 +90,7 @@ int main(int argc, char *argv[]){
   while ( !sprites[--i] );
   nsprites= ++i;
 
-    printf(" %x %x \n", point, 0xfffe-stasp);
+    printf(" %x %x \n", blocks[3].addr, blocks[3].len<<1);
 
   for ( i= 0; i < nblocks; i++ ){
     sum= blocks[i].len;
@@ -151,12 +151,12 @@ int main(int argc, char *argv[]){
   fwrite(mem+0x5b97, 1, 0x2469, fi);
   if( smooth )
     fwrite(mem+0xfca0, 1, 0x360, fi),
-    fwrite(mem+blocks[3].addr, 1, blocks[3].len, fi),
+    fwrite(mem+0x10000-stasp, 1, blocks[3].len<<1, fi),
     fwrite(mem+0x10002-scode, 1, scode-2-0x3df-tmp, fi);
   else
     fwrite(mem+0xfd50, 1, 0x130, fi),
     fwrite(mem+0xfeff, 1, 0x101, fi),
-    fwrite(mem+blocks[3].addr, 1, blocks[3].len, fi),
+    fwrite(mem+blocks[3].addr, 1, blocks[3].len<<1, fi),
     fwrite(mem+0x10002-scode, 1, scode-2-0x2b0-tmp, fi);
   fi2= fopen("engine1.bin", "rb");
   fseek(fi2, 0, SEEK_END);
@@ -207,8 +207,9 @@ int main(int argc, char *argv[]){
               "        DEFINE  init1   %d\n"
               "        DEFINE  frame0  %d\n"
               "        DEFINE  frame1  %d\n"
-              "        DEFINE  bl3len  %d\n", smooth, tmp, scode-2, scode1-2,
-              scode2-2, init0, init1, frame0, frame1, blocks[3].len);
+              "        DEFINE  bl3len  %d\n"
+              "        DEFINE  stasp   %d\n", smooth, tmp, scode-2, scode1-2,
+              scode2-2, init0, init1, frame0, frame1, blocks[3].len<<1, stasp);
   fclose(fi);
 
 

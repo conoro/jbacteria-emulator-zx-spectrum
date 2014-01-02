@@ -97,7 +97,7 @@ staspr  defw    draw_sprites+3
 do_sprites
         ld      (drawj+1&$ffff), sp
       IF  machine=0
-        ld      bc, syhi | sylo<<8
+do0     ld      bc, syhi | sylo<<8
 do1     in      a, ($ff)
         cp      b
         jp      nz, do1
@@ -106,7 +106,7 @@ do2     in      a, ($ff)
         cp      c
 do3     jr      z, do5
         djnz    do2
-        jr      do1
+        jr      do0
       ENDIF
       IF  machine=1
         ld      hl, flag&$ffff

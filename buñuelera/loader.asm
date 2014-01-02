@@ -8,7 +8,7 @@
         DEFINE  ramt  desc
       ENDIF
         output  loader.bin
-        org     $5b00+ini-prnbuf
+        org     $5b06+ini-prnbuf
 ini     ld      de, desc
         di
         db      $de, $c0, $37, $0e, $8f, $39, $96 ;OVER USR 7 ($5ccb)
@@ -24,13 +24,7 @@ ini     ld      de, desc
         ld      hl, $5ccb+descom-ini-1
         ld      de, $5aff
         call    desc
-        ld      hl, $5ccb+prnbuf-ini
-        ld      d, $5b
-        push    de
-        ld      c, fin-prnbuf
-        ldir
-        ret
-prnbuf  ld      hl, $8000-maplen
+        ld      hl, $8000-maplen
         ld      de, engcomp_size
         push    hl
         call    $07f4
@@ -44,12 +38,20 @@ prnbuf  ld      hl, $8000-maplen
         ld      hl, $8000-maplen+engcomp_size-1
         ld      de, ramt-1-maplen
         call    desc
+        ld      sp, $5b06
         ld      de, $ffff
         ld      hl, ramt-1-maplen-codel2-codel1-codel0-bl3len
         ld      bc, $360
         lddr
-        push    hl
-        ld      a, $17
+
+
+        ld      hl, $5ccb+prnbuf-ini
+        ld      de, $5b06
+        push    de
+        ld      c, fin-prnbuf
+        ldir
+        ret
+prnbuf  ld      a, $17
         ld      bc, $7ffd
         out     (c), a
         ld      ($ffff), a
@@ -76,10 +78,16 @@ next    call    ramt-maplen-12
         ld      ($fffd), hl
         ld      hl, frame0
         ld      ($fff2), hl
-copied  pop     hl
+copied  ld      hl, ramt-1-maplen-codel2-codel1-codel0-bl3len-$360
         ld      de, $7fff
         ld      bc, $2469
         lddr
+        ld      hl, ramt-maplen-codel2-codel1-codel0-1
+        ld      de, $10000-stasp+bl3len-1
+        ld      bc, bl3len
+        lddr
+        ld      hl, $ffff
+        ld      ($fffe-stasp), hl
         ld      hl, $8000+maincomp_size-1
         ld      de, $8040+main_size-1
         call    desc
@@ -88,6 +96,14 @@ copied  pop     hl
         push    de
         ld      bc, main_size
         ldir
+        ld      hl, $d800
+        ld      de, $d801
+        ld      (hl), l
+        ld      bc, $2ff
+        ldir
+        ld      de, $5aff
+        ld      bc, $2ff
+        lddr
         ret
       ENDIF
 fin
