@@ -217,7 +217,7 @@ int main(int argc, char *argv[]){
               "        DEFINE  frame1  %d\n"
               "        DEFINE  bl3len  %d\n"
               "        DEFINE  stasp   %d\n", smooth, tmp, scode-2, scode1-2,
-              scode2-2, init0, init1, frame0, frame1, blocks[3].len<<1, stasp);
+              scode2-2, init0, init1, frame0, frame1, blocks[3].len>0?blocks[3].len<<1:0, stasp);
   fclose(fi);
 
 

@@ -22,8 +22,8 @@ copy engine.bin engine1.bin
 copy define2.asm define.asm
 \emuscriptoria\sjasmplus engine.asm
 copy engine.bin engine2.bin
-\emuscriptoria\sjasmplus main.asm
 AllocBu dummy
+\emuscriptoria\sjasmplus main.asm
 zx7b block1.bin block1.zx7
 zx7b main.bin main.zx7
 copy /b map_compressed.bin+main.zx7+block1.zx7 engine.zx7
