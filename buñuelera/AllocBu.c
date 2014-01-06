@@ -147,17 +147,25 @@ int main(int argc, char *argv[]){
   fseek(fi, 0, SEEK_END);
   tmp= ftell(fi);
   fclose(fi);
+  fi2= fopen("engine2.bin", "rb");
+  fseek(fi2, -14, SEEK_END);
+  fread(mem+0xfff2, 1, 13, fi2);
+  fclose(fi2);
   fi= fopen("block1.bin", "wb+");
   fwrite(mem+0x5b97, 1, 0x2469, fi);
-  if( smooth )
-    fwrite(mem+0xfca0, 1, 0x360, fi),
-    fwrite(mem+0x10000-stasp, 1, blocks[3].len<<1, fi),
+  if( smooth ){
+    fwrite(mem+0xfca0, 1, 0x360, fi);
+    if( blocks[3].len>0 )
+      fwrite(mem+0x10000-stasp, 1, blocks[3].len<<1, fi);
     fwrite(mem+0x10002-scode, 1, scode-2-0x3df-tmp, fi);
-  else
-    fwrite(mem+0xfd50, 1, 0x130, fi),
-    fwrite(mem+0xfeff, 1, 0x101, fi),
-    fwrite(mem+blocks[3].addr, 1, blocks[3].len<<1, fi),
+  }
+  else{
+    fwrite(mem+0xfd50, 1, 0x130, fi);
+    fwrite(mem+0xfeff, 1, 0x101, fi);
+    if( blocks[3].len>0 )
+      fwrite(mem+blocks[3].addr, 1, blocks[3].len<<1, fi);
     fwrite(mem+0x10002-scode, 1, scode-2-0x2b0-tmp, fi);
+  }
   fi2= fopen("engine1.bin", "rb");
   fseek(fi2, 0, SEEK_END);
   scode1= ftell(fi2);

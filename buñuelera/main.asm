@@ -1,3 +1,4 @@
+        include defload.asm
         DEFINE  mapw  12              ; map width is 12
         DEFINE  maph  2               ; map height is 2, our demo has 12x2 screens
         DEFINE  frame $fff1
@@ -39,7 +40,7 @@
 
         org     $8000
         output  main.bin
-        ld      sp, $e0d2-$1a0
+        ld      sp, $fe50-stasp  ; $1b0
         ld      hl, ene0
         ld      de, enems
         ld      bc, 32

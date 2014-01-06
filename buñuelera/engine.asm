@@ -1178,19 +1178,22 @@ craw8   ld      a, 1
     ENDIF
 
 init    ld      (ini7+1&$ffff), sp
-        ld      a, 20
+        ld      a, 19
         ld      de, $0020
         ld      b, d
         ld      c, d
-        ld      hl, $5801
+        ld      hl, $5821
 ini1    ld      sp, hl
         push    bc
         add     hl, de
         dec     a
-        jp      p, ini1
+        jr      nz, ini1
+        ld      ($5800), a
+        ld      ($5a7f), a
+      IF  machine=0
+        dec     a
         ld      ($5b00), a
         ld      ($5bfe), a
-      IF  machine=0
         ld      sp, $50a0
         ld      de, sylo | syhi<<8
         ld      h, e
@@ -1223,9 +1226,11 @@ ini7    ld      sp, 0
         ret
       ENDIF
       IF  machine=1
-        xor     a
         ld      (do3+1), a
         ld      (port), a
+        dec     a
+        ld      ($5b00), a
+        ld      ($5bfe), a
         ld      hl, ini3&$ffff
         ld      de, $4000
         ld      c, ini4-ini3
@@ -1237,12 +1242,11 @@ ini7    ld      sp, 0
         im      2
 ini7    ld      sp, 0
         ret
-ini3    ld      bc, $ff+ini3-ini4&$ff
+ini3    ld      c, $ff+ini3-ini4&$ff
         ldir
-        ld      bc, $7ffd
         ld      a, $17
-        out     (c), a
-        ld      bc, $ff+ini3-ini4&$ff
+        call    $4000+ini35-ini3
+        ld      c, $ff+ini3-ini4&$ff
         ex      de, hl
         dec     e
         dec     l
@@ -1252,18 +1256,29 @@ ini3    ld      bc, $ff+ini3-ini4&$ff
         ex      de, hl
         ld      c, $ff+ini3-ini4&$ff
         add     hl, bc
-        ld      bc, $7ffd
         ld      a, $10
-        out     (c), a
+        call    $4000+ini35-ini3
         jr      nc, ini3
+        call    $4000+ini34-ini3
+        ld      hl, $5000+ini4-ini3
+        ld      d, $d0
+        ld      bc, $0b00-ini4+ini3
+        ldir
+ini34   xor     $07
+ini35   push    bc
+        ld      bc, $7ffd
+        out     (c), a
+        pop     bc
         ret
 ini4
       ENDIF
       IF  machine=2
+        ld      (do3+1), a
+        dec     a
+        ld      ($5b00), a
+        ld      ($5bfe), a
         dec     a
         ld      i, a
-        xor     a
-        ld      (do3+1), a
         im      2
 ini7    ld      sp, 0
         ret
