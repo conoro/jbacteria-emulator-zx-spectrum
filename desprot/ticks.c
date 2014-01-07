@@ -1,4 +1,10 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#ifndef WIN32
+#define stricmp strcasecmp
+#endif
 
 #define LDRIM(r)                \
           st+= 7,               \
@@ -484,18 +490,19 @@ int main (int argc, char **argv){
   FILE * fh;
   tapbuf= (unsigned char *) malloc (0x20000);
   if( argc==1 )
-    printf("Ticks v0.15 beta, a silent Z80 emulator by Antonio Villena, 21 Jan 2013\n\n"),
-    printf("  ticks <input_file> [-pc X] [-start X] [-end X] [-counter X] [-output <file>]\n\n"),
-    printf("  <input_file>   File between 1 and 65536 bytes with Z80 machine code\n"),
-    printf("  -tape <file>   emulates ZX tape in port $FE from a .WAV file\n"),
-    printf("  -pc X          X in hexadecimal is the initial PC value\n"),
-    printf("  -start X       X in hexadecimal is the PC condition to start the counter\n"),
-    printf("  -end X         X in hexadecimal is the PC condition to exit\n"),
-    printf("  -counter X     X in decimal is another condition to exit\n"),
-    printf("  -int X         X in decimal are number of cycles for periodic interrupts\n"),
-    printf("  -output <file> dumps the RAM content to a 64K file\n\n"),
-    printf("  Default values for -pc, -start and -end are 0000 if ommited. When the program "),
-    printf("exits, it'll show the number of cycles between start and end trigger in decimal\n\n"),
+    printf( "Ticks v0.15 beta, a silent Z80 emulator by Antonio Villena, 21 Jan 2013\n"
+            "                            Linux port by Jose Luis Sanchez, 7 Jan 2014\n\n"
+            "  ticks <input_file> [-pc X] [-start X] [-end X] [-counter X] [-output <file>]\n\n"
+            "  <input_file>   File between 1 and 65536 bytes with Z80 machine code\n"
+            "  -tape <file>   emulates ZX tape in port $FE from a .WAV file\n"
+            "  -pc X          X in hexadecimal is the initial PC value\n"
+            "  -start X       X in hexadecimal is the PC condition to start the counter\n"
+            "  -end X         X in hexadecimal is the PC condition to exit\n"
+            "  -counter X     X in decimal is another condition to exit\n"
+            "  -int X         X in decimal are number of cycles for periodic interrupts\n"
+            "  -output <file> dumps the RAM content to a 64K file\n\n"
+            "  Default values for -pc, -start and -end are 0000 if ommited. When the program\n"
+            "exits, it'll show the number of cycles between start and end trigger in decimal\n\n"),
     exit(0);
   while (argc > 1){
     if( argv[1][0] == '-' && argv[2] )
