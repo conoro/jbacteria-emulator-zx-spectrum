@@ -98,6 +98,7 @@ copied  ld      hl, ramt-1-maplen-codel2-codel1-codel0-bl3len-$231-$12f*smooth
         call    desc
         ld      hl, $8040
         ld      de, $8000
+        ld      sp, 0xfe50-stasp
         push    de
         ld      bc, main_size
         ldir

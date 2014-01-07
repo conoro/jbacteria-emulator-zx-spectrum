@@ -23,7 +23,6 @@ copy define2.asm define.asm
 \emuscriptoria\sjasmplus engine.asm
 copy engine.bin engine2.bin
 AllocBu dummy
-rem \emuscriptoria\sjasmplus main.asm
 sdcc -mz80 --no-std-crt0 --code-loc 0x8000 main.c
 hex2bin -p 00 main.ihx
 
