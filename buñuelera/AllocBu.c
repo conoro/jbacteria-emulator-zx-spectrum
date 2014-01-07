@@ -219,7 +219,10 @@ int main(int argc, char *argv[]){
               "        DEFINE  stasp   %d\n", smooth, tmp, scode-2, scode1-2,
               scode2-2, init0, init1, frame0, frame1, blocks[3].len>0?blocks[3].len<<1:0, stasp);
   fclose(fi);
-
+  fi= fopen("defs.h", "wb+");
+  fprintf(fi, "#define smooth %d\n"
+              "#define stack  %d\n", smooth, 0xfe50-stasp);
+  fclose(fi);
 
 /*  fi= fopen("dump128.sna", "wb+");
   fwrite(snaheader, 1, 0x1b, fi);

@@ -23,7 +23,10 @@ copy define2.asm define.asm
 \emuscriptoria\sjasmplus engine.asm
 copy engine.bin engine2.bin
 AllocBu dummy
-\emuscriptoria\sjasmplus main.asm
+rem \emuscriptoria\sjasmplus main.asm
+sdcc -mz80 --no-std-crt0 --code-loc 0x8000 main.c
+hex2bin -p 00 main.ihx
+
 zx7b block1.bin block1.zx7
 zx7b main.bin main.zx7
 copy /b map_compressed.bin+main.zx7+block1.zx7 engine.zx7
