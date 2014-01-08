@@ -1,13 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 FILE *fi, *fi2;
-unsigned char mem[0x10000], sprites[0x8000], sblocks[0x81], sorder[0x81], subset[0x1200][0x81],
-  snaheader[0x1b]= {0x3f, 0x58, 0x27, 0x9b, 0x36, 0x96, 0xb9, 0x1e, 0xd5, 0x02, 0xf0, 0x44, 0xd5,
-                    0x00, 0x00, 0x3a, 0x5c, 0x00, 0xf0, 0x00, 0x73, 0x45, 0x01, 0x00, 0x40, 0x01, 0};
+unsigned char mem[0x10000], sprites[0x8000], sblocks[0x81], sorder[0x81], subset[0x1200][0x81];
 unsigned  saccum[0x81], stiles, ssprites, scode, scode1, scode2, smooth, nblocks, nsprites,
           nnsprites, sum, tmp, init0, init1, frame0, frame1, point, stasp;
-int longl[4], i, j, k, l;
-struct blockentry {
+int i, j, k, l;
+struct {
   int len;
   unsigned addr;
 } blocks[4]=  { { 99>>1, 0x5b97}
@@ -26,9 +24,6 @@ int main(int argc, char *argv[]){
     exit(-1);
   fi= fopen("sprites.bin", "rb");
   ssprites= fread(sprites, 1, 0x8000, fi);
-  fclose(fi);
-  fi= fopen("main.bin", "rb");
-  fread(mem+0x8000, 1, 0x8000, fi);
   fclose(fi);
   fi= fopen("engine1.bin", "rb");
   fseek(fi, 0, SEEK_END);
@@ -89,9 +84,6 @@ int main(int argc, char *argv[]){
   nblocks= blocks[3].len>0 ? 4 : 3;
   while ( !sprites[--i] );
   nsprites= ++i;
-
-    printf(" %x %x \n", blocks[3].addr, blocks[3].len<<1);
-
   for ( i= 0; i < nblocks; i++ ){
     sum= blocks[i].len;
     for ( j= 0; j <= nsprites; j++ )
@@ -106,14 +98,12 @@ int main(int argc, char *argv[]){
       }
     if( !subset[sum][nsprites] )
       while( !subset[--sum][nsprites] );
-
     nnsprites= nsprites;
     for ( j= sum; j > 0; j-- )
       for ( k= nsprites; k > 0; k-- )
         while ( !subset[j][k] ){
           if( j >= sblocks[k] ){
             j-= sblocks[k];
-//            printf("[%d,%d]--->%x\n", j, k, sblocks[k]*2);
             mem[0xfe00|sorder[k]<<1]= blocks[i].addr&0xff;
             mem[0xfe01|sorder[k]<<1]= blocks[i].addr>>8;
             for ( l= 0; l<sblocks[k]; l++ )
@@ -131,17 +121,9 @@ int main(int argc, char *argv[]){
             k--;
         }
     nsprites= nnsprites;
-/*    for ( l= 0; l<64; l++ )
-      printf("%x,", sblocks[l]*2);
-    printf(" %d\n", nblocks);*/
-
   }
   mem[0x4000]= 0x00;
   mem[0x4001]= 0x80;
-  fclose(fi);
-  fi= fopen("dump48.sna", "wb+");
-  fwrite(snaheader, 1, 0x1b, fi);
-  fwrite(mem+0x4000, 1, 0xc000, fi);
   fclose(fi);
   fi= fopen("map_compressed.bin", "rb");
   fseek(fi, 0, SEEK_END);
@@ -223,27 +205,4 @@ int main(int argc, char *argv[]){
   fprintf(fi, "#define smooth %d\n"
               "#define stack  %d\n", smooth, 0xfe50-stasp);
   fclose(fi);
-
-/*  fi= fopen("dump128.sna", "wb+");
-  fwrite(snaheader, 1, 0x1b, fi);
-  fwrite(mem+0x4000, 1, 0xc000, fi);
-  snaheader[0]= 0x00;
-  snaheader[1]= 0x80;
-  snaheader[2]= 0x10;
-  snaheader[3]= 0x00;
-  fwrite(snaheader, 1, 4, fi);
-  fwrite(mem+0x4000, 1, 0xc000, fi);
-  fwrite(mem+0x4000, 1, 0x8000, fi);
-  fclose(fi);*/
-
-/*  for ( i= 0; i<0x40; i++ )
-    printf("%4x,", saccum[i]);
-
-  printf("%x\n", nsprites);
-  for ( i= 0; i<nsprites; i++ )
-    printf("%x,", sblocks[i]);
-  printf("\n%d, %d, %d, %d ", longl[0], longl[1], longl[2], longl[3]);
-  printf("%x ", 0x10000-scode);*/
-
-
 }

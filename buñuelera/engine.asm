@@ -8,7 +8,6 @@
         DEFINE  DMAP_BUFFER  $5b01    ; BUFFER points to where is decoded the uncompressed screen
         DEFINE  sylo  $66
         DEFINE  syhi  $c0
-        DEFINE  smooth  1
         DEFINE  clipup  1
         DEFINE  clipdn  1
         DEFINE  safeco  1

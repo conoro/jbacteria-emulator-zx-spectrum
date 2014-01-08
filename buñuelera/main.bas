@@ -1,3 +1,4 @@
+#include <keys.bas>
 #include "fase.bas"
 
   DisableInt
@@ -19,9 +20,13 @@
   NEXT i
 
   INIT
+
   SETSCREEN(0)
+
   WHILE 1
+
     FRAME
+
     FOR i = 1 TO 8
       IF GETSPRITE(i, 3) & 1 THEN
         IF GETSPRITE(i, 2) > 0 THEN
@@ -50,5 +55,42 @@
         END IF
       END IF
     NEXT i
-  END WHILE
 
+    IF multikeys(KEYP) THEN
+      IF GETSPRITE(0, 1) < $ee THEN
+        SETSPRITE(0, 1, GETSPRITE(0, 1)+1)
+      ELSEIF x < 11 THEN
+        SETSPRITE(0, 1, $02)
+        x= x + 1
+        SETSCREEN(y*12 + x)
+      END IF
+    END IF
+    IF multikeys(KEYO) THEN
+      IF GETSPRITE(0, 1) > $02 THEN
+        SETSPRITE(0, 1, GETSPRITE(0, 1)-1)
+      ELSEIF x > 0 THEN
+        SETSPRITE(0, 1, $ee)
+        x= x - 1
+        SETSCREEN(y*12 + x)
+      END IF
+    END IF
+    IF multikeys(KEYA) THEN
+      IF GETSPRITE(0, 2) < $a0 THEN
+        SETSPRITE(0, 2, GETSPRITE(0, 2)+1)
+      ELSEIF y < 1 THEN
+        SETSPRITE(0, 2, $01)
+        y= y + 1
+        SETSCREEN(y*12 + x)
+      END IF
+    END IF
+    IF multikeys(KEYQ) THEN
+      IF GETSPRITE(0, 2) > $01 THEN
+        SETSPRITE(0, 2, GETSPRITE(0, 2)-1)
+      ELSEIF y > 0 THEN
+        SETSPRITE(0, 2, $a0)
+        y= y - 1
+        SETSCREEN(y*12 + x)
+      END IF
+    END IF
+
+  END WHILE

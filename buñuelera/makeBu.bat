@@ -4,7 +4,7 @@ Png2Rcs loading.png loading.rcs
 zx7b loading.rcs loading.zx7
 TmxCompress map.tmx map_compressed.bin
 \_Downloads\dm\bin\dmc GfxBu.c lodepng.c
-GfxBu tiles.png sprites.png tiles.bin sprites.bin 0 dummy
+GfxBu tiles.png sprites.png tiles.bin sprites.bin 0 smooth
 rem echo  org     $fe80           >  deforg.asm
 rem echo  output  dzx7b_rcs_0.bin >> deforg.asm
 rem \emuscriptoria\sjasmplus dzx7b_rcs.asm
@@ -29,7 +29,7 @@ if %_lang%==c (
   sdcc -mz80 --no-std-crt0 --code-loc 0x8000 main.c
   hex2bin -p 00 main.ihx
 ) else (
-  ..\zxb\zxb main.bas
+  \Emuscriptoria\zxb\zxb main.bas
 )
 zx7b block1.bin block1.zx7
 zx7b main.bin main.zx7

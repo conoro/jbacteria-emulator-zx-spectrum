@@ -141,7 +141,8 @@ int main(int argc, char *argv[]){
   fprintf(ft, "        DEFINE  tmode  %d\n"
               "        DEFINE  tiles  %d\n"
               "        DEFINE  bmaps  %d\n"
-              "        DEFINE  attrs  %d\n", tilemode, pics, reppos, apics);
+              "        DEFINE  attrs  %d\n"
+              "        DEFINE  smooth %d\n", tilemode, pics, reppos, apics, smooth);
   fclose(ft);
   printf("no index     %d bytes\n", pics*36);
   printf("index bitmap %d bytes\n", pics*5+reppos*32);
