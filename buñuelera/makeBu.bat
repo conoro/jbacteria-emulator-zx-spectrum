@@ -1,3 +1,5 @@
+SETLOCAL
+set _lang=c
 Png2Rcs loading.png loading.rcs
 zx7b loading.rcs loading.zx7
 TmxCompress map.tmx map_compressed.bin
@@ -23,9 +25,12 @@ copy define2.asm define.asm
 \emuscriptoria\sjasmplus engine.asm
 copy engine.bin engine2.bin
 AllocBu dummy
-sdcc -mz80 --no-std-crt0 --code-loc 0x8000 main.c
-hex2bin -p 00 main.ihx
-
+if %_lang%==c (
+  sdcc -mz80 --no-std-crt0 --code-loc 0x8000 main.c
+  hex2bin -p 00 main.ihx
+) else (
+  ..\zxb\zxb main.bas
+)
 zx7b block1.bin block1.zx7
 zx7b main.bin main.zx7
 copy /b map_compressed.bin+main.zx7+block1.zx7 engine.zx7
@@ -37,3 +42,4 @@ for /f %%i in ("main.bin") do echo  define main_size %%~zi >> defload.asm
     basic 'game' 0  loader.bin           ^
      data           engine.zx7
 rem engine48.tap
+ENDLOCAL

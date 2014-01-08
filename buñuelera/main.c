@@ -1,4 +1,4 @@
-#include  "bunuelera.h"
+#include  "fase.h"
 
 const unsigned char data[32]= {
   0x00, 0x42, 0x11, 0,
@@ -74,14 +74,14 @@ int main(){
         sprites[0][2]++;
       else if( y < 1 )
         sprites[0][2]= 0x01,
-        screen= (++y)*12 + x;
+        screen= ++y*12 + x;
     }
     else if( ~KeybTREWQ & 0x01 ){ // Q
       if( sprites[0][2]>0x01 )
         sprites[0][2]--;
       else if( y )
         sprites[0][2]= 0xa0,
-        screen= (--y)*12 + x;
+        screen= --y*12 + x;
     }
   }
 }
