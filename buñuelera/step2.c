@@ -14,14 +14,6 @@ struct {
               , {     0,      0}};
 
 int main(int argc, char *argv[]){
-  if( argc==1 )
-    printf("\nAllocBu v0.01. Bu space allocator by AntonioVillena, 20 Nov 2013\n\n"
-           "  AllocBu\n\n"
-           "Example: AllocBu tiles sprites engine game\n"),
-    exit(0);
-  if( argc!=2 )
-    printf("\nInvalid number of parameters\n"),
-    exit(-1);
   fi= fopen("sprites.bin", "rb");
   ssprites= fread(sprites, 1, 0x8000, fi);
   fclose(fi);
@@ -133,7 +125,7 @@ int main(int argc, char *argv[]){
   fseek(fi2, -14, SEEK_END);
   fread(mem+0xfff2, 1, 13, fi2);
   fclose(fi2);
-  fi= fopen("block1.bin", "wb+");
+  fi= fopen("block.bin", "wb+");
   fwrite(mem+0x5b97, 1, 0x2469, fi);
   if( smooth ){
     fwrite(mem+0xfca0, 1, 0x360, fi);

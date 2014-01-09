@@ -107,7 +107,7 @@ fin
 screen  incbin  loading.zx7
 descom  
       IF  smooth=0
-        incbin  dzx7b_rcs_0.bin
+        incbin  file3.bin
       ELSE
-        incbin  dzx7b_rcs_1.bin
+        incbin  file4.bin
       ENDIF

@@ -1,17 +1,8 @@
         include define.asm
-        DEFINE  mapw  12              ; map width is 12
-        DEFINE  maph  2               ; map height is 2, our demo has 12x2 screens
-        DEFINE  scrw  15              ; screen width is 12
-        DEFINE  scrh  10              ; screen height is 8, our window is 12x8 tiles (exactly half of the screen area)
-        DEFINE  DMAP_BITSYMB 6        ; these 3 constants are for the map decompressor
-        DEFINE  DMAP_BITHALF 1        ; BITSYMB and BITHALF declares 5.5 bits per symbol (16 tiles with 5 bits and 32 with 6 bits)
-        DEFINE  DMAP_BUFFER  $5b01    ; BUFFER points to where is decoded the uncompressed screen
-        DEFINE  sylo  $66
-        DEFINE  syhi  $c0
-        DEFINE  clipup  1
-        DEFINE  clipdn  1
-        DEFINE  safeco  1
-        DEFINE  initregs
+        include defmap.asm
+        DEFINE  mapbuf  $5b01
+        DEFINE  sylo    $66
+        DEFINE  syhi    $c0
         DEFINE  port    $5bf8
         DEFINE  sprites $fe00
         DEFINE  tiladdr $5c50
@@ -89,7 +80,6 @@
       ENDM
 
 ; Paolo Ferraris' shortest loader, then we move all the code to $8000
-        output  engine.bin
         org     staspr+final-mapend-$
 staspr  defw    draw_sprites+3
         nop
@@ -182,11 +172,11 @@ desc2   out     (c), e
       ELSE
         ld      b, $80          ; marker bit
       ENDIF
-        ld      de, DMAP_BUFFER+149
-desc3   ld      a, 256 >> DMAP_BITSYMB
-desc4   call    gbit3&$ffff     ; load DMAP_BITSYMB bits (literal)
+        ld      de, mapbuf+149
+desc3   ld      a, 256 >> bitsym
+desc4   call    gbit3&$ffff     ; load bitsym bits (literal)
         jr      nc, desc4
-      IF DMAP_BITHALF=1
+      IF bithlf=1
         rrca                    ; half bit implementation (ie 48 tiles)
         call    c, gbit1&$ffff
       ELSE
@@ -259,7 +249,7 @@ upba1
         xor     a
         ld      (upba4+1), a
       ELSE
-        ld      bc, DMAP_BUFFER 
+        ld      bc, mapbuf 
       ENDIF
         ld      a, 0
 upba2   ex      af, af'
@@ -267,7 +257,7 @@ upba2   ex      af, af'
 upba3 IF  tmode=3
         ld      hl, upba4+1
         inc     (hl)
-upba4   ld      hl, DMAP_BUFFER 
+upba4   ld      hl, mapbuf 
       ELSE
         ld      h, b
         ld      l, c
@@ -1283,8 +1273,8 @@ ini7    ld      sp, 0
         ret
       ENDIF
 
-      IF DMAP_BITHALF=1
-gbit1   sub     $80 - (1 << DMAP_BITSYMB - 2)
+      IF bithlf=1
+gbit1   sub     $80 - (1 << bitsym - 2)
         defb    $da             ; second part of half bit implementation
       ENDIF
 gbit2   ld      b, (hl)         ; load another group of 8 bits
@@ -1310,14 +1300,14 @@ map     incbin  map_compressed.bin
 mapend
       IF smooth=0
         block   $fd50-$&$ffff
-lookt   incbin  table0.bin
+lookt   incbin  file1.bin
         block   $fe80-$&$ffff
-        incbin  dzx7b_rcs_0.bin
+        incbin  file3.bin
         defb    $ff
       ELSE
         block   $fc21-$&$ffff
-        incbin  dzx7b_rcs_1.bin
-lookt   incbin  table1.bin
+        incbin  file4.bin
+lookt   incbin  file2.bin
       ENDIF
         block   $ff00-$&$ffff
         defb    $ff

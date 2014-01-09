@@ -28,8 +28,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define MAX_OFFSET  142   /* range 1..142 */
-#define MAX_LEN    65536  /* range 2..65536 */
+#define MAX_OFFSET  142
+#define MAX_LEN   65536
 
 unsigned char *output_data, bitsymb, bithalf;
 size_t output_index;
@@ -88,7 +88,8 @@ Optimal* optimize(unsigned char *input_data, size_t input_size){
     exit(1);
   optimal[0].bits= bithalf ? (input_data[0]<1<<bitsymb-1?bitsymb:bitsymb+1) : bitsymb;
   for ( i= 1; i < input_size; i++ ){
-    optimal[i].bits= optimal[i-1].bits + 1 + (bithalf ? (input_data[i]<1<<bitsymb-1?bitsymb:bitsymb+1) : bitsymb);
+    optimal[i].bits=  optimal[i-1].bits + 1
+                    + (bithalf ? (input_data[i]<1<<bitsymb-1?bitsymb:bitsymb+1) : bitsymb);
     match_index= input_data[i-1] << 8 | input_data[i];
     best_len= 1;
     for ( match= &matches[match_index]
@@ -150,7 +151,8 @@ void write_elias_gamma(int value) {
   write_bit(1);
 }
 
-unsigned char *compress(Optimal *optimal, unsigned char *input_data, size_t input_size, size_t *output_size) {
+unsigned char *compress(Optimal *optimal, unsigned char *input_data,
+                        size_t input_size, size_t *output_size){
   size_t input_prev;
   int offset1;
   int mask;
@@ -253,10 +255,10 @@ int main(int argc, char* argv[]){
   FILE *fi, *fo;
   mem= (unsigned char *) malloc (0x10000);
   if( argc==1 )
-    printf("\nTmxCompress v1.12b, Map compressor by Antonio Villena, 18 Nov 2013\n\n"),
-    printf("  TmxCompress <input_tmx> <output_compressed>\n\n"),
-    printf("  <input_tmx>         Origin .TMX file\n"),
-    printf("  <output_compressed> Generated binary compressed map\n\n"),
+    printf( "\nTmxCompress v1.12b, Map compressor by Antonio Villena, 18 Nov 2013\n\n"
+            "  TmxCompress <input_tmx> <output_compressed>\n\n"
+            "  <input_tmx>         Origin .TMX file\n"
+            "  <output_compressed> Generated binary compressed map\n\n"),
     exit(0);
   if( argc!=3 )
     printf("\nInvalid number of parameters\n"),
@@ -293,7 +295,6 @@ int main(int argc, char* argv[]){
   }
   maph= scrh-size/mapw/scrw+1;
   scrh= (scrh-maph+1)/maph;
- printf("%d %d ", scrw, scrh);
   for ( j= i= 0; i<size; i++ )
     if( mem[i]>j )
       j= mem[i];
@@ -338,6 +339,10 @@ int main(int argc, char* argv[]){
       fwrite(output_data, 1, output_size, fo);
     }
   }
-  printf("\nFile generated successfully\n  DMAP_BITSYMB = %d\n"
-         "  DMAP_BITHALF = %d\n", bitsymb, bithalf);
+  printf("        define  bitsym  %d\n"
+         "        define  bithlf  %d\n"
+         "        define  mapw    %d\n"
+         "        define  maph    %d\n"
+         "        define  scrw    %d\n"
+         "        define  scrh    %d\n", bitsymb, bithalf, mapw, maph, scrw, scrh);
 }

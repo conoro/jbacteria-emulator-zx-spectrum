@@ -2,8 +2,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 unsigned char *image, *pixel, output[0x10000];
+char tmpstr[20], *fou;
 unsigned error, width, height, i, j, k, l, min, max, nmin, nmax, amin, amax,
-          mask, pics, amask, apics, inipos, reppos, smooth, outpos, fondo, tinta, tilemode;
+          mask, pics, amask, apics, inipos, reppos, smooth, outpos, fondo,
+          tinta, tmode, clipup, clipdn, safeco;
 long long atr, celdas[4];
 FILE *fo, *ft;
 
@@ -50,28 +52,25 @@ atrgen(){
 }
 
 int main(int argc, char *argv[]){
-  if( argc==1 )
-    printf("\nGfxBu v1.11. Bu Sprites generator by AntonioVillena, 20 Nov 2013\n\n"
-           "  GfxBu <input_tiles> <input_sprites> <output_tiles> <output_sprites>\n"
-           "        <tileindex_mode> [smooth]\n\n"
-           "  <input_tiles>     Normally tiles.png\n"
-           "  <input_sprites>   Normally sprites.png\n"
-           "  <output_tiles>    Output binary tiles\n"
-           "  <output_sprites>  Output binary sprites\n"
-           "  <tileindex_mode>  0=no index, 1=bitmap, 2=attr, 3=full index\n"
-           "  <smooth>          optionally, if present smooth sprite movement\n\n"
-           "Example: GfxBu tiles.png sprites.png tiles.bin sprites.bin b000 4\n"),
-    exit(0);
-  if( argc!=6 && argc!=7 )
-    printf("\nInvalid number of parameters\n"),
-    exit(-1);
-  tilemode= atoi(argv[5]);
-  smooth= argc&1;
+  ft= fopen("config.def", "r");
+  while ( !feof(ft) ){
+    fgets(tmpstr, 1000, ft);
+    if( fou= (char *) strstr(tmpstr, "tmode") )
+      tmode= atoi(fou+5);
+    else if( fou= (char *) strstr(tmpstr, "smooth") )
+      smooth= atoi(fou+6);
+    else if( fou= (char *) strstr(tmpstr, "clipup") )
+      clipup= atoi(fou+6);
+    else if( fou= (char *) strstr(tmpstr, "clipdn") )
+      clipdn= atoi(fou+6);
+    else if( fou= (char *) strstr(tmpstr, "safeco") )
+      safeco= atoi(fou+6);
+  }
+  fclose(ft);
 
 // tiles
 
-  error= lodepng_decode32_file(&image, &width, &height, argv[1]);
-  printf("Processing %14s...Done\n", argv[1]);
+  error= lodepng_decode32_file(&image, &width, &height, "tiles.png");
   if( error )
     printf("Error %u: %s\n", error, lodepng_error_text(error)),
     exit(-1);
@@ -142,17 +141,21 @@ int main(int argc, char *argv[]){
               "        DEFINE  tiles  %d\n"
               "        DEFINE  bmaps  %d\n"
               "        DEFINE  attrs  %d\n"
-              "        DEFINE  smooth %d\n", tilemode, pics, reppos, apics, smooth);
+              "        DEFINE  smooth %d\n"
+              "        DEFINE  clipup %d\n"
+              "        DEFINE  clipdn %d\n"
+              "        DEFINE  safeco %d\n", tmode, pics, reppos, apics,
+                                              smooth, clipup, clipdn, safeco);
   fclose(ft);
   printf("no index     %d bytes\n", pics*36);
   printf("index bitmap %d bytes\n", pics*5+reppos*32);
   printf("index attr   %d bytes\n", pics*33+apics*4);
   printf("full index   %d bytes\n", pics*2+reppos*32+apics*4);
-  fo= fopen(argv[3], "wb+");
+  fo= fopen("tiles.bin", "wb+");
   if( !fo )
-    printf("\nCannot create output file: %s\n", argv[3]),
+    printf("\nCannot create tiles.bin\n"),
     exit(-1);
-  switch( tilemode ){
+  switch( tmode ){
     case 0: fwrite(output, 1, outpos, fo);
             break;
     case 1: for ( i= 0; i < pics; i++ )
@@ -178,14 +181,13 @@ int main(int argc, char *argv[]){
 
   inipos= 0;
   outpos= 64<<smooth;
-  error= lodepng_decode32_file(&image, &width, &height, argv[2]);
-  printf("Processing %14s...", argv[2]);
+  error= lodepng_decode32_file(&image, &width, &height, "sprites.png");
   if( error )
     printf("\nError %u: %s\n", error, lodepng_error_text(error)),
     exit(-1);
-  fo= fopen(argv[4], "wb+");
+  fo= fopen("sprites.bin", "wb+");
   if( !fo )
-    printf("\nCannot create output file: %s\n", argv[4]),
+    printf("\nCannot create sprites.bin\n"),
     exit(-1);
   for ( i= 0; i < 16; i++ )
     for ( j= 0; j < 8; j+= 2-smooth ){
@@ -239,14 +241,13 @@ salir:
   output[(64<<smooth)-1]= outpos-inipos;
   fwrite(output, 1, outpos, fo);
   fclose(fo);
-  printf("Done\n"
-         "Generating      table.bin...Done\n"
-         "Files generated successfully\n");
+//  printf("Generating      table.bin...Done\n");
+  printf("Files generated successfully\n");
   free(image);
 
 // table
 
-  unsigned short table[0xb0];
+/*  unsigned short table[0xb0];
   fo= fopen("table0.bin", "wb+");
   for ( int i= 0x1c; i<0x7c; i++ )
     table[i-0x1c]= 0x3800 + (i<<9&0x700) + (i<<3&0xe0) + (i<<6&0x1800);
@@ -256,5 +257,5 @@ salir:
   for ( int i= 0x38; i<0xe8; i++ )
     table[i-0x38]= 0x3800 + (i<<8&0x700) + (i<<2&0xe0) + (i<<5&0x1800);
   fwrite(table, 1, 0x160, fo);
-  fclose(fo);
+  fclose(fo);*/
 }
