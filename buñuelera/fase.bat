@@ -23,9 +23,10 @@ if %_lang%==c (
 )
 util\zx7b main.bin main.zx7
 copy /b map_compressed.bin+main.zx7+block.zx7 engine.zx7
-for /f %%i in ("engine.zx7") do echo  define engcomp_size %%~zi >> defload.asm
-for /f %%i in ("main.zx7") do echo  define maincomp_size %%~zi >> defload.asm
-for /f %%i in ("main.bin") do echo  define main_size %%~zi >> defload.asm
+copy defload.asm ndefload.asm
+for /f %%i in ("engine.zx7") do echo  define engcomp_size %%~zi >> ndefload.asm
+for /f %%i in ("main.zx7") do echo  define maincomp_size %%~zi >> ndefload.asm
+for /f %%i in ("main.bin") do echo  define main_size %%~zi >> ndefload.asm
 util\sjasmplus loader.asm
 util\gentape game.tap           ^
     basic 'game' 0  loader.bin  ^

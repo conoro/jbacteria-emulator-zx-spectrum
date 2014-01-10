@@ -20,7 +20,7 @@
 
 #define SETSPRITE(number, param, value) POKE $5c00+(number)*4+(param), (value)
 #define GETSPRITE(number, param)        PEEK ($5c00+(number)*4+(param))
-#define SETSCREEN(value)                POKE $5b00, (value)
+DIM scr AS UByte AT $5b00
 
 #pragma pop(case_insensitive)
 #endif

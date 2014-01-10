@@ -21,7 +21,7 @@
 
   INIT
 
-  SETSCREEN(0)
+  scr= 0
 
   WHILE 1
 
@@ -62,7 +62,7 @@
       ELSEIF x < 11 THEN
         SETSPRITE(0, 1, $02)
         x= x + 1
-        SETSCREEN(y*12 + x)
+        scr= y*12 + x
       END IF
     END IF
     IF multikeys(KEYO) THEN
@@ -71,7 +71,7 @@
       ELSEIF x > 0 THEN
         SETSPRITE(0, 1, $ee)
         x= x - 1
-        SETSCREEN(y*12 + x)
+        scr= y*12 + x
       END IF
     END IF
     IF multikeys(KEYA) THEN
@@ -80,7 +80,7 @@
       ELSEIF y < 1 THEN
         SETSPRITE(0, 2, $01)
         y= y + 1
-        SETSCREEN(y*12 + x)
+        scr= y*12 + x
       END IF
     END IF
     IF multikeys(KEYQ) THEN
@@ -89,7 +89,7 @@
       ELSEIF y > 0 THEN
         SETSPRITE(0, 2, $a0)
         y= y - 1
-        SETSCREEN(y*12 + x)
+        scr= y*12 + x
       END IF
     END IF
 

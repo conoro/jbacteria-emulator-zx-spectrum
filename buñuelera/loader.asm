@@ -1,4 +1,4 @@
-        include defload.asm
+        include ndefload.asm
         DEFINE  border_loading 0
       IF  smooth=0
         DEFINE  desc  $fe80
