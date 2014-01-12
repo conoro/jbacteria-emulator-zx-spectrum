@@ -2,9 +2,9 @@
         DEFINE  border_loading 0
       IF  smooth=0
         DEFINE  desc  $fe80
-        DEFINE  ramt  $fd50
+        DEFINE  ramt  $fd00
       ELSE
-        DEFINE  desc  $fc21
+        DEFINE  desc  $fc81
         DEFINE  ramt  desc
       ENDIF
         output  loader.bin
@@ -43,9 +43,9 @@ ini     ld      de, desc
         ld      bc, $101
         lddr
         ld      e, $7f
-        ld      bc, $130
+        ld      bc, $180
       ELSE
-        ld      bc, $360
+        ld      bc, $300
       ENDIF
         lddr
         ld      hl, $5ccb+prnbuf-ini
@@ -81,7 +81,7 @@ next    call    ramt-maplen-12
         ld      ($fffd), hl
         ld      hl, frame0
         ld      ($fff2), hl
-copied  ld      hl, ramt-1-maplen-codel2-codel1-codel0-bl3len-$231-$12f*smooth
+copied  ld      hl, ramt-1-maplen-codel2-codel1-codel0-bl3len-$281-$7f*smooth
         ld      de, $7fff
         ld      bc, $2469
         lddr
@@ -107,7 +107,7 @@ fin
 screen  incbin  loading.zx7
 descom  
       IF  smooth=0
-        incbin  file3.bin
+        incbin  file2.bin
       ELSE
-        incbin  file4.bin
+        incbin  file3.bin
       ENDIF

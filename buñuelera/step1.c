@@ -2,10 +2,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 unsigned char *image, *pixel, output[0x10000];
-char tmpstr[20], *fou;
+char tmpstr[20], *fou, tmode, clipup, clipdn, safeco, offsex, offsey;
 unsigned error, width, height, i, j, k, l, min, max, nmin, nmax, amin, amax,
-          mask, pics, amask, apics, inipos, reppos, smooth, outpos, fondo,
-          tinta, tmode, clipup, clipdn, safeco;
+          mask, pics, amask, apics, inipos, reppos, smooth, outpos, fondo, tinta;
 long long atr, celdas[4];
 FILE *fo, *ft;
 
@@ -54,7 +53,7 @@ atrgen(){
 int main(int argc, char *argv[]){
   ft= fopen("config.def", "r");
   while ( !feof(ft) ){
-    fgets(tmpstr, 1000, ft);
+    fgets(tmpstr, 20, ft);
     if( fou= (char *) strstr(tmpstr, "tmode") )
       tmode= atoi(fou+5);
     else if( fou= (char *) strstr(tmpstr, "smooth") )
@@ -65,6 +64,10 @@ int main(int argc, char *argv[]){
       clipdn= atoi(fou+6);
     else if( fou= (char *) strstr(tmpstr, "safeco") )
       safeco= atoi(fou+6);
+    else if( fou= (char *) strstr(tmpstr, "offsex") )
+      offsex= atoi(fou+6);
+    else if( fou= (char *) strstr(tmpstr, "offsey") )
+      offsey= atoi(fou+6);
   }
   fclose(ft);
 
@@ -144,8 +147,10 @@ int main(int argc, char *argv[]){
               "        DEFINE  smooth %d\n"
               "        DEFINE  clipup %d\n"
               "        DEFINE  clipdn %d\n"
-              "        DEFINE  safeco %d\n", tmode, pics, reppos, apics,
-                                              smooth, clipup, clipdn, safeco);
+              "        DEFINE  safeco %d\n"
+              "        DEFINE  offsex %d\n"
+              "        DEFINE  offsey %d\n",  tmode, pics, reppos, apics, smooth,
+                                              clipup, clipdn, safeco, offsex, offsey);
   fclose(ft);
   printf("no index     %d bytes\n", pics*36);
   printf("index bitmap %d bytes\n", pics*5+reppos*32);
@@ -194,7 +199,7 @@ int main(int argc, char *argv[]){
       if( inipos )
         output[((j|i<<3)>>(1-smooth))-1]= outpos-inipos;
       output[inipos= outpos]= 0;
-      output[inipos+1]= 0x50;
+      output[inipos+1]= 0xf8+offsey*8;//0x50;
       outpos+= 2;
       nmin= nmax= 4;
       for ( k= 0; k < 16; k++ ){
@@ -247,15 +252,15 @@ salir:
 
 // table
 
-/*  unsigned short table[0xb0];
-  fo= fopen("table0.bin", "wb+");
-  for ( int i= 0x1c; i<0x7c; i++ )
-    table[i-0x1c]= 0x3800 + (i<<9&0x700) + (i<<3&0xe0) + (i<<6&0x1800);
-  fwrite(table, 1, 0xb0, fo);
-  fclose(fo);
-  fo= fopen("table1.bin", "wb+");
+  unsigned char table[0x100];
+  fo= fopen("file1.bin", "wb+");
+  for ( int i= 0; i<0x100; i++ )
+    table[i]=  i&0x07 | i>>3&0x18 | i<<2&0xe0;
+  fwrite(table, 1, 0x100, fo);
+
+/*  fo= fopen("file2.bin", "wb+");
   for ( int i= 0x38; i<0xe8; i++ )
-    table[i-0x38]= 0x3800 + (i<<8&0x700) + (i<<2&0xe0) + (i<<5&0x1800);
-  fwrite(table, 1, 0x160, fo);
-  fclose(fo);*/
+    table[i-0x38]=  0x3800 + (i<<8&0x700) + (((offsey<<3)+i)<<2&0xe0) + (((offsey<<3)+i)<<5&0x1800);
+  fwrite(table, 1, 0x160, fo);*/
+  fclose(fo);
 }

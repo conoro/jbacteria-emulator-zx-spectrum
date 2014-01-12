@@ -1,4 +1,3 @@
-        include deforg.asm
 ; -----------------------------------------------------------------------------
 ; ZX7 Backwards+DRCS by Einar Saukas, Antonio Villena
 ; Parameters:
