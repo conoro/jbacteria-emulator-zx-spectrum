@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 unsigned char *image, *pixel, output[0x10000];
-char tmpstr[20], *fou, tmode, clipup, clipdn, safeco, offsex, offsey;
+char tmpstr[20], *fou, tmode, clipup, clipdn, cliphr, safeco, offsex, offsey;
 unsigned error, width, height, i, j, k, l, min, max, nmin, nmax, amin, amax,
           mask, pics, amask, apics, inipos, reppos, smooth, outpos, fondo, tinta;
 long long atr, celdas[4];
@@ -62,6 +62,8 @@ int main(int argc, char *argv[]){
       clipup= atoi(fou+6);
     else if( fou= (char *) strstr(tmpstr, "clipdn") )
       clipdn= atoi(fou+6);
+    else if( fou= (char *) strstr(tmpstr, "cliphr") )
+      cliphr= atoi(fou+6);
     else if( fou= (char *) strstr(tmpstr, "safeco") )
       safeco= atoi(fou+6);
     else if( fou= (char *) strstr(tmpstr, "offsex") )
@@ -147,10 +149,11 @@ int main(int argc, char *argv[]){
               "        DEFINE  smooth %d\n"
               "        DEFINE  clipup %d\n"
               "        DEFINE  clipdn %d\n"
+              "        DEFINE  cliphr %d\n"
               "        DEFINE  safeco %d\n"
               "        DEFINE  offsex %d\n"
-              "        DEFINE  offsey %d\n",  tmode, pics, reppos, apics, smooth,
-                                              clipup, clipdn, safeco, offsex, offsey);
+              "        DEFINE  offsey %d\n",  tmode, pics, reppos, apics, smooth, clipup,
+                                              clipdn, cliphr, safeco, offsex, offsey);
   fclose(ft);
   printf("no index     %d bytes\n", pics*36);
   printf("index bitmap %d bytes\n", pics*5+reppos*32);

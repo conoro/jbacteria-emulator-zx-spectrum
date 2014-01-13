@@ -192,17 +192,25 @@ desc2   out     (c), e
       ELSE
         ld      b, $80          ; marker bit
       ENDIF
-        ld      de, mapbuf+149
+        ld      de, mapbuf+scrw*scrh-1
 desc3   ld      a, 256 >> bitsym
 desc4   call    gbit3&$ffff     ; load bitsym bits (literal)
         jr      nc, desc4
-      IF bithlf=1
+    IF bithlf=1
+      IF bitsym=1
+        rrca
+        jr      nc, desc45
+        xor     a
+        call    gbit3&$ffff
+        inc     a
+      ELSE
         rrca                    ; half bit implementation (ie 48 tiles)
         call    c, gbit1&$ffff
-      ELSE
-        and     a
       ENDIF
-        ld      (de), a         ; write literal
+    ELSE
+        and     a
+    ENDIF
+desc45  ld      (de), a         ; write literal
 desc5   dec     e               ; test end of file (map is always 150 bytes)
         jr      z, descb
         call    gbit3&$ffff     ; read one bit
@@ -218,7 +226,7 @@ desc6   call    nc, gbit3&$ffff ; (Elias gamma coding)
         inc     a               ; adjust length
         ld      c, a            ; save lenth to c
         xor     a
-        ld      de, 15          ; initially point to 15
+        ld      de, scrw        ; initially point to scrw
         call    gbit3&$ffff     ; get two bits
         call    gbit3&$ffff
         jr      z, desc9        ; 00 = 1
@@ -227,6 +235,17 @@ desc6   call    nc, gbit3&$ffff ; (Elias gamma coding)
         jr      z, desca        ; 010 = 15
         bit     2, a
         jr      nz, desc7
+    IF  scrw>15
+        call    gbit3&$ffff     ; [011, 100, 101] xx = from 2 to 13
+        dec     a
+        call    gbit3&$ffff
+        jr      desc95
+desc7   call    gbit3&$ffff     ; [110, 111] xxxxxx = from 14-15, 17-142
+        jr      nc, desc7
+        cp      scrw-14
+        sbc     a, -14
+    ELSE
+      IF  scrw=15
         add     a, $7c          ; [011, 100, 101] xx = from 2 to 13
         dec     e
 desc7   dec     e               ; [110, 111] xxxxxx = 14 and from 16 to 142
@@ -234,8 +253,19 @@ desc8   call    gbit3&$ffff
         jr      nc, desc8
         jr      z, desca
         add     a, e
+      ELSE
+        call    gbit3&$ffff     ; [011, 100, 101] xx = from 2 to 11 and from 13 to 14
+        call    gbit3&$ffff
+        cp      scrw+2
+        sbc     a, 2
+        jr      desc9
+desc7   call    gbit3&$ffff     ; [110, 111] xxxxxx = from 15 to 142
+        jr      nc, desc7
+        add     a, 14
+      ENDIF
+    ENDIF
 desc9   inc     a
-        ld      e, a
+desc95  ld      e, a
 desca   ld      a, b            ; save b (byte reading) on a
         ld      b, d            ; b= 0 because lddr moves bc bytes
         ex      (sp), hl        ; store source, restore destination
@@ -683,8 +713,12 @@ draw3   add     a, d
         ld      offsey<<3
       ENDIF
     ELSE
+      IF offsey=0
+        jp      nc, braw1&$ffff
+      ELSE
         cp      offsey<<3
         jp      c, braw1&$ffff
+      ENDIF
     ENDIF
 draw4
       IF clipdn=1
@@ -904,7 +938,11 @@ braw2   ld      a, (lookt&$ffff)
         ld      l, a          ; A=L= rrrRRppp
         and     %00011111
         ld      h, a          ;   H= 000RRppp
+      IF offsey=0
+        set     5, h
+      ELSE
         set     6, h
+      ENDIF
         xor     l             ;   A= rrr00000
         ld      l, a          ;   L= rrr00000
         ld      a, (draw8+1)
@@ -1007,9 +1045,8 @@ brawa   ld      bc, 0
 
     IF clipdn=1
 craw1   ld      (craw2+1&$ffff), a
-        sub     d
         cpl
-        sub     $f7-(scrh<<4)
+        sub     $ff-(offsey+scrh*2<<3)
         rra
         ld      ixh, a
 craw2   ld      a, (lookt&$ffff)
@@ -1196,23 +1233,40 @@ craw8   ld      a, 1
     ENDIF
 
 init    ld      (ini7+1&$ffff), sp
-        ld      a, 19
+    IF  scrw=16 || cliphr=0
+        xor     a
+    ELSE
+      IF  scrw=15 && offsex=1
+        ld      a, scrh*2-1
         ld      de, $0020
         ld      b, d
         ld      c, d
-        ld      hl, $5821
+        ld      hl, $5821+(offsey<<5)
 ini1    ld      sp, hl
         push    bc
         add     hl, de
         dec     a
         jr      nz, ini1
-        ld      ($5800), a
-        ld      ($5a7f), a
+        ld      ($5800+(offsey<<5)), a
+        ld      ($5a7f+(offsey<<5)), a
+      ELSE
+        ld      a, scrh*2
+        ld      de, scrw*2+1
+        ld      bc, 31-scrw*2
+        ld      hl, $5800+offsex-1+(offsey<<5)
+ini1    ld      (hl), b
+        add     hl, de
+        ld      (hl), b
+        add     hl, bc
+        dec     a
+        jr      nz, ini1
+      ENDIF
+    ENDIF
       IF  machine=0
         dec     a
         ld      ($5b00), a
         ld      ($5bfe), a
-        ld      sp, $50a0
+        ld      sp, $4020+(offsey+2*scrh<<5&0xe0)+(offsey+2*scrh<<8&0x1800)
         ld      de, sylo | syhi<<8
         ld      h, e
         ld      l, e
@@ -1222,7 +1276,7 @@ ini2    push    de
         ld      b, 6
 ini3    push    hl
         djnz    ini3
-        ld      sp, $51a0
+        ld      sp, $4120+(offsey+2*scrh<<5&0xe0)+(offsey+2*scrh<<8&0x1800)
         push    de
         push    de
         push    de
@@ -1230,11 +1284,11 @@ ini3    push    hl
         ld      b, 13
 ini4    push    de
         djnz    ini4
-        ld      sp, $52a0
+        ld      sp, $4220+(offsey+2*scrh<<5&0xe0)+(offsey+2*scrh<<8&0x1800)
         ld      b, 16
 ini5    push    de
         djnz    ini5
-        ld      sp, $5aa0
+        ld      sp, $5820+(offsey+2*scrh<<5)
         ld      b, 16
 ini6    push    de
         djnz    ini6
@@ -1244,6 +1298,7 @@ ini7    ld      sp, 0
         ret
       ENDIF
       IF  machine=1
+      ld sp, $5800
         ld      (do3+1), a
         ld      (port), a
         dec     a
@@ -1302,10 +1357,10 @@ ini7    ld      sp, 0
         ret
       ENDIF
 
-      IF bithlf=1
+    IF bithlf=1 && bitsym>1
 gbit1   sub     $80 - (1 << bitsym - 2)
         defb    $da             ; second part of half bit implementation
-      ENDIF
+    ENDIF
 gbit2   ld      b, (hl)         ; load another group of 8 bits
         dec     hl
 gbit3   rl      b               ; get next bit

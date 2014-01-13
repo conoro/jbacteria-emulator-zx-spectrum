@@ -2,6 +2,7 @@ tmode   0
 smooth  1
 clipup  1
 clipdn  1
+cliphr  0
 safeco  1
-offsex  1
-offsey  0
+offsex  2
+offsey  2

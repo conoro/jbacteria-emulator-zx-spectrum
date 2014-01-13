@@ -3,6 +3,7 @@ set _lang=c
 if "%1"=="gfx" (
   util\Png2Rcs loading.png loading.rcs
   util\zx7b loading.rcs loading.zx7
+  util\GenTmx 3 3 10 10 map.tmx
   util\TmxCompress map.tmx map_compressed.bin > defmap.asm
   util\step1
   goto cont

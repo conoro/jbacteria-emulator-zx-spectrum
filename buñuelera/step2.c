@@ -2,9 +2,9 @@
 #include <stdlib.h>
 FILE *fi, *fi2;
 unsigned char mem[0x10000], sprites[0x8000], sblocks[0x81], sorder[0x81], subset[0x1200][0x81];
-char tmpstr[20], *fou;
+char tmpstr[30], *fou;
 unsigned  saccum[0x81], stiles, ssprites, scode, scode1, scode2, smooth, nblocks, nsprites,
-          nnsprites, sum, tmp, init0, init1, frame0, frame1, point, stasp;
+          nnsprites, sum, tmp, init0, init1, frame0, frame1, point, stasp, scrw, scrh, mapw, maph;
 int i, j, k, l;
 struct {
   int len;
@@ -42,9 +42,22 @@ int main(int argc, char *argv[]){
   frame0= mem[0xfff2] | mem[0xfff3]<<8;
   fi= fopen("config.def", "r");
   while ( !feof(fi) ){
-    fgets(tmpstr, 20, fi);
+    fgets(tmpstr, 30, fi);
     if( fou= (char *) strstr(tmpstr, "smooth") )
       smooth= atoi(fou+6);
+  }
+  fclose(fi);
+  fi= fopen("defmap.asm", "r");
+  while ( !feof(fi) ){
+    fgets(tmpstr, 30, fi);
+    if( fou= (char *) strstr(tmpstr, "scrw") )
+      scrw= atoi(fou+6);
+    else if( fou= (char *) strstr(tmpstr, "scrh") )
+      scrh= atoi(fou+6);
+    else if( fou= (char *) strstr(tmpstr, "mapw") )
+      mapw= atoi(fou+6);
+    else if( fou= (char *) strstr(tmpstr, "maph") )
+      maph= atoi(fou+6);
   }
   fclose(fi);
   fi= fopen("tiles.bin", "rb");
@@ -202,6 +215,10 @@ int main(int argc, char *argv[]){
   fclose(fi);
   fi= fopen("defs.h", "wb+");
   fprintf(fi, "#define smooth %d\n"
-              "#define stack  %d\n", smooth, 0xfe50-stasp);
+              "#define stack  %d\n"
+              "#define scrw   %d\n"
+              "#define scrh   %d\n"
+              "#define mapw   %d\n"
+              "#define maph   %d\n", smooth, 0xfe50-stasp, scrw, scrh, mapw, maph);
   fclose(fi);
 }
