@@ -1,4 +1,4 @@
-Fucking Awesome Spectrum Engine (FASE) v0.12
+Fucking Awesome Spectrum Engine (FASE) v0.13
 --------------------------------------------
 
 There are 3 ways of generate game.tap. Just execute fase.bat with zero or one
@@ -28,15 +28,27 @@ The parameters of config.def are:
   sprite are stored. The 1 value is for fine 1 pixel movement and 8
   rotations per sprite. Normally sprites storage is 5K with 0 and 10K with 1
 -clipup
-  0 or 1. 1 enabled and 0 disabled. This is for clipping the sprites in the
-  upper bound of the screen. Sprite clipping require many lines of code, so
-  you must disable if you don't really need
+  0, 1 or 2. 0 disabled, 1 clipping bar, 2 with code. This is for clipping
+  the sprites in the upper bound of the playing area. If you need clipping,
+  a black clipping bar on top is recommended because requires minimum code.
+  Only use with code if the playing window is on the top of the screen and
+  there is no space for the clipping bar
 -clipdn
-  0 or 1. Same of last parameter but for the lower bound
--safeco
-  0 or 1. Safe coordinates. Avoid crashing if the Y coordinate of the sprite
-  has an illegal value. Disable it if you ensure legal values from your
-  program and you'll save some bytes
+  0, 1 or 2. Same of last parameter but for the lower bound
+-cliphr
+  0, 1. This adds both left and right clipping bars. There is no option to
+  clipping by code or clipping left or right bar separately
+-safevr
+  0 or 1. Safe vertical coordinates. Avoid crashing if the Y coordinate
+  of the sprite has an illegal value. Disable it if you ensure legal values
+  from your program and you'll save some bytes
+-safehr
+  Same like safevr but for horizontal coordinates
+-offsex
+  Number of chars (groups of 8 pixels) from the left bound of the screen to
+  the left bound of the playing window
+-offsey
+  Same as above but for Y coordinate
 
 The engine works at this version with ZX Basic:
 http://www.boriel.com/software/the-zx-basic-compiler/

@@ -8,7 +8,7 @@
         DEFINE  ramt  desc
       ENDIF
         display "----------------------------"
-        display "| ",/A,0x7e50-stasp-main_size, " bytes free |"
+        display /A,0x7e50-stasp-main_size, " bytes free"
         display "____________________________"
         output  loader.bin
         org     $5b06+ini-prnbuf

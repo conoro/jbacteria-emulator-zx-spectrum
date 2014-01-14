@@ -1312,6 +1312,14 @@ ini1    ld      (hl), b
       ELSE
         ld      sp, $4020+(offsey+2*scrh<<5&0xe0)+(offsey+2*scrh<<8&0x1800)
       ENDIF
+        ld      b, 16
+ini15   push    af
+        djnz    ini15
+      IF clipdn=1
+        ld      sp, $4120+(offsey+1+2*scrh<<5&0xe0)+(offsey+1+2*scrh<<8&0x1800)
+      ELSE
+        ld      sp, $4120+(offsey+2*scrh<<5&0xe0)+(offsey+2*scrh<<8&0x1800)
+      ENDIF
         ld      de, sylo | syhi<<8
         ld      h, e
         ld      l, e
@@ -1322,9 +1330,9 @@ ini2    push    de
 ini3    push    hl
         djnz    ini3
       IF clipdn=1
-        ld      sp, $4120+(offsey+1+2*scrh<<5&0xe0)+(offsey+1+2*scrh<<8&0x1800)
+        ld      sp, $4220+(offsey+1+2*scrh<<5&0xe0)+(offsey+1+2*scrh<<8&0x1800)
       ELSE
-        ld      sp, $4120+(offsey+2*scrh<<5&0xe0)+(offsey+2*scrh<<8&0x1800)
+        ld      sp, $4220+(offsey+2*scrh<<5&0xe0)+(offsey+2*scrh<<8&0x1800)
       ENDIF
         push    de
         push    de
@@ -1334,9 +1342,9 @@ ini3    push    hl
 ini4    push    de
         djnz    ini4
       IF clipdn=1
-        ld      sp, $4220+(offsey+1+2*scrh<<5&0xe0)+(offsey+1+2*scrh<<8&0x1800)
+        ld      sp, $4320+(offsey+1+2*scrh<<5&0xe0)+(offsey+1+2*scrh<<8&0x1800)
       ELSE
-        ld      sp, $4220+(offsey+2*scrh<<5&0xe0)+(offsey+2*scrh<<8&0x1800)
+        ld      sp, $4320+(offsey+2*scrh<<5&0xe0)+(offsey+2*scrh<<8&0x1800)
       ENDIF
         ld      b, 16
 ini5    push    de
