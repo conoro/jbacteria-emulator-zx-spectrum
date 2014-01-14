@@ -83,7 +83,7 @@ next    call    ramt-maplen-12
         ld      ($fff2), hl
 copied  ld      hl, ramt-1-maplen-codel2-codel1-codel0-bl2len-$281-$7f*smooth
         ld      de, $7fff
-        ld      bc, $2469
+        ld      bc, $23f8
         lddr
       IF  bl2len>0
         ld      hl, ramt-maplen-codel2-codel1-codel0-1

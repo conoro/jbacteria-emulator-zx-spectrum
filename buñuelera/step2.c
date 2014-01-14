@@ -60,7 +60,7 @@ int main(int argc, char *argv[]){
   }
   fclose(fi);
   fi= fopen("tiles.bin", "rb");
-  stiles= fread(mem+0x5c50, 1, 0x2400, fi);
+  stiles= fread(mem+0x5c08, 1, 0x23f8, fi);
   fclose(fi);
   nsprites= smooth ? 0x80 : 0x40;
   ssprites-= nsprites;
@@ -83,8 +83,8 @@ int main(int argc, char *argv[]){
   else
     blocks[0].len= 239>>1,
     blocks[0].addr= 0xff01;
-  blocks[1].len= (0x23b0-stiles)>>1;
-  blocks[1].addr= 0x5c50+stiles;
+  blocks[1].len= (0x23f8-stiles)>>1;
+  blocks[1].addr= 0x5c08+stiles;
   blocks[2].len= (ssprites>>1)-blocks[0].len-blocks[1].len;
   stasp= blocks[2].len>0 ? stasp+(blocks[2].len<<1): stasp;
   blocks[2].addr= 0x10000-stasp;
@@ -145,7 +145,7 @@ int main(int argc, char *argv[]){
   fread(mem+0xfff2, 1, 13, fi2);
   fclose(fi2);
   fi= fopen("block.bin", "wb+");
-  fwrite(mem+0x5b97, 1, 0x2469, fi);
+  fwrite(mem+0x5c08, 1, 0x23f8, fi);
   if( smooth ){
     fwrite(mem+0xfd00, 1, 0x300, fi);
     if( blocks[2].len>0 )

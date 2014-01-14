@@ -1,15 +1,15 @@
         include define.asm
         include defmap.asm
-        DEFINE  screen  $5b00
-        DEFINE  selbeg  $5bfe
-        DEFINE  selend  $5bff
-        DEFINE  mapbuf  $5b40
         DEFINE  sylo    $66
         DEFINE  syhi    $c0
-        DEFINE  port    $5bf8
+        DEFINE  enems   $5b00
+        DEFINE  mapbuf  $5b40
+        DEFINE  screen  $5c00
+        DEFINE  port    $5c01
+        DEFINE  selbeg  $5c02
+        DEFINE  selend  $5c03
+        DEFINE  tiladdr $5c08
         DEFINE  sprites $fe00
-        DEFINE  tiladdr $5c50
-        DEFINE  enems   $5c00
       IF  smooth=0
         DEFINE  final   $fd00
       ELSE
@@ -161,15 +161,9 @@ update_complete
         ld      a, (hl)
         inc     a
         jp      z, delete_sprites&$ffff
-      IF  machine=0
-        ld      b, l
-        ld      (hl), $ff
-        ld      hl, mapend+syhi-1&$ffff
-      ELSE
         ld      bc, $00ff
         ld      (hl), c
         ld      hl, mapend+$fe&$ffff
-      ENDIF
         ld      de, map&$ffff
 desc1   sbc     hl, bc
         ex      de, hl
@@ -668,14 +662,14 @@ draw2   ld      sp, (sprites)
   IF smooth=0
         and     $fe
     IF clipdn=0
-      IF safeco=1
+      IF safevr=1
         cp      scrh*16-7
         jr      c, draw3
         ld      a, scrh*16-8
       ENDIF
 draw3   add     a, d
     ELSE
-      IF safeco=1
+      IF safevr=1
         cp      scrh*16+1
         jr      c, draw3
         ld      a, scrh*16
@@ -685,7 +679,7 @@ draw3   add     a, d
         jp      nc, craw1&$ffff
     ENDIF
     IF clipup=0
-      IF safeco=1
+      IF safevr=1
         cp      offsey<<3
         jr      nc, draw4
         ld      a, offsey<<3
@@ -696,7 +690,7 @@ draw3   add     a, d
     ENDIF
 draw4
   ELSE
-    IF safeco=1
+    IF safevr=1
       IF clipdn=0
         cp      scrh*16-7
         jr      c, draw3
@@ -709,7 +703,7 @@ draw4
     ENDIF
 draw3   add     a, d
     IF clipup=0
-      IF safeco=1
+      IF safevr=1
         cp      offsey<<3
         jr      nc, draw4
         ld      offsey<<3

@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 unsigned char *image, *pixel, output[0x10000];
-char tmpstr[20], *fou, tmode, clipup, clipdn, cliphr, safeco, offsex, offsey;
+char tmpstr[20], *fou, tmode, clipup, clipdn, cliphr, safevr, safehr, offsex, offsey;
 unsigned error, width, height, i, j, k, l, min, max, nmin, nmax, amin, amax,
           mask, pics, amask, apics, inipos, reppos, smooth, outpos, fondo, tinta;
 long long atr, celdas[4];
@@ -64,8 +64,10 @@ int main(int argc, char *argv[]){
       clipdn= atoi(fou+6);
     else if( fou= (char *) strstr(tmpstr, "cliphr") )
       cliphr= atoi(fou+6);
-    else if( fou= (char *) strstr(tmpstr, "safeco") )
-      safeco= atoi(fou+6);
+    else if( fou= (char *) strstr(tmpstr, "safevr") )
+      safevr= atoi(fou+6);
+    else if( fou= (char *) strstr(tmpstr, "safehr") )
+      safehr= atoi(fou+6);
     else if( fou= (char *) strstr(tmpstr, "offsex") )
       offsex= atoi(fou+6);
     else if( fou= (char *) strstr(tmpstr, "offsey") )
@@ -150,10 +152,11 @@ int main(int argc, char *argv[]){
               "        DEFINE  clipup %d\n"
               "        DEFINE  clipdn %d\n"
               "        DEFINE  cliphr %d\n"
-              "        DEFINE  safeco %d\n"
+              "        DEFINE  safevr %d\n"
+              "        DEFINE  safehr %d\n"
               "        DEFINE  offsex %d\n"
               "        DEFINE  offsey %d\n",  tmode, pics, reppos, apics, smooth, clipup,
-                                              clipdn, cliphr, safeco, offsex, offsey);
+                                              clipdn, cliphr, safevr, safehr, offsex, offsey);
   fclose(ft);
   printf("no index     %d bytes\n", pics*36);
   printf("index bitmap %d bytes\n", pics*5+reppos*32);
