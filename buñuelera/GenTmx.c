@@ -42,8 +42,8 @@ int main(int argc, char* argv[]){
   if( scrw>6 && scrh>4 )
     for ( i= 0; i<maph; i++ )
       for ( j= 0; j<mapw; j++ ){
-        m= n4m[i];
-        n= n4m[j];
+        m= n4m[i%30];
+        n= n4m[j%30];
         ofs= (scrw-7>>1)+(scrh-5>>1)*mapw*scrw;
         for ( k= 0; k<5; k++ )
           for ( l= 0; l<3; l++ )

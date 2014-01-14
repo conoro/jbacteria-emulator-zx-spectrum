@@ -1,8 +1,8 @@
 tmode   0
 smooth  1
-clipup  1
-clipdn  1
-cliphr  0
+clipup  2
+clipdn  2
+cliphr  1
 safevr  1
 safehr  1
 offsex  2

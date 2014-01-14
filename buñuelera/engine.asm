@@ -638,10 +638,28 @@ draw1   ld      (drawh+1&$ffff), a
         add     a, a
         add     a, a
         inc     l
+    IF safehr && !cliphr
+        ex      af, af
+        ld      a, (hl)
+        cp      9
+        jr      nc, draw15
+        ld      a, 8
+draw15  cp      (scrw<<4)-8
+        jr      c, draw16
+        ld      a, (scrw<<4)-8
+draw16
+      IF smooth=0
+        and     $fe
+      ENDIF
+
+        ld      e, a
+        ex      af, af
+    ELSE
         ld      e, (hl)
       IF smooth=0
         res     0, e
       ENDIF
+    ENDIF
         inc     l
         xor     e
         and     $f8
@@ -675,8 +693,10 @@ draw3   add     a, d
         ld      a, scrh*16
       ENDIF
 draw3   add     a, d
+      IF clipdn=2
         cp      1+((offsey+scrh*2-2)<<3)
         jp      nc, craw1&$ffff
+      ENDIF
     ENDIF
     IF clipup=0
       IF safevr=1
@@ -685,8 +705,10 @@ draw3   add     a, d
         ld      a, offsey<<3
       ENDIF
     ELSE
+      IF clipup=2
         cp      offsey<<3
         jp      c, braw1&$ffff
+      ENDIF
     ENDIF
 draw4
   ELSE
@@ -702,13 +724,14 @@ draw4
       ENDIF
     ENDIF
 draw3   add     a, d
-    IF clipup=0
+  IF clipup=0
       IF safevr=1
         cp      offsey<<3
         jr      nc, draw4
-        ld      offsey<<3
+        ld      a, offsey<<3
       ENDIF
-    ELSE
+  ELSE
+    IF clipup=2
       IF offsey=0
         jp      nc, braw1&$ffff
       ELSE
@@ -716,8 +739,9 @@ draw3   add     a, d
         jp      c, braw1&$ffff
       ENDIF
     ENDIF
+  ENDIF
 draw4
-      IF clipdn=1
+      IF clipdn=2
         cp      1+((offsey+scrh*2-2)<<3)
         jp      nc, craw1&$ffff
       ENDIF
@@ -922,7 +946,7 @@ drawj   ld      sp, 0
       ENDIF
         ret
 
-    IF clipup=1
+    IF clipup=2
 braw1   ld      (brawa+1&$ffff), bc  
         ld      (braw2+1&$ffff), a
         sub     d
@@ -1039,7 +1063,7 @@ brawa   ld      bc, 0
         jp      drawa
     ENDIF
 
-    IF clipdn=1
+    IF clipdn=2
 craw1   ld      (craw2+1&$ffff), a
         cpl
         sub     $ff-(offsey+scrh*2<<3)
@@ -1229,6 +1253,27 @@ craw8   ld      a, 1
     ENDIF
 
 init    ld      (ini7+1&$ffff), sp
+
+      IF clipup=1
+        ld      hl, $5800+offsex  -cliphr+(offsey-1<<5)
+        ld      de, $5800+offsex+1-cliphr+(offsey-1<<5)
+        ld      bc, (scrh+cliphr<<1)-1
+        ld      (hl), b
+        ldir
+      ENDIF
+    IF clipdn=1
+        ld      hl, $5800+offsex  -cliphr+(offsey+2*scrh<<5)
+        ld      de, $5800+offsex+1-cliphr+(offsey+2*scrh<<5)
+      IF clipup=1
+        ld      c, (scrh+cliphr<<1)-1
+      ELSE
+        ld      bc, (scrh+cliphr<<1)-1
+      ENDIF
+        ld      (hl), b
+        ldir
+    ENDIF
+; aprovechar bc=0
+
     IF  scrw=16 || cliphr=0
         xor     a
     ELSE
@@ -1258,11 +1303,15 @@ ini1    ld      (hl), b
         jr      nz, ini1
       ENDIF
     ENDIF
-      IF  machine=0
+    IF  machine=0
         dec     a
         ld      (screen), a
         ld      (selbeg), a
+      IF clipdn=1
+        ld      sp, $4020+(offsey+1+2*scrh<<5&0xe0)+(offsey+1+2*scrh<<8&0x1800)
+      ELSE
         ld      sp, $4020+(offsey+2*scrh<<5&0xe0)+(offsey+2*scrh<<8&0x1800)
+      ENDIF
         ld      de, sylo | syhi<<8
         ld      h, e
         ld      l, e
@@ -1272,7 +1321,11 @@ ini2    push    de
         ld      b, 6
 ini3    push    hl
         djnz    ini3
+      IF clipdn=1
+        ld      sp, $4120+(offsey+1+2*scrh<<5&0xe0)+(offsey+1+2*scrh<<8&0x1800)
+      ELSE
         ld      sp, $4120+(offsey+2*scrh<<5&0xe0)+(offsey+2*scrh<<8&0x1800)
+      ENDIF
         push    de
         push    de
         push    de
@@ -1280,11 +1333,19 @@ ini3    push    hl
         ld      b, 13
 ini4    push    de
         djnz    ini4
+      IF clipdn=1
+        ld      sp, $4220+(offsey+1+2*scrh<<5&0xe0)+(offsey+1+2*scrh<<8&0x1800)
+      ELSE
         ld      sp, $4220+(offsey+2*scrh<<5&0xe0)+(offsey+2*scrh<<8&0x1800)
+      ENDIF
         ld      b, 16
 ini5    push    de
         djnz    ini5
+      IF clipdn=1
+        ld      sp, $5820+(offsey+1+2*scrh<<5)
+      ELSE
         ld      sp, $5820+(offsey+2*scrh<<5)
+      ENDIF
         ld      b, 16
 ini6    push    de
         djnz    ini6
@@ -1292,21 +1353,21 @@ ini6    push    de
         ld      (do3+1), a
 ini7    ld      sp, 0
         ret
-      ENDIF
+    ENDIF
       IF  machine=1
-      ld sp, $5800
+        ld      sp, $5c06
         ld      (do3+1), a
         ld      (port), a
-        dec     a
-        ld      (screen), a
-        ld      (selbeg), a
         ld      hl, ini3&$ffff
-        ld      de, $4000
+        ld      de, $5b00
         ld      c, ini4-ini3
         ldir
         ld      hl, $db00
-        call    $4000
-        ld      a, $fe
+        call    $5b00
+        ld      a, $ff
+        ld      (screen), a
+        ld      (selbeg), a
+        dec     a
         ld      i, a
         im      2
 ini7    ld      sp, 0
@@ -1314,7 +1375,7 @@ ini7    ld      sp, 0
 ini3    ld      c, $ff+ini3-ini4&$ff
         ldir
         ld      a, $17
-        call    $4000+ini35-ini3
+        call    $5b00+ini35-ini3
         ld      c, $ff+ini3-ini4&$ff
         ex      de, hl
         dec     e
@@ -1326,12 +1387,12 @@ ini3    ld      c, $ff+ini3-ini4&$ff
         ld      c, $ff+ini3-ini4&$ff
         add     hl, bc
         ld      a, $10
-        call    $4000+ini35-ini3
+        call    $5b00+ini35-ini3
         jr      nc, ini3
-        call    $4000+ini34-ini3
-        ld      hl, $5000+ini4-ini3
-        ld      d, $d0
-        ld      bc, $0b00-ini4+ini3
+        call    $5b00+ini34-ini3
+        ld      hl, $4000
+        ld      de, $c000
+        ld      bc, $1b00
         ldir
 ini34   xor     $07
 ini35   push    bc
