@@ -1,6 +1,9 @@
         include define.asm
         include defmap.asm
-        DEFINE  mapbuf  $5b01
+        DEFINE  screen  $5b00
+        DEFINE  selbeg  $5bfe
+        DEFINE  selend  $5bff
+        DEFINE  mapbuf  $5b40
         DEFINE  sylo    $66
         DEFINE  syhi    $c0
         DEFINE  port    $5bf8
@@ -154,7 +157,7 @@ do4     ld      a, update_complete-2-do3&$ff
 
 ;Complete background update
 update_complete
-        ld      hl, $5b00
+        ld      hl, screen
         ld      a, (hl)
         inc     a
         jp      z, delete_sprites&$ffff
@@ -207,11 +210,11 @@ desc4   call    gbit3&$ffff     ; load bitsym bits (literal)
         rrca                    ; half bit implementation (ie 48 tiles)
         call    c, gbit1&$ffff
       ENDIF
-    ELSE
-        and     a
     ENDIF
 desc45  ld      (de), a         ; write literal
-desc5   dec     e               ; test end of file (map is always 150 bytes)
+        dec     e               ; test end of file (map is always 150 bytes)
+desc5   ld      a, e
+        cp      $3f
         jr      z, descb
         call    gbit3&$ffff     ; read one bit
         rra
@@ -274,7 +277,6 @@ desca   ld      a, b            ; save b (byte reading) on a
         lddr
         pop     hl              ; restore source address (compressed data)
         ld      b, a            ; restore b register
-        inc     e               ; prepare test of end of file
         jr      desc5           ; jump to main loop
 descb   ld      a, scrh
         ld      (upba2-1), a
@@ -556,7 +558,7 @@ uppa2   ld      c, 0
         jr      uppa5
       ENDIF
 
-uppa3   ld      hl, $5bff
+uppa3   ld      hl, selend
         ld      a, (hl)
         dec     l
         ld      c, (hl)
@@ -1264,8 +1266,8 @@ ini1    ld      (hl), b
     ENDIF
       IF  machine=0
         dec     a
-        ld      ($5b00), a
-        ld      ($5bfe), a
+        ld      (screen), a
+        ld      (selbeg), a
         ld      sp, $4020+(offsey+2*scrh<<5&0xe0)+(offsey+2*scrh<<8&0x1800)
         ld      de, sylo | syhi<<8
         ld      h, e
@@ -1302,8 +1304,8 @@ ini7    ld      sp, 0
         ld      (do3+1), a
         ld      (port), a
         dec     a
-        ld      ($5b00), a
-        ld      ($5bfe), a
+        ld      (screen), a
+        ld      (selbeg), a
         ld      hl, ini3&$ffff
         ld      de, $4000
         ld      c, ini4-ini3
@@ -1348,8 +1350,8 @@ ini4
       IF  machine=2
         ld      (do3+1), a
         dec     a
-        ld      ($5b00), a
-        ld      ($5bfe), a
+        ld      (screen), a
+        ld      (selbeg), a
         dec     a
         ld      i, a
         im      2

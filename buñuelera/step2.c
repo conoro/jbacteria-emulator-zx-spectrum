@@ -9,8 +9,7 @@ int i, j, k, l;
 struct {
   int len;
   unsigned addr;
-} blocks[4]=  { { 99>>1, 0x5b97}
-              , {     0,      0}
+} blocks[3]=  { {     0,      0}
               , {     0,      0}
               , {     0,      0}};
 
@@ -74,26 +73,26 @@ int main(int argc, char *argv[]){
     ssprites-= sprites[--nsprites];
     if( i==0x80)
       --i;
-    blocks[1].len= (239-sprites[nsprites])>>1;
-    blocks[1].addr= 0xff01+sprites[nsprites];
+    blocks[0].len= (239-sprites[nsprites])>>1;
+    blocks[0].addr= 0xff01+sprites[nsprites];
     mem[0xfefe]= 0x01;
     mem[0xfeff]= 0xff;
     for ( l= 0; l<sprites[nsprites]; l++ )
       mem[0xff01+l]= sprites[saccum[nsprites]+64+smooth*64+l];
   }
   else
-    blocks[1].len= 239>>1,
-    blocks[1].addr= 0xff01;
-  blocks[2].len= (0x23b0-stiles)>>1;
-  blocks[2].addr= 0x5c50+stiles;
-  blocks[3].len= (ssprites>>1)-blocks[0].len-blocks[1].len-blocks[2].len;
-  stasp= blocks[3].len>0 ? stasp+(blocks[3].len<<1): stasp;
-  blocks[3].addr= 0x10000-stasp;
+    blocks[0].len= 239>>1,
+    blocks[0].addr= 0xff01;
+  blocks[1].len= (0x23b0-stiles)>>1;
+  blocks[1].addr= 0x5c50+stiles;
+  blocks[2].len= (ssprites>>1)-blocks[0].len-blocks[1].len;
+  stasp= blocks[2].len>0 ? stasp+(blocks[2].len<<1): stasp;
+  blocks[2].addr= 0x10000-stasp;
   mem[0xffff-stasp]= 0xff;
   mem[0xfffe-stasp]= 0xff;
   mem[point]= 0xfffe-stasp&0xff;
   mem[point+1]= 0xfffe-stasp>>8;
-  nblocks= blocks[3].len>0 ? 4 : 3;
+  nblocks= blocks[2].len>0 ? 3 : 2;
   while ( !sprites[--i] );
   nsprites= ++i;
   for ( i= 0; i < nblocks; i++ ){
@@ -149,15 +148,15 @@ int main(int argc, char *argv[]){
   fwrite(mem+0x5b97, 1, 0x2469, fi);
   if( smooth ){
     fwrite(mem+0xfd00, 1, 0x300, fi);
-    if( blocks[3].len>0 )
-      fwrite(mem+0x10000-stasp, 1, blocks[3].len<<1, fi);
+    if( blocks[2].len>0 )
+      fwrite(mem+0x10000-stasp, 1, blocks[2].len<<1, fi);
     fwrite(mem+0x10002-scode, 1, scode-2-0x37f-tmp, fi);
   }
   else{
     fwrite(mem+0xfd00, 1, 0x180, fi);
     fwrite(mem+0xfeff, 1, 0x101, fi);
-    if( blocks[3].len>0 )
-      fwrite(mem+blocks[3].addr, 1, blocks[3].len<<1, fi);
+    if( blocks[2].len>0 )
+      fwrite(mem+blocks[2].addr, 1, blocks[2].len<<1, fi);
     fwrite(mem+0x10002-scode, 1, scode-2-0x300-tmp, fi);
   }
   fi2= fopen("engine1.bin", "rb");
@@ -209,9 +208,9 @@ int main(int argc, char *argv[]){
               "        DEFINE  init1   %d\n"
               "        DEFINE  frame0  %d\n"
               "        DEFINE  frame1  %d\n"
-              "        DEFINE  bl3len  %d\n"
+              "        DEFINE  bl2len  %d\n"
               "        DEFINE  stasp   %d\n", smooth, tmp, scode-2, scode1-2,
-              scode2-2, init0, init1, frame0, frame1, blocks[3].len>0?blocks[3].len<<1:0, stasp);
+              scode2-2, init0, init1, frame0, frame1, blocks[2].len>0?blocks[2].len<<1:0, stasp);
   fclose(fi);
   fi= fopen("defs.h", "wb+");
   fprintf(fi, "#define smooth %d\n"

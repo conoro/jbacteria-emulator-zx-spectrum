@@ -38,7 +38,7 @@ ini     ld      de, desc
         call    desc
         ld      sp, $5b06
         ld      de, $ffff
-        ld      hl, ramt-1-maplen-codel2-codel1-codel0-bl3len
+        ld      hl, ramt-1-maplen-codel2-codel1-codel0-bl2len
       IF  smooth=0
         ld      bc, $101
         lddr
@@ -81,14 +81,14 @@ next    call    ramt-maplen-12
         ld      ($fffd), hl
         ld      hl, frame0
         ld      ($fff2), hl
-copied  ld      hl, ramt-1-maplen-codel2-codel1-codel0-bl3len-$281-$7f*smooth
+copied  ld      hl, ramt-1-maplen-codel2-codel1-codel0-bl2len-$281-$7f*smooth
         ld      de, $7fff
         ld      bc, $2469
         lddr
-      IF  bl3len>0
+      IF  bl2len>0
         ld      hl, ramt-maplen-codel2-codel1-codel0-1
-        ld      de, $10000-stasp+bl3len-1
-        ld      bc, bl3len
+        ld      de, $10000-stasp+bl2len-1
+        ld      bc, bl2len
         lddr
       ENDIF
         ld      hl, $ffff
