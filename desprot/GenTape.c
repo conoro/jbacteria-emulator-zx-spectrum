@@ -131,6 +131,8 @@ int main(int argc, char* argv[]){
   if( !fo )
     printf("\nCannot create output file: %s\n", argv[1]),
     exit(-1);
+  char filename[40];
+  strcpy( filename, argv[1] );
   precalc= (unsigned char *) malloc (0x200000);
   if( !strcasecmp((char *)strchr(argv[1], '.'), ".tzx" ) )
     fprintf( fo, "ZXTape!" ),
@@ -470,5 +472,5 @@ int main(int argc, char* argv[]){
     fseek(fo, 40, SEEK_SET),
     fwrite(&i, 4, 1, fo);
   fclose(fo);
-  printf("\nFile generated successfully\n");
+  printf("\nFile %s generated successfully\n", filename);
 }
