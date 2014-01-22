@@ -1738,19 +1738,7 @@ l08ca   ld      hl,ed_flags
 
 l08df   call    l05a7           ; page in normal memory
         call    l3e80
-    IF v41
-      IF spanish
-        defw    $14b0           ; enter 48K BASIC via ROM 1
-      ELSE
-        defw    $14a4           ; enter 48K BASIC via ROM 1
-      ENDIF
-    ELSE
-      IF spanish
-        defw    $1494           ; enter 48K BASIC via ROM 1
-      ELSE
-        defw    $1488           ; enter 48K BASIC via ROM 1
-      ENDIF
-    ENDIF
+        defw    m1488           ; enter 48K BASIC via ROM 1
         ret
 
 ; The Loader menu option
@@ -1773,21 +1761,8 @@ l08ff   res     0,(hl)          ; ???
         call    l191d           ; output "AT 0,0"
 l090e   call    l05a7           ; page in normal memory
         call    l3e80
-    IF v41
-      IF spanish
-        defw    $1310           ; execute Loader via ROM 1
-      ELSE
-        defw    $1304           ; execute Loader via ROM 1
-      ENDIF
-    ELSE
-      IF spanish
-        defw    $12f4           ; execute Loader via ROM 1
-      ELSE
-        defw    $12e8           ; execute Loader via ROM 1
-      ENDIF
-    ENDIF
+        defw    m12e8
         ret
-
 
 l0917   call    l1a95
         call    nc,l0794
@@ -1800,19 +1775,7 @@ l0917   call    l1a95
 
 l0928   call    l05a7           ; page in normal memory
         call    l3e80
-    IF v41
-      IF spanish
-        defw    $1479           ; execute Print via ROM 1
-      ELSE
-        defw    $146d           ; execute Print via ROM 1
-      ENDIF
-    ELSE
-      IF spanish
-        defw    $145d           ; execute Print via ROM 1
-      ELSE
-        defw    $1451           ; execute Print via ROM 1
-      ENDIF
-    ENDIF
+        defw    m1451
 l0930   ld      hl,ed_flags
         bit     6,(hl)          ; ???
 l0935   jr      nz,l093f
@@ -2507,19 +2470,7 @@ l0d6e   ld      hl,$ec00
         push    ix
         call    l05a7
         call    l3e80
-    IF v41
-      IF spanish
-        defw    $266b
-      ELSE
-        defw    $265d
-      ENDIF
-    ELSE
-      IF spanish
-        defw    $24fe
-      ELSE
-        defw    $24f0
-      ENDIF
-    ENDIF
+        defw    m24f0
         call    l05cc
         ei
         pop     ix
@@ -5893,19 +5844,7 @@ l20f9   ld      hl,(STKEND)
 l2109   ld      a,$03
         ld      (ERR_NR),a
         call    l3e80
-    IF v41
-      IF spanish
-        defw    $2747
-      ELSE
-        defw    $2739
-      ENDIF
-    ELSE
-      IF spanish
-        defw    $25d9
-      ELSE
-        defw    $25cb
-      ENDIF
-    ENDIF
+        defw    m25cb
 l2113   call    l142d
         call    $fd43
         ret     c
@@ -7915,19 +7854,7 @@ l3558   ld      hl,l3566        ; address of routine to execute in RAM
 l3566   ld      a,$04
         ld      bc,$1ffd
         out     (c),a           ; switch in ROM 2
-    IF v41
-      IF spanish
-        ld      hl,$2494        ; copy routine from ROM 2 to RAM
-      ELSE
-        ld      hl,$2492        ; copy routine from ROM 2 to RAM
-      ENDIF
-    ELSE
-      IF spanish
-        ld      hl,$245e        ; copy routine from ROM 2 to RAM
-      ELSE
-        ld      hl,$245c        ; copy routine from ROM 2 to RAM
-      ENDIF
-    ENDIF
+        ld      hl, n6000
         ld      de,$6000
         ld      bc,$0c00
         ldir
@@ -11584,19 +11511,7 @@ m133d   res     6,(iy+$02)      ; signal "lower screen can be cleared"
         cp      $00
         jr      nz,m1356        ; ???
         call    m3e80
-    IF v41
-      IF spanish
-        defw    $1aaa           ; clear bottom 3 lines to editor colours
-      ELSE
-        defw    $1a93           ; clear bottom 3 lines to editor colours
-      ENDIF
-    ELSE
-      IF spanish
-        defw    $1aa5           ; clear bottom 3 lines to editor colours
-      ELSE
-        defw    $1a8e           ; clear bottom 3 lines to editor colours
-      ENDIF
-    ENDIF
+        defw    l1a8e
 m1356   call    m2b64           ; page in normal memory
         ld      hl,TV_FLAG
         res     3,(hl)          ; signal "mode unchanged"
@@ -11669,19 +11584,7 @@ m13f3   res     6,(iy+$02)      ; signal "lower screen can be cleared"
         cp      $00
         jr      nz,m140c        ; ???
         call    m3e80
-    IF v41
-      IF spanish
-        defw    $1aaa           ; clear bottom 3 lines to editor colours
-      ELSE
-        defw    $1a93           ; clear bottom 3 lines to editor colours
-      ENDIF
-    ELSE
-      IF spanish
-        defw    $1aa5           ; clear bottom 3 lines to editor colours
-      ELSE
-        defw    $1a8e           ; clear bottom 3 lines to editor colours
-      ENDIF
-    ENDIF
+        defw    l1a8e
 m140c   call    m2b64           ; page in normal memory
         ld      hl,TV_FLAG
         res     3,(hl)          ; signal "mode unchanged"
@@ -11744,19 +11647,7 @@ m1465   call    m14c4           ; set "P" channel to use screen
 m1488   ld      hl,$6000
         push    hl              ; stack address to return to (in RAM)
         ld      de,$6000
-    IF v41
-      IF spanish
-        ld      hl,$14dd
-      ELSE
-        ld      hl,$14d1
-      ENDIF
-    ELSE
-      IF spanish
-        ld      hl,$14c1
-      ELSE
-        ld      hl,$14b5
-      ENDIF
-    ENDIF
+        ld      hl, m14b5
         ld      bc,$000f
         ldir                    ; copy following routine into RAM
         ld      a,(BANK678)
@@ -14349,19 +14240,7 @@ m2463   ld      a,'A'           ; set "A:" as default load/save drive
         call    m2b64           ; page in page 0
         jr      c,m24a3         ; move on if drive B exists
         ld      c,$00
-    IF v41
-      IF spanish
-        ld      hl,$2472        ; change disk routine in ROM 2
-      ELSE
-        ld      hl,$2470        ; change disk routine in ROM 2
-      ENDIF
-    ELSE
-      IF spanish
-        ld      hl,$2457        ; change disk routine in ROM 2
-      ELSE
-        ld      hl,$2455        ; change disk routine in ROM 2
-      ENDIF
-    ENDIF
+        ld      hl, n2455
         call    m2b89           ; page in DOS workspace
         call    m32b6           ; save TSTACK in page 7
         call    m3f00
@@ -14488,19 +14367,7 @@ m2585   res     6,(iy+$02)      ; signal "lower screen clear"
         cp      $00
         jr      nz,m259e
         call    m3e80
-    IF v41
-      IF spanish
-        defw    $1aaa           ; clear bottom 3 lines to editor colours
-      ELSE
-        defw    $1a93           ; clear bottom 3 lines to editor colours
-      ENDIF
-    ELSE
-      IF spanish
-        defw    $1aa5           ; clear bottom 3 lines to editor colours
-      ELSE
-        defw    $1a8e           ; clear bottom 3 lines to editor colours
-      ENDIF
-    ENDIF
+        defw    l1a8e
 m259e   call    m2b64           ; page in normal memory
         ld      hl,TV_FLAG
         res     3,(hl)          ; signal "mode hasn't changed"
@@ -14608,11 +14475,7 @@ m2674   ld      (iy+$0a),$ff    ; clear NSPPC
         ld      hl,FLAGS3
         res     0,(hl)          ; ???
         call    m3e80
-      IF v41
-        defw    $0680           ; call ROM 0
-      ELSE
-        defw    $067b           ; call ROM 0
-      ENDIF
+        defw    l067b
 m2686   ld      a,$10           ; error G - no room for line
         ld      bc,$0000
         jp      m25df           ; loop back
@@ -14653,19 +14516,7 @@ m26c0   pop     bc              ; restore line length
         push    hl
         ld      hl,(E_PPC)
         call    m3e80
-    IF v41
-      IF spanish
-        defw    $1434           ; ???
-      ELSE
-        defw    $141d           ; ???
-      ENDIF
-    ELSE
-      IF spanish
-        defw    $142f           ; ???
-      ELSE
-        defw    $1418           ; ???
-      ENDIF
-    ENDIF
+        defw    l1418
         ld      (E_PPC),hl
         pop     hl
         call    m2b64           ; page in normal memory
