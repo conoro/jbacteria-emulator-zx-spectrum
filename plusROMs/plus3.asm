@@ -1,5 +1,3 @@
-        include define.asm
-
 ; **************************************************
 ; *** SPECTRUM +3 ROM 0 DISASSEMBLY (EDITOR ROM) ***
 ; **************************************************
@@ -138,7 +136,7 @@
         define  SAVDRV    $5b7a
         define  DUMPLF    $5b7b
         define  STRIP1    $5b7c
-      IFDEF v41
+      IF v41
         define  STRIP2    $5b85
       ELSE
         define  STRIP2    $5b84
@@ -175,7 +173,7 @@
         define  pg_buffer $db00   ; ($20) buffer for copying between pages
         define  rt_alert  $db20   ; (2) ALERT routine address
         define  al_resp   $db22   ; (7) ALERT response string
-      IFDEF spanish
+      IF spanish
         define  al_mess   $db22   ; ($77) message for ALERT routine
       ELSE
         define  al_mess   $db29   ; ($77) message for ALERT routine
@@ -514,7 +512,7 @@ l5b34   push    hl              ; save HL
 ; Enter at ONERR to page in Syntax ROM (ROM 1) and jump to error handler
 
 l00f7   di                      ; disable interrupts
-      IFDEF v41
+      IF v41
         ld      a,$10
       ELSE
         xor     a
@@ -526,17 +524,10 @@ l00f7   di                      ; disable interrupts
         ld      bc,$7ffd
         out     (c),a           ; ensure ROM 1 is paged
         ld      (BANKM),a
-    IFDEF v41
-      IFDEF spanish
-        jp      $26b5           ; jump to error handler in ROM 1
-      ELSE
-        jp      l269a           ; jump to error handler in ROM 1
-      ENDIF
-    ELSE
+      IF v41=0
         ei                      ; enable interrupts
-        jp      $253a           ; jump to error handler in ROM 1
-    ENDIF
-
+      ENDIF
+        jp      m253a           ; jump to error handler in ROM 1
 
 ; Test memory at startup & initialise
 
@@ -649,7 +640,7 @@ l01b0   ld      hl,$3c00
         set     2,(hl)          ; set "print expanded tokens"
         ld      hl,$000b
         ld      (BAUD),hl       ; set BAUD
-      IFDEF v41
+      IF v41
         ld      hl,FLAGS2
         res     6,(hl)
       ENDIF
@@ -728,15 +719,7 @@ l01b0   ld      hl,$3c00
         ld      (ed_ATTR_P),a   ; set editor's ATTR_P
         call    l05a7           ; switch back page 0
         call    l3e80
-    IFDEF v41
-      IFDEF spanish
-        defw    $2592           ; initialise DOS & display drive info
-      ELSE
-        defw    $257d           ; initialise DOS & display drive info
-      ENDIF
-    ELSE
-        defw    $2410           ; initialise DOS & display drive info
-    ENDIF
+        defw    m2410           ; initialise DOS & display drive info
         call    l05cc           ; switch in page 7 with stack in TSTACK
         ld      (iy+$31),$02    ; set DFSZ
         set     5,(iy+$02)      ; set bit 5 of TVFLAG
@@ -1630,7 +1613,7 @@ l07f2   defb    $04
 
 l07ff   defb    $05             ; 5 lines total
         defm    "128 +3  ", $ff
-      IFDEF spanish
+      IF spanish
 l0809   defm    "Cargado", 'r'+$80
 l080f   defm    "+3 BASI", 'C'+$80
 l0817   defm    "Calculador", 'a'+$80
@@ -1728,7 +1711,7 @@ l086b   defb    $03
 l0884   defm    $16, $00, $00
         defm    $10, $00, $11, $07
         defm    $13, $00
-      IFDEF spanish
+      IF spanish
         defm    "Introduzca la cinta y pulse PLAY", $0d
         defm    "Cancelar: pulse BREAK dos veces", '.'+$80
       ELSE
@@ -1755,14 +1738,18 @@ l08ca   ld      hl,ed_flags
 
 l08df   call    l05a7           ; page in normal memory
         call    l3e80
-    IFDEF v41
-      IFDEF spanish
+    IF v41
+      IF spanish
         defw    $14b0           ; enter 48K BASIC via ROM 1
       ELSE
         defw    $14a4           ; enter 48K BASIC via ROM 1
       ENDIF
     ELSE
+      IF spanish
+        defw    $1494           ; enter 48K BASIC via ROM 1
+      ELSE
         defw    $1488           ; enter 48K BASIC via ROM 1
+      ENDIF
     ENDIF
         ret
 
@@ -1786,14 +1773,18 @@ l08ff   res     0,(hl)          ; ???
         call    l191d           ; output "AT 0,0"
 l090e   call    l05a7           ; page in normal memory
         call    l3e80
-    IFDEF v41
-      IFDEF spanish
+    IF v41
+      IF spanish
         defw    $1310           ; execute Loader via ROM 1
       ELSE
         defw    $1304           ; execute Loader via ROM 1
       ENDIF
     ELSE
+      IF spanish
+        defw    $12f4           ; execute Loader via ROM 1
+      ELSE
         defw    $12e8           ; execute Loader via ROM 1
+      ENDIF
     ENDIF
         ret
 
@@ -1809,14 +1800,18 @@ l0917   call    l1a95
 
 l0928   call    l05a7           ; page in normal memory
         call    l3e80
-    IFDEF v41
-      IFDEF spanish
+    IF v41
+      IF spanish
         defw    $1479           ; execute Print via ROM 1
       ELSE
         defw    $146d           ; execute Print via ROM 1
       ENDIF
     ELSE
+      IF spanish
+        defw    $145d           ; execute Print via ROM 1
+      ELSE
         defw    $1451           ; execute Print via ROM 1
+      ENDIF
     ENDIF
 l0930   ld      hl,ed_flags
         bit     6,(hl)          ; ???
@@ -2512,14 +2507,18 @@ l0d6e   ld      hl,$ec00
         push    ix
         call    l05a7
         call    l3e80
-    IFDEF v41
-      IFDEF spanish
+    IF v41
+      IF spanish
         defw    $266b
       ELSE
         defw    $265d
       ENDIF
     ELSE
+      IF spanish
+        defw    $24fe
+      ELSE
         defw    $24f0
+      ENDIF
     ENDIF
         call    l05cc
         ei
@@ -5894,14 +5893,18 @@ l20f9   ld      hl,(STKEND)
 l2109   ld      a,$03
         ld      (ERR_NR),a
         call    l3e80
-    IFDEF v41
-      IFDEF spanish
+    IF v41
+      IF spanish
         defw    $2747
       ELSE
         defw    $2739
       ENDIF
     ELSE
+      IF spanish
+        defw    $25d9
+      ELSE
         defw    $25cb
+      ENDIF
     ENDIF
 l2113   call    l142d
         call    $fd43
@@ -6002,7 +6005,7 @@ l2183   cp      a               ; test A
         ret
 l2186   jp      (hl)
 
-      IFDEF spanish
+      IF spanish
 l2187   push    hl
         push    de
         push    af
@@ -6021,14 +6024,14 @@ l2187   push    hl
         pop     de
         pop     bc
         jr      z,l21eb
-        ld      hl,$23ba
+        ld      hl, msg1
         push    af
         call    x21df
         pop     af
         rst     $10
-        ld      hl,$23df
+        ld      hl, msg2
         call    x21df
-        call    $188d
+        call    l1871
 x21d3   push    de
         rst     $28
         defw    $0d6e
@@ -6047,7 +6050,7 @@ x21df   ld      a,(hl)
         ret     nz
         inc     hl
         jr      x21df
-l21eb   ld      hl,$22b0
+l21eb   ld      hl, msg3
         call    x21df
         ld      a,c
         rst     $10
@@ -6058,7 +6061,7 @@ l21eb   ld      hl,$22b0
         push    bc
         pop     hl
         add     hl,hl
-        ld      bc,$229c
+        ld      bc, msg4
         add     hl,bc
         ld      a,(hl)
         inc     hl
@@ -6087,9 +6090,9 @@ l2223   pop     af
         call    x21df
         pop     af
         ld      (ATTR_T),a
-        ld      hl,$22c9
+        ld      hl, msg5
         call    x21df
-l2238   call    $188d
+l2238   call    l1871
         and     $df
         ld      e,$00
         cp      'C'
@@ -6104,7 +6107,7 @@ l2238   call    $188d
 x224f   push    af
         push    de
         push    hl
-        ld      hl,$22ba
+        ld      hl, msg6
         call    x21df
         ld      a,d
         call    l2275
@@ -6116,7 +6119,7 @@ x224f   push    af
 l2261   push    af
         push    de
         push    hl
-        ld      hl,$22c1
+        ld      hl, msg7
         call    x21df
         ld      a,e
         call    l2275
@@ -6149,33 +6152,33 @@ l2295   push    af
         rst     $10
         pop     af
         ret
-        defw    $22e9
-        defw    $22f7
-        defw    $2318
-        defw    $232c
-        defw    $233c
-        defw    $2347
-        defw    $2363
-        defw    $2377
-        defw    $238a
-        defw    $23a7
-        defb    $16, $00, $00
+msg4    defw    msg8
+        defw    msg9
+        defw    msg10
+        defw    msg11
+        defw    msg12
+        defw    msg13
+        defw    msg14
+        defw    msg15
+        defw    msg16
+        defw    msg17
+msg3    defb    $16, $00, $00
         defm    "UNIDAD", ' '+$80
-        defm    " PISTA", ' '+$80
-        defm    " SECTOR", ' '+$80
-        defm    $5d, "REINTENTAR, IGNORAR O CANCELAR", '?'+$80, $0d
-        defm    "NO PREPARADA", $0d+$80, $0d
-        defm    "DISCO PROTEGIDO CONTRA ESCRITUR", 'A'+$80, $01, $0d
-        defm    "FALLO DE BUSQUEDA", $0d+$80, $02
-        defm    "ERROR DE DATOS", $0d+$80, $02
-        defm    "SIN DATOS", $0d+$80, $02
-        defm    "FALTA MARCA DE DIRECCIONES", $0d+$80, $0d
-        defm    "FORMATO INCORRECTO", $0d+$80, $02
-        defm    "ERROR DESCONOCIDO", $0d+$80, $0d
-        defm    "DISCO CAMBIADO; SUSTITUYALO", $0d+$80, $0d
-        defm    "DISCO NO ADECUADO", $0d+$80
-        defm    "Introduzca en la unidad el discopara", ' '+$80
-        defm    " y luego pulse una tecl", 'a'+$80
+msg6    defm    " PISTA", ' '+$80
+msg7    defm    " SECTOR", ' '+$80
+msg5    defm    $5d, "REINTENTAR, IGNORAR O CANCELAR", '?'+$80
+msg8    defm    $0d, "NO PREPARADA", $0d+$80
+msg9    defm    $0d, "DISCO PROTEGIDO CONTRA ESCRITUR", 'A'+$80
+msg10   defm    $01, $0d, "FALLO DE BUSQUEDA", $0d+$80
+msg11   defm    $02, "ERROR DE DATOS", $0d+$80
+msg12   defm    $02, "SIN DATOS", $0d+$80
+msg13   defm    $02, "FALTA MARCA DE DIRECCIONES", $0d+$80
+msg14   defm    $0d, "FORMATO INCORRECTO", $0d+$80
+msg15   defm    $02, "ERROR DESCONOCIDO", $0d+$80
+msg16   defm    $0d, "DISCO CAMBIADO; SUSTITUYALO", $0d+$80
+msg17   defm    $0d, "DISCO NO ADECUADO", $0d+$80
+msg1    defm    "Introduzca en la unidad el discopara", ' '+$80
+msg2    defm    " y luego pulse una tecl", 'a'+$80
       ELSE
 
 ; Routine called from ROM 2 to display an error message in HL
@@ -6641,7 +6644,7 @@ l24c6   call    l2429           ; set success/fail flag
         ld      hl,l255e
         call    l2703
         ld      e,$00           ; chars per line count
-      IFDEF v41
+      IF v41 || spanish
         ld      b,$03
 l24df   dec     b
         jr      z,l2530
@@ -6705,7 +6708,7 @@ l251f   ld      bc,$1ffd
         ei
         ret
 l252c   pop     af              ; discard AF
-      IFDEF v41
+      IF v41 || spanish
         pop     af              ; discard return address
       ENDIF
         pop     af              ; discard return address
@@ -7782,7 +7785,7 @@ l30d9   defm    $16, $5, $5, $14, $1
         defm    $12, $0, $16, $0e, $5
         defm    " for 1 sec ", $14, $0, $ff
 l311e   defm    $16, $9, $0, $14, $1
-      IFDEF v41
+      IF v41
         defm    " SPECTRUM +3 test program V 4.1  AMSTRAD 1987..."
       ELSE
         defm    " SPECTRUM +3 test program V 4.0  AMSTRAD 1987..."
@@ -7912,14 +7915,18 @@ l3558   ld      hl,l3566        ; address of routine to execute in RAM
 l3566   ld      a,$04
         ld      bc,$1ffd
         out     (c),a           ; switch in ROM 2
-    IFDEF v41
-      IFDEF spanish
+    IF v41
+      IF spanish
         ld      hl,$2494        ; copy routine from ROM 2 to RAM
       ELSE
         ld      hl,$2492        ; copy routine from ROM 2 to RAM
       ENDIF
     ELSE
+      IF spanish
+        ld      hl,$245e        ; copy routine from ROM 2 to RAM
+      ELSE
         ld      hl,$245c        ; copy routine from ROM 2 to RAM
+      ENDIF
     ENDIF
         ld      de,$6000
         ld      bc,$0c00
@@ -8246,14 +8253,18 @@ l378e   sbc     a,$d4
         defs    $1c
 
 l37ca   defs    $11
-
-      IFDEF v41
-l37db   defs    $4c
+l37db
+    IF v41
+        defs    $4c
+    ELSE
+      IF spanish
+        defs    $51
       ELSE
-l37db   defs    $59
+        defs    $59
       ENDIF
+    ENDIF
 
-      IFDEF spanish
+      IF spanish
 l3834   defs    $3b9
       ELSE
 l3834   defs    $05cc
@@ -8433,14 +8444,18 @@ l3ff0   jp      l2187           ; go to the routine
         defb    $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff
         defb    $ff, $ff, $ff, $ff
 
-    IFDEF v41
-      IFDEF spanish
+    IF v41
+      IF spanish
         defb    $b6
       ELSE
         defb    $1f
       ENDIF
     ELSE
+      IF spanish
+        defb    $66
+      ELSE
         defb    $8b
+      ENDIF
     ENDIF
 
 
@@ -9205,7 +9220,7 @@ m0392   bit     5,(iy+$01)
 
 ; Formatting message
 
-      IFDEF spanish
+      IF spanish
 m03a7   defm    "Ya formateado. Tecla A para", $0d
         defm    "abandonar/otra para continuar", 0
       ELSE
@@ -9235,7 +9250,7 @@ m03f6   rst     $28
         dec     a
         or      b               ; check length
         jr      z,m0407
-      IFDEF v41
+      IF v41
         jp      m045b           ; "Invalid drive" error if not 1
       ELSE
         jp      m028d           ; "Invalid drive" error if not 1
@@ -9248,7 +9263,7 @@ m0407   ld      a,(de)
 m0411   set     2,(hl)          ; if 2nd string "E", set "expand tokens" flag
         jr      m041c
 m0415   cp      'U'
-      IFDEF v41
+      IF v41
         jp      nz,m045b        ; if 2nd string not "U", error
       ELSE
         jp      nz,m028d        ; if 2nd string not "U", error
@@ -9260,7 +9275,7 @@ m041c   rst     $28
         dec     a
         or      b               ; check length
         jr      z,m0427
-      IFDEF v41
+      IF v41
         jp      m045b           ; "Invalid drive" error if not 1
       ELSE
         jp      m028d           ; "Invalid drive" error if not 1
@@ -9281,7 +9296,7 @@ m043b   cp      'E'
         set     2,(hl)          ; if "E", set "expand tokens" flag
         ret
 m0442   cp      'U'
-      IFDEF v41
+      IF v41
         jr      nz,m0449
         res     2,(hl)
         ret
@@ -9348,7 +9363,7 @@ m0481   bit     5,(hl)
         pop     de              ; exit without doing anything
         pop     bc              ; (lower screen should have been cleared)
         ret
-      IFDEF spanish
+      IF spanish
 m0493   cp      'S'
       ELSE
 m0493   cp      'Y'
@@ -9399,7 +9414,7 @@ m04ce   inc     de
 
 ; Erase messages
 
-      IFDEF spanish
+      IF spanish
 m04d5   defm    "]Borrar ", 0
 m04dc   defm    " (S/N)?", 0
       ELSE
@@ -9790,7 +9805,7 @@ m07ba   call    m2b64           ; page in normal memory
         call    m2b89           ; page in DOS workspace
         jp      m0784           ; go to display free space
 
-      IFDEF spanish
+      IF spanish
 m07c9   defm    "K LIBRES", $0d, 0
 m07d1   defm    "NINGUN FICHERO ENCONTRADO", $0d, $0d, 0
       ELSE
@@ -9953,7 +9968,7 @@ m08b0   ld      (de),a          ; fill 11-byte name with spaces
         ld      a,(de)
         cp      '*'
         jr      nz,m08e4        ; or if not "*"
-      IFDEF v41
+      IF v41
         ld      a,(T_ADDR)
         cp      $01
         jr      nz,m08e4
@@ -11569,14 +11584,18 @@ m133d   res     6,(iy+$02)      ; signal "lower screen can be cleared"
         cp      $00
         jr      nz,m1356        ; ???
         call    m3e80
-    IFDEF v41
-      IFDEF spanish
+    IF v41
+      IF spanish
         defw    $1aaa           ; clear bottom 3 lines to editor colours
       ELSE
         defw    $1a93           ; clear bottom 3 lines to editor colours
       ENDIF
     ELSE
+      IF spanish
+        defw    $1aa5           ; clear bottom 3 lines to editor colours
+      ELSE
         defw    $1a8e           ; clear bottom 3 lines to editor colours
+      ENDIF
     ENDIF
 m1356   call    m2b64           ; page in normal memory
         ld      hl,TV_FLAG
@@ -11650,14 +11669,18 @@ m13f3   res     6,(iy+$02)      ; signal "lower screen can be cleared"
         cp      $00
         jr      nz,m140c        ; ???
         call    m3e80
-    IFDEF v41
-      IFDEF spanish
+    IF v41
+      IF spanish
         defw    $1aaa           ; clear bottom 3 lines to editor colours
       ELSE
         defw    $1a93           ; clear bottom 3 lines to editor colours
       ENDIF
     ELSE
+      IF spanish
+        defw    $1aa5           ; clear bottom 3 lines to editor colours
+      ELSE
         defw    $1a8e           ; clear bottom 3 lines to editor colours
+      ENDIF
     ENDIF
 m140c   call    m2b64           ; page in normal memory
         ld      hl,TV_FLAG
@@ -11721,14 +11744,18 @@ m1465   call    m14c4           ; set "P" channel to use screen
 m1488   ld      hl,$6000
         push    hl              ; stack address to return to (in RAM)
         ld      de,$6000
-    IFDEF v41
-      IFDEF spanish
+    IF v41
+      IF spanish
         ld      hl,$14dd
       ELSE
         ld      hl,$14d1
       ENDIF
     ELSE
+      IF spanish
+        ld      hl,$14c1
+      ELSE
         ld      hl,$14b5
+      ENDIF
     ENDIF
         ld      bc,$000f
         ldir                    ; copy following routine into RAM
@@ -11781,7 +11808,7 @@ m14df   defb    $ef,$22,$22
 
 m14e2   defm    $16, $00, $00
 m14e5   defm    $10, $00, $11, $07, $13, $00
-      IFDEF spanish
+      IF spanish
         defm    "Introduzca la cinta y pulse PLAY", $0d
         defm    "Cancelar: pulse BREAK dos veces.", $ff
       ELSE
@@ -13131,7 +13158,7 @@ m1e85   rst     $28
         defw    $15c4           ; invalid I/O device error
         ret
 m1e89   call    m2af9           ; test for BREAK
-      IFDEF v41
+      IF v41
         ld      hl,FLAGS2
         bit     6,(hl)
         jr      z,m1e8c
@@ -13282,7 +13309,7 @@ m1f64   ld      hl,SERFL
         ei
         ret                     ; done
 
-m1f94 IFDEF v41
+m1f94 IF v41
         di
         exx
         ld      de,(BAUD)       ; DE=BAUD
@@ -13564,7 +13591,7 @@ m2051   push    hl
         pop     hl
         jp      z,m20a8         ; move on if print output is centronics
 
-      IFDEF v41
+      IF v41
         ld      hl,FLAGS2
         bit     6,(hl)
         jr      z,m205c
@@ -13620,7 +13647,7 @@ m2098   dec     hl
         ei
         ret
 
-      IFDEF v41
+      IF v41
 x216d   push    af
         ld      c,$fd
         ld      d,$ff
@@ -14141,7 +14168,7 @@ m2347   push    hl
         defw    $1601           ; open channel to stream 2
         pop     af
         call    m3e80
-      IFDEF v41
+      IF v41
         defw    $071b           ; "do" the key
       ELSE
         defw    $0716           ; "do" the key
@@ -14322,14 +14349,18 @@ m2463   ld      a,'A'           ; set "A:" as default load/save drive
         call    m2b64           ; page in page 0
         jr      c,m24a3         ; move on if drive B exists
         ld      c,$00
-    IFDEF v41
-      IFDEF spanish
+    IF v41
+      IF spanish
         ld      hl,$2472        ; change disk routine in ROM 2
       ELSE
         ld      hl,$2470        ; change disk routine in ROM 2
       ENDIF
     ELSE
+      IF spanish
+        ld      hl,$2457        ; change disk routine in ROM 2
+      ELSE
         ld      hl,$2455        ; change disk routine in ROM 2
+      ENDIF
     ENDIF
         call    m2b89           ; page in DOS workspace
         call    m32b6           ; save TSTACK in page 7
@@ -14360,7 +14391,7 @@ m24b5   ld      a,(hl)          ; get next char
 
 ; Drives present messages
 
-      IFDEF spanish
+      IF spanish
 m24be   defm    "Unidades disponibles:  ", 0
 m24c4   defm    "M", 0
 m24c8   defm    "A y M", 0
@@ -14403,13 +14434,14 @@ m252f   jp      nz,m0fbf        ; if not, execute it
         pop     hl              ; unstack ONERR address
         ret                     ; exit
 
-      IFDEF v41
+m253a
+      IF v41
         ei
       ENDIF
 ; The +3-specific error-handling routine
 ; ONERR jumps here
 
-m253a   call    m2b89           ; page in DOS workspace
+        call    m2b89           ; page in DOS workspace
         ld      b,$00
         call    m32b6           ; save TSTACK in page 7
         call    m3f00
@@ -14456,14 +14488,18 @@ m2585   res     6,(iy+$02)      ; signal "lower screen clear"
         cp      $00
         jr      nz,m259e
         call    m3e80
-    IFDEF v41
-      IFDEF spanish
+    IF v41
+      IF spanish
         defw    $1aaa           ; clear bottom 3 lines to editor colours
       ELSE
         defw    $1a93           ; clear bottom 3 lines to editor colours
       ENDIF
     ELSE
+      IF spanish
+        defw    $1aa5           ; clear bottom 3 lines to editor colours
+      ELSE
         defw    $1a8e           ; clear bottom 3 lines to editor colours
+      ENDIF
     ENDIF
 m259e   call    m2b64           ; page in normal memory
         ld      hl,TV_FLAG
@@ -14572,7 +14608,7 @@ m2674   ld      (iy+$0a),$ff    ; clear NSPPC
         ld      hl,FLAGS3
         res     0,(hl)          ; ???
         call    m3e80
-      IFDEF v41
+      IF v41
         defw    $0680           ; call ROM 0
       ELSE
         defw    $067b           ; call ROM 0
@@ -14617,14 +14653,18 @@ m26c0   pop     bc              ; restore line length
         push    hl
         ld      hl,(E_PPC)
         call    m3e80
-    IFDEF v41
-      IFDEF spanish
+    IF v41
+      IF spanish
         defw    $1434           ; ???
       ELSE
         defw    $141d           ; ???
       ENDIF
     ELSE
+      IF spanish
+        defw    $142f           ; ???
+      ELSE
         defw    $1418           ; ???
+      ENDIF
     ENDIF
         ld      (E_PPC),hl
         pop     hl
@@ -14717,13 +14757,13 @@ m2705   defw    m276d
         defw    m2a8a
         defw    m2a97
 
-      IFDEF v41
+      IF v41 || spanish
         defw    m2aa8
         defw    m2ac1
       ENDIF
 
 ; The +3 BASIC and +3DOS error messages
-      IFDEF spanish
+      IF spanish
 m276d   defm    "Error en MERG", 'E'+$80
 m2778   defm    "FICHERO INCORRECT", 'O'+$80
 m2787   defm    "Error en COD", 'E'+$80
@@ -15351,7 +15391,7 @@ m2e95   ld      hl,src_file     ; source filename
 
 ; Subroutine to copy everything from file 0 to file 1, via a 2K area
 ; in page 0 (bug: this should be page 7!)
-      IFDEF v41
+      IF v41
 m2ecd   ld      bc,$0007        ; file 0, page 0 (oops, should be page 7!)
       ELSE
 m2ecd   ld      bc,$0000        ; file 0, page 0 (oops, should be page 7!)
@@ -15385,7 +15425,7 @@ m2f0b   ld      a,e
         or      d
         jr      z,m2f23         ; if no bytes read, move on
         ld      hl,tmp_buff
-      IFDEF v41
+      IF v41
         ld      bc,$0107
       ELSE
         ld      bc,$0100
@@ -15425,7 +15465,7 @@ m2f44   ld      hl,tmp_file     ; temporary filename
         jp      nc,m3219        ; move on if error
         ld      hl,$0000
         ld      (tmp_bytes),hl  ; zero # bytes copied to temp file
-      IFDEF v41
+      IF v41
 m2f61   ld      bc,$0007
       ELSE
 m2f61   ld      bc,$0000
@@ -15460,7 +15500,7 @@ m2f9f   ld      a,e
         jr      z,m2fb9         ; move on if no bytes read
         push    de
         ld      hl,tmp_buff
-      IFDEF v41
+      IF v41
         ld      bc,$0207
       ELSE
         ld      bc,$0200
@@ -15515,7 +15555,7 @@ m2fd2   ld      a,(src_drv)
         ld      (dst_open),a    ; signal dest file is open
 m301e   ld      hl,tmp_buff
         ld      de,$0800
-      IFDEF v41
+      IF v41
         ld      bc,$0207
       ELSE
         ld      bc,$0200
@@ -15532,7 +15572,7 @@ m301e   ld      hl,tmp_buff
         or      a
         sbc     hl,de           ; HL=# bytes read
 m3042   ex      de,hl
-      IFDEF v41
+      IF v41
         ld      bc,$0107
       ELSE
         ld      bc,$0100
@@ -15823,7 +15863,7 @@ m3252   ld      hl,tmp_file
         call    m32ee           ; restore TSTACK
         pop     af              ; restore +3DOS error code
         call    m2b64           ; page in normal memory
-      IFDEF v41
+      IF v41
         ld      a,$02
         rst     $28
         defw    $1601
@@ -15860,7 +15900,7 @@ m3283   defm    "M:VAXNSUZ.$$$", $ff
 
 ; Files copied messages
 
-      IFDEF spanish
+      IF spanish
 m3291   defm    $0d, "  1 fichero copiado.", $0d, $0d, 0
 m32a5   defm    " ficheros copiados.", $0d, $0d, 0
       ELSE
@@ -15879,7 +15919,7 @@ m32b6   di
         ld      (tmp_bc),bc     ; save BC
         ld      hl,TSTACK
         ld      de,tmp_stack
-      IFDEF v41
+      IF v41
         ld      bc,$0083
       ELSE
         ld      bc,$0084
@@ -15913,7 +15953,7 @@ m32ee   di
         ld      (tmp_ret),hl    ; save return address
         ld      hl,tmp_stack
         ld      de,TSTACK
-      IFDEF v41
+      IF v41
         ld      bc,$0083
       ELSE
         ld      bc,$0084
@@ -15948,7 +15988,7 @@ m3328   xor     a
         call    m2b64           ; page in normal memory
         rst     $28
         defw    $0020           ; get to next char
-x34be IFDEF v41
+x34be IF v41
         cp      $dc
         jr      nz,m3347
         ld      hl,FLAGS
@@ -16338,7 +16378,7 @@ m35dc   djnz    m35c8           ; loop back
         jr      nz,m35c6        ; loop back
         call    m2ada
         defb    $0b             ; nonsense in BASIC error
-m35e5 IFDEF v41
+m35e5 IF v41 || spanish
         ld      ix,$2000
       ENDIF
         xor     a
@@ -16363,7 +16403,7 @@ m360c   ld      d,$58           ; high byte of start of attribs
         ld      hl,m3631        ; table of attrib offsets
 m3611   ld      e,(hl)
         push    af
-      IFDEF v41
+      IF v41 || spanish
         ld      a,$fb
         in      a,($fe)
         rra
@@ -16396,7 +16436,7 @@ m3613   ld      a,e
         jr      nz,m3621        ; move on if still in attribs area
         pop     af
         inc     c               ; increment base ink colour
-      IFDEF v41
+      IF v41 || spanish
         push    af
         push    bc
         push    ix
@@ -16483,14 +16523,18 @@ m3631   defb    $21,$41,$61,$81
         defb    $fb,$da,$00     ; end of table
 
 m3713   defs    $19
-    IFDEF v41
-      IFDEF spanish
+    IF v41
+      IF spanish
 m372c   defs    $00bf
       ELSE
 m372c   defs    $0104
       ENDIF
     ELSE
+      IF spanish
+m372c   defs    $0250
+      ELSE
 m372c   defs    $02d4
+      ENDIF
     ENDIF
 
 ; The printer input (m3a00) and output (m3a05) routines
@@ -16721,14 +16765,18 @@ m3f90   exx
         defb    $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff
         defb    $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff
         defb    $ff,$ff,$ff,$ff,$ff,$ff
-    IFDEF v41
-      IFDEF spanish
+    IF v41
+      IF spanish
         defb    $8e
       ELSE
         defb    $12
       ENDIF
     ELSE
+      IF spanish
+        defb    $3c
+      ELSE
         defb    $72
+      ENDIF
     ENDIF
 ; ----------------------------------------------------------------------------------------------------
 
@@ -16962,7 +17010,7 @@ n01c2   push    de
 n01cd   xor     a
         ld      b,a
         ld      c,a             ; A=BC=0
-      IFDEF spanish
+      IF spanish
         ld      de,$0101        ; DE=version info
         ld      hl,$0070        ; HL=?
       ELSE
@@ -17206,7 +17254,7 @@ n02f7   ld      b,a
         jr      nz,n0302        ; if ALERT routine exists, go to do it
         inc     l               ; otherwise exit with HL=1
         ret
-      IFDEF spanish
+      IF spanish
 n0302   push    bc              ; save drive
         call    n033a
         pop     bc
@@ -17356,7 +17404,7 @@ n03ae   defm    $8b, "not ready", $8f, $ff
         defm    $8b, "track ", $fd, ", ", $ff
         defm    $8d, "sector ", $fc, ", ", $ff
         defm    " - Retry, Ignore or Cancel? ", $ff
-      IFNDEF spanish
+      IF spanish=0
 n04cc   defm    "rRiIcC", $ff
 n04d3   defb    1,1,2,2,0,0
       ENDIF
@@ -17395,7 +17443,7 @@ n04ef   ret     c
         add     a,$e0           ; if lowercase, convert to uppercase
         ret
 
-      IFDEF spanish
+      IF spanish
         defs    56
       ELSE
         defs    10
@@ -22826,7 +22874,7 @@ n2436   inc     b
 n244b   ld      a,$40
         ret
 
-    IFDEF v41
+    IF v41
 n244e   push    hl
         ld      hl,(CURCHL)
         ex      (sp),hl
@@ -22837,7 +22885,7 @@ n244e   push    hl
         ld      hl,(FLAGS2)
         ex      (sp),hl
         xor     a
-      IFDEF spanish
+      IF spanish
         ld      h,b
         ld      l,c
       ENDIF
@@ -22870,15 +22918,17 @@ n2455   push    hl
         ld      (CURCHL),hl
         ret
     ELSE
-        
+n244e   xor     a               ; we need a response
+      IF spanish
+        ld      h,b
+        ld      l,c
+      ENDIF
 ; These routines display error messages (in RAM at HL) using ROM 0.
 ; The first requires a response (DE=list of possible keys on entry)
 
-n244e   xor     a               ; we need a response
         call    n3e00
         defw    $3ff0           ; display message
         ret
-
 n2455   or      a               ; no response required
         call    n3e00
         defw    $3ff0           ; display message
@@ -22888,15 +22938,19 @@ n2455   or      a               ; no response required
 ; ******************* SELF-TEST PROGRAM SECTION START *******************
 ; This routine is copied to RAM at $6000 and executed there with ROM 1
 ; paged in. A total of $C00 bytes is copied from here ($245c-$305b).
-    IFDEF v41
-      IFDEF spanish
+    IF v41
+      IF spanish
         define  stst    $6000-$2494
       ELSE
         define  stst    $6000-$2492
       ENDIF
         define  offs    $13
     ELSE
+      IF spanish
+        define  stst    $6000-$245e
+      ELSE
         define  stst    $6000-$245c
+      ENDIF
         define  offs    $00
     ENDIF
 
@@ -23001,7 +23055,7 @@ n60c3   call    n636a+stst      ; get drive status
         call    DD_INIT
         call    n683a+stst      ; page ROM 1/bank 0
 
-      IFNDEF v41
+      IF v41=0
         ld      d,$00
         call    n62a8+stst      ; format track 0
         ret     nc
@@ -23160,7 +23214,7 @@ n61f5   ld      a,$0b
         pop     hl
         push    de
         ld      ($685e-offs),hl ; save low word of time taken
-      IFDEF v41
+      IF v41
         ld      de,$736f
       ELSE
         ld      de,$4c2d
@@ -23181,7 +23235,7 @@ n6218   ld      (n6521+stst),a  ; set sign of spin speed difference
         jp      n623f+stst
 n6227   pop     af
         ld      hl,($685e-offs) ; get low word of time taken
-      IFDEF v41
+      IF v41
         ld      de,$736f
       ELSE
         ld      de,$4c2d
@@ -23190,7 +23244,7 @@ n6227   pop     af
         ex      de,hl           ; exchange if necessary
 n6231   xor     a               ; zero difference percentage
         sbc     hl,de           ; get timing difference
-      IFDEF v41
+      IF v41
         ld      de,$0127        ; DE is 1% difference
       ELSE
         ld      de,$00c3        ; DE is 1% difference
@@ -23589,14 +23643,18 @@ n684f   and     $fb             ; ensure ROM 1 paged
 ; *********************** END OF SELF-TEST PROGRAM **********************
 
 
-    IFDEF v41
-      IFDEF spanish
+    IF v41
+      IF spanish
 n2cc4   defs    4380
       ELSE
 n2cc4   defs    4382
       ENDIF
     ELSE
+      IF spanish
+n2cc4   defs    4415
+      ELSE
 n2cc4   defs    4417
+      ENDIF
     ENDIF
 
 ; Paging routine, for calling a routine (address inline) in ROM 0
@@ -23724,14 +23782,18 @@ n3f42   push    bc              ; save registers
         defb    $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff
         defb    $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff
         defb    $ff,$ff,$ff,$ff
-    IFDEF v41
-      IFDEF spanish
+    IF v41
+      IF spanish
         defb    $4f
       ELSE
         defb    $5c
       ENDIF
     ELSE
+      IF spanish
+        defb    $59
+      ELSE
         defb    $66
+      ENDIF
     ENDIF
 
 ; ----------------------------------------------------------------------------------------------------
@@ -23919,10 +23981,14 @@ o0010:  JP      o15F2           ; Jump forward to continue at PRINT-A-2.
 
 ; ---
 
-    IFDEF spanish
+    IF spanish
+      IF v41
         DEFB    $FF, $FC        ; Five unused locations.
+      ELSE
+        DEFB    $FF, $C0        ; Five unused locations.
+      ENDIF
     ELSE
-      IFDEF v41
+      IF v41
         DEFB    $FF, $15        ; Five unused locations.
       ELSE
         DEFB    $A7, $FF        ; Five unused locations.
@@ -26837,9 +26903,14 @@ o0991:  HALT                    ; wait for interrupt
 ;   Starts with normal initial step-over byte.
 
 ;; tape-msgs
-    IFDEF spanish
+    IF spanish
 o09A1:  DEFB    $80
-        DEFM    "PREPARE LA CINTA Y PULSE ENTER"
+        DEFM    "PREPARE LA CINTA Y PULSE "
+      IF v41
+        DEFM    "ENTER"
+      ELSE
+        DEFM    "INTRO"
+      ENDIF
 o09C0:  DEFB    '.'+$80
         DEFB    $0D
         DEFM    "PROGRAMA:"
@@ -27765,7 +27836,7 @@ o0CF0:  LD      (DE),A          ; transfer
 
 ;; scrl-mssg
 o0CF8:  DEFB    $80             ; initial step-over byte.
-      IFDEF spanish
+      IF spanish
         DEFM    "]MAS? "
         DEFB    ' '+$80
       ELSE
@@ -29702,8 +29773,14 @@ o1386:  LD      (IY+$0A),$FF    ; update NSPPC - signal 'no jump'.
 ;; rpt-mesgs
 o1391:  DEFB    $80
         DEFB    'O','K'+$80                             ; 0
-  IFDEF spanish
-        DEFM    "NEXT SIN FO"
+  IF spanish
+        DEFM    "NEXT "
+      IF v41
+        DEFM    "SIN"
+      ELSE
+        DEFM    "sin"
+      ENDIF
+        DEFM    " FO"
         DEFB    'R'+$80                                 ; 1
         DEFM    "VARIABLE NO DEFINID"
         DEFB    'A'+$80                                 ; 2
@@ -29715,11 +29792,21 @@ o1391:  DEFB    $80
         DEFB    'A'+$80                                 ; 5
         DEFM    "NUMERO MUY GRAND"
         DEFB    'E'+$80                                 ; 6
-        DEFM    "RETURN SIN GOSU"
+        DEFM    "RETURN "
+      IF v41
+        DEFM    "SIN"
+      ELSE
+        DEFM    "sin"
+      ENDIF
+        DEFM    " GOSU"
         DEFB    'B'+$80                                 ; 7
         DEFM    "FIN DE FICHER"
         DEFB    'O'+$80                                 ; 8
+      IF v41
         DEFM    "SENTENCIA STO"
+      ELSE
+        DEFM    "Sentencia STO"
+      ENDIF
         DEFB    'P'+$80                                 ; 9
         DEFM    "ARG. INVALID"
         DEFB    'O'+$80                                 ; A
@@ -29727,17 +29814,35 @@ o1391:  DEFB    $80
         DEFB    'N'+$80                                 ; B
         DEFM    "SIN SENTIDO EN BASI"
         DEFB    'C'+$80                                 ; C
-        DEFM    "BREAK/CONT REPIT"
+        DEFM    "BREAK/CONT "
+      IF v41
+        DEFM    "REPIT"
         DEFB    'E'+$80                                 ; D
+      ELSE
+        DEFM    "repit"
+        DEFB    'e'+$80                                 ; D
+      ENDIF
         DEFM    "DATOS AGOTADO"
         DEFB    'S'+$80                                 ; E
         DEFM    "NOMBRE INCORRECT"
         DEFB    'O'+$80                                 ; F
         DEFM    "NO CABE LA LINE"
         DEFB    'A'+$80                                 ; G
-        DEFM    "STOP EN INPU"
+        DEFM    "STOP "
+      IF v41
+        DEFM    "EN"
+      ELSE
+        DEFM    "en"
+      ENDIF
+        DEFB    " INPU"
         DEFB    'T'+$80                                 ; H
-        DEFM    "FOR SIN NEX"
+        DEFM    "FOR "
+      IF v41
+        DEFM    "SIN"
+      ELSE
+        DEFM    "sin"
+      ENDIF
+        DEFM    " NEX"
         DEFB    'T'+$80                                 ; I
         DEFM    "DISP. E/S INCORRECT"
         DEFB    'O'+$80                                 ; J
@@ -29745,13 +29850,25 @@ o1391:  DEFB    $80
         DEFB    'O'+$80                                 ; K
         DEFM    "PROGR. INTERRUMPID"
         DEFB    'O'+$80                                 ; L
-        DEFM    "RAMTOP INCORRECT"
+        DEFM    "RAMTOP "
+      IF v41
+        DEFM    "INCORRECT"
         DEFB    'A'+$80                                 ; M
+      ELSE
+        DEFM    "incorrect"
+        DEFB    'a'+$80                                 ; M
+      ENDIF
         DEFM    "SENT. PERDID"
         DEFB    'A'+$80                                 ; N
         DEFM    "CANAL NO VALID"
         DEFB    'O'+$80                                 ; O
-        DEFM    "FN SIN DE"
+        DEFM    "FN "
+      IF v41
+        DEFM    "SIN"
+      ELSE
+        DEFM    "sin"
+      ENDIF
+        DEFM    " DE"
         DEFB    'F'+$80                                 ; P
         DEFM    "PARAMETRO ERRONE"
         DEFB    'O'+$80                                 ; Q
@@ -43091,15 +43208,11 @@ o3A1B   EX      AF,AF'
 ; Patch to print error message routine
 
 o3A29   BIT     4,(IY+$01)      ; check bit 4 of FLAGS
-    IFDEF v41
-        DEFB    $00, $00
-    ELSE
-      IFDEF spanish
+      IF v41
         DEFB    $00, $00
       ELSE
         JR      NZ,o3A34        ; move on if in +3 BASIC
       ENDIF
-    ENDIF
         XOR     A
         LD      DE,$1536        ; else exit to do standard "comma" message
         RET     
@@ -43114,15 +43227,11 @@ o3A37   EX      (SP),HL
 ; Patch to "STMT-RET" routine
 
 o3A3B   BIT     4,(IY+$01)      ; check bit 4 of FLAGS
-    IFDEF v41
-        DEFB    $00, $00
-    ELSE
-      IFDEF spanish
+      IF v41
         DEFB    $00, $00
       ELSE
         JR      NZ,o3A46        ; move on if in +3 BASIC
       ENDIF
-    ENDIF
         BIT     7,(IY+$0A)      ; else exit with normal 48K ROM check done
         RET     
 o3A46   LD      HL,$0112
@@ -43132,15 +43241,11 @@ o3A46   LD      HL,$0112
 ; Patch to "STMT-NEXT" routine
 
 o3A4B   BIT     4,(IY+$01)      ; check bit 4 of FLAGS
-    IFDEF v41
-        DEFB    $00, $00
-    ELSE
-      IFDEF spanish
+      IF v41
         DEFB    $00, $00
       ELSE
         JR      NZ,o3A55        ; move on if in +3 BASIC
       ENDIF
-    ENDIF
         RST     $18
         CP      $0D             ; else exit with normal 48K ROM check done
         RET     
@@ -43866,7 +43971,7 @@ o3D00:  DEFB    %00000000
         DEFB    %01111110
         DEFB    %00000000
 
-      IFDEF spanish
+      IF spanish
 ; $5B - Character: '!inv'       CHR$(91)
         DEFB    %00000000
         DEFB    %00001000
@@ -43946,7 +44051,7 @@ o3D00:  DEFB    %00000000
         DEFB    %00000000
         DEFB    %11111111
 
-      IFDEF spanish
+      IF spanish
 ; $60 - Character: ' Pt '       CHR$(96)
         DEFB    %00000000
         DEFB    %11110000
@@ -44265,7 +44370,7 @@ o3D00:  DEFB    %00000000
         DEFB    %00001110
         DEFB    %00000000
 
-      IFDEF spanish
+      IF spanish
 ; $7C - Character: 'ntilde'     CHR$(124)
         DEFB    %00111000
         DEFB    %00000000
