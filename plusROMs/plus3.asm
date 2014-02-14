@@ -701,7 +701,11 @@ l01b0   ld      hl,$3c00
         ld      (iy+$31),$02    ; set DF SZ
         ex      af,af'
         cp      $52
+      IF garry
+        defb    0, 0, 0
+      ELSE
         jp      z,l2675         ; move on if in self-test program
+      ENDIF
         ld      hl,(RAMTOP)
         inc     hl
         ld      sp,hl           ; set SP to RAMTOP+1
@@ -757,7 +761,7 @@ l02ae   rra
         out     ($fe),a         ; white border
         ld      a,$02
         rst     $28
-        defw    $1601           ; open stream 2 for output
+        defw    l1601           ; open stream 2 for output
         xor     a
         ld      (TV_FLAG),a     ; clear TV FLAG
         ld      a,$16
@@ -818,7 +822,52 @@ l030a   dec     bc
         jr      nz,l0307        ; loop back for tone
 ; Here we test for sets of keys pressed at the test image, and jump
 ; to routines to handle them if necessary
-
+      IF garry
+        jr      l0302           ; sound tone again
+       call    $089f
+        ld      (hl), a
+        ret
+       call    $089f
+        ld      a, (hl)
+        ret
+        inc     b
+        djnz    l032e
+        ld      de, 15
+        jr      l0352
+l032e   djnz    l034f
+        ld      a, d
+        or      e
+       jp      nz, $38d5
+        push    hl
+        ld      hl, (CURCHL)
+        ld      de, 13
+        add     hl, de
+        ld      e, (hl)
+        inc     hl
+        ld      d, (hl)
+        dec     de
+        inc     hl
+        ex      de, hl
+        pop     bc
+        and     a
+        sbc     hl, bc
+        ex      de, hl
+       jp      c, $38d5
+        ld      (hl), c
+        inc     hl
+        ld      (hl), b
+        ret
+l034f   ld      de, 13
+l0352   ld      hl, (CURCHL)
+        add     hl, de
+        ld      e, (hl)
+        inc     hl
+        ld      d, (hl)
+        ex      de, hl
+        ld      de, 0
+        ret
+l035e   DEFS    9
+      ELSE
         ld      de,$2000        ; DE=number of times to check for keysets
         ld      ix,l03a8        ; IX=start of keyset table
 l0321   ld      l,(ix+$00)      ; HL=next keyset start address-1
@@ -872,6 +921,7 @@ l0351   defw    $fbfe
         defb    $1b             ; "M"
         defw    0               ; end of keys to scan
         defw    l21df           ; routine address
+      ENDIF
 
 ; Jump here if there is a memory test error:
 ; if the bit couldn't be set, a border is set to the bit number,
@@ -909,6 +959,9 @@ l038a   dec     de
         jr      nz,l038a        ; pause for approx 0.1s
         jr      l0379           ; loop back
 
+      IF garry
+        defs    31
+      ELSE
 ; Pretty EAR monitor keyset table
 ; Program accessed with "EUA" held down on test screen
 l0391   defw    $fbfe
@@ -937,22 +990,28 @@ l03a8   defw    l0351-1         ; self-test keyset table-1
         defw    l039e-1         ; reboot keyset table-1
         defw    0               ; end of table marker
 ; Text used for the test display
+      ENDIF
 
 l03b0   defm    $13, $0, "19", $13, $1, "87"
 
 ; Here is the initial channel information, copied to CHANS
 
-l03b8   defw    $09f4
-        defw    $10a8
+l03b8   defw    o09F4
+        defw    o10A8
         defb    'K'             ; keyboard/lower screen channel
-        defw    $09f4
-        defw    $15c4
+        defw    o09F4
+        defw    o15C4
         defb    'S'             ; main screen channel
-        defw    $0f81
-        defw    $15c4
+        defw    o0F81
+        defw    o15C4
         defb    'X'             ; workspace channel
-        defw    $3a05
-        defw    $3a00
+      IF garry
+        defw    $5b00
+        defw    $5b00
+      ELSE
+        defw    o3A05
+        defw    o3A00
+      ENDIF
         defb    'P'             ; printer channel
         defb    $80             ; end of channel information
 
@@ -1383,7 +1442,7 @@ l064e   ld      hl,TSTACK
         call    l05cc           ; page in DOS workspace
         ld      a,$02
         rst     $28
-        defw    $1601           ; open channel to stream 2
+        defw    l1601           ; open channel to stream 2
 l065c   ld      hl,l07f2
         ld      (men_rout),hl   ; store main menu routine table address
         ld      hl,l07ff
@@ -1406,7 +1465,7 @@ l067b   ld      ix,$fd98
         call    l05cc
         ld      a,$02
         rst     $28
-        defw    $1601
+        defw    l1601
         call    l185a
         ld      hl,$5c3b
 
@@ -1708,6 +1767,40 @@ l086b   defb    $03
 ; Cassette loader message
 
       ENDIF
+    IF garry
+l0884   defs    27
+        ld      hl, (CURCHL)
+        ld      de, 13
+        add     hl, de
+        ld      c, (hl)
+        inc     hl
+        ld      b, (hl)
+        inc     hl
+        ld      e, (hl)
+        inc     hl
+        ld      d, (hl)
+        ex      de, hl
+        push    hl
+        and     a
+        sbc     hl, bc
+        pop     hl
+        ex      de, hl
+       jp      nc, $38d5
+        inc     de
+        ld      (hl), d
+        dec     hl
+        ld      (hl), e
+        inc     hl
+        inc     hl
+        ld      c, (hl)
+        inc     hl
+        ld      b, (hl)
+        ex      de, hl
+        add     hl, bc
+        dec     hl
+        scf
+        ret
+    ELSE
 l0884   defm    $16, $00, $00
         defm    $10, $00, $11, $07
         defm    $13, $00
@@ -1718,6 +1811,7 @@ l0884   defm    $16, $00, $00
         defm    "Insert tape and press PLAY", $0d
         defm    "To cancel - press BREAK twic", 'e'+$80
       ENDIF
+    ENDIF
 ; The Screen menu option
 
 l08c5   call    l0748           ; call SCREEN editing key routine
@@ -1746,11 +1840,19 @@ l08df   call    l05a7           ; page in normal memory
 l08e8   call    l1a64           ; display "Loader" bar
         ld      hl,TV_FLAG
         set     0,(hl)          ; signal "using lower screen"
+      IF garry
+       ld      de, $37eb
+        nop
+        nop
+        ld      a, (LODDRV)
+        cp      $54
+      ELSE
         ld      de,l0884
         push    hl
 l08f4   ld      hl,FLAGS3
         bit     4,(hl)
         pop     hl
+      ENDIF
         jr      nz,l08ff        ; move on if disk interface present
         call    l029e           ; display cassette loader message
 l08ff   res     0,(hl)          ; ???
@@ -3913,6 +4015,11 @@ l15f0   push    hl
         ld      de,$0000        ; no previous line
         ld      hl,(PROG)       ; get start of program
         call    l15d3           ; check if end
+      IF garry
+       jp      $3873
+        ld      hl, (CURCHL)
+l1601   jp      $387f
+      ELSE
         ret     nc              ; exit if so with failure
         call    l15da           ; is it line BC
         ret     c               ; exit if so with success
@@ -3920,6 +4027,7 @@ l15f0   push    hl
 l1601   or      c
         scf
         ret     z               ; exit with first line if line 0 specified
+      ENDIF
 l1604   call    l15c9           ; get to next line
         call    l15d3
         ret     nc              ; exit if program end
@@ -5944,6 +6052,52 @@ l2183   cp      a               ; test A
         ret
 l2186   jp      (hl)
 
+    IF garry
+l2187   push    af
+        push    hl
+        ld      a, (ATTR_P)
+        push    af
+        ld      a, (BORDCR)
+        ld      (ATTR_P), a
+        rst     $28
+        defw    l0d6e
+        ld      a, $fd
+        rst     $28
+        defw    l1601
+        pop     af
+        ld      (ATTR_P), a
+        pop     hl
+l21a0   ld      a, (hl)
+        inc     hl
+        cp      $ff
+        jr      z, l21a9
+        rst     $10
+        jr      l21a0
+l21a9   pop     af
+        jr      z, l21bb
+        call    l1871
+l21af   push    de
+        rst     $28
+        defw    l0d6e
+        ld      a, $fe
+        rst     $28
+        defw    l1601
+        pop     de
+        ld      a, e
+        ret
+l21bb   call    l1871
+        and     $df
+        ld      e, 0
+        cp      $43
+        jr      z, l21af
+        inc     e
+        cp      $52
+        jr      z, l21af
+        inc     e
+        cp      $49
+        jr      z, l21af
+        jr      l21bb
+    ELSE
       IF spanish
 l2187   push    hl
         push    de
@@ -5953,10 +6107,10 @@ l2187   push    hl
         ld      a,(BORDCR)
         ld      (ATTR_P),a
         rst     $28
-        defw    $0d6e
+        defw    l0d6e
         ld      a,$fd
         rst     $28
-        defw    $1601
+        defw    l1601
         pop     af
         ld      (ATTR_P),a
         pop     af
@@ -5973,10 +6127,10 @@ l2187   push    hl
         call    l1871
 x21d3   push    de
         rst     $28
-        defw    $0d6e
+        defw    l0d6e
         ld      a,$fe
         rst     $28
-        defw    $1601
+        defw    l1601
         pop     de
         ld      a,e
         ret
@@ -6129,7 +6283,7 @@ l218c   push    de
         push    hl
         ld      a,$fd
         rst     $28
-        defw    $1601           ; open channel to stream -3
+        defw    l1601           ; open channel to stream -3
         pop     hl
         push    hl
 l2195   ld      b,$20           ; 32 chars per line
@@ -6175,19 +6329,237 @@ l21c8   ld      a,(hl)
         jr      l21be           ; else get another key
 l21d3   push    af
         rst     $28
-        defw    $0d6e           ; clear lower screen
+        defw    l0d6e           ; clear lower screen
         ld      a,$fe
         rst     $28
-        defw    $1601           ; open channel to stream -2
+        defw    l1601           ; open channel to stream -2
         pop     af
         pop     hl
         ret
       ENDIF
+    ENDIF
 
+    IF garry
+        defw    $2562
+        defw    $23f1
+        defw    $24bd
+        defw    $24e8
+        defw    $254b
+        defw    $2563
+        defw    $2692
+        defw    $2a49
+        defw    $2569
+        defw    $2584
+        defw    $25be
+        defw    $25db
+        defw    $25ec
+        defw    $2a16
+        defw    $269f
+        defw    $2739
+        defw    $273f
+        defw    $274c
+        defw    $275c
+        defw    $2767
+        defw    $2772
+        defw    $277d
+        defw    $261c
+        defw    $267c
+        defw    $2ab9
+        defw    $2788
+        defw    $26a3
+        defw    $2793
+        defw    $27ac
+        defw    $27b7
+        defw    $2286
+        defw    $2296
+        defw    $2624
+        defw    $2449
+        defw    $2562
+        defw    $24bd
+        defw    $24e8
+        defw    $254b
+        defw    $2563
+        defw    $2562
+        defw    $2a49
+        defw    $2562
+        defw    $2562
+        defw    $25be
+        defw    $25db
+        defw    $2562
+        defw    $2423
+        defw    $269f
+        defw    $2739
+        defw    $22de
+        defw    $22de
+        defw    $22de
+        defw    $22de
+        defw    $22de
+        defw    $22de
+        defw    $2562
+        defw    $2562
+        defw    $22de
+        defw    $2562
+        defw    $22de
+        defw    $22de
+        defw    $2562
+        defw    $22de
+        defw    $2254
+        defw    $2562
+l2254   set     7, (ix+$1a)     ; set freeze flag
+        ret
+l2259   ld      hl, (CURCHL)
+        ld      de, 77
+        add     hl, de
+        ret
+l2261   call    l2259
+        ld      bc, $00ff
+        bit     7, (ix+$1c)
+        ret     nz
+l226c   ld      a, (ix+$18)
+        bit     4, (ix+$1a)
+        jr      z, l2277
+        srl     a
+l2277   ld      c, a
+        inc     c
+        ret
+l227a   push    af
+        push    bc
+        push    de
+        push    hl
+       call    $27d0
+        pop     hl
+        pop     de
+        pop     bc
+        pop     af
+        ret
+l2286   and     $03
+        cp      $03
+        ret     z
+        ld      b, a
+        ld      a, (ix+$1c)
+        and     $fc
+        or      b
+        ld      (ix+$1c), a
+        ret
+l2296   res     7, (ix+$1c)
+        rra
+        ret     nc
+        set     7, (ix+$1c)
+        ret
+l22a1   ld      ix, (CURCHL)
+        ld      (ix+$23), a
+        bit     2, (ix+$1a)
+        jr      nz, l22c0
+        cp      $a5
+        jr      c, l22c0
+        sub     $a5
+        ld      hl, (RETADDR)
+        push    hl
+        rst     $28
+        defw    o0C10
+        pop     hl
+        ld      (RETADDR), hl
+        ret
+l22c0   bit     6, (ix+$1a)
+        res     6, (ix+$1a)
+        jr      nz, l22f5
+        bit     7, (ix+$1a)
+        res     7, (ix+$1a)
+        jr      nz, l2286
+        cp      $20
+       jr      nc, $22e9
+        ld      hl, $2214
+       jp      $27e4
+        bit     7, (ix+$1c)
+        ret     z
+        set     6, (ix+$1a)
+        jr      l22f5
+l22e9   cp      $20
+        jr      nz, l22f5
+       call    $2468
+        ld      a, (ix+$1e)
+        and     a
+        ret     z
+l22f5   call    l2259
+        ld      e, (ix+$1d)
+        add     hl, de
+        ld      a, (ix+$23)
+        ld      (hl), a
+        inc     (ix+$1d)
+       call    $2468
+        ld      a, (ix+$1d)
+        cp      $ff
+        jr      z, l2314
+        call    l226c
+        cp      (ix+$1e)
+        ret     nc
+l2314   call    $2468
+        call    l226c
+        cp      (ix+$1e)
+        jr      nc, l2359
+        cp      (ix+$20)
+        jr      c, l2338
+        ld      a, (ix+$20)
+        cp      $01
+        ld      a, (ix+$1f)
+        jr      z, l2331
+        and     a
+        jr      z, l2338
+l2331   ld      c, a
+        inc     c
+        ld      b, (ix+$20)
+        jr      l235f
+l2338   call    l2259
+        ld      bc, 0
+l233e   ld      a, (hl)
+        call    l227a
+        inc     hl
+        inc     c
+        ld      a, (ix+$17)
+        bit     4, (ix+$1a)
+        jr      z, l2354
+        inc     a
+        cp      (ix+$18)
+        jr      l23d2
+        dec     a
+l2354   and     a
+        jr      nz, l233e
+        jr      l23d2
+l2359   ld      c, (ix+$1d)
+        ld      b, (ix+$1e)
+l235f   ld      a, c
+        and     a
+        ret     z
+        call    l2259
+        ld      a, (ix+$1c)
+        and     $03
+        jr      z, l239a
+        push    bc
+        call    l226c
+        pop     bc
+        sub     b
+        ld      e, a
+        ld      a, (ix+$1c)
+        and     $02
+        jr      nz, l238a
+        ld      a, e
+        srl     a
+l237d   and     a
+        jr      z, l239a
+        push    af
+        ld      a, $20
+        call    l227a
+        pop     af
+        dec     a
+        jr      l237d
+        
+l238a
+l239a
+l23d2
+        block   $36ba-$
+    ELSE
 ; *************** START OF SELF-TEST PROGRAM SECTION ****************
-
 ; The self-test program, entered by pressing "QAZPLM" at the test screen
-
 l21df   di                      ; disable interrupts
         ld      ix,$ffff        ; IX=top of RAM
         ld      a,$07
@@ -6701,7 +7073,7 @@ l266f   ld      a,$52           ; signal "in test program"
         jp      l016c           ; do some initialisation & return here
 l2675   ld      a,$02
         rst     $28
-        defw    $1601           ; open channel to stream 2
+        defw    l1601           ; open channel to stream 2
 l267a   ld      hl,l2681
         call    l2703           ; output normal colour control codes
         ret
@@ -7778,7 +8150,6 @@ l3486   defm    $16, $0, $0, $12, $1
 l34a8   defm    "press [ENTER] if you heard four sounds, "
         defm    "else press [SPACE].     ", $ff
 
-
 ; Subroutine to make a beep. This is a copy of the BEEPER
 ; subroutine at 03B5 in ROM3
 
@@ -7975,7 +8346,7 @@ l362b   defm    $16, $0, $0
 
 
 ; *********** END OF SELF-TEST PROGRAM SECTION ***********
-
+    ENDIF
 
 
 l36ba   ld      (hl),h
@@ -9140,7 +9511,7 @@ m0392   bit     5,(iy+$01)
         push    af
         push    hl
         rst     $28
-        defw    $0d6e           ; clear lower screen
+        defw    l0d6e           ; clear lower screen
         pop     hl
         pop     af
         ret                     ; exit with Z set if abandon requested
@@ -9298,7 +9669,7 @@ m0493   cp      'Y'
         jr      z,m0499
         jr      m047c           ; loop back for another key if not "Y"
 m0499   rst     $28
-        defw    $0d6e           ; clear lower screen
+        defw    l0d6e           ; clear lower screen
         pop     de
         pop     bc
         ld      hl,tmp_fspec
@@ -9493,7 +9864,7 @@ m05dd   ld      a,$02           ; use stream 2
         bit     7,(iy+$01)
         jr      z,m05e8         ; move on if only syntax-checking
         rst     $28
-        defw    $1601           ; else open channel to stream
+        defw    l1601           ; else open channel to stream
 m05e8   ld      hl,(CH_ADD)
         ld      a,(hl)          ; check next char
         cp      $0d
@@ -10206,7 +10577,7 @@ m0ae9   push    ix
         jr      nc,m0ae9        ; loop back if error
         ld      a,$fe
         rst     $28
-        defw    $1601           ; open channel to stream -2
+        defw    l1601           ; open channel to stream -2
         ld      (iy+$52),$03    ; set scroll count
         ld      c,$80           ; signal "names don't match"
         ld      a,(ix+$00)
@@ -10656,7 +11027,7 @@ m0e0c   call    m2b64           ; page in normal memory
 m0e10   push    hl
         ld      a,$fd
         rst     $28
-        defw    $1601           ; open channel to stream -3
+        defw    l1601           ; open channel to stream -3
         xor     a
         ld      de,$09a1
         rst     $28
@@ -11500,7 +11871,7 @@ m12e8   call    m2b89           ; page in DOS workspace
         bit     6,(iy+$02)
         jr      nz,m133d        ; move on if shouldn't clear lower screen
         rst     $28
-        defw    $0d6e           ; clear lower screen
+        defw    l0d6e           ; clear lower screen
 m133d   res     6,(iy+$02)      ; signal "lower screen can be cleared"
         call    m2b89           ; page in DOS workspace
         ld      hl,ed_flags
@@ -11573,7 +11944,7 @@ m13c9   rst     $28
         bit     6,(iy+$02)
         jr      nz,m13f3
         rst     $28
-        defw    $0d6e           ; clear lower screen if necessary
+        defw    l0d6e           ; clear lower screen if necessary
 m13f3   res     6,(iy+$02)      ; signal "lower screen can be cleared"
         call    m2b89           ; page in DOS workspace
         ld      hl,ed_flags
@@ -11733,7 +12104,7 @@ m153f   rst     $28
         defw    $2530           ; are we checking syntax?
         jr      z,m1547
         rst     $28
-        defw    $1601           ; open channel if not
+        defw    l1601           ; open channel if not
 m1547   rst     $28
         defw    $0018           ; get character
         rst     $28
@@ -13771,7 +14142,7 @@ m217d   rst     $28
         defw    $2530           ; are we syntax-checking?
         jr      z,m2185
         rst     $28
-        defw    $1601           ; open channel if not
+        defw    l1601           ; open channel if not
 m2185   rst     $28
         defw    $0d4d           ; set temporary colours
         rst     $28
@@ -13786,9 +14157,9 @@ m218f   rst     $28
         jr      z,m219c         ; move on if syntax-checking
         ld      a,$01
 m2196   rst     $28
-        defw    $1601           ; open channel to stream 1
+        defw    l1601           ; open channel to stream 1
         rst     $28
-        defw    $0d6e           ; clear lower screen
+        defw    l0d6e           ; clear lower screen
 m219c   ld      (iy+$02),$01    ; set DF_SZ to 1
         rst     $28
         defw    $20c1           ; deal with the input items
@@ -14027,7 +14398,7 @@ m2321   ld      (K_CUR),hl      ; save address of cursor
         push    hl
         ld      a,$ff
         rst     $28
-        defw    $1601           ; open channel to stream -1
+        defw    l1601           ; open channel to stream -1
         rst     $28
         defw    $2de3           ; print the result value
         pop     hl
@@ -14056,7 +14427,7 @@ m2347   push    hl
         push    af
         ld      a,$02
         rst     $28
-        defw    $1601           ; open channel to stream 2
+        defw    l1601           ; open channel to stream 2
         pop     af
         call    m3e80
       IF v41
@@ -14356,7 +14727,7 @@ m2567   ld      hl,(E_LINE)
         bit     6,(iy+$02)
         jr      nz,m2585
         rst     $28
-        defw    $0d6e           ; clear lower screen if necessary
+        defw    l0d6e           ; clear lower screen if necessary
 m2585   res     6,(iy+$02)      ; signal "lower screen clear"
         call    m2b89           ; page in DOS workspace
         ld      hl,ed_flags
@@ -14406,7 +14777,7 @@ m25df   push    af              ; save error code
         defw    $16b0           ; clear editing areas and calculator etc
         res     5,(iy+$37)      ; ???
         rst     $28
-        defw    $0d6e           ; clear lower screen
+        defw    l0d6e           ; clear lower screen
         set     5,(iy+$02)      ; signal "clear lower screen after keystroke"
         pop     af              ; get back error code
         ld      b,a             ; save it
@@ -14887,7 +15258,7 @@ m2ba3   call    m2b89           ; page in DOS workspace
 m2bb2   ld      a,$02           ; use stream 2
 m2bb4   call    m2b64           ; page in normal memory
         rst     $28
-        defw    $1601           ; open channel to stream
+        defw    l1601           ; open channel to stream
         call    m2b89           ; page in DOS workspace
         pop     af              ; restore destination flag
         jr      z,m2c1e         ; move on if copying to another file
@@ -15573,7 +15944,7 @@ m311a   rst     $28
         defw    $0d6b           ; cls
         ld      a,$02
         rst     $28
-        defw    $1601           ; open channel to stream 2
+        defw    l1601           ; open channel to stream 2
         ret
 
 ; Routine to copy files to spectrum format
@@ -15717,7 +16088,7 @@ m3252   ld      hl,tmp_file
       IF v41
         ld      a,$02
         rst     $28
-        defw    $1601
+        defw    l1601
       ENDIF
         call    m0e9a           ; cause +3DOS error
         defb    $ff
@@ -22810,7 +23181,7 @@ n6000   call    n683a+stst      ; page ROM 1/bank 0
         defw    $0d6b           ; cls
         ld      a,$02
         rst     $28
-        defw    $1601           ; open stream 2
+        defw    l1601           ; open stream 2
         call    n6038+stst      ; do the tests
         push    af
         ld      hl,n6544+stst   ; pass message
@@ -24996,7 +25367,7 @@ o03B5:  DI                      ; Disable Interrupts so they don't disturb timin
         ADD     IX,BC           ;   IX holds address of entry into the loop
                                 ;   the loop will contain 0-3 NOPs, implementing
                                 ;   the fine part of the tone period.
-        LD      A,($5C48)       ; BORDCR
+        LD      A,(BORDCR)      ; BORDCR
         AND     $38             ; bits 5..3 contain border colour
         RRCA                    ; border colour bits moved to 2..0
         RRCA                    ;   to match border bits on port #FE
@@ -25475,7 +25846,7 @@ o053C:  DJNZ    o053C           ; self loop to SA-DELAY
 
 ;; SA/LD-RET
 o053F:  PUSH    AF              ; preserve accumulator throughout.
-        LD      A,($5C48)       ; fetch border colour from BORDCR.
+        LD      A,(BORDCR)      ; fetch border colour from BORDCR.
         AND     $38             ; mask off paper bits.
         RRCA                    ; rotate
         RRCA                    ; to the
@@ -26995,7 +27366,7 @@ o0A7A:  LD      DE,o0A87        ; address: PO-CONT will be next output routine
 o0A7D:  LD      ($5C0E),A       ; store control code in TVDATA-lo
 
 ;; PO-CHANGE
-o0A80:  LD      HL,($5C51)      ; use CURCHL to find current output channel.
+o0A80:  LD      HL,(CURCHL)     ; use CURCHL to find current output channel.
         LD      (HL),E          ; make it
         INC     HL              ; the supplied
         LD      (HL),D          ; address from DE.
@@ -27768,7 +28139,7 @@ o0D2D:  CALL    o0E00           ; routine CL-SCROLL scrolls B lines
 
 ;; TEMPS
 o0D4D:  XOR     A               ; clear the accumulator
-        LD      HL,($5C8D)      ; fetch L=ATTR_P and H=MASK_P
+        LD      HL,(ATTR_P)     ; fetch L=ATTR_P and H=MASK_P
         BIT     0,(IY+$02)      ; test TV_FLAG  - is lower screen in use ?
         JR      Z,o0D5B         ; skip to TEMPS-1 if not
 
@@ -27839,7 +28210,7 @@ o0D6E:  LD      HL,$5C3C        ; address System Variable TV_FLAG.
         LD      HL,$5AC0        ; set initial attribute address to the leftmost
                                 ; cell of second line up.
 
-        LD      A,($5C8D)       ; fetch permanent attribute from ATTR_P.
+        LD      A,(ATTR_P)      ; fetch permanent attribute from ATTR_P.
 
         DEC     B               ; decrement lower screen display file size.
 
@@ -27875,7 +28246,7 @@ o0D94:  LD      A,$FD           ; select system channel 'K'
 
         CALL    o1601           ; routine CHAN-OPEN opens it.
 
-        LD      HL,($5C51)      ; fetch CURCHL to HL to address current channel
+        LD      HL,(CURCHL)     ; fetch CURCHL to HL to address current channel
         LD      DE,o09F4        ; set address to PRINT-OUT for first pass.
         AND     A               ; clear carry for first pass.
 
@@ -27924,7 +28295,7 @@ o0DAF:  LD      HL,$0000        ; Initialize plot coordinates.
                                 ; attributes from ATTR-P.
                                 ; This routine preserves B and sets C to $21.
 
-        LD      HL,($5C51)      ; fetch CURCHL make HL address output routine.
+        LD      HL,(CURCHL)     ; fetch CURCHL make HL address output routine.
 
         LD      DE,o09F4        ; address: PRINT-OUT
         LD      (HL),E          ; is made
@@ -28098,11 +28469,11 @@ o0E4D:  AND     $07             ; mask 0-7 to consider thirds at a time
 
         INC     DE              ; make DE point to next location.
 
-        LD      A,($5C8D)       ; fetch ATTR_P - permanent attributes
+        LD      A,(ATTR_P)      ; fetch ATTR_P - permanent attributes
         BIT     0,(IY+$02)      ; test TV_FLAG  - lower screen in use ?
         JR      Z,o0E80         ; skip to CL-LINE-3 if not.
 
-        LD      A,($5C48)       ; else lower screen uses BORDCR as attribute.
+        LD      A,(BORDCR)      ; else lower screen uses BORDCR as attribute.
 
 ;; CL-LINE-3
 o0E80:  LD      (HL),A          ; put attribute in first byte.
@@ -28538,7 +28909,7 @@ o0FA9:  LD      HL,($5C49)      ; fetch E_PPC the last line number entered.
         LD      C,L             ; to BC register.
         CALL    o1F05           ; routine TEST-ROOM checks free memory.
         CALL    o1097           ; routine CLEAR-SP clears editing area.
-        LD      HL,($5C51)      ; address CURCHL
+        LD      HL,(CURCHL)     ; address CURCHL
         EX      (SP),HL         ; swap with line address on stack
         PUSH    HL              ; save line address underneath
 
@@ -29364,9 +29735,9 @@ o121C:
                                 ; --
         LD      A,$38           ; the colour system is set to white paper,
                                 ; black ink, no flash or bright.
-        LD      ($5C8D),A       ; set ATTR_P permanent colour attributes.
+        LD      (ATTR_P),A      ; set ATTR_P permanent colour attributes.
         LD      ($5C8F),A       ; set ATTR_T temporary colour attributes.
-        LD      ($5C48),A       ; set BORDCR the border colour/lower screen
+        LD      (BORDCR),A      ; set BORDCR the border colour/lower screen
                                 ; attributes.
 
         LD      HL,$0523        ; The keyboard repeat and delay values are
@@ -29980,7 +30351,7 @@ o15E4:  RST     08H             ; ERROR-1
 ;; INPUT-AD
 o15E6:  EXX                     ; switch in alternate set.
         PUSH    HL              ; save HL register
-        LD      HL,($5C51)      ; fetch address of CURCHL - current channel.
+        LD      HL,(CURCHL)     ; fetch address of CURCHL - current channel.
         INC     HL              ; step over output routine
         INC     HL              ; to point to low byte of input routine.
         JR      o15F7           ; forward to CALL-SUB.
@@ -30007,7 +30378,7 @@ o15EF:  LD      E,$30           ; add 48 decimal to give the ASCII character
 ;; PRINT-A-2
 o15F2:  EXX                     ; switch in alternate set
         PUSH    HL              ; save HL register
-        LD      HL,($5C51)      ; fetch CURCHL the current channel.
+        LD      HL,(CURCHL)     ; fetch CURCHL the current channel.
 
 ; input-ad rejoins here also.
 
@@ -30066,7 +30437,7 @@ o1610:  DEC     DE              ; reduce offset so it points to the channel.
 ; current channel when it has been temporarily altered.
 
 ;; CHAN-FLAG
-o1615:  LD      ($5C51),HL      ; set CURCHL system variable to the
+o1615:  LD      (CURCHL),HL     ; set CURCHL system variable to the
                                 ; address in HL
         RES     4,(IY+$30)      ; update FLAGS2  - signal K channel not in use.
                                 ; Note. provide a default for channel 'R'.
@@ -32568,7 +32939,7 @@ o1CA5:  SUB     (o1AEB-$D8)%256 ; convert $EB to $D8 ('INK') etc.
 ; return here in runtime.
 
         LD      HL,($5C8F)      ; pick up ATTR_T and MASK_T
-        LD      ($5C8D),HL      ; and store in ATTR_P and MASK_P
+        LD      (ATTR_P),HL     ; and store in ATTR_P and MASK_P
         LD      HL,$5C91        ; point to P_FLAG.
         LD      A,(HL)          ; pick up in A
         RLCA                    ; rotate to left
@@ -34258,7 +34629,7 @@ o21D4:  RST     08H             ; ERROR-1
 ;   the input routine in use is the one for the keyboard.
 
 ;; IN-CHAN-K
-o21D6:  LD      HL,($5C51)      ; fetch address of current channel CURCHL
+o21D6:  LD      HL,(CURCHL)     ; fetch address of current channel CURCHL
         INC     HL              ;
         INC     HL              ; advance past
         INC     HL              ; input and
@@ -34572,7 +34943,7 @@ o2294:  CALL    o1E94           ; routine FIND-INT1
         XOR     $07             ; make the ink white.
 
 ;; BORDER-1
-o22A6:  LD      ($5C48),A       ; update BORDCR with new paper/ink
+o22A6:  LD      (BORDCR),A      ; update BORDCR with new paper/ink
         RET                     ; return.
 
 ; -----------------
@@ -41957,7 +42328,7 @@ o361F:  LD      BC,$0001        ; create an initial byte in workspace
         LD      ($5C5B),HL      ; set system variable K_CUR to new location.
         PUSH    HL              ; and save start on machine stack also.
 
-        LD      HL,($5C51)      ; fetch value of system variable CURCHL
+        LD      HL,(CURCHL)     ; fetch value of system variable CURCHL
         PUSH    HL              ; and save that too.
 
         LD      A,$FF           ; select system channel 'R'.
@@ -41998,7 +42369,7 @@ o3645:  CALL    o1E94           ; routine FIND-INT1 fetches stream to A
                                 ; 'Integer out of range'
                                 ; (REPORT-Bd is within range)
 
-        LD      HL,($5C51)      ; fetch current channel CURCHL
+        LD      HL,(CURCHL)     ; fetch current channel CURCHL
         PUSH    HL              ; save it
 
         CALL    o1601           ; routine CHAN-OPEN opens channel
