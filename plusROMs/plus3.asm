@@ -504,7 +504,7 @@ l00e7   push    hl              ; save HL
         push    af              ; save AF & BC
         push    bc
         jp      STOO            ; swap ROM 0<->2 or ROM 1<->3 and return here
-l5b34   push    hl              ; save HL
+        push    hl              ; save HL
         ld      hl,(RETADDR)    ; get return address from system vars
         ex      (sp),hl         ; restore return address & HL
         ret
@@ -713,7 +713,11 @@ l01b0   ld      hl,$3c00
         rst     $28
         defw    $0d6b           ; CLS using ROM 3
         call    l02aa           ; display test image if BREAK held down
+      IF garry
+        ld      de,l3834
+      ELSE
         ld      de,l03db
+      ENDIF
         call    l029e           ; display copyright message
         ld      hl,TSTACK
         ld      (OLDSP),hl      ; set OLDSP to TSTACK area
@@ -761,7 +765,7 @@ l02ae   rra
         out     ($fe),a         ; white border
         ld      a,$02
         rst     $28
-        defw    l1601           ; open stream 2 for output
+        defw    $1601           ; open stream 2 for output
         xor     a
         ld      (TV_FLAG),a     ; clear TV FLAG
         ld      a,$16
@@ -1442,7 +1446,7 @@ l064e   ld      hl,TSTACK
         call    l05cc           ; page in DOS workspace
         ld      a,$02
         rst     $28
-        defw    l1601           ; open channel to stream 2
+        defw    $1601           ; open channel to stream 2
 l065c   ld      hl,l07f2
         ld      (men_rout),hl   ; store main menu routine table address
         ld      hl,l07ff
@@ -1465,7 +1469,7 @@ l067b   ld      ix,$fd98
         call    l05cc
         ld      a,$02
         rst     $28
-        defw    l1601
+        defw    $1601
         call    l185a
         ld      hl,$5c3b
 
@@ -1549,7 +1553,12 @@ l0736   ld      hl,ed_flags
         call    l0794           ; sound a RASP
         ret
 l0741   cp      $a3
+      IF garry
+        ret     nc
+        nop
+      ELSE
         jr      nc,l0706        ; loop back if ???
+      ENDIF
         jp      l09bc
 
 ; Editing keys: SCREEN
@@ -1598,7 +1607,11 @@ l0794   ld      a,(RASP)
 l0799   push    ix              ; save IX
         ld      d,$00
         ld      e,a             ; DE=f*t
+      IF garry
+        ld      hl, $00c8
+      ELSE
         ld      hl,$0c80        ; HL=timing constant
+      ENDIF
 l07a1   rst     $28
         defw    $03b5           ; call BEEPER
         pop     ix              ; restore IX
@@ -1671,7 +1684,11 @@ l07f2   defb    $04
 ; The main menu
 
 l07ff   defb    $05             ; 5 lines total
+      IF garry
+        defm    "128 +3e ", $ff
+      ELSE
         defm    "128 +3  ", $ff
+      ENDIF
       IF spanish
 l0809   defm    "Cargado", 'r'+$80
 l080f   defm    "+3 BASI", 'C'+$80
@@ -2705,7 +2722,11 @@ l0e60   call    l0edc
 
 l0e6c   inc     c
         ld      b,$00
+      IF garry
+        ld      hl, nr_above
+      ELSE
         ld      hl,(nr_above)
+      ENDIF
         ld      a,c
         cp      (hl)
         defb    $38
@@ -4017,8 +4038,8 @@ l15f0   push    hl
         call    l15d3           ; check if end
       IF garry
        jp      $3873
-        ld      hl, (CURCHL)
-l1601   jp      $387f
+l15fe   ld      hl, (CURCHL)
+l1601   jp      l387f
       ELSE
         ret     nc              ; exit if so with failure
         call    l15da           ; is it line BC
@@ -4617,7 +4638,11 @@ l1931   ld      a,(hl)
         rst     $10
         ld      a,'2'
         rst     $10
+      IF garry
+        ld      a, 'e'
+      ELSE
         ld      a,'A'
+      ENDIF
         jr      l192e           ; back
 
 ; This routine has a dual purpose: to either copy a "window" area to the
@@ -5001,8 +5026,13 @@ l1b64   inc     hl              ; HL points to next statement/line
         defw    $196e           ; get HL=address of target line
         jr      z,l1b7c         ; move on if the actual line was found
         ld      a,(hl)
+      IF garry
+        cp      $28
+        jr      c,l1b7c        ; or if there is a line afterwards (not end)
+      ELSE
         cp      $80
         jr      nz,l1b7c        ; or if there is a line afterwards (not end)
+      ENDIF
         ld      hl,$270f        ; use 9999 and move on
         jr      l1b8d
 l1b7c   ld      (STRIP2+$0d),hl ; save target line address
@@ -5684,7 +5714,11 @@ l1f60   ld      hl,$fda0
 l1f6d   ld      a,(hl)
         and     $7f
         push    hl
+      IF garry
+        call    l1fa9
+      ELSE
         call    l202f
+      ENDIF
         pop     hl
         ld      a,(hl)
         and     $80
@@ -5889,7 +5923,11 @@ l208e   ld      hl,($fdb3)
         ld      bc,($fdb1)
         ld      hl,($fdb3)
         and     a
+      IF garry
+        defb    0, 0
+      ELSE
         sbc     hl,bc
+      ENDIF
         jr      nc,l20bd            ; (4)
         ld      bc,($fdb3)
 
@@ -6060,10 +6098,10 @@ l2187   push    af
         ld      a, (BORDCR)
         ld      (ATTR_P), a
         rst     $28
-        defw    l0d6e
+        defw    $0d6e
         ld      a, $fd
         rst     $28
-        defw    l1601
+        defw    $1601
         pop     af
         ld      (ATTR_P), a
         pop     hl
@@ -6078,10 +6116,10 @@ l21a9   pop     af
         call    l1871
 l21af   push    de
         rst     $28
-        defw    l0d6e
+        defw    $0d6e
         ld      a, $fe
         rst     $28
-        defw    l1601
+        defw    $1601
         pop     de
         ld      a, e
         ret
@@ -6107,10 +6145,10 @@ l2187   push    hl
         ld      a,(BORDCR)
         ld      (ATTR_P),a
         rst     $28
-        defw    l0d6e
+        defw    $0d6e
         ld      a,$fd
         rst     $28
-        defw    l1601
+        defw    $1601
         pop     af
         ld      (ATTR_P),a
         pop     af
@@ -6127,10 +6165,10 @@ l2187   push    hl
         call    l1871
 x21d3   push    de
         rst     $28
-        defw    l0d6e
+        defw    $0d6e
         ld      a,$fe
         rst     $28
-        defw    l1601
+        defw    $1601
         pop     de
         ld      a,e
         ret
@@ -6283,7 +6321,7 @@ l218c   push    de
         push    hl
         ld      a,$fd
         rst     $28
-        defw    l1601           ; open channel to stream -3
+        defw    $1601           ; open channel to stream -3
         pop     hl
         push    hl
 l2195   ld      b,$20           ; 32 chars per line
@@ -6329,10 +6367,10 @@ l21c8   ld      a,(hl)
         jr      l21be           ; else get another key
 l21d3   push    af
         rst     $28
-        defw    l0d6e           ; clear lower screen
+        defw    $0d6e           ; clear lower screen
         ld      a,$fe
         rst     $28
-        defw    l1601           ; open channel to stream -2
+        defw    $1601           ; open channel to stream -2
         pop     af
         pop     hl
         ret
@@ -6453,7 +6491,7 @@ l22a1   ld      ix, (CURCHL)
         cp      $a5
         jr      c, l22c0
         sub     $a5
-        ld      hl, (RETADDR)
+l22b4   ld      hl, (RETADDR)
         push    hl
         rst     $28
         defw    o0C10
@@ -6467,16 +6505,16 @@ l22c0   bit     6, (ix+$1a)
         res     7, (ix+$1a)
         jr      nz, l2286
         cp      $20
-       jr      nc, $22e9
+        jr      nc, l22e9
         ld      hl, $2214
-       jp      $27e4
+        jp      l27e4
         bit     7, (ix+$1c)
         ret     z
         set     6, (ix+$1a)
         jr      l22f5
 l22e9   cp      $20
         jr      nz, l22f5
-       call    $2468
+        call    l2468
         ld      a, (ix+$1e)
         and     a
         ret     z
@@ -6486,15 +6524,15 @@ l22f5   call    l2259
         ld      a, (ix+$23)
         ld      (hl), a
         inc     (ix+$1d)
-       call    $2468
+        call    l2468
         ld      a, (ix+$1d)
         cp      $ff
         jr      z, l2314
         call    l226c
         cp      (ix+$1e)
         ret     nc
-l2314   call    $2468
-        call    l226c
+l2314   call    l2468
+l2317   call    l226c
         cp      (ix+$1e)
         jr      nc, l2359
         cp      (ix+$20)
@@ -6520,7 +6558,11 @@ l233e   ld      a, (hl)
         jr      z, l2354
         inc     a
         cp      (ix+$18)
+      IF garry
+        jr      z, l23d2
+      ELSE
         jr      l23d2
+      ENDIF
         dec     a
 l2354   and     a
         jr      nz, l233e
@@ -6552,10 +6594,1255 @@ l237d   and     a
         pop     af
         dec     a
         jr      l237d
-        
-l238a
-l239a
-l23d2
+l238a   push    bc
+        push    hl
+        ld      d, 0
+l238e   ld      a, (hl)
+        inc     hl
+        cp      $20
+        jr      nz, l2395
+        inc     d
+l2395   dec     c
+        jr      nz, l238e
+l2398   pop     hl
+        pop     bc
+l239a   ld      b, 0
+        push    bc
+        push    hl
+l239e   ld      a, (hl)
+        call    l227a
+        cp      $20
+        jr      nz, l23c5
+        ld      a, (ix+$1c)
+        and     $02
+        jr      z, l23c5
+        ld      a, e
+        ld      b, 0
+l23b0   sub     d
+        jr      c, l23b6
+        inc     b
+        jr      l23b0
+l23b6   dec     d
+        ld      a, b
+        and     a
+        jr      z, l23c5
+        ld      a, e
+        sub     b
+        ld      e, a
+l23be   ld      a, $20
+        call    l227a
+        djnz    l23be
+l23c5   inc     hl
+        dec     c
+        jr      nz, l239e
+        ld      a, (ix+$17)
+        and     a
+        call    nz, l2a16
+        pop     hl
+        pop     bc
+l23d2   push    bc
+        call    l2261
+        ex      de, hl
+        pop     hl
+        push    hl
+        add     hl, de
+        ldir
+        pop     bc
+        ld      a, (ix+$1d)
+        sub     c
+        ld      (ix+$1d), a
+        jr      z, l2415
+        call    l2259
+        ld      c, 1
+        ld      a, (hl)
+        cp      $20
+        jr      z, l23d2
+        ret
+l23f1   call    l2261
+        push    bc
+        call    l3fb0
+        pop     bc
+        ld      l, (ix+$0b)
+        ld      h, (ix+$0c)
+        add     hl, bc
+        ld      (ix+$0b), l
+        ld      (ix+$0c), h
+        res     6, (ix+$1a)
+        res     7, (ix+$1a)
+        ld      a, (ix+$17)
+        and     a
+        call    nz, l2a16
+l2415   ld      (ix+$1d), 0
+        ld      hl, l22a1
+l241c   ld      (ix+$05), l
+        ld      (ix+$06), h
+        ret
+l2423   call    l2468
+        ld      a, (ix+$1d)
+        push    af
+l242a   ld      a, (ix+$1c)
+        push    af
+        res     1, (ix+$1c)
+        call    l2317
+        pop     af
+        ld      (ix+$1c), a
+        ld      a, (ix+$1d)
+        and     a
+        jr      nz, l242a
+        pop     af
+        and     a
+        ret     nz
+        call    l25be
+        ret     c
+        jp      l2a49
+l2449   call    l2423
+        call    l2261
+        push    bc
+        call    l3f78
+        pop     bc
+        ld      l, (ix+$0b)
+        ld      h, (ix+$0c)
+        and     a
+        sbc     hl, bc
+        ld      (ix+$0b), l
+        ld      (ix+$0c), h
+        ld      hl, l27d0
+        jr      l241c
+l2468   call    l2259
+        ld      d, 0
+        ld      e, d
+        ld      (ix+$1f), d
+        ld      c, d
+        ld      b, (ix+$1d)
+        ld      a, b
+        and     a
+        jr      z, l24af
+l2479   ld      a, (hl)
+        cp      $20
+        jr      c, l24b6
+        jr      nz, l2486
+        dec     d
+        ld      (ix+$1f), d
+        inc     d
+        ld      c, e
+l2486   inc     e
+        cp      $21
+        jr      z, l249f
+        cp      $2e
+        jr      z, l249f
+        cp      $2c
+        jr      z, l249f
+        cp      $3f
+        jr      z, l249f
+        cp      $3a
+        jr      z, l249f
+        cp      $3b
+        jr      nz, l24ab
+l249f   push    bc
+        call    l226c
+        pop     bc
+        cp      e
+        jr      c, l24ab
+        ld      (ix+$1f), d
+        ld      c, e
+l24ab   inc     d
+        inc     hl
+        djnz    l2479
+l24af   ld      (ix+$1e), e
+        ld      (ix+$20), c
+        ret
+l24b6   inc     d
+        inc     hl
+        dec     b
+        jr      z, l24af
+        jr      l24ab
+l24bd   bit     3, (ix+$1a)
+        jr      nz, l24e2
+        call    l252a
+        ld      hl, (CURCHL)
+        ld      e, (ix+$0b)
+        ld      d, (ix+$0c)
+        add     hl, de
+        push    bc
+        push    de
+        call    l3fb0
+        pop     hl
+        pop     bc
+        add     hl, bc
+        ld      (ix+$0b), l
+        ld      (ix+$0c), h
+        set     3, (ix+$1a)
+l24e2   ld      (ix+$24), 2
+        jr      l24f1
+l24e8   bit     3, (ix+$1a)
+        ret     z
+        ld      (ix+$24), 1
+l24f1   exx
+        push    hl
+        push    de
+        ld      hl, (CURCHL)
+        ld      e, (ix+$0b)
+        ld      d, (ix+$0c)
+        add     hl, de
+        exx
+        call    l26aa
+        exx
+        pop     de
+        ex      (sp), hl
+        exx
+        pop     hl
+        ld      a, (ix+$24)
+        dec     a
+        ret     nz
+        push    hl
+        call    l252a
+        pop     hl
+        push    bc
+        call    l3f78
+        ld      l, (ix+$0b)
+        ld      h, (ix+$0c)
+        pop     bc
+        and     a
+        sbc     hl, bc
+        ld      (ix+$0b), l
+        ld      (ix+$0c), h
+        res     3, (ix+$1a)
+        ret
+l252a   ld      a, (ix+$0f)
+        sub     (ix+$0d)
+        inc     a
+        ld      e, a
+        ld      d, 0
+        ld      a, (ix+$10)
+        sub     (ix+$0e)
+        inc     a
+        ld      hl, 0
+l253e   add     hl, de
+        dec     a
+        jr      nz, l253e
+        ld      e, l
+        ld      d, h
+        add     hl, hl
+        add     hl, hl
+        add     hl, hl
+        add     hl, de
+        push    hl
+        pop     bc
+        ret
+l254b   ld      a, (ix+$0e)
+l254e   add     a, a
+        add     a, a
+        add     a, a
+        ld      (ix+$12), a
+        ld      a, (ix+$0d)
+        ld      (ix+$11), a
+        ld      (ix+$16), 0
+        ld      (ix+$17), 0
+        ret
+l2563   ld      a, (ix+$10)
+        inc     a
+        jr      l254e
+l2569   ld      a, (ix+$17)
+        and     a
+        ret     z
+        dec     (ix+$17)
+        ld      a, (ix+$16)
+        sub     (ix+$13)
+        ld      (ix+$16), a
+        ret     nc
+        add     a, $08
+        ld      (ix+$16), a
+        dec     (ix+$11)
+        ret
+l2584   ld      a, (ix+$17)
+        inc     a
+        cp      (ix+$18)
+        ret     nc
+        ld      (ix+$17), a
+        ld      a, (ix+$16)
+        add     a, (ix+$13)
+        ld      (ix+$16), a
+        cp      $08
+        ret     c
+        sub     $08
+        ld      (ix+$16), a
+        inc     (ix+$11)
+        ret
+l25a4   ld      a, (ix+$12)
+        add     a, $08
+        bit     6, (ix+$1c)
+        ret     z
+        dec     a
+        dec     a
+        ret
+l25b1   ld      a, (ix+$12)
+        sub     $08
+        bit     6, (ix+$1c)
+        ret     z
+        inc     a
+        inc     a
+        ret
+l25be   ld      a, (ix+$10)
+        add     a, a
+        add     a, a
+        add     a, a
+        inc     a
+        ld      b, a
+        ld      a, (ix+$12)
+        add     a, $08
+        bit     6, (ix+$1c)
+        jr      z, l25d5
+        dec     a
+        dec     a
+        inc     b
+        inc     b
+l25d5   cp      b
+        ret     nc
+        ld      (ix+$12), a
+        ret
+l25db   ld      a, (ix+$0e)
+        add     a, a
+        add     a, a
+        add     a, a
+        ld      b, a
+        call    l25b1
+        ret     c
+        cp      b
+        ret     c
+        ld      (ix+$12), a
+        ret
+l25ec   ld      a, (ix+$0e)
+        add     a, a
+        add     a, a
+        add     a, a
+        ld      b, a
+        ld      a, (ix+$12)
+        sub     b
+        ld      (ix+$21), a
+        ld      a, (ix+$17)
+        and     a
+        jr      nz, l260b
+        call    l25b1
+        sub     b
+        ret     c
+        ld      (ix+$21), a
+        ld      a, (ix+$18)
+l260b   dec     a
+        push    af
+        ld      (ix+$23), a
+        call    l2624
+        call    l2666
+        pop     af
+        ld      (ix+$23), a
+        jr      l2624
+l261c   ld      (ix+$21), a
+        ld      (ix+$1b), $20
+        ret
+l2624   ld      a, (ix+$10)
+        sub     (ix+$0e)
+        inc     a
+        add     a, a
+        add     a, a
+        add     a, a
+        dec     a
+        cp      (ix+$21)
+        ret     c
+        ld      a, (ix+$23)
+        cp      (ix+$18)
+        ret     nc
+        ld      (ix+$17), a
+        ld      b, a
+        inc     b
+        ld      a, (ix+$0e)
+        add     a, a
+        add     a, a
+        add     a, a
+        add     a, (ix+$21)
+        ld      (ix+$12), a
+        ld      c, (ix+$0d)
+        ld      a, 0
+l2650   dec     b
+        jr      z, l265f
+        add     a, (ix+$13)
+        cp      $08
+        jr      c, l2650
+        sub     $08
+        inc     c
+        jr      l2650
+l265f   ld      (ix+$11), c
+        ld      (ix+$16), a
+        ret
+l2666   push    af
+        ld      (ix+$23), $20
+        ld      a, (ix+$1a)
+        push    af
+        res     4, (ix+$1a)
+        call    l2800
+        pop     af
+        ld      (ix+$1a), a
+        pop     af
+        ret
+l267c   ld      b, (ix+$18)
+l267f   sub     b
+        jr      nc, l267f
+        add     a, b
+        ld      c, (ix+$17)
+        sub     c
+        jr      nc, l268a
+        add     a, b
+l268a   and     a
+        ret     z
+        call    l2666
+        dec     a
+        jr      l268a
+l2692   ld      a, (ix+$18)
+        srl     a
+        cp      (ix+$17)
+        jr      nc, l267c
+        xor     a
+        jr      l267c
+l269f   call    l254b
+        xor     a
+        ld      (l26e0+1), a
+        ld      (ix+$24), 0
+l26aa   ld      c, (ix+$0d)
+        ld      b, (ix+$0e)
+        call    l2abd
+        ex      de, hl
+        ld      a, (ix+$10)
+        sub     (ix+$0e)
+        inc     a
+        ld      c, a
+l26bc   push    hl
+        ld      a, (ix+$0f)
+        sub     (ix+$0d)
+        inc     a
+        ld      b, a
+l26c5   push    bc
+        push    hl
+        ld      b, 8
+l26c9   ld      a, (ix+$24)
+        and     a
+        jr      z, l26e0
+        exx
+        dec     hl
+        dec     a
+        jr      z, l26db
+        exx
+        ld      a, (hl)
+        exx
+        ld      (hl), a
+        exx
+        jr      l26e2
+l26db   ld      a, (hl)
+        exx
+        ld      (hl), a
+        jr      l26e2
+l26e0   ld      (hl), 0
+l26e2   inc     h
+        djnz    l26c9
+        pop     hl
+        pop     bc
+        inc     hl
+        djnz    l26c5
+        pop     hl
+        ld      a, l
+        add     a, $20
+        ld      l, a
+        jr      nc, l26f5
+        ld      a, h
+        add     a, 8
+        ld      h, a
+l26f5   dec     c
+        jr      nz, l26bc
+l26f8   ld      c, (ix+$0d)
+        ld      b, (ix+$0e)
+        call    l2abd
+        ld      de, 32
+        ld      a, (ix+$10)
+        sub     (ix+$0e)
+        inc     a
+        ld      c, a
+l270c   push    hl
+        ld      a, (ix+$0f)
+        sub     (ix+$0d)
+        inc     a
+        ld      b, a
+l2715   ld      a, (ix+$24)
+        and     a
+        jr      z, l272c
+        exx
+        dec     hl
+        dec     a
+        jr      z, l2727
+        exx
+        ld      a, (hl)
+        exx
+        ld      (hl), a
+        exx
+        jr      l2730
+l2727   ld      a, (hl)
+        exx
+        ld      (hl), a
+        jr      l2730
+l272c   ld      a, (ix+$19)
+        ld      (hl), a
+l2730   inc     hl
+        djnz    l2715
+        pop     hl
+        add     hl, de
+        dec     c
+        jr      nz, l270c
+        ret
+l2739   ld      (ix+$24), 0
+        jr      l26f8
+l273f   and     $07
+        ld      b, a
+        ld      a, (ix+$19)
+        and     $f8
+        or      b
+        ld      (ix+$19), a
+        ret
+l274c   and     $07
+        add     a, a
+        add     a, a
+        add     a, a
+        ld      b, a
+        ld      a, (ix+$19)
+        and     $c7
+        or      b
+        ld      (ix+$19), a
+        ret
+l275c   res     7, (ix+$19)
+        rra
+        ret     nc
+        set     7, (ix+$19)
+        ret
+l2767   res     6, (ix+$19)
+        rra
+        ret     nc
+        set     6, (ix+$19)
+        ret
+l2772   res     0, (ix+$1a)
+        rra
+        ret     nc
+        set     0, (ix+$1a)
+        ret
+l277d   res     1, (ix+$1a)
+        rra
+        ret     nc
+        set     1, (ix+$1a)
+        ret
+l2788   res     2, (ix+$1a)
+        rra
+        ret     nc
+        set     2, (ix+$1a)
+        ret
+l2793   call    l254b
+        ld      a, (ix+$10)
+        sub     (ix+$0e)
+        inc     a
+        ld      c, a
+l279e   ld      b, (ix+$18)
+l27a1   push    bc
+        call    l2800
+        pop     bc
+        djnz    l27a1
+        dec     c
+        jr      nz, l279e
+        ret
+l27ac   res     4, (ix+$1a)
+        rra
+        ret     nc
+        set     4, (ix+$1a)
+        ret
+l27b7   res     5, (ix+$1a)
+        rra
+        jr      nc, l27c2
+        set     5, (ix+$1a)
+l27c2   res     6, (ix+$1c)
+        rra
+        ret     nc
+        set     6, (ix+$1c)
+        ret
+        defb    0, 0, 0
+l27d0   ld      ix, (CURCHL)
+        ld      (ix+$23), a
+        ld      a, (ix+$1b)
+        and     a
+        jr      z, l27f1
+        ld      (ix+$1b), 0
+l27e1   ld      hl, $21d2
+l27e4   ld      e, a
+        ld      d, 0
+        add     hl, de
+        add     hl, de
+        ld      e, (hl)
+        inc     hl
+        ld      d, (hl)
+        ex      de, hl
+        ld      a, (ix+$23)
+        jp      (hl)
+l27f1   ld      a, (ix+$23)
+        cp      $20
+        jr      nc, l2800
+        cp      $10
+        jr      c, l27e1
+        ld      (ix+$1b), a
+        ret
+l2800   bit     2, (ix+$1a)
+        jr      nz, l280e
+        ld      a, (ix+$23)
+        sub     $a5
+        jp      nc, l22b4
+l280e   ld      a, (ix+$23)
+        ld      h, 0
+        ld      l, a
+        add     hl, hl
+        add     hl, hl
+        add     hl, hl
+        cp      $80
+        jr      c, l284a
+        cp      $90
+        jr      nc, l283d
+        ld      e, a
+        push    ix
+        pop     hl
+        ld      bc, 69
+        add     hl, bc
+        push    hl
+        ld      a, (ix+$13)
+        ld      c, a
+        srl     c
+        sub     c
+        ld      b, a
+        dec     b
+        dec     c
+        push    bc
+        call    l2aeb
+        pop     bc
+        call    l2aeb
+        pop     hl
+        jr      l285c
+l283d   ld      de, (UDG)
+        add     hl, de
+        ld      de, $0480
+        and     a
+        sbc     hl, de
+        jr      l285c
+l284a   ld      c, (ix+$14)
+        ld      b, (ix+$15)
+        ld      a, b
+        and     $c0
+        jr      nz, l285b
+        ld      de, l285c
+        push    de
+        push    bc
+        ret
+l285b   add     hl, bc
+l285c   ld      (ix+$22), 1
+        bit     4, (ix+$1a)
+        jr      z, l28e4
+        ex      de, hl
+        push    ix
+        pop     hl
+        ld      bc, 37
+        add     hl, bc
+        ld      b, 8
+l2870   push    bc
+        ld      b, (ix+$13)
+        srl     b
+        jr      c, l2893
+        push    bc
+        ld      (hl), 1
+        ld      a, (de)
+l287c   rla
+        push    af
+        rl      (hl)
+        pop     af
+        rl      (hl)
+        djnz    l287c
+        jr      c, l288b
+l2887   rl      (hl)
+        jr      nc, l2887
+l288b   ld      bc, 8
+        add     hl, bc
+        ld      (hl), 1
+        jr      l28af
+l2893   push    bc
+        ld      (hl), 1
+        ld      a, (de)
+l2897   rla
+        push    af
+        rl      (hl)
+        pop     af
+        rl      (hl)
+        djnz    l2897
+        rla
+        push    af
+l28a2   rl      (hl)
+        jr      nc, l28a2
+        ld      bc, 8
+        add     hl, bc
+        ld      (hl), 1
+        pop     af
+        rl      (hl)
+l28af   pop     bc
+l28b0   rla
+        push    af
+        rl      (hl)
+        pop     af
+        rl      (hl)
+        djnz    l28b0
+        jr      c, l28bf
+l28bb   rl      (hl)
+        jr      nc, l28bb
+l28bf   ld      bc, 7
+        and     a
+        sbc     hl, bc
+        inc     de
+        pop     bc
+        djnz    l2870
+        ld      a, (ix+$17)
+        inc     a
+        cp      (ix+$18)
+        call    z, l2a16
+        push    ix
+        pop     hl
+        ld      bc, 37
+        add     hl, bc
+        call    l28e4
+        push    ix
+        pop     hl
+        ld      bc, 45
+        add     hl, bc
+l28e4   bit     5, (ix+$1a)
+        jr      z, l2935
+        ex      de, hl
+        push    ix
+        pop     hl
+        ld      bc, 53
+        add     hl, bc
+        ld      b, 8
+l28f4   ld      a, (de)
+        inc     de
+        ld      (hl), a
+        inc     hl
+        ld      (hl), a
+        inc     hl
+        djnz    l28f4
+        push    ix
+        pop     hl
+        ld      bc, 53
+        add     hl, bc
+        bit     6, (ix+$1c)
+        jr      z, l290a
+        inc     hl
+l290a   ld      (ix+$22), 0
+        call    l2935
+        push    ix
+        pop     hl
+        ld      bc, 61
+        add     hl, bc
+        ld      a, (ix+$12)
+        add     a, 8
+        bit     6, (ix+$1c)
+        jr      z, l2926
+        dec     a
+        dec     a
+        dec     hl
+l2926   ld      (ix+$12), a
+        call    l2935
+        call    l25b1
+        ld      (ix+$12), a
+        jp      l29fa
+l2935   push    hl
+        ld      a, (ix+$10)
+        inc     a
+        add     a, a
+        add     a, a
+        add     a, a
+        inc     a
+        ld      b, a
+        call    l25a4
+        cp      b
+        jr      c, l2950
+        ld      a, (ix+$12)
+        sub     8
+        ld      (ix+$12), a
+        call    l2a49
+l2950   ld      c, (ix+$11)
+        ld      b, (ix+$12)
+        call    l2ac2
+        ld      b, (ix+$19)
+        ld      (hl), b
+        ld      a, (ix+$16)
+        add     a, (ix+$13)
+        cp      9
+        jr      c, l296a
+        inc     hl
+        ld      (hl), b
+        dec     hl
+l296a   ld      a, (ix+$12)
+        and     7
+        jr      z, l298e
+        bit     6, (ix+$1c)
+        jr      z, l297b
+        cp      3
+        jr      c, l298e
+l297b   push    de
+        ld      de, 32
+        add     hl, de
+        pop     de
+        ld      (hl), b
+        ld      a, (ix+$16)
+        add     a, (ix+$13)
+        cp      9
+        jr      c, l298e
+        inc     hl
+        ld      (hl), b
+l298e   pop     hl
+        ex      de, hl
+        ld      b, (ix+$13)
+        xor     a
+l2994   scf
+        rra
+        djnz    l2994
+        ld      b, a
+        ld      c, 8
+        bit     6, (ix+$1c)
+        jr      z, l29a4
+        dec     c
+        dec     c
+        inc     de
+l29a4   push    bc
+        ld      a, (de)
+        inc     de
+        push    de
+        bit     0, (ix+$1a)
+        jr      z, l29af
+        cpl
+l29af   and     b
+        ld      d, a
+        ld      c, 0
+        ld      e, c
+        ld      a, (ix+$16)
+        and     a
+        jr      z, l29c5
+l29ba   rr      b
+        rr      c
+        rr      d
+        rr      e
+        dec     a
+        jr      nz, l29ba
+l29c5   bit     1, (ix+$1a)
+        jr      z, l29d4
+        ld      a, (hl)
+        xor     d
+        ld      (hl), a
+        inc     hl
+        ld      a, (hl)
+        xor     e
+        ld      (hl), a
+        jr      l29df
+l29d4   ld      a, b
+        cpl
+        and     (hl)
+        or      d
+        ld      (hl), a
+        inc     hl
+        ld      a, c
+        cpl
+        and     (hl)
+        or      e
+        ld      (hl), a
+l29df   dec     hl
+        inc     h
+        ld      a, h
+        and     7
+        jr      nz, l29f0
+        ld      a, l
+        add     a, $20
+        ld      l, a
+        jr      c, l29f0
+        ld      a, h
+        sub     8
+        ld      h, a
+l29f0   pop     de
+        pop     bc
+        dec     c
+        jr      nz, l29a4
+        ld      a, (ix+$22)
+        and     a
+        ret     z
+l29fa   inc     (ix+$17)
+        ld      a, (ix+$16)
+        add     a, (ix+$13)
+        cp      8
+        jr      c, l2a0c
+        sub     8
+        inc     (ix+$11)
+l2a0c   ld      (ix+$16), a
+        ld      a, (ix+$17)
+        cp      (ix+$18)
+        ret     c
+l2a16   call    l2a3b
+        bit     5, (ix+$1a)
+        call    nz, l2a20
+l2a20   call    l25a4
+        ld      (ix+$12), a
+        ld      a, (ix+$10)
+        inc     a
+        add     a, a
+        add     a, a
+        add     a, a
+        cp      (ix+$12)
+        ret     nc
+        ld      a, (ix+$12)
+        sub     8
+        ld      (ix+$12), a
+        jr      l2a49
+l2a3b   xor     a
+        ld      (ix+$16), a
+        ld      (ix+$17), a
+        ld      a, (ix+$0d)
+        ld      (ix+$11), a
+        ret
+l2a49   ld      c, (ix+$0d)
+        ld      b, (ix+$0e)
+        call    l2abd
+        ld      a, (ix+$10)
+        sub     (ix+$0e)
+        ld      b, a
+        jr      z, l2a9c
+l2a5b   push    bc
+        push    de
+        push    hl
+        ld      a, (ix+$0f)
+        sub     (ix+$0d)
+        ld      b, a
+        inc     b
+l2a66   push    bc
+        ld      bc, 32
+        add     hl, bc
+        ld      a, (hl)
+        sbc     hl, bc
+        ld      (hl), a
+        push    de
+        ld      b, 8
+l2a72   push    de
+        ld      a, e
+        add     a, $20
+        ld      e, a
+        jr      nc, l2a7d
+        ld      a, d
+        add     a, 8
+        ld      d, a
+l2a7d   ld      a, (de)
+        pop     de
+        ld      (de), a
+        inc     d
+        djnz    l2a72
+        pop     de
+        inc     de
+        inc     hl
+        pop     bc
+        djnz    l2a66
+        pop     hl
+        pop     de
+        ld      bc, 32
+        add     hl, bc
+        ld      a, e
+        add     a, $20
+        ld      e, a
+        jr      nc, l2a99
+        ld      a, d
+        add     a, 8
+        ld      d, a
+l2a99   pop     bc
+        djnz    l2a5b
+l2a9c   ex      de, hl
+        ld      a, (ix+$0f)
+        sub     (ix+$0d)
+        ld      b, a
+        inc     b
+l2aa5   push    bc
+        ld      a, (ix+$19)
+        ld      (de), a
+        ld      b, 8
+        push    hl
+l2aad   ld      (hl), 0
+        inc     h
+        djnz    l2aad
+        pop     hl
+        inc     de
+        inc     hl
+        pop     bc
+        djnz    l2aa5
+        ret
+l2ab9   ld      (ix+$19), a
+        ret
+l2abd   ld      a, b
+        add     a, a
+        add     a, a
+        add     a, a
+        ld      b, a
+l2ac2   ld      a, b
+        rrca
+        rrca
+        rrca
+        ld      l, a
+        and     $18
+        or      $40
+        ld      d, a
+        ld      a, b
+        and     7
+        or      d
+        ld      d, a
+        ld      a, b
+        rlca
+        rlca
+        and     $e0
+        or      c
+        ld      e, a
+        ld      a, l
+        and     $1f
+        ld      l, a
+        ld      h, 0
+        add     hl, hl
+        add     hl, hl
+        add     hl, hl
+        add     hl, hl
+        add     hl, hl
+        ld      b, 0
+        add     hl, bc
+        ld      bc, $5800
+        add     hl, bc
+        ret
+l2aeb   xor     a
+        srl     e
+        rra
+l2aef   sra     a
+        dec     c
+        jr      nz, l2aef
+        srl     e
+        rra
+l2af7   sra     a
+        djnz    l2af7
+        ld      b, 4
+l2afd   ld      (hl), a
+        inc     hl
+        djnz    l2afd
+        ret
+        defs    29
+l2b1f   ld      bc, $3c00
+        add     hl, bc
+        ex      de, hl
+        ld      hl, (RETADDR)
+        push    hl
+        ld      hl, 69
+        push    ix
+        pop     bc
+        add     hl, bc
+        ex      de, hl
+        push    de
+        ld      bc, 8
+        rst     $28
+        defw    $33c3
+        pop     hl
+        pop     de
+        ld      (RETADDR), de
+        ret
+l2b3e   call    l2b1f
+        sla     (ix+$45)
+        sla     (ix+$46)
+        sla     (ix+$47)
+        sla     (ix+$48)
+        sla     (ix+$49)
+        sla     (ix+$4a)
+        sla     (ix+$4b)
+        sla     (ix+$4c)
+        ret
+l2b62   ld      bc, l2b95-$100
+        add     hl, bc
+        push    ix
+        pop     de
+        ld      bc, 69
+        ex      de, hl
+        add     hl, bc
+        push    hl
+        ld      b, 8
+l2b71   ld      a, (de)
+        inc     de
+        and     $e0
+        ld      (hl), a
+        inc     hl
+        djnz    l2b71
+        pop     hl
+        ret
+l2b7b   ld      bc, l2b95-$100
+        add     hl, bc
+        push    ix
+        pop     de
+        ld      bc, 69
+        ex      de, hl
+        add     hl, bc
+        push    hl
+        ld      b, 8
+l2b8a   ld      a, (de)
+        inc     de
+        add     a, a
+        add     a, a
+        add     a, a
+        ld      (hl), a
+        inc     hl
+        djnz    l2b8a
+        pop     hl
+        ret
+l2b95   defb    %00000000
+        defb    %00000000
+        defb    %00000000
+        defb    %00000000
+        defb    %00000000
+        defb    %00000000
+        defb    %00000000
+        defb    %00000000
+
+        defb    %00000000
+        defb    %01001000
+        defb    %01001000
+        defb    %01001000
+        defb    %01001000
+        defb    %00000000
+        defb    %01001000
+        defb    %00000000
+
+        defb    %00000000
+        defb    %10101010
+        defb    %10101010
+        defb    %00000000
+        defb    %00000000
+        defb    %00000000
+        defb    %00000000
+        defb    %00000000
+
+        defb    %00000000
+        defb    %10101010
+        defb    %11111111
+        defb    %10101010
+        defb    %10101010
+        defb    %11111111
+        defb    %10101010
+        defb    %00000000
+
+        defb    %00000000
+        defb    %01000100
+        defb    %11111110
+        defb    %10010100
+        defb    %11111110
+        defb    %00100110
+        defb    %11111110
+        defb    %01000100
+
+        defb    %00000000
+        defb    %10010010
+        defb    %10000010
+        defb    %00100100
+        defb    %01001000
+        defb    %10010000
+        defb    %00110010
+        defb    %00100000
+
+        defb    $00, $48, $b4, $48, $dd, $b2, $fd, $00
+        defb    $00, $44, $88, $00, $00, $00, $00, $00
+        defb    $00, $42, $84, $84, $84, $84, $42, $00
+        defb    $00, $88, $44, $44, $44, $44, $88, $00
+        defb    $00, $00, $aa, $44, $ee, $44, $aa, $00
+        defb    $00, $00, $44, $44, $ee, $44, $44, $00
+        defb    $00, $00, $00, $00, $00, $44, $44, $88
+        defb    $00, $00, $00, $00, $ee, $00, $00, $00
+        defb    $00, $00, $00, $00, $00, $cc, $cc, $00
+        defb    $00, $20, $22, $42, $44, $88, $88, $00
+        defb    $00, $ec, $b2, $b2, $b2, $b2, $ec, $00
+        defb    $00, $4c, $c4, $44, $44, $44, $ee, $00
+        defb    $00, $4c, $b2, $22, $4c, $90, $fe, $00
+        defb    $00, $cc, $32, $c4, $22, $32, $cc, $00
+        defb    $00, $24, $64, $ac, $b4, $fe, $24, $00
+        defb    $00, $fe, $90, $dc, $22, $32, $cc, $00
+        defb    $00, $6c, $90, $dc, $b2, $b2, $4c, $00
+        defb    $00, $fe, $22, $44, $48, $88, $88, $00
+        defb    $00, $ec, $b2, $4c, $b2, $b2, $ec, $00
+        defb    $00, $4c, $b2, $b2, $6e, $22, $cc, $00
+        defb    $00, $00, $00, $48, $00, $00, $48, $00
+        defb    $00, $00, $44, $00, $00, $44, $44, $88
+        defb    $00, $00, $22, $44, $88, $44, $22, $00
+        defb    $00, $00, $00, $ee, $00, $ee, $00, $00
+        defb    $00, $00, $88, $44, $22, $44, $88, $00
+        defb    $00, $4c, $b2, $22, $44, $00, $44, $00
+        defb    $00, $5e, $fe, $fa, $fe, $90, $ee, $00
+        defb    $00, $4c, $b2, $b2, $fe, $b2, $b2, $00
+        defb    $00, $dc, $b2, $dc, $b2, $b2, $dc, $00
+        defb    $00, $4c, $b2, $90, $90, $b2, $4c, $00
+        defb    $00, $dc, $b2, $b2, $b2, $b2, $dc, $00
+        defb    $00, $fe, $90, $dc, $90, $90, $fe, $00
+        defb    $00, $fe, $90, $fc, $90, $90, $90, $00
+        defb    $00, $4c, $b2, $90, $f6, $b2, $4e, $00
+        defb    $00, $b2, $b2, $fe, $b2, $b2, $b2, $00
+        defb    $00, $ee, $44, $44, $44, $44, $ee, $00
+        defb    $00, $22, $22, $22, $a2, $b2, $4c, $00
+        defb    $00, $b2, $b4, $d8, $d4, $b2, $b2, $00
+        defb    $00, $90, $90, $90, $90, $90, $fe, $00
+        defb    $00, $b2, $fe, $fe, $f2, $b2, $b2, $00
+        defb    $00, $f2, $ba, $ba, $b6, $b6, $b2, $00
+        defb    $00, $4c, $b2, $b2, $b2, $b2, $4c, $00
+        defb    $00, $dc, $b2, $b2, $dc, $90, $90, $00
+        defb    $00, $ec, $b2, $b2, $b6, $f6, $ee, $20
+        defb    $00, $fc, $b2, $b2, $dc, $d2, $b2, $00
+        defb    $00, $6e, $90, $4c, $22, $32, $cc, $00
+        defb    $00, $ee, $44, $44, $44, $44, $44, $00
+        defb    $00, $b2, $b2, $b2, $b2, $b2, $ec, $00
+        defb    $00, $aa, $aa, $aa, $aa, $aa, $44, $00
+        defb    $00, $b2, $f2, $f2, $fe, $fe, $52, $00
+        defb    $00, $aa, $aa, $44, $44, $aa, $aa, $00
+        defb    $00, $aa, $aa, $aa, $44, $44, $44, $00
+        defb    $00, $fe, $22, $44, $48, $90, $fe, $00
+        defb    $00, $66, $44, $44, $44, $44, $66, $00
+        defb    $00, $00, $88, $c8, $44, $62, $22, $00
+        defb    $00, $cc, $44, $44, $44, $44, $cc, $00
+        defb    $00, $44, $ee, $44, $44, $44, $44, $00
+        defb    $00, $00, $00, $00, $00, $00, $00, $ff
+        defb    $00, $4e, $b0, $9c, $f0, $90, $fe, $00
+        defb    $00, $00, $cc, $22, $ee, $b2, $ee, $00
+        defb    $00, $90, $90, $dc, $b2, $b2, $dc, $00
+        defb    $00, $00, $6e, $90, $90, $90, $6e, $00
+        defb    $00, $22, $22, $6e, $b2, $b2, $6e, $00
+        defb    $00, $00, $4c, $b2, $dc, $90, $6e, $00
+        defb    $00, $6c, $90, $d8, $90, $90, $90, $00
+        defb    $00, $00, $6e, $b2, $b2, $6e, $22, $cc
+        defb    $00, $90, $90, $dc, $b2, $b2, $b2, $00
+        defb    $00, $44, $00, $4c, $44, $44, $4e, $00
+        defb    $00, $22, $00, $22, $22, $22, $b2, $4c
+        defb    $00, $90, $b4, $d8, $d8, $b4, $b2, $00
+        defb    $00, $48, $48, $48, $48, $48, $46, $00
+        defb    $00, $00, $ba, $f5, $f5, $f5, $b5, $00
+        defb    $00, $00, $dc, $b2, $b2, $b2, $b2, $00
+        defb    $00, $00, $4c, $b2, $b2, $b2, $4c, $00
+        defb    $00, $00, $dc, $b2, $b2, $dc, $90, $90
+        defb    $00, $00, $6e, $b2, $b2, $6e, $22, $22
+        defb    $00, $00, $6e, $90, $90, $90, $90, $00
+        defb    $00, $00, $6e, $90, $4e, $22, $dc, $00
+        defb    $00, $48, $fc, $48, $48, $48, $46, $00
+        defb    $00, $00, $b2, $b2, $b2, $b2, $ec, $00
+        defb    $00, $00, $aa, $aa, $aa, $aa, $44, $00
+        defb    $00, $00, $b1, $f5, $f5, $f5, $4a, $00
+        defb    $00, $00, $aa, $aa, $44, $aa, $aa, $00
+        defb    $00, $00, $b2, $b2, $b2, $6e, $22, $cc
+        defb    $00, $00, $fe, $22, $44, $88, $fe, $00
+        defb    $00, $66, $44, $88, $44, $44, $66, $00
+        defb    $00, $44, $44, $44, $44, $44, $44, $00
+        defb    $00, $cc, $44, $22, $44, $44, $cc, $00
+        defb    $00, $4a, $b4, $00, $00, $00, $00, $00
+        defb    $ee, $b1, $f7, $b5, $f5, $b7, $b1, $ee
         block   $36ba-$
     ELSE
 ; *************** START OF SELF-TEST PROGRAM SECTION ****************
@@ -7073,7 +8360,7 @@ l266f   ld      a,$52           ; signal "in test program"
         jp      l016c           ; do some initialisation & return here
 l2675   ld      a,$02
         rst     $28
-        defw    l1601           ; open channel to stream 2
+        defw    $1601           ; open channel to stream 2
 l267a   ld      hl,l2681
         call    l2703           ; output normal colour control codes
         ret
@@ -8552,6 +9839,294 @@ l378e   sbc     a,$d4
 
 l37ca   defs    $11
 l37db
+  IF garry
+        defs    $10
+        defb    $16, 0, 0, $10, 0, $11, $07, $13, 0
+        defm    "Insert tape and press PLAY", 13
+        defm    "To cancel - press BREAK twic", 'e'+$80
+        defb    0, 0, 0, 0, 0, 0, 0, 0
+l3834   defm    $7f, "1982, 1986, 1987 Amstrad Plc.", 13
+        defm    $7f, "2000-2009 Garry Lancaster v1.3", '8'+$80
+        ret     nc
+        call    l15da
+        ret     c
+        ld      a, b
+        or      c
+        scf
+        ret     z
+        jp      l1604
+l387f   ex      de, hl
+        and     a
+        sbc     hl, de
+        ld      c, l
+        ld      b, a
+        inc     de
+        inc     de
+        inc     de
+        inc     de
+        ld      a, (de)
+        cp      $50
+        jr      z, l38a2
+        inc     de
+        dec     c
+        jr      z, l389b
+        inc     de
+        inc     de
+        ex      de, hl
+        ld      e, (hl)
+        inc     hl
+        ld      h, (hl)
+        ld      l, e
+        jr      l38ab
+l389b   ex      de, hl
+        ld      e, (hl)
+        inc     hl
+        ld      h, (hl)
+        ld      l, e
+        jr      l3907
+l38a2   ld      hl, l3921
+        dec     c
+        jr      z, l3907
+        ld      hl, l3927
+l38ab   res     3, (iy+$02)
+        push    hl
+        ld      hl, (ERR_SP)
+        ld      e, (hl)
+        inc     hl
+        ld      d, (hl)
+        and     a
+        ld      hl, $107f
+        sbc     hl, de
+        pop     hl
+        jr      nz, l38f8
+        ld      sp, (ERR_SP)
+        pop     de
+        pop     de
+        ld      (ERR_SP), de
+        push    ix
+l38cb   push    hl
+        ld      de, l38d1
+        push    de
+        jp      (hl)
+l38d1   jr      c, l38dc
+        jr      z, l38d9
+l38d5   ld      a, 7
+        jr      l3917
+l38d9   pop     hl
+        jr      l38cb
+l38dc   cp      13
+        jr      z, l38ee
+        ld      hl, (RETADDR)
+        push    hl
+        rst     $28
+        defw    $0f85
+        pop     hl
+        ld      (RETADDR), hl
+        pop     hl
+        jr      l38cb
+l38ee   pop     hl
+        pop     ix
+        ld      hl, l15fe
+        push    hl
+        jp      $5b00
+l38f8   ld      de, l15fe
+        push    de
+        call    l3916
+        jp      c, $5b00
+        jp      z, $5b00
+        jr      l38d5
+l3907   ld      de, l15fe
+        push    de
+        ld      a, b
+        push    ix
+        call    l3916
+        pop     ix
+        jp      $5b00
+l3916   jp      (hl)
+l3917   ld      hl, (CH_ADD)
+        ld      (X_PTR), hl
+        ld      l, a
+        rst     $28
+        defw    $0055
+l3921   call    l3e80
+        ld      l, (hl)
+        rra
+        ret
+l3927   call    l3e80
+        ld      (hl), b
+        ld      e, $c9
+l392d   ld      hl, (CURCHL)
+        ld      a, (hl)
+        cp      0
+        jr      nz, l3967
+        inc     hl
+        ld      a, (hl)
+        dec     hl
+        cp      $5b
+        jr      nz, l3967
+        inc     hl
+        inc     hl
+        inc     hl
+        inc     hl
+        ld      a, (hl)
+        inc     hl
+        cp      $50
+        jr      nz, l3955
+        ld      a, e
+        cp      4
+        jr      z, l399c
+        cp      2
+        jp      z, l3927
+        exx
+        ld      a, c
+        jp      l3921
+l3955   ld      a, e
+        add     hl, de
+        ld      e, (hl)
+        inc     hl
+        ld      d, (hl)
+        push    de
+        cp      2
+        jr      z, l3962
+        exx
+        ld      a, c
+        ret
+l3962   ld      hl, l3996
+        ex      (sp), hl
+        jp      (hl)
+l3967   ld      a, e
+        cp      4
+        jr      z, l399c
+        add     hl, de
+        ld      e, (hl)
+        inc     hl
+        ld      d, (hl)
+        ld      hl, (RETADDR)
+        push    hl
+        cp      2
+        jr      z, l3989
+        ld      hl, l3985
+        ld      (RETADDR), hl
+        ex      de, hl
+        exx
+        ld      a, c
+        exx
+        jp      l00ae
+l3985   ld      (RETADDR), hl
+        ret
+l3989   ld      hl, l3993
+        ld      (RETADDR), hl
+        ex      de, hl
+        jp      l00ae
+l3993   ld      (RETADDR), hl
+l3996   ret     c
+        ld      de, 2
+        jr      l392d
+l399c   ld      a, $12
+        jp      l3917
+l39a1   ld      hl, (CURCHL)
+        ld      de, 13
+        add     hl, de
+        ld      a, (hl)
+        push    hl
+        ld      hl, (VARS)
+        ld      c, a
+l39ae   ld      a, (hl)
+        cp      $80
+        jr      z, l399c
+        cp      c
+        jr      z, l39be
+        push    bc
+        rst     $28
+        defw    $19b8
+        pop     bc
+        ex      de, hl
+        jr      l39ae
+l39be   inc     hl
+        inc     hl
+        inc     hl
+        ld      a, (hl)
+        inc     hl
+        dec     a
+        jr      nz, l399c
+        ld      c, (hl)
+        inc     hl
+        ld      b, (hl)
+        inc     hl
+        ex      de, hl
+        pop     hl
+        inc     hl
+        ld      a, (hl)
+        inc     hl
+        ld      h, (hl)
+        ld      l, a
+        push    hl
+        and     a
+        sbc     hl, bc
+        pop     hl
+        ret
+l39d7   call    l39a1
+        jp      nc, l38d5
+        add     hl, de
+        ld      a, (hl)
+l39df   ld      hl, (CURCHL)
+        ld      de, 14
+        add     hl, de
+        ld      e, (hl)
+        inc     hl
+        ld      d, (hl)
+        inc     de
+        ld      (hl), d
+        dec     hl
+        ld      (hl), e
+        scf
+        ret
+l39ef   push    af
+        call    l39a1
+        jp      nc, l38d5
+        add     hl, de
+        pop     af
+        ld      (hl), a
+        jr      l39df
+l39fb   push    hl
+        push    de
+        ld      a, b
+        push    af
+        call    l39a1
+        pop     af
+        and     a
+        jr      nz, l3a0c
+        pop     bc
+        pop     bc
+        ld      de, 0
+        ret
+l3a0c   dec     a
+        jr      nz, l3a29
+        pop     hl
+        ld      a, h
+        or      l
+        jp      nz, l38d5
+        pop     hl
+        and     a
+        sbc     hl, bc
+        jp      nc, l38d5
+        add     hl, bc
+        ex      de, hl
+        ld      hl, (CURCHL)
+        ld      bc, 14
+        add     hl, bc
+        ld      (hl), e
+        inc     hl
+        ld      (hl), d
+        ret
+l3a29   pop     hl
+        pop     hl
+        ld      h, b
+        ld      l, c
+        ld      de, 0
+        ret
+        defs    $3cf
+  ELSE
     IF v41
         defs    $4c
     ELSE
@@ -8561,12 +10136,12 @@ l37db
         defs    $59
       ENDIF
     ENDIF
-
       IF spanish
-l3834   defs    $3b9
+        defs    $3b9
       ELSE
-l3834   defs    $05cc
+        defs    $05cc
       ENDIF
+  ENDIF
 
         ld      (OLDHL),hl
         push    af
@@ -8608,9 +10183,43 @@ l3e05   ld      (OLDAF),hl
         pop     af
         pop     bc
         ret
-
+      IF garry
+l3e41   ld      hl, (CURCHL)    ; get address of current channel information
+        ld      de, 13
+        add     hl, de
+        ld      b, (hl)
+        pop     hl
+        call    l05cc
+        jp      (hl)
+l3e4e   exx
+        call    l3e41
+        push    bc
+        exx
+        ld      a, b
+        pop     bc
+        and     a
+        jr      z, l3e63
+        dec     a
+        jr      z, l3e6c
+        call    l3ec9
+        add     hl, sp
+        ld      bc, $0518
+l3e63   call    l3ec9
+        inc     sp
+        ld      bc, 22
+        jr      l3ee9
+l3e6c   call    l3ec9
+        ld      (hl), 1
+        jr      l3ee9
+        call    l3e41
+        call    l3ec9
+        jr      l3e7c
+l3e7b   ld      a, c
+l3e7c   jr      l3ee9
+        defs    2
+      ELSE
         defs    $3f
-
+      ENDIF
 ; Subroutine to call a subroutine in ROM 1
 ; The address to call is stored inline after the call to this routine
 
@@ -8669,7 +10278,33 @@ l3ec5   ei
         pop     af
         ret
 
+      IF garry
+l3ec9   ld      (OLDHL),hl      ; save HL in OLDHL
+        ld      (OLDBC),bc      ; save BC in OLDBC
+        push    af
+        pop     hl
+        ld      (OLDAF),hl      ; save AF in OLDAF
+        ex      (sp),hl         ; HL=return address
+        ld      c,(hl)
+        inc     hl
+        ld      b,(hl)          ; BC=inline address for ROM 1
+        inc     hl
+        ex      (sp),hl         ; restore proper return address
+        ld      hl, l3f63
+        jr      l3f15
+l3ee0   ld      c, a
+        call    l3e41
+        call    l3ec9
+        dec     de
+        defb    1               ; ld bc, xxxx
+l3ee9   call    l05a7
+        ret     c
+        ld      a, $12
+        jp      l3917
+        defs    14
+      ELSE
         defs    $37
+      ENDIF
 
 ; Subroutine to call a subroutine in ROM 2, with inline address
 ; This routine is not used in this ROM, but is a duplicate of a
@@ -8687,6 +10322,10 @@ l3f00   ld      (OLDHL),hl      ; save HL, BC and AF
         ld      b,(hl)          ; BC=inline address
         inc     hl
         ex      (sp),hl         ; restack updated return address
+      IF garry
+        ld      hl, l3f42
+l3f15   push    hl
+      ENDIF
         push    bc
         pop     hl
         ld      a,(BANKM)
@@ -8701,8 +10340,10 @@ l3f00   ld      (OLDHL),hl      ; save HL, BC and AF
         ld      bc,$1ffd
         out     (c),a           ; switch in ROM 2
         ei
+      IF garry=0
         ld      bc,l3f42
         push    bc              ; stack routine address to return to ROM 1
+      ENDIF
         push    hl              ; stack routine address to call in ROM 2
         ld      hl,(OLDAF)      ; restore registers
         push    hl
@@ -8731,14 +10372,118 @@ l3f42   push    bc              ; save registers
         pop     bc
         ret                     ; done!
 
+      IF garry
+l3f63   push    bc
+        push    af
+        ld      a, (BANK678)
+        and     $fb
+        di
+        ld      (BANK678), a
+        ld      bc, $1ffd
+        out     (c), a
+        ei
+        pop     af
+        pop     bc
+        ret
+l3f77   exx
+l3f78   push    hl
+        push    bc
+        push    hl
+        ld      hl, (RETADDR)
+        ex      (sp), hl
+        rst     $28
+        defw    $19e8
+        pop     hl
+        ld      (RETADDR), hl
+        pop     bc
+        pop     hl
+        ld      de, (CHANS)
+        and     a
+        sbc     hl, de
+        push    hl
+        ld      a, $13
+        ld      hl, STRMS
+l3f95   ld      e, (hl)
+        inc     hl
+        ld      d, (hl)
+        ex      (sp), hl
+        and     a
+        sbc     hl, de
+        add     hl, de
+        jr      nc, l3fa4
+        ex      de, hl
+        and     a
+        sbc     hl, bc
+        ex      de, hl
+l3fa4   ex      (sp), hl
+        dec     hl
+        ld      (hl), e
+        inc     hl
+        ld      (hl), d
+        inc     hl
+        dec     a
+        jr      nz, l3f95
+        pop     hl
+        ret
+l3faf   exx
+l3fb0   push    hl
+        push    bc
+        push    hl
+        ld      hl, (RETADDR)
+        ex      (sp), hl
+        rst     $28
+        defw    $1655
+        pop     hl
+        ld      (RETADDR), hl
+        ld      hl, (DATADD)
+        ld      de, (PROG)
+        dec     de
+        and     a
+        sbc     hl, de
+        jr      nc, l3fcf
+        ld      (DATADD), de
+l3fcf   pop     bc
+        pop     hl
+        ld      de, (CHANS)
+        and     a
+        sbc     hl, de
+        push    hl
+        ld      a, $13
+        ld      hl, STRMS
+l3fde   ld      e, (hl)
+        inc     hl
+        ld      d, (hl)
+        ex      (sp), hl
+        and     a
+        sbc     hl, de
+        add     hl, de
+        jr      nc, l3fec
+        ex      de, hl
+        and     a
+        add     hl, bc
+        ex      de, hl
+l3fec   ex      (sp), hl
+        dec     hl
+        ld      (hl), e
+        inc     hl
+        ld      (hl), d
+        inc     hl
+        dec     a
+        jr      nz, l3fde
+        pop     hl
+        ret
+      ELSE
         defs    $8d
+      ENDIF
 
 ; This routine is called from ROM 2 to display error messages, and
 ; optionally get a response
 
 l3ff0   jp      l2187           ; go to the routine
 
-
+  IF garry
+        defb    0, 0, 0, 0, 0, 0
+  ELSE
         defb    $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff
         defb    $ff, $ff, $ff, $ff
 
@@ -8755,6 +10500,7 @@ l3ff0   jp      l2187           ; go to the routine
         defb    $8b
       ENDIF
     ENDIF
+  ENDIF
 
 
 ; **************************************************
@@ -9511,7 +11257,7 @@ m0392   bit     5,(iy+$01)
         push    af
         push    hl
         rst     $28
-        defw    l0d6e           ; clear lower screen
+        defw    $0d6e           ; clear lower screen
         pop     hl
         pop     af
         ret                     ; exit with Z set if abandon requested
@@ -9669,7 +11415,7 @@ m0493   cp      'Y'
         jr      z,m0499
         jr      m047c           ; loop back for another key if not "Y"
 m0499   rst     $28
-        defw    l0d6e           ; clear lower screen
+        defw    $0d6e           ; clear lower screen
         pop     de
         pop     bc
         ld      hl,tmp_fspec
@@ -9864,7 +11610,7 @@ m05dd   ld      a,$02           ; use stream 2
         bit     7,(iy+$01)
         jr      z,m05e8         ; move on if only syntax-checking
         rst     $28
-        defw    l1601           ; else open channel to stream
+        defw    $1601           ; else open channel to stream
 m05e8   ld      hl,(CH_ADD)
         ld      a,(hl)          ; check next char
         cp      $0d
@@ -10577,7 +12323,7 @@ m0ae9   push    ix
         jr      nc,m0ae9        ; loop back if error
         ld      a,$fe
         rst     $28
-        defw    l1601           ; open channel to stream -2
+        defw    $1601           ; open channel to stream -2
         ld      (iy+$52),$03    ; set scroll count
         ld      c,$80           ; signal "names don't match"
         ld      a,(ix+$00)
@@ -11027,7 +12773,7 @@ m0e0c   call    m2b64           ; page in normal memory
 m0e10   push    hl
         ld      a,$fd
         rst     $28
-        defw    l1601           ; open channel to stream -3
+        defw    $1601           ; open channel to stream -3
         xor     a
         ld      de,$09a1
         rst     $28
@@ -11871,7 +13617,7 @@ m12e8   call    m2b89           ; page in DOS workspace
         bit     6,(iy+$02)
         jr      nz,m133d        ; move on if shouldn't clear lower screen
         rst     $28
-        defw    l0d6e           ; clear lower screen
+        defw    $0d6e           ; clear lower screen
 m133d   res     6,(iy+$02)      ; signal "lower screen can be cleared"
         call    m2b89           ; page in DOS workspace
         ld      hl,ed_flags
@@ -11944,7 +13690,7 @@ m13c9   rst     $28
         bit     6,(iy+$02)
         jr      nz,m13f3
         rst     $28
-        defw    l0d6e           ; clear lower screen if necessary
+        defw    $0d6e           ; clear lower screen if necessary
 m13f3   res     6,(iy+$02)      ; signal "lower screen can be cleared"
         call    m2b89           ; page in DOS workspace
         ld      hl,ed_flags
@@ -12104,7 +13850,7 @@ m153f   rst     $28
         defw    $2530           ; are we checking syntax?
         jr      z,m1547
         rst     $28
-        defw    l1601           ; open channel if not
+        defw    $1601           ; open channel if not
 m1547   rst     $28
         defw    $0018           ; get character
         rst     $28
@@ -14142,7 +15888,7 @@ m217d   rst     $28
         defw    $2530           ; are we syntax-checking?
         jr      z,m2185
         rst     $28
-        defw    l1601           ; open channel if not
+        defw    $1601           ; open channel if not
 m2185   rst     $28
         defw    $0d4d           ; set temporary colours
         rst     $28
@@ -14157,9 +15903,9 @@ m218f   rst     $28
         jr      z,m219c         ; move on if syntax-checking
         ld      a,$01
 m2196   rst     $28
-        defw    l1601           ; open channel to stream 1
+        defw    $1601           ; open channel to stream 1
         rst     $28
-        defw    l0d6e           ; clear lower screen
+        defw    $0d6e           ; clear lower screen
 m219c   ld      (iy+$02),$01    ; set DF_SZ to 1
         rst     $28
         defw    $20c1           ; deal with the input items
@@ -14398,7 +16144,7 @@ m2321   ld      (K_CUR),hl      ; save address of cursor
         push    hl
         ld      a,$ff
         rst     $28
-        defw    l1601           ; open channel to stream -1
+        defw    $1601           ; open channel to stream -1
         rst     $28
         defw    $2de3           ; print the result value
         pop     hl
@@ -14427,7 +16173,7 @@ m2347   push    hl
         push    af
         ld      a,$02
         rst     $28
-        defw    l1601           ; open channel to stream 2
+        defw    $1601           ; open channel to stream 2
         pop     af
         call    m3e80
       IF v41
@@ -14727,7 +16473,7 @@ m2567   ld      hl,(E_LINE)
         bit     6,(iy+$02)
         jr      nz,m2585
         rst     $28
-        defw    l0d6e           ; clear lower screen if necessary
+        defw    $0d6e           ; clear lower screen if necessary
 m2585   res     6,(iy+$02)      ; signal "lower screen clear"
         call    m2b89           ; page in DOS workspace
         ld      hl,ed_flags
@@ -14777,7 +16523,7 @@ m25df   push    af              ; save error code
         defw    $16b0           ; clear editing areas and calculator etc
         res     5,(iy+$37)      ; ???
         rst     $28
-        defw    l0d6e           ; clear lower screen
+        defw    $0d6e           ; clear lower screen
         set     5,(iy+$02)      ; signal "clear lower screen after keystroke"
         pop     af              ; get back error code
         ld      b,a             ; save it
@@ -15258,7 +17004,7 @@ m2ba3   call    m2b89           ; page in DOS workspace
 m2bb2   ld      a,$02           ; use stream 2
 m2bb4   call    m2b64           ; page in normal memory
         rst     $28
-        defw    l1601           ; open channel to stream
+        defw    $1601           ; open channel to stream
         call    m2b89           ; page in DOS workspace
         pop     af              ; restore destination flag
         jr      z,m2c1e         ; move on if copying to another file
@@ -15944,7 +17690,7 @@ m311a   rst     $28
         defw    $0d6b           ; cls
         ld      a,$02
         rst     $28
-        defw    l1601           ; open channel to stream 2
+        defw    $1601           ; open channel to stream 2
         ret
 
 ; Routine to copy files to spectrum format
@@ -16088,7 +17834,7 @@ m3252   ld      hl,tmp_file
       IF v41
         ld      a,$02
         rst     $28
-        defw    l1601
+        defw    $1601
       ENDIF
         call    m0e9a           ; cause +3DOS error
         defb    $ff
@@ -23181,7 +24927,7 @@ n6000   call    n683a+stst      ; page ROM 1/bank 0
         defw    $0d6b           ; cls
         ld      a,$02
         rst     $28
-        defw    l1601           ; open stream 2
+        defw    $1601           ; open stream 2
         call    n6038+stst      ; do the tests
         push    af
         ld      hl,n6544+stst   ; pass message
@@ -24185,8 +25931,8 @@ o0000:  DI                      ; Disable Interrupts.
 ;   concept and not all errors pass through here.
 
 ;; ERROR-1
-o0008:  LD      HL,($5C5D)      ; Fetch the character address from CH_ADD.
-        LD      ($5C5F),HL      ; Copy it to the error pointer X_PTR.
+o0008:  LD      HL,(CH_ADD)     ; Fetch the character address from CH_ADD.
+        LD      (X_PTR),HL      ; Copy it to the error pointer X_PTR.
         JR      o0053           ; Forward to continue at ERROR-2.
 
 ; -----------------------------
@@ -24231,7 +25977,7 @@ o0010:  JP      o15F2           ; Jump forward to continue at PRINT-A-2.
 ;   4) in workspace if accepting input but not that from INPUT LINE.
 
 ;; GET-CHAR
-o0018:  LD      HL,($5C5D)      ; fetch the address from CH_ADD.
+o0018:  LD      HL,(CH_ADD)     ; fetch the address from CH_ADD.
         LD      A,(HL)          ; use it to pick up current character.
 
 ;; TEST-CHAR
@@ -24341,7 +26087,7 @@ o0053:  POP     HL              ; drop the return address - the location
 
 ;; ERROR-3
 o0055:  LD      (IY+$00),L      ; Store it in the system variable ERR_NR.
-        LD      SP,($5C3D)      ; ERR_SP points to an error handler on the
+        LD      SP,(ERR_SP)     ; ERR_SP points to an error handler on the
                                 ; machine stack. There may be a hierarchy
                                 ; of routines.
                                 ; To MAIN-4 initially at base.
@@ -24411,13 +26157,13 @@ o0070:  POP     HL              ; restore the
 ;   Both TEMP-PTR1 and TEMP-PTR2 are used by the READ command routine.
 
 ;; CH-ADD+1
-o0074:  LD      HL,($5C5D)      ; fetch address from CH_ADD.
+o0074:  LD      HL,(CH_ADD)     ; fetch address from CH_ADD.
 
 ;; TEMP-PTR1
 o0077:  INC     HL              ; increase the character address by one.
 
 ;; TEMP-PTR2
-o0078:  LD      ($5C5D),HL      ; update CH_ADD with character address.
+o0078:  LD      (CH_ADD),HL     ; update CH_ADD with character address.
         LD      A,(HL)          ; load character to A from HL.
         RET                     ; and return.
 
@@ -24470,7 +26216,7 @@ o007D:  CP      $21             ; test if higher than space.
 
 ;; SKIPS
 o0090:  SCF                     ; set the carry flag
-        LD      ($5C5D),HL      ; update the CH_ADD system variable.
+        LD      (CH_ADD),HL     ; update the CH_ADD system variable.
         RET                     ; return with carry set.
 
 
@@ -26480,14 +28226,14 @@ o0723:  LD      A,($5C74)       ; fetch command from T_ADDR
 ;; SA-TYPE-0
 o073A:  LD      (IX+$00),$00    ; place type zero - program in descriptor.
         LD      HL,($5C59)      ; fetch E_LINE to HL.
-        LD      DE,($5C53)      ; fetch PROG to DE.
+        LD      DE,(PROG)       ; fetch PROG to DE.
         SCF                     ; set carry flag to calculate from end of
                                 ; variables E_LINE -1.
         SBC     HL,DE           ; subtract to give total length.
 
         LD      (IX+$0B),L      ; place total length
         LD      (IX+$0C),H      ; in descriptor.
-        LD      HL,($5C4B)      ; load HL from system variable VARS
+        LD      HL,(VARS)       ; load HL from system variable VARS
         SBC     HL,DE           ; subtract to give program length.
         LD      (IX+$0F),L      ; place length of program
         LD      (IX+$10),H      ; in the descriptor.
@@ -26739,11 +28485,11 @@ o082E:  POP     HL              ; pop destination
         INC     BC              ; adjust length to
         INC     BC              ; include these
         INC     BC              ; three bytes also.
-        LD      ($5C5F),IX      ; save header pointer in X_PTR.
+        LD      (X_PTR),IX      ; save header pointer in X_PTR.
         CALL    o19E8           ; routine RECLAIM-2 reclaims the old variable
                                 ; sliding workspace including the two headers
                                 ; downwards.
-        LD      IX,($5C5F)      ; reload IX from X_PTR which will have been
+        LD      IX,(X_PTR)      ; reload IX from X_PTR which will have been
                                 ; adjusted down by POINTERS routine.
 
 ;; LD-DATA-1
@@ -26784,7 +28530,7 @@ o084C:  LD      HL,($5C59)      ; address E_LINE
 o0873:  EX      DE,HL           ; transfer dest to DE.
         LD      HL,($5C59)      ; address E_LINE
         DEC     HL              ; now variables end-marker.
-        LD      ($5C5F),IX      ; place the IX header pointer in X_PTR
+        LD      (X_PTR),IX      ; place the IX header pointer in X_PTR
         LD      C,(IX+$0B)      ; get new length
         LD      B,(IX+$0C)      ; from 2nd header
         PUSH    BC              ; and save it.
@@ -26798,12 +28544,12 @@ o0873:  EX      DE,HL           ; transfer dest to DE.
 
         CALL    o1655           ; routine MAKE-ROOM creates the space.
 
-        LD      IX,($5C5F)      ; reload IX from adjusted X_PTR
+        LD      IX,(X_PTR)      ; reload IX from adjusted X_PTR
         INC     HL              ; point to start of new area.
         LD      C,(IX+$0F)      ; fetch length of BASIC on tape
         LD      B,(IX+$10)      ; from 2nd descriptor
         ADD     HL,BC           ; add to address the start of variables.
-        LD      ($5C4B),HL      ; set system variable VARS
+        LD      (VARS),HL       ; set system variable VARS
 
         LD      H,(IX+$0E)      ; fetch high byte of autostart line number.
         LD      A,H             ; transfer to A
@@ -26846,7 +28592,7 @@ o08B6:  LD      C,(IX+$0B)      ; fetch length
         LD      A,$FF           ; signal data not a header.
         CALL    o0802           ; routine LD-BLOCK loads to workspace.
         POP     HL              ; restore first location in workspace to HL.
-        LD      DE,($5C53)      ; set DE from system variable PROG.
+        LD      DE,(PROG)       ; set DE from system variable PROG.
 
 ;   now enter a loop to merge the data block in workspace with the program and
 ;   variables.
@@ -26900,7 +28646,7 @@ o08F0:  LD      A,(HL)          ; fetch first byte of workspace variable.
         RET     Z               ; return if so as complete.  >>>>>
 
         PUSH    HL              ; save workspace area pointer.
-        LD      HL,($5C4B)      ; load HL with VARS - start of variables area.
+        LD      HL,(VARS)       ; load HL with VARS - start of variables area.
 
 ;; ME-OLD-VP
 o08F9:  LD      A,(HL)          ; fetch first byte.
@@ -26988,13 +28734,13 @@ o092C:  JR      NZ,o093E        ; forward to ME-ENT-1 for insertion only.
 ;   but the program line or variable matches so old one is reclaimed.
 
         EX      AF,AF'          ; save flag??
-        LD      ($5C5F),HL      ; preserve workspace pointer in dynamic X_PTR
+        LD      (X_PTR),HL      ; preserve workspace pointer in dynamic X_PTR
         EX      DE,HL           ; transfer program dest pointer to HL.
         CALL    o19B8           ; routine NEXT-ONE finds following location
                                 ; in program or variables area.
         CALL    o19E8           ; routine RECLAIM-2 reclaims the space between.
         EX      DE,HL           ; transfer program dest pointer back to DE.
-        LD      HL,($5C5F)      ; fetch adjusted workspace pointer from X_PTR
+        LD      HL,(X_PTR)      ; fetch adjusted workspace pointer from X_PTR
         EX      AF,AF'          ; restore flags.
 
 ;   now the new line or variable is entered.
@@ -27005,8 +28751,8 @@ o093E:  EX      AF,AF'          ; save or re-save flags.
         CALL    o19B8           ; routine NEXT-ONE finds next in workspace.
                                 ; gets next in DE, difference in BC.
                                 ; prev addr in HL
-        LD      ($5C5F),HL      ; store pointer in X_PTR
-        LD      HL,($5C53)      ; load HL from system variable PROG
+        LD      (X_PTR),HL      ; store pointer in X_PTR
+        LD      HL,(PROG)       ; load HL from system variable PROG
         EX      (SP),HL         ; swap with prog/vars pointer on stack.
         PUSH    BC              ; ** save length of new program line/variable.
         EX      AF,AF'          ; fetch flags back.
@@ -27028,8 +28774,8 @@ o0958:  INC     HL              ; address next?
         POP     BC              ; ** pop length
         POP     DE              ; * pop value for PROG which may have been
                                 ; altered by POINTERS if first line.
-        LD      ($5C53),DE      ; set PROG to original value.
-        LD      DE,($5C5F)      ; fetch adjusted workspace pointer from X_PTR
+        LD      (PROG),DE       ; set PROG to original value.
+        LD      DE,(X_PTR)      ; fetch adjusted workspace pointer from X_PTR
         PUSH    BC              ; save length
         PUSH    DE              ; and workspace pointer
         EX      DE,HL           ; make workspace pointer source, prog/vars
@@ -27608,7 +29354,7 @@ o0B52:  JP      o3A7E
 
 o0B56:  ADD     A,$15           ; add 21d to restore to 0 - 20
         PUSH    BC              ; save current print position
-        LD      BC,($5C7B)      ; fetch UDG to address bit patterns
+        LD      BC,(UDG)        ; fetch UDG to address bit patterns
         JR      o0B6A           ; to PO-CHAR-2 - common code to lay down
                                 ; a bit patterned character
 
@@ -28734,13 +30480,13 @@ o0F1E:  IN      A,($FB)         ; read the port.
 ; This is a compact and highly versatile routine.
 
 ;; EDITOR
-o0F2C:  LD      HL,($5C3D)      ; fetch ERR_SP
+o0F2C:  LD      HL,(ERR_SP)     ; fetch ERR_SP
         PUSH    HL              ; save on stack
 
 ;; ED-AGAIN
 o0F30:  LD      HL,o107F        ; address: ED-ERROR
         PUSH    HL              ; save address on stack and
-        LD      ($5C3D),SP      ; make ERR_SP point to it.
+        LD      (ERR_SP),SP     ; make ERR_SP point to it.
 
 ; Note. While in editing/input mode should an error occur then RST 08 will
 ; update X_PTR to the location reached by CH_ADD and jump to ED-ERROR
@@ -29029,7 +30775,7 @@ o1024:  POP     HL              ; discard address ED-LOOP
 
 ;; ED-END
 o1026:  POP     HL              ; the previous value of ERR_SP
-        LD      ($5C3D),HL      ; is restored to ERR_SP system variable
+        LD      (ERR_SP),HL     ; is restored to ERR_SP system variable
         BIT     7,(IY+$00)      ; is ERR_NR $FF (= 'OK') ?
         RET     NZ              ; return if so
 
@@ -29328,7 +31074,7 @@ o110D:  LD      A,($5C0D)       ; pick up the parameter stored in KDATA.
                                 ; make a return with the control code.
 
 ;; KEY-CHAN
-o1113:  LD      HL,($5C4F)      ; address start of CHANNELS area using CHANS
+o1113:  LD      HL,(CHANS)      ; address start of CHANNELS area using CHANS
                                 ; system variable.
                                 ; Note. One might have expected CURCHL to
                                 ; have been used.
@@ -29360,11 +31106,11 @@ o111D:  CALL    o0D4D           ; routine TEMPS sets temporary attributes.
         LD      HL,($5C8A)      ; fetch SPOSNL
         PUSH    HL              ; and save on stack.
 
-        LD      HL,($5C3D)      ; fetch ERR_SP
+        LD      HL,(ERR_SP)     ; fetch ERR_SP
         PUSH    HL              ; and save also
         LD      HL,o1167        ; address: ED-FULL
         PUSH    HL              ; is pushed as the error routine
-        LD      ($5C3D),SP      ; and ERR_SP made to point to it.
+        LD      (ERR_SP),SP     ; and ERR_SP made to point to it.
 
         LD      HL,($5C82)      ; fetch ECHO_E
         PUSH    HL              ; and push also
@@ -29446,7 +31192,7 @@ o117C:  POP     DE              ; fetch new line/column.
 
 ;; ED-C-END
 o117E:  POP     HL              ; restore the old value of ERR_SP.
-        LD      ($5C3D),HL      ; update the system variable ERR_SP
+        LD      (ERR_SP),HL     ; update the system variable ERR_SP
 
         POP     BC              ; old value of SPOSN_L
         PUSH    DE              ; save new value
@@ -29565,7 +31311,7 @@ o11B7:  DI                      ; Disable Interrupts - machine stack will be
         EXX                     ; Switch in alternate set.
         LD      BC,($5CB4)      ; Fetch P-RAMT differs on 16K/48K machines.
         LD      DE,($5C38)      ; Fetch RASP/PIP.
-        LD      HL,($5C7B)      ; Fetch UDG    differs on 16K/48K machines.
+        LD      HL,(UDG)        ; Fetch UDG    differs on 16K/48K machines.
         EXX                     ; Switch back to main set and continue into...
 
 ; ----------------------
@@ -29633,7 +31379,7 @@ o11EF:  DEC     HL              ; step back to last valid location.
                                 ; stored system variables in case from NEW.
         LD      ($5CB4),BC      ; insert P-RAMT.
         LD      ($5C38),DE      ; insert RASP/PIP.
-        LD      ($5C7B),HL      ; insert UDG.
+        LD      (UDG),HL        ; insert UDG.
         EXX                     ; switch in main set.
         INC     B               ; now test if we arrived here from NEW.
         JR      Z,o1219         ; forward to RAM-SET if we did.
@@ -29648,7 +31394,7 @@ o11EF:  DEC     HL              ; step back to last valid location.
         LDDR                    ; copy of the standard characters A - U.
         EX      DE,HL           ; switch the pointer to HL.
         INC     HL              ; update to start of 'A' in RAM.
-        LD      ($5C7B),HL      ; make UDG system variable address the first
+        LD      (UDG),HL        ; make UDG system variable address the first
                                 ; bitmap.
         DEC     HL              ; point at RAMTOP again.
 
@@ -29682,7 +31428,7 @@ o121C:
         LD      SP,HL           ; set up the machine stack pointer.
         DEC     HL              ;
         DEC     HL              ;
-        LD      ($5C3D),HL      ; ERR_SP is where the error pointer is
+        LD      (ERR_SP),HL     ; ERR_SP is where the error pointer is
                                 ; at moment empty - will take address MAIN-4
                                 ; at the call preceding that address,
                                 ; although interrupts and calls will make use
@@ -29703,7 +31449,7 @@ o121C:
 
         LD      HL,$5CB6        ; The address of the channels - initially
                                 ; following system variables.
-        LD      ($5C4F),HL      ; Set the CHANS system variable.
+        LD      (CHANS),HL      ; Set the CHANS system variable.
 
         LD      DE,o15AF        ; Address: init-chan in ROM.
         LD      BC,$0015        ; There are 21 bytes of initial data in ROM.
@@ -29712,11 +31458,11 @@ o121C:
 
         EX      DE,HL           ; Swap pointers. HL points to program area.
         DEC     HL              ; Decrement address.
-        LD      ($5C57),HL      ; Set DATADD to location before program area.
+        LD      (DATADD),HL     ; Set DATADD to location before program area.
         INC     HL              ; Increment again.
 
-        LD      ($5C53),HL      ; Set PROG the location where BASIC starts.
-        LD      ($5C4B),HL      ; Set VARS to same location with a
+        LD      (PROG),HL       ; Set PROG the location where BASIC starts.
+        LD      (VARS),HL       ; Set VARS to same location with a
         LD      (HL),$80        ; variables end-marker.
         INC     HL              ; Advance address.
         LD      ($5C59),HL      ; Set E_LINE, where the edit line
@@ -29747,7 +31493,7 @@ o121C:
         DEC     (IY-$36)        ; set KSTATE-4 to $FF - keyboard map available.
 
         LD      HL,o15C6        ; set source to ROM Address: init-strm
-        LD      DE,$5C10        ; set destination to system variable STRMS-FD
+        LD      DE,STRMS        ; set destination to system variable STRMS-FD
         LD      BC,$000E        ; copy the 14 bytes of initial 7 streams data
         LDIR                    ; from ROM to RAM.
 
@@ -29820,7 +31566,7 @@ o12AC:  LD      A,$00           ; select channel 'K' the keyboard
 ;; MAIN-3
 o12CF:  LD      HL,($5C59)      ; fetch the edit line address from E_LINE.
 
-        LD      ($5C5D),HL      ; system variable CH_ADD is set to first
+        LD      (CH_ADD),HL     ; system variable CH_ADD is set to first
                                 ; character of edit line.
                                 ; Note. the above two instructions are a little
                                 ; inadequate.
@@ -30193,7 +31939,7 @@ o1555:  LD      A,$10           ; i.e. 'G' -$30 -$07
 
 ;; MAIN-ADD
 o155D:  LD      ($5C49),BC      ; set E_PPC to extracted line number.
-        LD      HL,($5C5D)      ; fetch CH_ADD - points to location after the
+        LD      HL,(CH_ADD)     ; fetch CH_ADD - points to location after the
                                 ; initial digits (set in E_LINE_NO).
         EX      DE,HL           ; save start of BASIC in DE.
 
@@ -30229,12 +31975,12 @@ o157D:  POP     BC              ; retrieve the length of the new line.
         INC     BC              ; (two bytes).
         DEC     HL              ; HL points to location before the destination
 
-        LD      DE,($5C53)      ; fetch the address of PROG
+        LD      DE,(PROG)       ; fetch the address of PROG
         PUSH    DE              ; and save it on the stack
         CALL    o1655           ; routine MAKE-ROOM creates BC spaces in
                                 ; program area and updates pointers.
         POP     HL              ; restore old program pointer.
-        LD      ($5C53),HL      ; and put back in PROG as it may have been
+        LD      (PROG),HL       ; and put back in PROG as it may have been
                                 ; altered by the POINTERS routine.
 
         POP     BC              ; retrieve BASIC length
@@ -30425,7 +32171,7 @@ o160E:  RST     08H             ; ERROR-1
 
 ;; CHAN-OP-1
 o1610:  DEC     DE              ; reduce offset so it points to the channel.
-        LD      HL,($5C4F)      ; fetch CHANS the location of the base of
+        LD      HL,(CHANS)      ; fetch CHANS the location of the base of
                                 ; the channel information area
         ADD     HL,DE           ; and add the offset to address the channel.
                                 ; and continue to set flags.
@@ -30561,7 +32307,7 @@ o1655:  PUSH    HL              ; save the address pointer.
 ;; POINTERS
 o1664:  PUSH    AF              ; preserve accumulator.
         PUSH    HL              ; put pos pointer on stack.
-        LD      HL,$5C4B        ; address VARS the first of the
+        LD      HL,VARS         ; address VARS the first of the
         LD      A,$0E           ; fourteen variables to consider.
 
 ;; PTR-NEXT
@@ -30827,7 +32573,7 @@ o16FC:  EX      DE,HL           ; address of stream to HL.
 ;; CLOSE-2
 o1701:  PUSH    HL              ; * save address of stream data pointer
                                 ; in STRMS on the machine stack.
-        LD      HL,($5C4F)      ; fetch CHANS address to HL
+        LD      HL,(CHANS)      ; fetch CHANS address to HL
         ADD     HL,BC           ; add the offset to address the second
                                 ; byte of the output routine hopefully.
         INC     HL              ; step past
@@ -30909,7 +32655,7 @@ o1727:  ADD     A,$03           ; add the offset for 3 system streams.
                                 ; range 00 - 15d becomes 3 - 18d.
         RLCA                    ; double as there are two bytes per
                                 ; stream - now 06 - 36d
-        LD      HL,$5C10        ; address STRMS - the start of the streams
+        LD      HL,STRMS        ; address STRMS - the start of the streams
                                 ; data area in system variables.
         LD      C,A             ; transfer the low byte to A.
         LD      B,$00           ; prepare to add offset.
@@ -30949,7 +32695,7 @@ o1736:  RST     28H             ;; FP-CALC    ;s,c.
 ; if it is a system channel then it can re-attached.
 
         EX      DE,HL           ; save STRMS address in DE.
-        LD      HL,($5C4F)      ; fetch CHANS.
+        LD      HL,(CHANS)      ; fetch CHANS.
         ADD     HL,BC           ; add the offset to address the second
                                 ; byte of the channel.
         INC     HL              ; skip over the
@@ -31375,7 +33121,7 @@ o1881:  PUSH    DE              ; save flag E for a return value.
         SET     2,(HL)          ; signal 'L' mode. (used for input)
 
 ;; OUT-LINE4
-o1894:  LD      HL,($5C5F)      ; fetch X_PTR - possibly the error pointer
+o1894:  LD      HL,(X_PTR)      ; fetch X_PTR - possibly the error pointer
                                 ; address.
         AND     A               ; clear the carry flag.
         SBC     HL,DE           ; test if an error address has been reached.
@@ -31673,7 +33419,7 @@ o196C:  RST     10H             ; PRINT-A vectors the character to
 
 ;; LINE-ADDR
 o196E:  PUSH    HL              ; save line number in HL register
-        LD      HL,($5C53)      ; fetch start of program from PROG
+        LD      HL,(PROG)       ; fetch start of program from PROG
         LD      D,H             ; transfer address to
         LD      E,L             ; the DE register pair.
 
@@ -31726,7 +33472,7 @@ o1988:  INC     HL              ;
 ; -> entry point.
 
 ;; EACH-STMT
-o198B:  LD      ($5C5D),HL      ; save HL in CH_ADD
+o198B:  LD      (CH_ADD),HL     ; save HL in CH_ADD
         LD      C,$00           ; initialize quotes flag
 
 ;; EACH-S-1
@@ -31749,7 +33495,7 @@ o1998:  INC     HL              ; next address
 
 ;; EACH-S-3
 o199A:  CALL    o18B6           ; routine NUMBER skips if number marker
-        LD      ($5C5D),HL      ; save in CH_ADD
+        LD      (CH_ADD),HL     ; save in CH_ADD
         CP      $22             ; is it quotes '"' ?
         JR      NZ,o19A5        ; to EACH-S-4 if not
 
@@ -31939,7 +33685,7 @@ o19FB:  LD      HL,($5C59)      ; load HL from system variable E_LINE.
         DEC     HL              ; decrease so that NEXT_CHAR can be used
                                 ; without skipping the first digit.
 
-        LD      ($5C5D),HL      ; store in the system variable CH_ADD.
+        LD      (CH_ADD),HL     ; store in the system variable CH_ADD.
 
         RST     20H             ; NEXT-CHAR skips any noise and white-space
                                 ; to point exactly at the first digit.
@@ -32650,7 +34396,7 @@ o1BBF:  CP      $01             ; will set carry if zero.
 o1BD1:  LD      ($5C55),HL      ; store pointer in system variable NXTLIN
 
         EX      DE,HL           ; bring back pointer to previous or edit line
-        LD      ($5C5D),HL      ; and update CH_ADD with character address.
+        LD      (CH_ADD),HL     ; and update CH_ADD with character address.
 
         LD      D,A             ; store statement in D.
         LD      E,$00           ; set E to zero to suppress token searching
@@ -33161,7 +34907,7 @@ o1D34:  PUSH    HL              ; save position.
                                 ; initially and we are in the middle of a
                                 ; line.
         LD      D,A             ; Store result in D.
-        LD      HL,($5C5D)      ; get current address from CH_ADD
+        LD      HL,(CH_ADD)      ; get current address from CH_ADD
         LD      E,$F3           ; search will be for token 'NEXT'
 
 ;; F-LOOP
@@ -33359,8 +35105,8 @@ o1DED:  CALL    o1C1F           ; routine CLASS-01 checks variable.
 
 
         RST     18H             ; GET-CHAR
-        LD      ($5C5F),HL      ; save character position in X_PTR.
-        LD      HL,($5C57)      ; load HL with Data Address DATADD, which is
+        LD      (X_PTR),HL      ; save character position in X_PTR.
+        LD      HL,(DATADD)     ; load HL with Data Address DATADD, which is
                                 ; the start of the program or the address
                                 ; after the last expression that was read or
                                 ; the address of the line number of the
@@ -33388,8 +35134,8 @@ o1E0A:  CALL    o0077           ; routine TEMP-PTR1 advances updating CH_ADD
                                 ; checking type match and adjusting CH_ADD.
 
         RST     18H             ; GET-CHAR fetches adjusted character position
-        LD      ($5C57),HL      ; store back in DATADD
-        LD      HL,($5C5F)      ; fetch X_PTR  the original READ CH_ADD
+        LD      (DATADD),HL     ; store back in DATADD
+        LD      HL,(X_PTR)      ; fetch X_PTR  the original READ CH_ADD
         LD      (IY+$26),$00    ; now nullify X_PTR_hi
         CALL    o0078           ; routine TEMP-PTR2 restores READ CH_ADD
 
@@ -33490,7 +35236,7 @@ o1E45:  LD      H,B             ; transfer the line
         LD      L,C             ; number to the HL register.
         CALL    o196E           ; routine LINE-ADDR to fetch the address.
         DEC     HL              ; point to the location before the line.
-        LD      ($5C57),HL      ; update system variable DATADD.
+        LD      (DATADD),HL     ; update system variable DATADD.
         RET                     ; return to STMT-RET (or RUN)
 
 ; ------------------------
@@ -33670,7 +35416,7 @@ o1EAF:  LD      A,B             ; test for
 ;; CLEAR-1
 o1EB7:  PUSH    BC              ; save ramtop value.
 
-        LD      DE,($5C4B)      ; fetch VARS
+        LD      DE,(VARS)       ; fetch VARS
         LD      HL,($5C59)      ; fetch E_LINE
         DEC     HL              ; adjust to point at variables end-marker.
         CALL    o19E5           ; routine RECLAIM-1 reclaims the space used by
@@ -33705,7 +35451,7 @@ o1EDC:  EX      DE,HL           ; transfer ramtop value to HL.
         DEC     HL              ; leave a location beneath it.
         LD      SP,HL           ; initialize the machine stack pointer.
         PUSH    BC              ; push the error address.
-        LD      ($5C3D),SP      ; make ERR_SP point to location.
+        LD      (ERR_SP),SP     ; make ERR_SP point to location.
         EX      DE,HL           ; put STMT-RET in HL.
         JP      (HL)            ; and go there directly.
 
@@ -33729,7 +35475,7 @@ o1EED:  POP     DE              ; drop the address STMT-RET
         PUSH    BC              ; and PUSH onto GO SUB stack.
                                 ; the empty machine-stack can be rebuilt
         PUSH    HL              ; push the error address.
-        LD      ($5C3D),SP      ; make system variable ERR_SP point to it.
+        LD      (ERR_SP),SP     ; make system variable ERR_SP point to it.
         PUSH    DE              ; push the address STMT-RET.
         CALL    o1E67           ; call routine GO-TO to update the system
                                 ; variables NEWPPC and NSPPC.
@@ -33800,7 +35546,7 @@ o1F23:  POP     BC              ; drop the address STMT-RET.
         EX      (SP),HL         ; statement to H, error address to base of
                                 ; new machine stack.
         EX      DE,HL           ; statement to D,  BASIC line number to HL.
-        LD      ($5C3D),SP      ; adjust ERR_SP to point to new stack pointer
+        LD      (ERR_SP),SP     ; adjust ERR_SP to point to new stack pointer
         PUSH    BC              ; now re-stack the address STMT-RET
         JP      o1E73           ; to GO-TO-2 to update statement and line
                                 ; system variables and exit indirectly to the
@@ -34440,9 +36186,9 @@ o2129:  LD      ($5C5B),HL      ; set keyboard cursor K_CUR to HL
         JR      NZ,o215E        ; forward to IN-VAR-3 if so as input will
                                 ; be accepted without checking its syntax.
 
-        LD      HL,($5C5D)      ; fetch CH_ADD
+        LD      HL,(CH_ADD)     ; fetch CH_ADD
         PUSH    HL              ; and save on stack.
-        LD      HL,($5C3D)      ; fetch ERR_SP
+        LD      HL,(ERR_SP)     ; fetch ERR_SP
         PUSH    HL              ; and save on stack
 
 ;; IN-VAR-1
@@ -34452,7 +36198,7 @@ o213A:  LD      HL,o213A        ; address: IN-VAR-1 - this address
         JR      Z,o2148         ; forward to IN-VAR-2 if not using the
                                 ; keyboard for input. (??)
 
-        LD      ($5C3D),SP      ; set ERR_SP to point to IN-VAR-1 on stack.
+        LD      (ERR_SP),SP     ; set ERR_SP to point to IN-VAR-1 on stack.
 
 ;; IN-VAR-2
 o2148:  LD      HL,($5C61)      ; set HL to WORKSP - start of workspace.
@@ -34524,10 +36270,10 @@ o2174:  LD      HL,$5C71        ; point HL to FLAGX
         POP     HL              ; drop the looping address
         POP     HL              ; drop the address of previous
                                 ; error handler.
-        LD      ($5C3D),HL      ; set ERR_SP to point to it.
+        LD      (ERR_SP),HL     ; set ERR_SP to point to it.
         POP     HL              ; drop original CH_ADD which points to
                                 ; INPUT command in BASIC line.
-        LD      ($5C5F),HL      ; save in X_PTR while input is assigned.
+        LD      (X_PTR),HL      ; save in X_PTR while input is assigned.
         SET     7,(IY+$01)      ; update FLAGS - Signal running program
         CALL    o21B9           ; routine IN-ASSIGN is called again
                                 ; this time the variable will be assigned
@@ -34535,9 +36281,9 @@ o2174:  LD      HL,$5C71        ; point HL to FLAGX
                                 ; Note. the previous example now
                                 ; becomes "hatstand"
 
-        LD      HL,($5C5F)      ; fetch stored CH_ADD value from X_PTR.
+        LD      HL,(X_PTR)      ; fetch stored CH_ADD value from X_PTR.
         LD      (IY+$26),$00    ; set X_PTR_hi so that iy is no longer relevant.
-        LD      ($5C5D),HL      ; put restored value back in CH_ADD
+        LD      (CH_ADD),HL     ; put restored value back in CH_ADD
         JR      o21B2           ; forward to IN-NEXT-2 to see if anything
                                 ; more in the INPUT list.
 
@@ -34586,7 +36332,7 @@ o21B2:  CALL    o204E           ; routine PR-POSN-1 handles a position item.
 
 ;; IN-ASSIGN
 o21B9:  LD      HL,($5C61)      ; fetch WORKSP start of input
-        LD      ($5C5D),HL      ; set CH_ADD to first character
+        LD      (CH_ADD),HL     ; set CH_ADD to first character
 
         RST     18H             ; GET-CHAR ignoring leading white-space.
         CP      $E2             ; is it 'STOP'
@@ -36711,7 +38457,7 @@ o26B6:  INC     HL              ; advance pointer
 
         INC     HL              ; point to first byte of number
         CALL    o33B4           ; routine STACK-NUM stacks it
-        LD      ($5C5D),HL      ; update system variable CH_ADD
+        LD      (CH_ADD),HL     ; update system variable CH_ADD
 
 ;; S-NUMERIC
 o26C3:  SET     6,(IY+$01)      ; update FLAGS  - Signal numeric result
@@ -37184,7 +38930,7 @@ o27F7:  RST     20H             ; NEXT-CHAR fetches name
 ;; SF-ARGMT1
 o2802:  RST     20H             ; NEXT-CHAR advances to start of argument
         PUSH    HL              ; save address
-        LD      HL,($5C53)      ; fetch start of program area from PROG
+        LD      HL,(PROG)       ; fetch start of program area from PROG
         DEC     HL              ; the search starting point is the previous
                                 ; location.
 
@@ -37242,7 +38988,7 @@ o2831:  AND     A               ; test A ( will be zero if string '$' - '$' )
 
         POP     DE              ; discard pointer to 'DEF FN'.
         POP     DE              ; restore pointer to first FN argument.
-        LD      ($5C5D),DE      ; save in CH_ADD
+        LD      (CH_ADD),DE     ; save in CH_ADD
 
         CALL    o28AB           ; routine FN-SKPOVR advances HL past '('
         PUSH    HL              ; save start address in DEF FN  ***
@@ -37332,7 +39078,7 @@ o288B:  RST     08H             ; ERROR-1
 ;; SF-VALUE
 o288D:  POP     DE              ; location of ')' in DEF FN to DE.
         EX      DE,HL           ; now to HL, FN ')' pointer to DE.
-        LD      ($5C5D),HL      ; initialize CH_ADD to this value.
+        LD      (CH_ADD),HL     ; initialize CH_ADD to this value.
 
 ; At this point the start of the DEF FN argument list is on the machine stack.
 ; We also have to consider that this defined function may form part of the
@@ -37356,7 +39102,7 @@ o288D:  POP     DE              ; location of ')' in DEF FN to DE.
                                 ; initially for variables at DEFADD
 
         POP     HL              ; pop the FN ')' pointer
-        LD      ($5C5D),HL      ; set CH_ADD to this
+        LD      (CH_ADD),HL     ; set CH_ADD to this
         POP     HL              ; pop the original DEFADD value
         LD      ($5C0B),HL      ; and re-insert into DEFADD system variable.
 
@@ -37465,7 +39211,7 @@ o28EF:  LD      B,C             ; save flags in B
 ; but in runtime search for the variable.
 
 ;; V-RUN
-o28FD:  LD      HL,($5C4B)      ; set HL to start of variables from VARS
+o28FD:  LD      HL,(VARS)       ; set HL to start of variables from VARS
 
 ;; V-EACH
 o2900:  LD      A,(HL)          ; get first character
@@ -37811,7 +39557,7 @@ o29D8:  CP      $29             ; as above ')' could follow the expression
 ;; SV-CH-ADD
 o29E0:  RST     18H             ; GET-CHAR
         DEC     HL              ; backtrack HL
-        LD      ($5C5D),HL      ; to set CH_ADD up for slicing routine
+        LD      (CH_ADD),HL     ; to set CH_ADD up for slicing routine
         JR      o2A45           ; forward to SV-SLICE and make a return
                                 ; when all slicing complete.
 
@@ -41705,7 +43451,7 @@ o34D3:  DEC     A               ; make range of bits 0-4 start at zero
         JR      NC,o34E7        ; to REPORT-A if originally higher
                                 ; than 'U','u' or graphics U.
 
-        LD      BC,($5C7B)      ; fetch the UDG system variable value.
+        LD      BC,(UDG)        ; fetch the UDG system variable value.
         ADD     A,C             ; add the offset to character
         LD      C,A             ; and store back in register C.
         JR      NC,o34E4        ; forward to USR-STACK if no overflow.
@@ -42258,7 +44004,7 @@ o35DC:  RST     08H             ; ERROR-1
 
 ;; val
 ;; val$
-o35DE:  LD      HL,($5C5D)      ; fetch value of system variable CH_ADD
+o35DE:  LD      HL,(CH_ADD)     ; fetch value of system variable CH_ADD
         PUSH    HL              ; and save on the machine stack.
         LD      A,B             ; fetch the literal (either $1D or $18).
         ADD     A,$E3           ; add $E3 to form $00 (setting carry) or $FB.
@@ -42274,7 +44020,7 @@ o35DE:  LD      HL,($5C5D)      ; fetch value of system variable CH_ADD
 
         RST     30H             ; BC-SPACES creates the space in workspace.
         POP     HL              ; restore start of string to HL.
-        LD      ($5C5D),DE      ; load CH_ADD with start DE in workspace.
+        LD      (CH_ADD),DE     ; load CH_ADD with start DE in workspace.
 
         PUSH    DE              ; save the start in workspace
         LDIR                    ; copy string from program or variables or
@@ -42300,13 +44046,13 @@ o35DE:  LD      HL,($5C5D)      ; fetch value of system variable CH_ADD
 ;; V-RPORT-C
 o360C:  JP      NZ,o1C8A        ; jump back to REPORT-C with a result mismatch.
 
-        LD      ($5C5D),HL      ; set CH_ADD to the start of the string again.
+        LD      (CH_ADD),HL     ; set CH_ADD to the start of the string again.
         SET     7,(IY+$01)      ; update FLAGS  - signal running program.
         CALL    o24FB           ; routine SCANNING evaluates the string
                                 ; in full leaving result on calculator stack.
 
         POP     HL              ; restore saved character address in program.
-        LD      ($5C5D),HL      ; and reset the system variable CH_ADD.
+        LD      (CH_ADD),HL     ; and reset the system variable CH_ADD.
 
         JR      o35BF           ; back to exit via STK-PNTRS.
                                 ; resetting the calculator stack pointers
