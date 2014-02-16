@@ -10786,8 +10786,11 @@ m0048   push    bc
         pop     af
         ei                      ; re-enable interrupts & exit
         ret
-
+      IF garry
+        defm    "Start: ", 0, "system", 0, 0
+      ELSE
         defs    $10
+      ENDIF
 
 ; The NMI routine
 
@@ -11096,10 +11099,16 @@ m026c   rst     $28
 m026f   cp      $e0
         jp      z,m03e3         ; move on if LPRINT
         cp      $ca
+      IF garry
+        jp      z, m1e02        ; move on if not LINE
+        cp      $cc
+        jp      z, m1dd9
+      ELSE
         jr      nz,m027e        ; move on if not LINE
         rst     $28
         defw    $0020           ; get next character
         jp      m1e05           ; and move on for FORMAT LINE
+      ENDIF
 m027e   rst     $28
         defw    $1c8c           ; get a string expression
         call    m10b1           ; check for end-of-statement
@@ -11390,10 +11399,19 @@ m0455   push    bc              ; save addresses
         pop     bc
         jr      z,m046d         ; move on if ? wildcard present
         jr      m0499           ; move on for a single file
-m046d   ld      hl,m04d5
+m046d
+      IF garry
+        ld      hl, merase
+      ELSE
+        ld      hl,m04d5
+      ENDIF
         call    m04c1           ; output "Erase "
         call    m04ca           ; output filespec
+      IF garry
+        ld      hl, myn
+      ELSE
         ld      hl,m04dc
+      ENDIF
         call    m04c1           ; output "? (Y/N"
 m047c   ld      hl,FLAGS
         res     5,(hl)          ; signal "no key available"
@@ -11457,7 +11475,19 @@ m04ce   inc     de
         ret
 
 ; Erase messages
-
+    IF garry
+        rst     $28
+        defw    $c101
+        ld      (bc), a
+        inc     (hl)
+        ld      b, b
+        ld      b, c
+        nop
+        nop
+        ld      ($38e1), a
+        ret
+        defb    0, 0, 0
+    ELSE
       IF spanish
 m04d5   defm    "]Borrar ", 0
 m04dc   defm    " (S/N)?", 0
@@ -11465,6 +11495,7 @@ m04dc   defm    " (S/N)?", 0
 m04d5   defm    "Erase ", 0
 m04dc   defm    " ? (Y/N)", 0
       ENDIF
+    ENDIF
 
 ; The MOVE command
 
@@ -11602,8 +11633,13 @@ m05b8   ld      hl,FLAGS3
         jr      z,m062b         ; or if end-of-statement
         cp      $b9
         jr      z,m062b         ; or if EXP
+      IF garry
+       jp      $3b48
+        nop
+      ELSE
         call    m2ada
         defb    $0b             ; else nonsense in BASIC error
+      ENDIF
 m05da   rst     $20             ; get next char
         jr      m05f8
 m05dd   ld      a,$02           ; use stream 2
@@ -11617,8 +11653,13 @@ m05e8   ld      hl,(CH_ADD)
         jr      z,m062b         ; move on if end-of-line
         cp      ':'
         jr      z,m062b         ; or if end-of-statement
+      IF garry
+       jp      $3b55
+        nop
+      ELSE
         cp      $b9
         jr      z,m062b         ; or if EXP
+      ENDIF
 m05f8   rst     $28
         defw    $1c8c           ; get string expression
         rst     $28
@@ -11818,9 +11859,13 @@ m075c   call    m07eb           ; output CR
         ld      de,tmp_buff
         ld      bc,$000d
         ldir                    ; if so, copy last entry to first
+      IF garry
+        ex      de, hl
+        ld      (hl), d
+      ENDIF
         jp      m067f           ; and back for more
 m077b   call    m2b64           ; page in normal memory
-        call    m07eb           ; output CR
+m077e   call    m07eb           ; output CR
         call    m2b89           ; page in DOS workspace
 m0784   ld      a,(DEFADD)      ; get drive letter
         or      a
@@ -11843,12 +11888,31 @@ m079a   call    m32b6           ; save TSTACK in page 7
         call    m07e2           ; output "K free" message
         call    m07eb           ; output CR
         ret                     ; done
-m07ba   call    m2b64           ; page in normal memory
+m07ba
+    IF garry
+        ld      a, ($ed1c)
+        and     a
+        call    m2b64           ; page in normal memory
+        ld      hl, m07d1
+        call    z, m07e2
+        jp      m077e
+        defb    0, 0, 0
+        call    m2b64
+        rst     $10
+m07d3   call    m2b89
+        ret
+m07d7   call    m2b64
+        call    m07e2
+        jr      m07d3
+m07df   call    m2b64
+        call    m07f1
+        jr      m07d3
+    ELSE
+        call    m2b64           ; page in normal memory
         ld      hl,m07d1
         call    m07e2           ; output no files message
         call    m2b89           ; page in DOS workspace
         jp      m0784           ; go to display free space
-
       IF spanish
 m07c9   defm    "K LIBRES", $0d, 0
 m07d1   defm    "NINGUN FICHERO ENCONTRADO", $0d, $0d, 0
@@ -11856,6 +11920,7 @@ m07d1   defm    "NINGUN FICHERO ENCONTRADO", $0d, $0d, 0
 m07c9   defm    "K free", $0d, 0
 m07d1   defm    "No files found", $0d, $0d, 0
       ENDIF
+    ENDIF
 
 ; Subroutine to output a null-terminated message
 
@@ -12039,6 +12104,14 @@ m08e4   inc     de
         jr      nz,m08fe        ; move on if no drive specified
         ld      a,(de)
         and     $df             ; get capitalised drive letter
+      IF garry
+        cp      'T'             ; check for valid drives
+        jr      z,m090f         ; moving on if found
+        cp      'A'             ; check for valid drives
+        jr      z,m08fe         ; moving on if found
+        cp      'Q'             ; check for valid drives
+        jr      z,m090f         ; moving on if found
+      ELSE
         cp      'A'             ; check for valid drives
         jr      z,m090f         ; moving on if found
         cp      'B'
@@ -12047,6 +12120,7 @@ m08e4   inc     de
         jr      z,m090f
         cp      'T'
         jr      z,m090f
+      ENDIF
 m08fe   ld      a,(T_ADDR)
         or      a
         ld      a,(SAVDRV)      ; use SAVDRV as drive for SAVE
@@ -12057,12 +12131,20 @@ m090a   ld      (RAMERR),a      ; store drive in RAMERR
 
 ; section 4 - changing default drives for LOAD "A:" etc
 
-m090f   ld      l,a             ; save drive in L
+m090f
+      IF garry
+        ld      (RAMERR), a
+      ELSE
+        ld      l,a             ; save drive in L
+      ENDIF
         ld      a,c
         dec     a
         dec     a
         or      b               ; check string length
         jr      nz,m0966        ; move on if not 2
+      IF garry
+        ld      a, (RAMERR)
+      ELSE
         ld      a,(T_ADDR)
         or      a
         jr      z,m0923         ; if SAVE, go to set default SAVE drive
@@ -12085,6 +12167,7 @@ m0923   ld      a,l
 m093b   call    m2ada
         defb    $4e             ; cause "Invalid drive" error
 m093f   ld      (SAVDRV),a      ; store in SAVDRV
+      ENDIF
 m0942   cp      'T'
         jr      z,m095d         ; move on for T:
         call    m2b89           ; page in DOS workspace
@@ -12096,6 +12179,44 @@ m0942   cp      'T'
         jr      c,m095d         ; move on if no error
         call    m0e9a
         defb    $ff             ; cause DOS error
+      IF garry
+m095d   ld      a, (T_ADDR)
+        or      a
+        ld      a, (RAMERR)
+        jr      z, m0945
+        ld      (LODDRV), a
+        jr      m0948
+m0945   ld      (SAVDRV), a
+m0948   ld      d, a
+        ld      e, $10
+        rst     $18
+        cp      $b5
+        jr      nz, m0966
+        rst     $20
+        ex      de, hl
+        xor     a
+        ld      b, a
+        ld      c, a
+        call    m2b89           ; page in DOS workspace
+        call    m32b6
+        call    m3f00
+        defw    $00d6
+        call    m32ee
+        call    m2b64
+m0966   pop     bc
+        pop     de
+        ret
+m0969   ld      a, (RAMERR)
+        cp      $54
+        jr      nz, m096c
+m0970   pop     bc
+        pop     de
+        inc     de
+        inc     de
+        dec     bc
+        dec     bc
+        jr      m099a
+      ELSE
 m095d   pop     bc              ; exit
         pop     de
         ret
@@ -12105,6 +12226,7 @@ m0960   ld      a,l
 m0966   ld      a,(de)
         and     $df
         ld      (RAMERR),a      ; save capitalised drive in RAMERR
+      ENDIF
 
 ; section 5 - copying filename to page 7 (disk operations only)
 
@@ -12137,7 +12259,7 @@ m0982   ld      hl,tmp_fspec
 
 m0998   pop     bc              ; restore length & add of filename
 m0999   pop     de
-        ld      hl,$fff6
+m099a   ld      hl,$fff6
         dec     bc
         add     hl,bc
         inc     bc
@@ -12164,16 +12286,24 @@ m09b3   push    ix
 ; to load/verify/merge/save at
 
 ; section 7 - DATA operations
-
-m09ba   rst     $28
+m09ba
+      IF garry
+        rst     $18
+      ELSE
+        rst     $28
         defw    $0018           ; get next char
+      ENDIF
         cp      $e4
         jr      nz,m0a11        ; move on if not DATA
         ld      a,(T_ADDR)
         cp      $03
         jp      z,m1125         ; error if used with MERGE
+      IF garry
+        rst     $20
+      ELSE
         rst     $28
         defw    $0020           ; get current char
+      ENDIF
 m09cc   rst     $28
         defw    $28b2           ; search for variable
         set     7,c             ; set bit 7 of array's name
@@ -12201,8 +12331,12 @@ m09f4   ld      (ix+$0e),c      ; copy array name into workspace header
         inc     a               ; else type 2
 m09fe   ld      (ix+$00),a      ; copy type into workspace header
 m0a01   ex      de,hl
+      IF garry
+        rst     $20
+      ELSE
         rst     $28
-        defw    $0020           ; get next char
+        defw    $0020           ; get current char
+      ENDIF
         cp      ')'
         jr      nz,m09e0        ; error if not ")"
         rst     $20
@@ -12217,8 +12351,12 @@ m0a11   cp      $aa             ; check for SCREEN$
         ld      a,(T_ADDR)
         cp      $03
         jp      z,m1125         ; error if trying to MERGE
+      IF garry
+        rst     $20
+      ELSE
         rst     $28
-        defw    $0020           ; get next char
+        defw    $0020           ; get current char
+      ENDIF
         call    m10b1           ; check for end-of-statement
         ld      (ix+$0b),$00    ; store screen length
         ld      (ix+$0c),$1b
@@ -12234,8 +12372,12 @@ m0a36   cp      $af             ; check for CODE
         ld      a,(T_ADDR)
         cp      $03
         jp      z,m1125         ; error if trying to MERGE
+      IF garry
+        rst     $20
+      ELSE
         rst     $28
-        defw    $0020           ; get next char
+        defw    $0020           ; get current char
+      ENDIF
 m0a45   call    m0e94
         jr      nz,m0a56        ; move on if not end-of-statement
         ld      a,(T_ADDR)
@@ -12245,8 +12387,12 @@ m0a45   call    m0e94
         defw    $1ce6           ; get zero to calculator stack
         jr      m0a67           ; move on
 m0a56   call    m1121           ; get numeric expression
+      IF garry
+        rst     $18
+      ELSE
         rst     $28
         defw    $0018           ; get next char
+      ENDIF
         cp      ','
         jr      z,m0a6c         ; move on if comma
         ld      a,(T_ADDR)
@@ -12276,7 +12422,11 @@ m0a89   ld      (ix+$00),$03    ; type 3 to workspace header
 
 m0a8f   cp      $ca             ; check for LINE
         jr      z,m0a9c         ; move on if present
+      IF garry
+       jp      $24c7           ; check for end-of-statement
+      ELSE
         call    m10b1           ; check for end-of-statement
+      ENDIF
         ld      (ix+$0e),$80    ; no auto-run
         jr      m0ab5           ; move on
 m0a9c   ld      a,(T_ADDR)
@@ -15089,7 +15239,7 @@ m1df9   ld      hl,(CH_ADD)
         ld      a,(hl)
         cp      ';'
         jp      nz,m1125        ; nonsense in BASIC error if next char not ";"
-        rst     $28
+m1e02   rst     $28
         defw    $0020           ; get next char & continue into FORMAT LINE
 
 ; The FORMAT LINE command
@@ -18720,14 +18870,21 @@ m3f90   exx
         out     (c),a           ; page in previous memory
         ei                      ; enable interrupts
         ret
+    IF garry
+m07c9   defm    "K free", 13, 0
+m07d1   defm    "No files found", 13, 0
+merase  defm    "Erase ", 0
+myn     defm    " ? (Y/N)", 0
+    ELSE
+        defb    $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff
+        defb    $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff
+        defb    $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff
+        defb    $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff
+        defb    $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff
+    ENDIF
 
 ; Unused space
 
-        defb    $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff
-        defb    $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff
-        defb    $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff
-        defb    $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff
-        defb    $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff
         defb    $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff
         defb    $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff
         defb    $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff
@@ -27890,7 +28047,7 @@ o05ED:  INC     B               ; increment the time-out counter.
 
 ;; SAVE-ETC
 o0605:  POP     AF              ; discard address STMT-RET.
-        LD      A,($5C74)       ; fetch T_ADDR
+        LD      A,(T_ADDR)      ; fetch T_ADDR
 
 ;   Now reduce the low byte of the Syntax table entry to give command.
 ;   Note. For ZASM use SUB $E0 as next instruction.
@@ -27898,7 +28055,7 @@ o0605:  POP     AF              ; discard address STMT-RET.
 o0609:  SUB     (o1ADF+1) % 256 ; subtract the known offset.
                                 ; ( is SUB $E0 in standard ROM )
 
-        LD      ($5C74),A       ; and put back in T_ADDR as 0,1,2, or 3
+        LD      (T_ADDR),A      ; and put back in T_ADDR as 0,1,2, or 3
                                 ; for future reference.
 
         CALL    o1C8C           ; routine EXPT-EXP checks that a string
@@ -27909,7 +28066,7 @@ o0609:  SUB     (o1ADF+1) % 256 ; subtract the known offset.
         JR      Z,o0652         ; forward to SA-DATA if checking syntax.
 
         LD      BC,$0011        ; presume seventeen bytes for a header.
-        LD      A,($5C74)       ; fetch command from T_ADDR.
+        LD      A,(T_ADDR)      ; fetch command from T_ADDR.
         AND     A               ; test for zero - SAVE.
         JR      Z,o0621         ; forward to SA-SPACE if so.
 
@@ -27949,7 +28106,7 @@ o0629:  LD      (DE),A          ; set workspace location to space.
 
 ;   the filename is more than ten characters in length or the null string.
 
-        LD      A,($5C74)       ; fetch command from T_ADDR.
+        LD      A,(T_ADDR)      ; fetch command from T_ADDR.
         AND     A               ; test for zero - SAVE.
         JR      NZ,o0644        ; forward to SA-NULL if not the SAVE command.
 
@@ -27994,7 +28151,7 @@ o0652:  RST     18H             ; GET-CHAR
 
 ;   continue to consider DATA.
 
-        LD      A,($5C74)       ; fetch command from T_ADDR
+        LD      A,(T_ADDR)      ; fetch command from T_ADDR
         CP      $03             ; is it 'VERIFY' ?
         JP      Z,o1C8A         ; jump forward to REPORT-C if so.
                                 ; 'Nonsense in BASIC'
@@ -28012,7 +28169,7 @@ o0652:  RST     18H             ; GET-CHAR
         JR      NC,o0672        ; forward to SA-V-OLD if variable found.
 
         LD      HL,$0000        ; set destination to zero as not fixed.
-        LD      A,($5C74)       ; fetch command from T_ADDR
+        LD      A,(T_ADDR)      ; fetch command from T_ADDR
         DEC     A               ; test for 1 - LOAD
         JR      Z,o0685         ; forward to SA-V-NEW with LOAD DATA.
                                 ; to load a new array.
@@ -28075,7 +28232,7 @@ o0692:  EX      DE,HL           ; save var pointer in DE
 o06A0:  CP      $AA             ; is character the token 'SCREEN$' ?
         JR      NZ,o06C3        ; forward to SA-CODE if not.
 
-        LD      A,($5C74)       ; fetch command from T_ADDR
+        LD      A,(T_ADDR)      ; fetch command from T_ADDR
         CP      $03             ; is it MERGE ?
         JP       Z,o1C8A        ; jump to REPORT-C if so.
                                 ; 'Nonsense in BASIC'
@@ -28104,7 +28261,7 @@ o06C3:  CP      $AF             ; is character the token 'CODE' ?
         JR      NZ,o0716        ; forward if not to SA-LINE to consider an
                                 ; auto-started BASIC program.
 
-        LD      A,($5C74)       ; fetch command from T_ADDR
+        LD      A,(T_ADDR)      ; fetch command from T_ADDR
         CP      $03             ; is it MERGE ?
         JP      Z,o1C8A         ; jump forward to REPORT-C if so.
                                 ; 'Nonsense in BASIC'
@@ -28115,7 +28272,7 @@ o06C3:  CP      $AF             ; is character the token 'CODE' ?
                                 ; return or ':' follows.
         JR      NZ,o06E1        ; forward to SA-CODE-1 if there are parameters.
 
-        LD      A,($5C74)       ; else fetch the command from T_ADDR.
+        LD      A,(T_ADDR)      ; else fetch the command from T_ADDR.
         AND     A               ; test for zero - SAVE without a specification.
         JP      Z,o1C8A         ; jump to REPORT-C if so.
                                 ; 'Nonsense in BASIC'
@@ -28139,7 +28296,7 @@ o06E1:  CALL    o1C82           ; routine EXPT-1NUM checks for numeric
 
 ;   else allow saved code to be loaded to a specified address.
 
-        LD      A,($5C74)       ; fetch command from T_ADDR.
+        LD      A,(T_ADDR)      ; fetch command from T_ADDR.
         AND     A               ; is the command SAVE which requires length ?
         JP      Z,o1C8A         ; jump to REPORT-C if so.
                                 ; 'Nonsense in BASIC'
@@ -28201,7 +28358,7 @@ o0716:  CP      $CA             ; is character the token 'LINE' ?
 ;   the branch was here to consider auto-start.
 
 ;; SA-LINE-1
-o0723:  LD      A,($5C74)       ; fetch command from T_ADDR
+o0723:  LD      A,(T_ADDR)      ; fetch command from T_ADDR
         AND     A               ; test for SAVE.
         JP      NZ,o1C8A        ; jump forward to REPORT-C with anything else.
                                 ; 'Nonsense in BASIC'
@@ -28240,7 +28397,7 @@ o073A:  LD      (IX+$00),$00    ; place type zero - program in descriptor.
         EX      DE,HL           ; start to HL, length to DE.
 
 ;; SA-ALL
-o075A:  LD      A,($5C74)       ; fetch command from T_ADDR
+o075A:  LD      A,(T_ADDR)      ; fetch command from T_ADDR
         AND     A               ; test for zero - SAVE.
         JP      Z,o0970         ; jump forward to SA-CONTRL with SAVE  ->
 
@@ -28344,7 +28501,7 @@ o07AD:  RST     10H             ; PRINT-A prints character
 
 ;  type is a program or an array.
 
-        LD      A,($5C74)       ; fetch command from T_ADDR
+        LD      A,(T_ADDR)      ; fetch command from T_ADDR
         DEC     A               ; was it LOAD ?
         JP      Z,o0808         ; JUMP forward to LD-CONTRL if so to
                                 ; load BASIC or variables.
@@ -28400,7 +28557,7 @@ o07E9:  POP     HL              ; pop pointer to data
 ;; VR-CONT-2
 o07F4:  PUSH    HL              ; push pointer to start of data block.
         POP     IX              ; transfer to IX.
-        LD      A,($5C74)       ; fetch reduced command from T_ADDR
+        LD      A,(T_ADDR)      ; fetch reduced command from T_ADDR
         CP      $02             ; is it VERIFY ?
         SCF                     ; prepare a set carry flag
         JR      NZ,o0800        ; skip to VR-CONT-3 if not
@@ -34201,7 +34358,7 @@ o1B29:  CALL    o16BF           ; routine SET-WORK clears workspace etc.
 ;
 
 ;; SCAN-LOOP
-o1B52:  LD      HL,($5C74)      ; fetch temporary address from T_ADDR
+o1B52:  LD      HL,(T_ADDR)     ; fetch temporary address from T_ADDR
                                 ; during subsequent loops.
 
 ; -> the initial entry point with HL addressing start of syntax table entry.
@@ -34209,7 +34366,7 @@ o1B52:  LD      HL,($5C74)      ; fetch temporary address from T_ADDR
 ;; GET-PARAM
 o1B55:  LD      A,(HL)          ; pick up the parameter.
         INC     HL              ; address next one.
-        LD      ($5C74),HL      ; save pointer in system variable T_ADDR
+        LD      (T_ADDR),HL     ; save pointer in system variable T_ADDR
 
         LD      BC,o1B52        ; address: SCAN-LOOP
         PUSH    BC              ; is now pushed on stack as looping address.
@@ -34493,7 +34650,7 @@ o1C11:  POP     BC              ; drop address SCAN-LOOP.
                                 ; as should be no further characters.
 
         EX      DE,HL           ; save HL to DE.
-        LD      HL,($5C74)      ; fetch T_ADDR
+        LD      HL,(T_ADDR)     ; fetch T_ADDR
         LD      C,(HL)          ; fetch low byte of routine
         INC     HL              ; address next.
         LD      B,(HL)          ; fetch high byte of routine.
@@ -34667,7 +34824,7 @@ o1C96:  BIT     7,(IY+$01)      ; test FLAGS - checking syntax only ?
         RES     0,(IY+$02)      ; update TV_FLAG - signal main screen in use
         CALL    NZ,o0D4D        ; routine TEMPS is called in runtime.
         POP     AF              ; drop return address SCAN-LOOP
-        LD      A,($5C74)       ; T_ADDR_lo to accumulator.
+        LD      A,(T_ADDR)      ; T_ADDR_lo to accumulator.
                                 ; points to '$07' entry + 1
                                 ; e.g. for INK points to $EC now
 
