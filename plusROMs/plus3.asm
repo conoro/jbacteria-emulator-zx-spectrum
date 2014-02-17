@@ -9841,7 +9841,8 @@ l37ca   defs    $11
 l37db
   IF garry
         defs    $10
-        defb    $16, 0, 0, $10, 0, $11, $07, $13, 0
+        defm    $16, $00, $00
+m14e5   defm    $10, $00, $11, $07, $13, $00
         defm    "Insert tape and press PLAY", 13
         defm    "To cancel - press BREAK twic", 'e'+$80
         defb    0, 0, 0, 0, 0, 0, 0, 0
@@ -10787,7 +10788,8 @@ m0048   push    bc
         ei                      ; re-enable interrupts & exit
         ret
       IF garry
-        defm    "Start: ", 0, "system", 0, 0
+m0056   defm    "Start: ", 0
+m005e   defm    "system", 0, 0
       ELSE
         defs    $10
       ENDIF
@@ -11476,7 +11478,7 @@ m04ce   inc     de
 
 ; Erase messages
     IF garry
-        rst     $28
+m04d5   rst     $28
         defw    $c101
         ld      (bc), a
         inc     (hl)
@@ -11634,7 +11636,7 @@ m05b8   ld      hl,FLAGS3
         cp      $b9
         jr      z,m062b         ; or if EXP
       IF garry
-       jp      $3b48
+        jp      m3b48
         nop
       ELSE
         call    m2ada
@@ -11814,14 +11816,14 @@ m070e   ld      a,(RAMERR)      ; get attributes
 m071c   push    af
         call    m07e2           ; output message
         pop     af
-        ld      hl,m0812+1      ; blank message
+        ld      hl,m0813        ; blank message
         bit     2,a
         jr      z,m072b
         ld      hl,m081e        ; if bit 2 set, SYS message
 m072b   push    af
         call    m07e2           ; output message
         pop     af
-        ld      hl,m0812+1      ; blank message
+        ld      hl,m0813        ; blank message
         bit     1,a
         jr      z,m073a
         ld      hl,m0823        ; if bit 1 set, ARC message
@@ -11839,7 +11841,11 @@ m0743   push    hl
         call    m2b64           ; page in normal memory
         ld      l,a
         ld      e,' '
+      IF garry
+        call    m07f1
+      ELSE
         call    m0800           ; output filesize
+      ENDIF
         pop     hl
         inc     hl
         inc     hl              ; move to next file entry
@@ -11853,15 +11859,22 @@ m075c   call    m07eb           ; output CR
         jp      nz,m06b8        ; move back for more files in buffer
         pop     bc
         ld      a,b
+      IF garry
+        sub     $3f
+      ELSE
         sub     $40             ; was buffer full? (*BUG* should be $3f)
+      ENDIF
         jr      c,m077b         ; if not, move on
         ld      hl,$f044
         ld      de,tmp_buff
-        ld      bc,$000d
-        ldir                    ; if so, copy last entry to first
       IF garry
+        ld      bc, 11
+        ldir                    ; if so, copy last entry to first
         ex      de, hl
         ld      (hl), d
+      ELSE
+        ld      bc, 13
+        ldir                    ; if so, copy last entry to first
       ENDIF
         jp      m067f           ; and back for more
 m077b   call    m2b64           ; page in normal memory
@@ -11882,8 +11895,13 @@ m079a   call    m32b6           ; save TSTACK in page 7
         call    m32ee           ; restore TSTACK
         jp      nc,m06ab        ; go if error
         call    m2b64           ; page in normal memory
+      IF garry
+        ld      e, $ff
+        call    m07f1
+      ELSE
         ld      e,' '
         call    m0800           ; output number
+      ENDIF
         ld      hl,m07c9
         call    m07e2           ; output "K free" message
         call    m07eb           ; output CR
@@ -11897,7 +11915,7 @@ m07ba
         call    z, m07e2
         jp      m077e
         defb    0, 0, 0
-        call    m2b64
+m07cf   call    m2b64
         rst     $10
 m07d3   call    m2b89
         ret
@@ -11968,8 +11986,17 @@ m0801   ld      bc,$ff9c        ; -100
 
 ; Catalog attribute messages
 
-m0812   defm    "     ", 0
+      IF garry
+        defb    0
+m0812   
+m0813   defm    "    ", 0
+        defb    0
+m0818   defm    " PRT", 0
+      ELSE
+m0812   defm    " "
+m0813   defm    "    ", 0
 m0818   defm    " PROT", 0
+      ENDIF
 m081e   defm    " SYS", 0
 m0823   defm    " ARC", 0
 
@@ -12108,9 +12135,9 @@ m08e4   inc     de
         cp      'T'             ; check for valid drives
         jr      z,m090f         ; moving on if found
         cp      'A'             ; check for valid drives
-        jr      z,m08fe         ; moving on if found
+        jr      c,m08fe         ; moving on if found
         cp      'Q'             ; check for valid drives
-        jr      z,m090f         ; moving on if found
+        jr      c,m090f         ; moving on if found
       ELSE
         cp      'A'             ; check for valid drives
         jr      z,m090f         ; moving on if found
@@ -12141,10 +12168,11 @@ m090f
         dec     a
         dec     a
         or      b               ; check string length
-        jr      nz,m0966        ; move on if not 2
       IF garry
+        jr      nz,m0969        ; move on if not 2
         ld      a, (RAMERR)
       ELSE
+        jr      nz,m0966        ; move on if not 2
         ld      a,(T_ADDR)
         or      a
         jr      z,m0923         ; if SAVE, go to set default SAVE drive
@@ -12427,7 +12455,7 @@ m0a8f   cp      $ca             ; check for LINE
       ELSE
         call    m10b1           ; check for end-of-statement
       ENDIF
-        ld      (ix+$0e),$80    ; no auto-run
+m0a96   ld      (ix+$0e),$80    ; no auto-run
         jr      m0ab5           ; move on
 m0a9c   ld      a,(T_ADDR)
         and     a
@@ -12946,13 +12974,20 @@ m0e31   halt                    ; delay for 1 sec
         jp      m0828           ; save & exit
 
 ; Looks like these bits aren't used
-
+      IF garry
+msg18   defb    $16, 0, 0, $10, 0, $11, $07, $13, 0
+        defm    "Insert tape and press PLAY", 13
+        defm    "To cancel - press BREAK twice", $ff
+        defb    0, 0, 0, 0, 0, 0, 0, 0
+        defb    0, 0, 0, 0, 0, 0, 0, 0, 0
+      ELSE
         defb    $80
 m0e42   defm    "Press REC & PLAY, then any key", $ae
         defm    $0d, "Program:", $a0
         defm    $0d, "Number array:", $a0
         defm    $0d, "Character array:", $a0
         defm    $0d, "Bytes:", $a0
+      ENDIF
 
 ; Subroutine to check if char in A is a statement terminator
 
@@ -12986,7 +13021,7 @@ m0e9b   ld      a,(RAMERR)
         call    m32ee           ; restore TSTACK
         call    m2b64           ; page in normal memory
 m0eca   pop     af              ; restore error code
-        pop     hl              ; get return address
+m0ecb   pop     hl              ; get return address
         ld      e,(hl)          ; get inline code
         bit     7,e
         jr      z,m0edc         ; use it as error code if not $ff
@@ -13083,31 +13118,57 @@ m0eeb   defb    m0f9c-$         ; DEF FN
 ;       0e      As 05, but handled in ROM 1 not ROM 3
 
 m0f1d   defb    $01,'=',$02     ; LET
+      IF garry
+m0f20   defb    $0e
+        defw    $35e1           ; GOTO
+        defb    $00
+      ELSE
 m0f20   defb    $06,$00
-        defw    $1e67           ; GOTO
+        defw    o1E67           ; GOTO
+      ENDIF
 m0f24   defb    $06,$cb,$0e
         defw    m115e           ; IF
 m0f29   defb    $06,$0c
         defw    m124a           ; GOSUB
 m0f2d   defb    $00
-        defw    $1cee           ; STOP
+        defw    o1CEE           ; STOP
+      IF garry
+m0f30   defb    $0e
+        defw    m2b09
+      ELSE
 m0f30   defb    $0c
         defw    m1266           ; RETURN
+      ENDIF
 m0f33   defb    $04,'=',$06
         defb    $cc,$06,$0e
         defw    m1178           ; FOR
+      IF garry
+m0f3b   defb    $0e
+        defw    $1506           ; NEXT
+        defb    $00
+      ELSE
 m0f3b   defb    $04,$00
-        defw    $1dab           ; NEXT
+        defw    o1DAB           ; NEXT
+      ENDIF
 m0f3f   defb    $0e
         defw    m217b           ; PRINT
 m0f42   defb    $0e
         defw    m218f           ; INPUT
 m0f45   defb    $0e
+      IF garry
+        defw    m14e2           ; DIM
+      ELSE
         defw    m22ad           ; DIM
+      ENDIF
 m0f48   defb    $0e
         defw    m1072           ; REM
+      IF garry
+m0f4b   defb    $0e
+        defw    $387f           ; NEW
+      ELSE
 m0f4b   defb    $0c
         defw    m2280           ; NEW
+      ENDIF
 m0f4e   defb    $0d
         defw    m11f9           ; RUN
 m0f51   defb    $0e
@@ -13160,20 +13221,38 @@ m0f98   defb    $06,$00
         defw    $2294           ; BORDER
 m0f9c   defb    $0e
         defw    m1283           ; DEF FN
+      IF garry
+m0f9f   defb    $06,',',$0a,$0c
+        defw    $35c4           ; OPEN#
+m0fa5   defb    $06,$0c
+        defw    $35d7           ; CLOSE#
+      ELSE
 m0f9f   defb    $06,',',$0a,$00
-        defw    $1736           ; OPEN#
+        defw    o1736           ; OPEN#
 m0fa5   defb    $06,$00
         defw    $16e5           ; CLOSE#
+      ENDIF
 m0fa9   defb    $0e
         defw    m026c           ; FORMAT
+      IF garry
+m0fac   defb    $0a,$0e
+        defw    $39bb           ; MOVE
+        defb    0, 0
+      ELSE
 m0fac   defb    $0a,$cc,$0a,$0c
         defw    m04e5           ; MOVE
+      ENDIF
 m0fb2   defb    $0a,$0c
         defw    m044a           ; ERASE
 m0fb6   defb    $0e
         defw    m05b8           ; CAT
+      IF garry
+m0fb9   defb    $0e
+        defw    $3aaf           ; SPECTRUM
+      ELSE
 m0fb9   defb    $0c
         defw    m1465           ; SPECTRUM
+      ENDIF
 m0fbc   defb    $0e
         defw    m23f1           ; PLAY
 
@@ -13435,7 +13514,7 @@ m1118   rst     $28
 
 ; Class $08 routine
 
-        rst     $20
+m111c   rst     $20
 m111d   rst     $28             ; use ROM 3 to deal with class $08
         defw    $1c7a
         ret
@@ -13737,8 +13816,13 @@ m12e1   jp      nz,m1125        ; error if expression not correct type
 m12e8   call    m2b89           ; page in DOS workspace
         ld      hl,process
         ld      (hl),$ff        ; signal "current process is Loader"
+      IF garry
+        ld      a, (LODDRV)
+        cp      $54
+      ELSE
         ld      hl,FLAGS3
         bit     4,(hl)
+      ENDIF
         jp      z,m13c6         ; move on if no disk interface present
         xor     a
         call    m32b6           ; save TSTACK in page 7
@@ -13817,7 +13901,7 @@ m1383   call    m2b89           ; page in DOS workspace
         ld      (LODDRV),a      ; set default load drive to cassette
         ld      hl,TV_FLAG
         set     0,(hl)          ; signal "using lower screen"
-        ld      hl,m14e2
+        ld      hl,msg18
         call    m1524           ; output cassette loader message
         ld      hl,TV_FLAG
         res     0,(hl)          ; signal "using main screen"
@@ -13963,8 +14047,52 @@ m14c4   ld      hl,(CHANS)
 m14df   defb    $ef,$22,$22
 
 ; The Loader message
-
-m14e2   defm    $16, $00, $00
+    IF garry
+m14e2   rst     $18
+        cp      '#'
+        jp      nz, m22ad
+        call    m2b35
+        ld      b, 2
+        jp      m2b19
+m14f0   ld      a, b
+        cpl
+        ld      h, a
+        ld      a, c
+        cpl
+        ld      l, a
+        inc     hl
+        add     hl, sp
+        ld      sp, hl
+        push    bc
+        push    hl
+        ex      de, hl
+        ldir
+        pop     hl
+        rst     $28
+        defw    $250e
+        pop     hl
+        add     hl, sp
+        ld      sp, hl
+        ret
+m1506   rst     $18
+        cp      '#'
+        jr      z, m1515
+        rst     $28
+        defw    $1c6c
+        call    m10b1
+        rst     $28
+        defw    $1dab
+        ret
+m1515  call    $2b35
+        call    m3f00
+        defw    $005c
+        rst     $28
+        defw    $2d28
+        rst     $28
+        defw    $2aff
+        ret
+    ELSE
+msg18   defm    $16, $00, $00
 m14e5   defm    $10, $00, $11, $07, $13, $00
       IF spanish
         defm    "Introduzca la cinta y pulse PLAY", $0d
@@ -13973,6 +14101,7 @@ m14e5   defm    $10, $00, $11, $07, $13, $00
         defm    "Insert tape and press PLAY", $0d
         defm    "To cancel - press BREAK twice", $ff
       ENDIF
+    ENDIF
 
 
 ; Subroutine to output a $ff-terminated message
@@ -15217,7 +15346,33 @@ m1dd5   dec     e
 
 ; Unused code for a FORMAT "P";n command, used in same way as FORMAT LINE n
 
-m1dd9   rst     $28
+m1dd9
+      IF garry
+        rst     $20
+        rst     $28
+        defw    $1c82           ; get a string expression
+        rst     $18
+        cp      ','
+        jp      nz, m1125
+        rst     $20             ; get next char
+        rst     $28
+        defw    $1c82           ; get numeric expression
+        rst     $18
+        ld      hl, FLAGS3
+        res     6, (hl)
+        cp      ','
+        jr      nz, m1df7
+        set     6, (hl)
+        rst     $20
+        rst     $28
+        defw    $1c82           ; get a string expression
+m1df7   call    m10b1
+        ld      a, 1
+        rst     $28
+        defw    $1601
+        jp      $37fe
+      ELSE
+        rst     $28
         defw    $0018           ; get character at CH_ADD
         rst     $28
         defw    $1c8c           ; get a string expression
@@ -15239,6 +15394,7 @@ m1df9   ld      hl,(CH_ADD)
         ld      a,(hl)
         cp      ';'
         jp      nz,m1125        ; nonsense in BASIC error if next char not ";"
+      ENDIF
 m1e02   rst     $28
         defw    $0020           ; get next char & continue into FORMAT LINE
 
@@ -15696,7 +15852,11 @@ m1ff6   push    de
 m2001   cp      $16
         jr      z,m200e         ; move on for AT (2 inline codes)
         cp      $17
+      IF garry
+        jr      z,m2017
+      ELSE
         jr      z,m200e         ; move on for TAB (*BUG* 2 inline codes)
+      ENDIF
         cp      $10
         ret     c               ; exit for codes 0-15
         jr      m2017           ; move on for colour codes (1 inline code)
@@ -15705,7 +15865,11 @@ m200e   ld      (TVDATA),a      ; store control code
         ld      (TVPARS),a      ; & number of codes required
         ret
 m2017   ld      (TVDATA),a      ; store control code
+      IF garry
+        ld      a,$01
+      ELSE
         ld      a,$02           ; *BUG* should be 1
+      ENDIF
         ld      (TVPARS),a      ; & number of codes required
         ret
 
@@ -15805,7 +15969,7 @@ m2098   dec     hl
         ei
         ret
 
-      IF v41
+    IF v41
 x216d   push    af
         ld      c,$fd
         ld      d,$ff
@@ -15880,7 +16044,7 @@ x2217   call    m2af9
         ei
         scf
         ret
-      ELSE
+    ELSE
 m20a8   push    af              ; save character
 m20a9   call    m2af9           ; test for BREAK
         ld      bc,$0ffd
@@ -15892,16 +16056,24 @@ m20a9   call    m2af9           ; test for BREAK
         di
 m20b9   ld      bc,$1ffd
         ld      a,(BANK678)
+      IF garry
+        and     $ef
+        out     (c),a           ; output strobe
+        or      $10
+        ld      (BANK678),a
+        out     (c),a           ; output strobe
+      ELSE
         xor     $10             ; toggle strobe bit
         ld      (BANK678),a
         out     (c),a           ; output strobe
         bit     4,a
         jr      z,m20b9         ; loop back to finish with strobe high
+      ENDIF
         ei
         scf
         ret
         ret
-      ENDIF
+    ENDIF
 
 ; The COPY (to printer) command routine
 
@@ -16073,8 +16245,12 @@ m21aa   rst     $18
         jp      z,m20ce         ; or end of statement
         cp      $b9
         jp      z,m3328         ; go to do expanded copy if COPY EXP
+      IF garry
+        defs    5
+      ELSE
         cp      $f9
         jp      z,m35c4         ; move on if COPY RANDOMIZE
+      ENDIF
         rst     $28
         defw    $1c8c           ; get a string expression
         rst     $28
@@ -16463,6 +16639,29 @@ m240a   call    m10b1           ; check for end-of-statement
 ; of drives on the system, displaying information to the user.
 
 m2410   call    m2b89           ; page in DOS workspace (page 7)
+      IF garry
+        call    m32b6
+        ld      hl,FLAGS3
+        bit     7,(hl)
+        jr      nz,m2427        ; move on if DOS already initialised
+        set     7,(hl)          ; signal "DOS initialised"
+        call    m3f00
+        defw    $00a3
+        ld      ($df9d), a
+m2427   call    m3f00
+        defw    $0100
+        call    m32ee
+        ld      hl, $368c
+        call    m24b5
+m242a   ld      a,$ff
+        ld      hl, $0002       ; standard ALERT routine in ROM 2
+        call    m32b6           ; save TSTACK in page 7
+        call    m3f00
+        defw    DOS_SET_MESSAGE
+        call    m32ee           ; restore TSTACK
+        ld      hl,FLAGS3
+        res     4,(hl)          ; signal "disk interface not present"
+      ELSE
         ld      hl,FLAGS3
         bit     7,(hl)
         jr      nz,m242a        ; move on if DOS already initialised
@@ -16484,10 +16683,15 @@ m242a   ld      a,$ff
         ld      hl,FLAGS3
         res     4,(hl)          ; signal "disk interface not present"
         call    m2b89           ; page in DOS workspace
+      ENDIF
         call    m32b6           ; save TSTACK in page 7
         call    m3f00
         defw    DD_INTERFACE
         call    m32ee           ; restore TSTACK
+      IF garry
+        ld      a, $30
+        jr      nc, m2488
+      ELSE
         call    m2b64           ; page in page 0
         jr      c,m2463         ; move on if interface present
         ld      hl,m24c4
@@ -16496,47 +16700,107 @@ m242a   ld      a,$ff
 m2463   ld      a,'A'           ; set "A:" as default load/save drive
         ld      (LODDRV),a
         ld      (SAVDRV),a
+      ENDIF
         ld      hl,FLAGS3
         set     4,(hl)          ; signal "disk interface present"
         res     5,(hl)          ; signal "no drive B:"
+      IF garry=0
         call    m2b89           ; page in DOS workspace
+      ENDIF
         call    m32b6           ; save TSTACK in page 7
         call    m3f00
         defw    DD_ASK_1
         call    m32ee           ; restore TSTACK
+      IF garry=0
         call    m2b64           ; page in page 0
+      ENDIF
         jr      c,m24a3         ; move on if drive B exists
         ld      c,$00
+      IF garry
+        ld      hl, 5
+      ELSE
         ld      hl, n2455
         call    m2b89           ; page in DOS workspace
+      ENDIF
         call    m32b6           ; save TSTACK in page 7
         call    m3f00
         defw    DOS_MAP_B       ; map drive B: to unit 0
         call    m32ee           ; restore TSTACK
+      IF garry
+        ld      a, $31
+        jr      m2488
+      ELSE
         call    m2b64           ; page in page 0
         ld      hl,m24c8
         call    m24b5           ; display " A:"
         jr      m24ae           ; move on
+      ENDIF
 m24a3   ld      hl,FLAGS3
         set     5,(hl)          ; signal "drive B: present"
+      IF garry
+        ld      a, $32
+m2488   rst     $10
+        ld      hl, $369e
+        call    m24b5
+        ld      a, ($df9d)
+        add     a, $30
+        rst     $10
+        ld      hl, $36a8
+        call    m24b5
+        ld      hl, $e2a0
+        ld      c, $41
+        ld      b, $10
+m24a2   ld      a, (hl)
+        inc     hl
+        or      (hl)
+        inc     hl
+        jr      z, m24b9
+        ld      a, (LODDRV)
+        cp      c
+        ld      e, 0
+        jr      nz, m24b2
+        ld      e, 1
+m24b2   ld      a, $13
+        rst     $10
+        ld      a, e
+        rst     $10
+        ld      a, c
+        rst     $10
+m24b9   inc     c
+        djnz    m24a2
+        call    m2b64           ; page in normal memory
+        ret
+      ELSE
         ld      hl,m24d4
         call    m24b5           ; display "s A: and B:"
 m24ae   ld      hl,m24e4
         call    m24b5           ; display " available."
         ret
+      ENDIF
 
 ; Subroutine to print a null-terminated string
 
 m24b5   ld      a,(hl)          ; get next char
         or      a
         ret     z               ; exit if null
+      IF garry
+        rst     $10
+      ELSE
         rst     $28
         defw    $0010           ; print it
+      ENDIF
         inc     hl
         jr      m24b5           ; back for more
 
 ; Drives present messages
-
+    IF garry
+        cp      $b5
+        jr      nz, m24cc
+        rst     $20
+m24cc   call    m10b1
+        jp      m0a96
+        defs    30
+    ELSE
       IF spanish
 m24be   defm    "Unidades disponibles:  ", 0
 m24c4   defm    "M", 0
@@ -16550,6 +16814,7 @@ m24c8   defm    "s A: and M:", 0
 m24d4   defm    "s A:, B: and M:", 0
 m24e4   defm    " available.", 0
       ENDIF
+    ENDIF
 ; Subroutine used to execute a command line or evaluate an expression
 
 m24f0   ld      (iy+$00),$ff    ; clear error
@@ -16658,7 +16923,11 @@ m25cb   ld      sp,(RAMTOP)
         inc     sp              ; clear return stack
         ld      hl,TSTACK
         ld      (OLDSP),hl      ; set OLDSP to temporary stack area
+      IF garry
+        nop
+      ELSE
         halt                    ; wait for an interrupt
+      ENDIF
         res     5,(iy+$01)      ; signal no key available
         ld      a,(ERR_NR)
         inc     a               ; A=error code
@@ -16874,6 +17143,19 @@ m2705   defw    m276d
         defw    m2a74
         defw    m2a8a
         defw    m2a97
+      IF garry
+        defw    m36fb
+        defw    m370c
+        defw    m3724
+        defw    m3733
+        defw    m3741
+        defw    m3759
+        defw    m376d
+        defw    m3781
+        defw    m378d
+        defw    m379e
+        defs    18
+      ENDIF
 
       IF v41 || spanish
         defw    m2aa8
@@ -16984,9 +17266,10 @@ m2a74   defm    "Drive must be A: or B", ':'+$80
 m2a8a   defm    "Invalid driv", 'e'+$80
 m2a97   defm    "Code length erro", 'r'+$80
       ENDIF
-
+      IF garry=0
 m2aa8   defm    "You should never see thi", 's'+$80
 m2ac1   defm    "Hello there !"
+      ENDIF
 
 ; Subroutine to output an error message (terminated by
 ; a byte with bit 7 set)
@@ -17040,7 +17323,60 @@ m2af9   ld      a,$7f
 ; Subroutine to execute routine at HL, returning to m3a1b in order to
 ; return control to ROM 3
 ; It is provided to allow serial input into 48K BASIC, but looks buggy
-
+      IF garry
+m2b09   rst     $18
+        cp      $23
+        jr      z, m2b14
+        call    m10b1
+        jp      m1266
+m2b14   call    m2b35
+        ld      b, 0
+m2b19   call    m3f00
+        defw    $0062
+        push    de
+        push    hl
+        pop     bc
+        rst     $28
+        defw    $2d2b
+        pop     bc
+        rst     $28
+        defw    $2d2b
+        ld      de, m2b56
+        ld      bc, 10
+        call    m14f0
+        rst     $28
+        defw    $2aff
+        ret
+m2b35   rst     $20
+        rst     $28
+        defw    $1c82
+        rst     $18
+        cp      ','
+        jp      nz, m22c3
+        rst     $20
+        rst     $28
+        defw    $1c1f
+        bit     6, (iy+$01)
+        jp      z, m22c3
+        pop     hl
+        call    m10b1
+        push    hl
+        rst     $28
+        defw    $1e94
+        rst     $28
+        defw    $1601
+        ret
+m2b56   rst     $28
+        defw    $4034
+        ld      b, c
+        nop
+        nop
+        inc     b
+        rrca
+        defb    $38
+        ret
+        defs    4
+      ELSE
 m2b09   ei
         ex      af,af'
         ld      de,m3a1b
@@ -17092,6 +17428,7 @@ m2b5a   pop     hl
 m2b60   ret     c               ; exit if no errors
         ret     z
         jr      m2b37           ; else go to act on them
+      ENDIF
 
 ; Subroutine to page in normal memory (page 0) and swap SP with OLDSP
 
@@ -17379,7 +17716,11 @@ m2d94   xor     a
         call    m3f00
         defw    DOS_FREE_SPACE  ; find free space on drive M:
         call    m32ee           ; restore TSTACK
+      IF garry
+        jp      nc,m2dc7
+      ELSE
         jp      nc,m3219        ; move on if error
+      ENDIF
         ld      a,h
         or      a
         jr      z,m2daf
@@ -17397,7 +17738,7 @@ m2db7   ld      h,l
         or      a
         sbc     hl,de
         jr      nc,m2dd1        ; move on if >=2K free
-        ld      a,$ff
+m2dc7   ld      a,$ff
         ld      (SCR_CT),a      ; set scroll count
         ld      a,$01
         ld      (copy_ram),a    ; signal "copy via RAM"
@@ -17509,7 +17850,7 @@ m2e95   ld      hl,src_file     ; source filename
 
 ; Subroutine to copy everything from file 0 to file 1, via a 2K area
 ; in page 0 (bug: this should be page 7!)
-      IF v41
+      IF v41 || garry
 m2ecd   ld      bc,$0007        ; file 0, page 0 (oops, should be page 7!)
       ELSE
 m2ecd   ld      bc,$0000        ; file 0, page 0 (oops, should be page 7!)
@@ -17543,7 +17884,7 @@ m2f0b   ld      a,e
         or      d
         jr      z,m2f23         ; if no bytes read, move on
         ld      hl,tmp_buff
-      IF v41
+      IF v41 || garry
         ld      bc,$0107
       ELSE
         ld      bc,$0100
@@ -17583,7 +17924,7 @@ m2f44   ld      hl,tmp_file     ; temporary filename
         jp      nc,m3219        ; move on if error
         ld      hl,$0000
         ld      (tmp_bytes),hl  ; zero # bytes copied to temp file
-      IF v41
+      IF v41 || garry
 m2f61   ld      bc,$0007
       ELSE
 m2f61   ld      bc,$0000
@@ -17618,7 +17959,7 @@ m2f9f   ld      a,e
         jr      z,m2fb9         ; move on if no bytes read
         push    de
         ld      hl,tmp_buff
-      IF v41
+      IF v41 || garry
         ld      bc,$0207
       ELSE
         ld      bc,$0200
@@ -17673,7 +18014,7 @@ m2fd2   ld      a,(src_drv)
         ld      (dst_open),a    ; signal dest file is open
 m301e   ld      hl,tmp_buff
         ld      de,$0800
-      IF v41
+      IF v41 || garry
         ld      bc,$0207
       ELSE
         ld      bc,$0200
@@ -17690,7 +18031,7 @@ m301e   ld      hl,tmp_buff
         or      a
         sbc     hl,de           ; HL=# bytes read
 m3042   ex      de,hl
-      IF v41
+      IF v41 || garry
         ld      bc,$0107
       ELSE
         ld      bc,$0100
@@ -18017,7 +18358,9 @@ m3279   bit     5,(hl)
 m3283   defm    "M:VAXNSUZ.$$$", $ff
 
 ; Files copied messages
-
+    IF garry
+        defs    37
+    ELSE
       IF spanish
 m3291   defm    $0d, "  1 fichero copiado.", $0d, $0d, 0
 m32a5   defm    " ficheros copiados.", $0d, $0d, 0
@@ -18025,6 +18368,7 @@ m32a5   defm    " ficheros copiados.", $0d, $0d, 0
 m3291   defm    $0d, "  1 file copied.", $0d, $0d, 0
 m32a5   defm    " files copied.", $0d, $0d, 0
       ENDIF
+    ENDIF
 ; Subroutine to copy TSTACK to a temporary area in page 7, and
 ; reset SP to use whole of TSTACK again
 
@@ -18476,6 +18820,851 @@ m35b3   defm    "CODE ", 0
 m35b9   defm    "$() ", 0
 m35be   defm    "LINE ", 0
 
+  IF garry
+        rst     $28
+        defw    $2bf1
+        push    bc
+        push    de
+        rst     $28
+        defw    $1e94
+        pop     de
+        pop     bc
+        call    m3f00
+        defw    $0056
+m35d3   jp      nc, m0edb
+        ret
+m35d7   rst     $28
+        defw    $1e94
+        call    l3f00
+        defw    $0059
+        jr      m35d3
+        rst     $18
+        cp      '#'
+        jr      z, m35f0
+        rst     $28
+        defw    $1c82
+        call    m10b1
+        rst     $28
+        defw    $1e67
+        ret
+m35f0   call    m111c
+        call    m10b1
+        ld      de, m04d5
+        ld      bc, 13
+        call    m14f0
+        rst     $28
+        defw    $1e94
+        rst     $28
+        defw    $1601
+        rst     $28
+        defw    $2da2
+        push    bc
+        rst     $28
+        defw    $2da2
+        push    bc
+        pop     hl
+        pop     de
+        ld      b, 1
+        call    m3f00
+        defw    $0062
+        ret
+        defs    $75
+        defm    "Physical drives: ", 0
+        defm    " floppy, ", 0
+        defm    " MMCLogical drives: ", 0
+m36bd   defm    "Really format hard disk (Y/N)?", 0
+m36dc   defm    "Really delete partition (Y/N)?", 0
+m36fb   defm    "Invalid partitio", 'n'+$80
+m370c   defm    "Partition already exist", 's'+$80
+m3724   defm    "Not implemente", 'd'+$80
+m3733   defm    "Partition ope", 'n'+$80
+m3741   defm    "Out of partition handle", 's'+$80
+m3759   defm    "Not a swap partitio", 'n'+$80
+m376d   defm    "Drive already mappe", 'd'+$80
+m3781   defm    "Out of XDPB", 's'+$80
+m378d   defm    "No swap partitio", 'n'+$80
+m379e   defm    "Invalid devic", 'e'+$80
+        defs    $31
+m37dd   call    m24b5
+        ld      hl, FLAGS
+        res     5, (hl)
+m37e5   bit     5, (hl)
+        jr      z, m37e5
+        res     5, (hl)
+        ld      a, (LAST_K)
+        and     $df
+        cp      'N'
+        jr      z, m37f8
+        cp      'Y'
+        jr      nz, m37e5
+m37f8   push    af
+        rst     $28
+        defw    $0d6e
+        pop     af
+        ret
+m37fe   rst     $28
+        defw    $0d6e
+        ld      hl, m36bd
+        call    m37dd
+        push    af
+        ld      bc, 0
+        ld      a, (FLAGS3)
+        bit     6, a
+        jr      z, m3815
+        rst     $28
+        defw    $1e99
+m3815   push    bc
+        rst     $28
+        defw    $1e99
+        push    bc
+        rst     $28
+        defw    $1e94
+        ld      c, a
+        pop     hl
+        pop     de
+        pop     af
+        cp      'N'
+        ret     z
+m3824   push    hl
+        push    bc
+        push    de
+        ld      b, 7
+        ld      hl, $ed11
+        call    m2b89
+        call    m32b6
+        call    m3f00
+        defw    $01a2
+        jp      nc, m395a
+        ld      ix, $ed11
+        ld      h, (ix+$06)
+        ld      l, (ix+$0c)
+        ld      e, (ix+$02)
+        ld      d, (ix+$03)
+        call    m32ee
+        call    m2b64
+        ex      (sp), hl
+        and     a
+        sbc     hl, de
+        jp      nc, m38c7
+        add     hl, de
+        ld      a, h
+        or      l
+        jr      z, m3862
+        ex      de, hl
+        pop     hl
+        set     7, h
+        jr      m3863
+m3862   pop     hl
+m3863   pop     bc
+        ld      a, c
+        pop     bc
+        push    de
+        pop     ix
+        call    m2b89
+        call    m32b6
+        call    m3f00
+        defw    $00b2
+        call    m32ee
+        call    m2b64
+        ret     c
+m387b   call    m0ecb
+        rst     $38
+        rst     $18
+        cp      $e4
+        jr      z, m388e
+        cp      $b9
+        jr      z, m388e
+        call    m10b1
+        jp      m2280
+m388e   push    af
+        rst     $20
+        rst     $28
+        defw    $1c8c
+        rst     $18
+        cp      ','
+        jp      nz, m1125
+m3899   rst     $20
+        rst     $28
+        defw    $1c82
+        call    m10b1
+        rst     $28
+        defw    $1e99
+        push    bc
+        call    m3965
+        jp      nz, m398a
+        pop     hl
+        pop     af
+        cp      $b9
+        ld      a, 2
+        ld      bc, 17
+        jr      z, m38ba
+        ld      a, 3
+        ld      bc, 17
+m38ba   call    m2b89
+        ld      ($efa8), a
+        push    hl
+        and     a
+        sbc     hl, bc
+        pop     hl
+        jr      c, m38ce
+m38c7   call    m2b64
+        call    m2ada
+        ld      a, (bc)
+m38ce   ld      a, h
+        or      l
+        jr      z, m38c7
+        push    de
+        push    hl
+        ld      hl, m3d8b
+        ld      de, $efb8
+        ld      bc, $1d
+        ldir
+        pop     hl
+        push    hl
+        ld      d, l
+        ld      e, 0
+        ld      a, l
+        cp      5
+        jr      c, m3903
+        cp      9
+        jr      c, m38fa
+        srl     d
+        rr      e
+        ld      bc, $3f06
+        ld      h, 3
+        ld      a, $c0
+        jr      m390c
+m38fa   ld      bc, $1f05
+        ld      h, 1
+        ld      a, $f0
+        jr      m390c
+m3903   sla     d
+        ld      bc, $0f04
+        ld      h, 0
+        ld      a, $ff
+m390c   ld      ($efba), bc
+        ld      ($efc1), a
+        ld      a, h
+        ld      ($efbc), a
+        dec     de
+        ld      b, l
+        xor     a
+m391a   add     a, $10
+        djnz    m391a
+        and     a
+        jr      nz, m3925
+        dec     a
+        ld      de, $07f7
+m3925   ld      ($efca), a
+        ld      ($efbd), de
+        pop     hl
+        add     hl, hl
+        add     hl, hl
+        add     hl, hl
+        dec     hl
+        ld      ($efb0), hl
+        ld      a, $ff
+        ld      ($efaf), a
+        pop     af
+        push    af
+        ld      hl, $ef98
+        call    m32b6
+        call    m3f00
+        defw    $00b8
+        call    m32ee
+        jr      nc, m395d
+        pop     af
+        ld      l, $e5
+        ld      ix, $0020
+        call    m32b6
+        call    m3f00
+        defw    $00bb
+m395a   call    m32ee
+m395d   call    m2b64
+        ret     c
+        call    m0ecb
+        rst     $38
+m3965   rst     $28
+        defw    $2bf1
+        ld      a, b
+        or      c
+        jr      nz, m3970
+        call    m2ada
+        inc     l
+m3970   inc     de
+        ld      a, (de)
+        dec     de
+        cp      '>'
+        ld      a, 0
+        jr      nz, m398e
+m3979   ld      a, (de)
+        inc     de
+        inc     de
+        dec     bc
+        dec     bc
+        sub     '0'
+        jr      z, m398e
+        cp      1
+        jr      z, m398e
+        ld      d, a
+        cp      5
+        ret     c
+m398a   call    m2ada
+        ld      e, c
+m398e   push    af
+        ld      b, 0
+        ld      a, c
+        cp      $11
+        jr      c, m3998
+        ld      a, $10
+m3998   ex      de, hl
+        ld      de, $ef98
+        call    m3f63
+        di
+        ld      a, (BANKM)
+        or      7
+        ld      bc, $7ffd
+        out     (c), a
+        ex      de, hl
+        ld      d, $10
+m39ad   ld      (hl), $20
+        inc     hl
+        dec     d
+        jr      nz, m39ad
+        ld      a, (BANKM)
+        out     (c), a
+        ei
+        pop     de
+        ret
+m39bb   rst     $18
+        cp      $eb
+        jp      z, m3df2
+        cp      $bf
+        jr      z, m39dc
+        cp      $df
+        jr      z, m3a1f
+        cp      $c4
+        jr      z, m3a3d
+        cp      $cc
+        jp      nz, m1125
+        rst     $20
+        rst     $28
+        defw    $1c8c
+        call    m10b1
+        jp      m04e5
+m39dc   rst     $20
+        rst     $28
+        defw    $1c8c
+        call    m3a81
+        call    m10b1
+        call    m3965
+        ld      a, d
+        push    af
+        jr      nz, m3a03
+        ld      hl, $ef98
+        call    m2b89
+        call    m32b6
+        call    m3f00
+        defw    $00b5
+        call    m32ee
+        call    m2b64
+        jr      nc, m3a1b
+m3a03   push    bc
+        call    m3a8e
+        pop     bc
+        pop     af
+        call    m2b89
+        call    m32b6
+        call    m3f00
+        defw    $00f1
+        call    m32ee
+        call    m2b64
+        ret     c
+m3a1b   call    m0ecb
+        rst     $38
+m3a1f   rst     $20
+        call    m3a81
+        call    m10b1
+        call    m3a8e
+        call    m2b89
+        call    m32b6
+        call    m3f00
+        defw    $00f4
+        call    m32ee
+        call    m2b64
+        jr      nc, m3a1b
+        ret
+m3a3d   rst     $20
+        call    m10b1
+        ld      hl, m36dc
+        call    m37dd
+        push    af
+        call    m3965
+        jp      nz, m398a
+        pop     af
+        cp      'N'
+        ret     z
+        ld      a, d
+        push    af
+        ld      hl, $ef98
+        call    m2b89
+        call    m32b6
+        call    m3f00
+        defw    $00b5
+        call    m32ee
+        call    m2b64
+        jr      nc, m3a7d
+        pop     af
+        call    m2b89
+        call    m32b6
+        call    m3f00
+        defw    $00be
+        call    m32ee
+        call    m2b64
+        ret     c
+m3a7d   call    m0ecb
+        rst     $38
+m3a81   rst     $18
+        ld      hl, FLAGS3
+        res     6, (hl)
+        cp      $b5
+        ret     nz
+        set     6, (hl)
+        rst     $20
+        ret
+m3a8e   rst     $28
+        pop     af
+        dec     hl
+        dec     bc
+        dec     bc
+        ld      a, b
+        or      c
+        jr      nz, m3aab
+        inc     de
+        ld      a, (de)
+        cp      ':'
+        jr      nz, m3aab
+        dec     de
+        ld      a, (de)
+        and     $df
+        cp      'A'
+        jr      c, m3aab
+        cp      'Q'
+        jr      nc, m3aab
+        ld      l, a
+        ret
+m3aab   call    m2ada
+        ld      c, (hl)
+        rst     $18
+        cp      $ab
+        ld      bc, $1ff
+        jr      z, m3b08
+        cp      $d9
+        ld      bc, $0107
+        jr      z, m3b08
+        cp      $da
+        ld      bc, $0407
+        jr      z, m3b08
+        cp      $db
+        ld      bc, $0801
+        jr      z, m3b08
+        cp      $dc
+        ld      bc, $0701
+        jr      z, m3b08
+        cp      $0d
+        jr      z, m3adb
+        cp      ':'
+        jr      nz, m3ae1
+m3adb   call    m10b1
+        jp      m1465
+m3ae1   rst     $28
+        defw    $1c8c
+        call    m10b1
+        rst     $28
+        defw    $2bf1
+        ex      de, hl
+        ld      de, tmp_file
+        call    m3f63
+        call    m2b89
+        ld      a, $ff
+        ld      (de), a
+        ld      hl, tmp_file
+        call    m32b6
+        call    m3f00
+        defw    $00fd
+        call    m32ee
+        jp      m3d21
+m3b08   push    bc
+        rst     $20
+        rst     $28
+        defw    $1c82
+        call    m3a81
+        call    m10b1
+        rst     $28
+        defw    $1e94
+        pop     bc
+        ld      d, a
+        ld      a, c
+        cp      d
+        jr      nc, m3b20
+        call    m2ada
+        inc     de
+m3b20   dec     b
+        jr      z, m3b29
+        rlc     d
+        rlc     c
+        jr      m3b20
+m3b29   call    m2b89
+        ld      a, c
+        cpl
+        ld      c, a
+        ld      a, ($ec11)
+        and     c
+        or      d
+        ld      ($ec11), a
+        ld      ($ec0f), a
+        call    m2b64
+        ld      hl, FLAGS3
+        bit     6, (hl)
+        ret     z
+        ld      h, a
+        xor     a
+        jp      m3e5c
+m3b48   cp      $ad
+        jr      z, m3b64
+        cp      $b5
+        jp      z, m3da8
+        call    m2ada
+        dec     bc
+        cp      $b9
+        jp      z, m062b
+        cp      $b5
+        jp      z, m3da8
+        cp      $ad
+        jp      nz, m05f8
+m3b64   rst     $20
+        cp      $b9
+        jr      nz, m3b6f
+        rst     $20
+        ld      hl, FLAGS3
+        set     6, (hl)
+m3b6f   call    m10b1
+        call    m2b89
+        ld      b, 2
+m3b77   push    bc
+        ld      a, 2
+        sub     b
+        ld      de, 0
+        push    de
+        push    af
+        ld      hl, m3d48
+        call    m07d7
+        pop     af
+        push    af
+        ld      c, a
+        add     a, $30
+        call    m07cf
+        ld      b, 7
+        ld      hl, $ed11
+        call    m32b6
+        call    m3f00
+        defw    $01a2
+        call    m32ee
+        jr      nc, m3c06
+        ld      ix, $ed11
+        ld      hl, m3d77
+        call    m07d7
+        ld      l, (ix+$02)
+        ld      h, (ix+$03)
+        ld      e, $ff
+        call    m07df
+        ld      a, '/'
+        call    m07cf
+        ld      h, 0
+        ld      l, (ix+$06)
+        ld      e, $ff
+        call    m07df
+        ld      a, '/'
+        call    m07cf
+        ld      h, 0
+        ld      l, (ix+$0c)
+        ld      e, $ff
+        call    m07df
+        ld      a, ')'
+        call    m07cf
+        ld      a, 13
+        call    m07cf
+m3bdd   ld      bc, 0
+m3be0   pop     af
+        push    af
+        ld      hl, $ef98
+        call    m32b6
+        call    m3f00
+        defw    $00c4
+        call    m32ee
+        jp      nc, m3d15
+        ld      ix, $ef98
+        ld      a, (ix+$10)
+        cp      0
+        jr      nz, m3c0e
+        pop     af
+        pop     de
+        inc     de
+        push    de
+        push    af
+        jp      m3cf9
+m3c06   ld      hl, m3d7a
+        call    m07d7
+        jr      m3bdd
+m3c0e   push    bc
+        ld      hl, $ef98
+        ld      e, $10
+m3c14   ld      a, (hl)
+        inc     hl
+        and     a
+        jr      nz, m3c1b
+        ld      a, $7e
+m3c1b   call    m07cf
+        dec     e
+        jr      nz, m3c14
+        ld      a, $20
+        call    m07cf
+        ld      l, (ix+$18)
+        ld      h, (ix+$19)
+        ld      e, (ix+$1a)
+        ld      a, e
+        or      h
+        jr      nz, m3c46
+        ld      h, l
+        ld      l, (ix+$17)
+        inc     hl
+        srl     h
+        rr      l
+        ld      e, $20
+        call    m07df
+        ld      hl, m3d2b
+        jr      m3c63
+m3c46   xor     a
+        srl     e
+        rr      h
+        rr      l
+        rra
+        srl     e
+        rr      h
+        rr      l
+        rra
+        srl     e
+        rr      h
+        rr      l
+        ld      e, $20
+        call    m07df
+        ld      hl, m3d27
+m3c63   call    m07d7
+        ld      a, (ix+$10)
+        cp      1
+        ld      hl, m005e
+        jr      z, m3c8f
+        cp      2
+        ld      hl, m3d52
+        jr      z, m3c8f
+        cp      3
+        ld      hl, m3d57
+        jr      z, m3c8f
+        cp      $fe
+        ld      hl, m3d5d
+        jr      z, m3c8f
+        cp      $ff
+        ld      hl, m3d63
+        jr      z, m3c8f
+        ld      hl, m3d68
+m3c8f   call    m07d7
+        ld      a, (ix+$10)
+        cp      3
+        jr      nz, m3ca7
+        ld      a, (ix+$3c)
+        and     a
+        jr      z, m3ca7
+        call    m07cf
+        ld      a, ':'
+        call    m07cf
+m3ca7   ld      a, 13
+        call    m07cf
+        ld      hl, FLAGS3
+        bit     6, (hl)
+        jr      z, m3cf8
+        ld      hl, m0056
+        call    m07d7
+        ld      l, (ix+$11)
+        ld      h, (ix+$12)
+        ld      e, $ff
+        call    m07df
+        ld      a, ','
+        call    m07cf
+        ld      l, (ix+$13)
+        ld      h, 0
+        ld      e, $ff
+        call    m07df
+        ld      hl, m3d70
+        call    m07d7
+        ld      l, (ix+$14)
+        ld      h, (ix+$15)
+        ld      e, $ff
+        call    m07df
+        ld      a, ','
+        call    m07cf
+        ld      l, (ix+$16)
+        ld      h, 0
+        ld      e, $ff
+        call    m07df
+        ld      a, 13
+        call    m07cf
+m3cf8   pop     bc
+m3cf9   inc     bc
+        ld      a, b
+        or      c
+        jp      nz, m3be0
+m3cff   pop     af
+        pop     hl
+        ld      e, $ff
+        call    m07df
+        ld      hl, m3d2e
+        call    m07d7
+m3d0c   pop     bc
+        dec     b
+        jp      nz, m3b77
+        call    m2b64
+        ret
+m3d15   cp      $38
+        jr      z, m3cff
+        cp      $16
+        jr      nz, m3d21
+        pop     af
+        pop     hl
+        jr      m3d0c
+m3d21   call    m2b64
+        jp      m387b
+m3d27   defm    "Mb ", 0
+m3d2b   defm    "K ", 0
+m3d2e   defm    " free partition entries", 13, 13, 0
+m3d48   defm    "MMC unit ", 0
+m3d52   defm    "swap", 0
+m3d57   defm    "data ", 0
+m3d5d   defm    "*BAD*", 0
+m3d63   defm    "FREE", 0
+m3d68   defm    "unknown", 0
+m3d70   defm    " End: ", 0
+m3d77   defm    " (", 0
+m3d7a   defm    " (not detected)", 13, 0
+m3d8b   defb    0, 2, 0, 0, 0, 0, 0, $ff, 1, 0, 0, 0, $80, 0
+        defb    0, 2, 3, 0, 0, $80, 0, 0, 2, 0, 0, 0, 0, 0, 0
+m3da8   rst     $20
+        call    m10b1
+        call    m2b89
+        ld      b, $10
+        ld      l, 'A'
+m3db3   push    bc
+        push    hl
+        ld      bc, $ef98
+        call    m32b6
+        call    m3f00
+        defw    $00f7
+        call    m32ee
+        jp      nc, m3d21
+        jr      z, m3de9
+        pop     hl
+        push    hl
+        ld      a, l
+        call    m07cf
+        ld      a, ':'
+        call    m07cf
+        ld      a, ' '
+        call    m07cf
+        ld      hl, $ef98
+        ld      b, $12
+m3ddd   ld      a, (hl)
+        call    m07cf
+        inc     hl
+        djnz    m3ddd
+        ld      a, 13
+        call    m07cf
+m3de9   pop     hl
+        pop     bc
+        inc     l
+        djnz    m3db3
+        call    m2b64
+        ret
+m3df2   rst     $20
+        rst     $28
+        defw    $1c8c
+        call    m10b1
+        rst     $28
+        defw    $2bf1
+        ld      b, 0
+        ld      a, c
+        and     a
+        jr      nz, m3e06
+        call    m2ada
+        inc     l
+m3e06   cp      $10
+        jr      c, m3e0c
+        ld      c, $10
+m3e0c   push    bc
+        ex      de, hl
+        ld      de, tmp_file
+        call    m3f63
+        call    m3965
+        ld      a, d
+        jp      nz, m398a
+        push    af
+        ld      hl, $ef98
+        call    m2b89
+        call    m32b6
+        call    m3f00
+        defw    $00b5
+        call    m32ee
+        call    m2b64
+        jr      nc, m3e58
+        pop     af
+        pop     de
+        call    m2b89
+        ld      hl, tmp_file
+        add     hl, de
+        ld      d, a
+        ld      a, $11
+        sub     e
+m3e3f   ld      (hl), $20
+        inc     hl
+        dec     a
+        jr      nz, m3e3f
+        ld      a, d
+        ld      hl, tmp_file
+        call    m32b6
+        call    m3f00
+        defw    $00c1
+        call    m32ee
+        call    m2b64
+        ret     c
+m3e58   call    m0ecb
+        rst     $38
+m3e5c   ld      b, a
+        ld      c, a
+        ld      l, 8
+        call    m2b89
+        call    m32b6
+        call    m3f00
+        defw    $00d6
+        ld      a, (ATTR_P)
+        ld      h, a
+        ld      l, 9
+        xor     a
+        ld      b, a
+        ld      c, a
+        call    m3f00
+        defw    $00d6
+        call    m32ee
+        call    m2b64
+        ret
+  ELSE
 ; The "COPY RANDOMIZE" command
 ; This is a silly command
 
@@ -18496,7 +19685,8 @@ m35dc   djnz    m35c8           ; loop back
         jr      nz,m35c6        ; loop back
         call    m2ada
         defb    $0b             ; nonsense in BASIC error
-m35e5 IF v41 || spanish
+m35e5
+      IF v41 || spanish
         ld      ix,$2000
       ENDIF
         xor     a
@@ -18688,6 +19878,7 @@ m3d03   jp      m1e70           ; jump to input routine
 m3d06   jp      m1f6e           ; jump to output routine
 
         defs    $0177
+  ENDIF
 
 ; Subroutine to call a subroutine in ROM 0
 ; The subroutine address is inline after the call to this routine
@@ -18747,8 +19938,13 @@ m3ec5   ei
         pop     af
         ret                     ; return
 
+      IF garry
+m3291   defm    $0d, "  1 file copied.", $0d, $0d, 0
+m32a5   defm    " files copied.", $0d, $0d, 0
+        defs    $12
+      ELSE
         defs    $37
-
+      ENDIF
 ; Subroutine to call a subroutine in ROM 2
 ; The subroutine address is inline after the call to this routine
 ; This routine is duplicated in ROMs 0 & 2, so that when we start switching
@@ -18765,6 +19961,10 @@ m3f00   ld      (OLDHL),hl      ; save HL,BC and AF
         ld      b,(hl)          ; BC=inline address
         inc     hl
         ex      (sp),hl         ; restack updated return address
+      IF garry
+        ld      hl, m3f42
+        push    hl
+      ENDIF
         push    bc
         pop     hl              ; HL=address to call in ROM
         ld      a,(BANKM)
@@ -18779,8 +19979,10 @@ m3f00   ld      (OLDHL),hl      ; save HL,BC and AF
 m3f2a   ld      bc,$1ffd
         out     (c),a           ; page in ROM 2
         ei
+      IF garry=0
         ld      bc,m3f42
         push    bc              ; stack routine address to return to ROM 1
+      ENDIF
         push    hl              ; stack routine address to call in ROM 2
         ld      hl,(OLDAF)      ; restore registers
         push    hl
@@ -18870,21 +20072,20 @@ m3f90   exx
         out     (c),a           ; page in previous memory
         ei                      ; enable interrupts
         ret
-    IF garry
+  IF garry
 m07c9   defm    "K free", 13, 0
 m07d1   defm    "No files found", 13, 0
 merase  defm    "Erase ", 0
 myn     defm    " ? (Y/N)", 0
-    ELSE
+        defs    28
+        defb    $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff
+        defb    $ff,$ff,$ff
+  ELSE
         defb    $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff
         defb    $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff
         defb    $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff
         defb    $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff
         defb    $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff
-    ENDIF
-
-; Unused space
-
         defb    $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff
         defb    $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff
         defb    $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff
@@ -18903,6 +20104,8 @@ myn     defm    " ? (Y/N)", 0
         defb    $72
       ENDIF
     ENDIF
+  ENDIF
+
 ; ----------------------------------------------------------------------------------------------------
 
 ; ============================
