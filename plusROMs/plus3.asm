@@ -20192,9 +20192,21 @@ myn     defm    " ? (Y/N)", 0
 
         org     $0000
 
+      IF garry
+n0000   jr      n0000
+        jp      n22c5
+       jp      $196a
+n0008   defm    "PLUS3DOS"
+n0010   defb    $2f, $58, $32, $9a, $2f, $9e, $34, $e3
+        defb    $80, $01, $c0, $05, $c4, $09, $c8, $0d
+        defb    $61, $0f, $cc, $14, $51, $00, $13, $16
+        defb    $24, $17, $56, $19, $10, $13, $14, $ed
+        defb    $79, $01, $06, $7f, $3e, $c3, $fb, $c9
+      ELSE
 n0000   defs    8
 n0008   defm    "PLUS3DOS"
 n0010   defs    40
+      ENDIF
 
 ; The maskable interrupt routine
 
@@ -20218,7 +20230,16 @@ n0048   push    bc
         ei
         ret
 
+      IF garry
+        jp      $3a24
+        jp      $3cc9
+        jp      $3d5f
+        jp      $3d55
+        jp      $3d64
+        nop
+      ELSE
         defs    16
+      ENDIF
 
 ; The Non-maskable interrupt
 
@@ -20250,8 +20271,43 @@ n0095   ld      bc,$7ffd
         out     (c),a           ; restore memory configuration
         ret
 
+      IF garry
+        defb    0, 0
+        jp      $2825
+        jp      $275b
+        jp      $2845
+        jp      $282a
+        jp      $2524
+        jp      $2529
+        jp      $2a0f
+        jp      $2bd6
+        jp      $2df0
+        jp      $2d19
+        jp      $2f94
+        jp      $2c1d
+        jp      $2b77
+        jp      $2ba0
+        jp      $2c49
+        jp      $2ca2
+        jp      $2ce9
+        jp      $306d
+        jp      $3084
+        jp      $317e
+        jp      $2ce9
+        jp      $3124
+        jp      $3107
+        jp      $3141
+        jp      $30b0
+        jp      $30bc
+        jp      $31d4
+        jp      $321a
+        jp      $3363
+        jp      $33c0
+        jp      $349f
+        jp      $3524
+      ELSE
         defs    98
-
+      ENDIF
 
 ; The DOS routines jump block
 
@@ -20308,19 +20364,29 @@ n0193   jp      n20cc           ; DD_L_WRITE
 n0196   jp      n212b           ; DD_L_ON_MOTOR
 n0199   jp      n2150           ; DD_L_T_OFF_MOTOR
 n019c   jp      n2164           ; DD_L_OFF_MOTOR
-
+      IF garry
+        jp      $39bd
+n01a2   jp      $2475
+n01a5   jp      $29d8
+n019f   ld      a, ($df9d)
+        push    af
+      ELSE
+n019f   
+      ENDIF
 
 ; DOS_INITIALISE
 
-n019f   ld      hl,pg_buffer
+        ld      hl,pg_buffer
         ld      de,pg_buffer+1
         ld      bc,$09ff
         ld      (hl),$00
         ldir                    ; clear DOS workspace variables
         call    n1f27           ; DD_INTERFACE
+      IF garry=0
         ld      hl,$0080        ; max RAMdisk, zero cache
         ld      d,h
         ld      e,h
+      ENDIF
         jr      nc,n01c2        ; move on if no interface
         call    n1f32           ; DD_INIT
         call    n17d0           ; initialise A: & B: extended XDPBs
@@ -20330,12 +20396,24 @@ n01c2   push    de
         call    n1820           ; initialise RAMdisk
         pop     de
         call    n1539           ; setup cache
+      IF garry
+        call    $0508
+        pop     af
+        ld      ($df9d), a
+        jp      $2845
+      ELSE
         jp      n0500           ; set default drive and exit
+      ENDIF
 
 
 ; DOS_VERSION
 
 n01cd   xor     a
+      IF garry
+        ld      b, 1
+        sub     b
+        ld      a, 0
+      ENDIF
         ld      b,a
         ld      c,a             ; A=BC=0
       IF spanish
@@ -20397,6 +20475,14 @@ n0207   push    hl
         ld      a,(hl)
         and     $07
         push    af              ; stack previous bank
+      IF garry
+        ld      a, (hl)
+        and     $f8
+        or      b
+        ld      bc, $7ffd
+        ld      (hl), a
+        out     (c), a
+      ELSE
         cp      b
         jr      z,n0227         ; exit if no change
         ld      a,(hl)
@@ -20411,6 +20497,7 @@ n0207   push    hl
         out     (c),a           ; page in new bank
         jp      po,n0227
         ei                      ; restore interrupts if necessary
+      ENDIF
 n0227   pop     af              ; restore previous bank
         pop     bc
         pop     hl
@@ -20582,6 +20669,20 @@ n02f7   ld      b,a
         jr      nz,n0302        ; if ALERT routine exists, go to do it
         inc     l               ; otherwise exit with HL=1
         ret
+    IF garry
+n0302   push    bc
+        ld      hl, n03ae
+        ld      (al_resp), hl
+        call    n033a
+        pop     bc
+        push    bc
+        call    n0332
+        pop     bc
+        sub     $01
+        ccf
+        ld      a,b
+        ret        
+    ELSE
       IF spanish
 n0302   push    bc              ; save drive
         call    n033a
@@ -20625,6 +20726,7 @@ n032c   sub     $01             ; carry set for "Cancel", Z set for "Retry"
         ld      a,b             ; restore error
         ret
       ENDIF
+    ENDIF
 ; Subroutine to call ALERT subroutine with error message in HL
 
 n0332   push    hl
@@ -20637,7 +20739,10 @@ n0332   push    hl
 n0338   ld      a,$0a           ; message 10
 
 ; Subroutine to generate recoverable error message A, returns address in HL
-
+      IF garry
+        ld      hl, l03cd
+        ld      (al_resp), hl
+      ENDIF
 n033a   ld      ix,al_mess      ; address to place message
         push    ix
         call    n0349           ; generate it
@@ -20675,7 +20780,30 @@ n0365   or      a
         cp      $fd
         jr      z,n0378         ; go to insert track number
         cp      $fc
+      IF garry
+        jr      z, $0394
+        cp      $fb
+        jr      z, n037d
+        cp      $fa
+        jr      nz, $033c
+        ld      (ix), $10
+        inc     ix
+        ld      a, (BORDCR)
+        and     7
+        jr      $03c7
+n037d   ld      (ix), $10
+        inc     ix
+        ld      a, (BORDCR)
+        and     $38
+        cp      $20
+        jr      nc, nn390
+        ld      a, 5
+        jr      nn392
+nn390   ld      a, 2
+nn392   jr      $03c7
+      ELSE
         jr      nz,n0349        ; if not sector, go to include submessage
+      ENDIF
         ld      a,e             ; sector=E
         jr      n0379
 n0378   ld      a,d             ; track=D
@@ -20732,7 +20860,7 @@ n03ae   defm    $8b, "not ready", $8f, $ff
         defm    $8b, "track ", $fd, ", ", $ff
         defm    $8d, "sector ", $fc, ", ", $ff
         defm    " - Retry, Ignore or Cancel? ", $ff
-      IF spanish=0
+      IF (spanish=0) && (garry=0)
 n04cc   defm    "rRiIcC", $ff
 n04d3   defb    1,1,2,2,0,0
       ENDIF
@@ -20771,24 +20899,38 @@ n04ef   ret     c
         add     a,$e0           ; if lowercase, convert to uppercase
         ret
 
+    IF garry=0
       IF spanish
         defs    56
       ELSE
         defs    10
       ENDIF
+    ENDIF
 
 ; Sets default drive to first found with XDPB
 ; If none, A: is set as default
 
 n0500   ld      bc,$1041        ; 16 drives, A: to P:
 n0503   ld      a,c
+      IF garry
+        call    $17cb
+        ld      a, c
+        jr      c, n0517
+        inc     c               ; increment drive letter
+        djnz    n0503           ; back for more
+        ld      a,'A'
+n0517   ld      (def_drv),a     ; set default drive A:
+        ld      (LODDRV), a
+        ld      (SAVDRV), a
+      ELSE
         ld      (def_drv),a     ; set drive as default
-n0507   call    n184d           ; get XDPB for drive
+        call    n184d           ; get XDPB for drive
         ret     c               ; exit if XDPB available
         inc     c               ; increment drive letter
         djnz    n0503           ; back for more
         ld      a,'A'
         ld      (def_drv),a     ; set default drive A:
+      ENDIF
         ret
 
 ; Subroutine to get FCB for file B & test if open for reading
@@ -20976,9 +21118,11 @@ n05f5   push    hl
         ex      de,hl
         ld      hl,$0020
         add     hl,bc
+      IF garry=0
         bit     7,(hl)          ; is file open?
         jr      z,n061f         ; move on if not
         inc     hl
+      ENDIF
         cp      (hl)            ; is drive the same?
         jr      nz,n061f        ; move on if not
         inc     hl
@@ -21165,7 +21309,12 @@ n0706   call    n04ed           ; make drive letter uppercase
         ld      d,(ix+$06)
         inc     de
         ld      a,(ix+$02)
+      IF garry
+        sub     2
+        call    nz, n04e3
+      ELSE
         call    n04e3
+      ENDIF
         call    n19c0
         sla     e
         rl      d               ; DE="file" length (high bytes)
@@ -21995,7 +22144,9 @@ n0be5   cp      (hl)            ; test against next illegal char
 ; List of illegal chars in filenames
 
 n0bef   defm    "!&()+,-./:;<=>[\\]|", $80
+      IF garry=0
         defs    30
+      ENDIF
 
 ; Subroutine to ensure disk for FCB in BC is logged in, if
 ; necessary building checksum vector, allocation bitmap & directory
@@ -22184,6 +22335,10 @@ n0d19   push    bc
         ld      h,a             ; H=low 5 bits of required extent counter
         ld      a,b
         pop     bc
+      IF garry
+        ret
+        call    n0d19
+      ENDIF
         push    hl
         push    de
         push    bc
@@ -22456,6 +22611,10 @@ n0e7d   push    hl
         ld      a,(ix+$0c)
         and     $7f
         ld      d,a             ; DE=#directory records
+      IF garry
+        ld      a, 2
+        call    $04eb
+      ENDIF
         call    n19c0           ; DE=first non-directory sector
         sbc     hl,de           ; test logical sector
         ccf
@@ -22823,7 +22982,9 @@ n1064   add     hl,bc           ; generate address of datestamp for entry
 n1068   inc     hl
         ret
 
+      IF garry=0
         defs    6
+      ENDIF
 
 ; DOS_GET_POSITION
 
@@ -22927,7 +23088,56 @@ n10e7   pop     af
         ret
 
 ; DOS_READ
-
+      IF garry
+        call    $114c
+        ret     nc
+        push    de
+        ld      e, a
+        ld      a, (rw_page)
+        ld      hl, (rw_add)
+        call    $021b
+        ld      (hl), e
+        call    $021b
+        inc     hl
+        ld      (rw_add), hl
+        pop     de
+        ld      a, d
+        or      e
+        dec     de
+        scf
+        ret
+        push    de
+        call    $12fe
+        pop     de
+        ret     nc
+        push    de
+        call    $1088
+        ld      hl, $002d
+        add     hl, bc
+        ld      e, (hl)
+        inc     hl
+        ld      d, (hl)
+        inc     hl
+        push    bc
+        ld      c, (hl)
+        ld      a, (rw_page)
+        ld      b, a
+        ld      hl, (rw_add)
+        ex      de, hl
+        ld      ix, $0080
+        call    $0245
+        pop     bc
+        ld      (rw_add), de
+        pop     de
+        ld      hl, $ff81
+        add     hl, de
+        ex      de, hl
+        ld      a, d
+        or      e
+        dec     de
+        scf
+        ret
+      ELSE
 n10ea   ld      a,c
         ld      (rw_page),a     ; save page & address to read to
         ld      (rw_add),hl
@@ -22944,7 +23154,7 @@ n10ea   ld      a,c
         sbc     hl,de
         ex      de,hl           ; DE=unread bytes
         pop     af
-        ret
+        ret 
 
 ; Subroutine to read DE bytes from file
 
@@ -23060,6 +23270,7 @@ n1175   push    de
         dec     de              ; subtract further byte
         scf                     ; success
         ret
+      ENDIF
 
 ; DOS_BYTE_READ
 
@@ -23548,7 +23759,12 @@ n143c   push    bc
         push    af
         ex      de,hl
         ld      a,(ix+$02)
-        call    n04e3           ; DE=logical usable record
+      IF garry
+        sub     2
+        call    nz, n04e3
+      ELSE
+        call    n04e3
+      ENDIF
         call    n19c0           ; DE=abs logical sector of block start
         ex      de,hl
         ld      b,d             ; save high byte of offset
@@ -23704,7 +23920,12 @@ n14eb   ld      a,e
         ld      e,(ix+$05)
         ld      d,(ix+$06)
         inc     de
+      IF garry
+        sub     2
+        call    nz, n04e3
+      ELSE
         call    n04e3
+      ENDIF
         call    n19c0           ; DE=max sector on disk
         or      a
         sbc     hl,de           ; no carry (error) if sector > max
@@ -23713,7 +23934,9 @@ n14eb   ld      a,e
         ld      a,$19           ; error "end of file"
         jp      n1431           ; go to get sector & calculate address
 
+      IF garry=0
         defs    25
+      ENDIF
 
 ; Subroutine to get D=first buffer for cache, E=number of cache buffers
 
@@ -24218,7 +24441,9 @@ n17c3   ld      a,(de)
         dec     de
         ret
 
+      IF garry=0
         defs    5
+      ENDIF
 
 ; Subroutine to setup extended XDPB info for drives A: and B:
 
@@ -24234,8 +24459,20 @@ n17d0   ld      a,'A'
         ld      de,xdpb_b+$1b
         ld      bc,$0015
         ldir                    ; copy extended XDPB info for B:
+      IF garry
+        ld      hl, xdpb_b
+        ld      ($e2a2), hl
+        ld      c,$01           ; B: should be unit 1 or disabled
+        call    $1935
+        call    $1f52
+        ret     nc
+        ld      a, 3
+        ld      l, $42
+        jp      $321a
+      ELSE
         ld      c,$01           ; B: should be unit 1 or disabled
         jp      n1943           ; exit via DOS_MAP_B
+      ENDIF
 
 ; The extended XDPB info for drive A:
 
@@ -24264,6 +24501,10 @@ n1820   push    hl
         ld      de,xdpb_m+$1b
         ld      bc,$0015
         ldir                    ; copy extended XDPB info for M:
+      IF garry
+        ld      hl, xdpb_m
+        ld      ($e2b8), hl
+      ENDIF
         pop     hl
         jp      n1a5d           ; setup RAMdisk & exit
 
@@ -24432,6 +24673,7 @@ n18fd   bit     2,(ix+$1b)
 
 ; Subroutine to check whether "change disk" routine should be called
 
+      IF garry=0
 n1918   push    hl
         ld      c,(ix+$1d)
         ld      a,c
@@ -24532,6 +24774,7 @@ n1988   call    n1918           ; check if disk change required
         ld      (ix+$0c),a      ; else set chksum size to $40
         scf
         ret
+      ENDIF
 
 ; Subroutine to convert logical usable record number (in DE) to
 ; absolute logical sector number by allowing for reserved tracks
@@ -24543,6 +24786,10 @@ n19c0   push    hl
         ex      de,hl
         ld      e,(ix+$00)
         ld      d,(ix+$01)      ; DE=# records per track
+      IF garry
+        ld      a, 2
+        call    $04eb
+      ENDIF
         jr      n19d3
 n19d1   add     hl,de
         dec     bc
@@ -24552,8 +24799,12 @@ n19d3   ld      a,b
         ex      de,hl           ; DE=origHL+#reserved records
         pop     bc
         pop     hl
+      IF garry
+        ret
+      ELSE
         ld      a,$02
         jp      n04d9           ; DE=absolute logical sector
+      ENDIF
 
 ; Subroutine to find logical track (D) & sector (E) from absolute logical
 ; sector number (DE). IX=XDPB for disk
@@ -24561,10 +24812,16 @@ n19d3   ld      a,b
 n19df   push    hl
         push    bc
         ex      de,hl
+      IF garry=0
         add     hl,hl
         add     hl,hl           ; HL=absolute logical record number
+      ENDIF
         ld      e,(ix+$00)
         ld      d,(ix+$01)      ; DE=records per track
+      IF garry
+        ld      a, 2
+        call    $04eb
+      ENDIF
         ld      bc,$ffff        ; BC=logical track counter
         or      a
 n19ee   inc     bc
@@ -24572,8 +24829,10 @@ n19ee   inc     bc
         jr      nc,n19ee        ; loop until found correct track in BC
         add     hl,de
         ex      de,hl           ; DE=logical record number
+      IF garry=0
         ld      a,$02
         call    n04d9           ; DE=logical sector number on track
+      ENDIF
         ld      d,c             ; D=logical track, E=logical sector
         pop     bc
         pop     hl
@@ -24619,6 +24878,171 @@ n1a2e   push    hl              ; save HL
         ld      hl,(rt_temp)    ; stack routine address
         ex      (sp),hl         ; stack address & restore HL
         ret                     ; return to call routine
+
+      IF garry
+        jp      (hl)
+n1918   push    hl
+        ld      c,(ix+$1d)
+        ld      a,c
+        or      a
+        jr      nz,n1935        ; exit if drive not mapped to unit 0
+        ld      hl,unit0
+        ld      a,(ix+$1c)
+        cp      (hl)
+        jr      z,n1935         ; exit if unit 0 is currently mapped to drive
+        ld      (hl),a          ; change unit 0 mapping to this drive
+        push    ix
+        push    de
+        push    bc
+        call    n1937           ; ask user to change disk
+        pop     bc
+        pop     de
+        pop     ix
+n1935   pop     hl
+        ret
+
+; Change disk subroutine
+
+n1937   push    af
+        ld      c,a
+        call    n0338           ; generate change disk message
+        pop     af
+        push    hl
+        ld      hl,(rt_chgdsk)
+        ex      (sp),hl         ; stack change disk routine address
+        ret                     ; exit to routine
+
+; DOS_MAP_B
+n1943   ld      ix, xdpb_b
+        call    $181b
+        ret     nc              ; exit if error
+        ld      a,c
+        or      a
+        jr      z,n1954
+        ld      hl,$0000        ; no change-disk routine if B: is unit 1
+n1954   ld      de,(rt_chgdsk)  ; get old routine address
+        ld      (rt_chgdsk),hl  ; store new routine address
+        ld      ix,xdpb_b       ; IX=XDPB for B:
+        ld      (ix+$1d),c      ; set unit number
+        call    n1f27           ; DD_INTERFACE
+        jr      nc,n1979        ; move on if no interface
+        ld      a,c
+        or      a
+        scf
+        call    nz,n1edd        ; for unit 1 only, test if present
+        jr      c,n1979         ; if not, no drive B:
+        ld      (ix+$1d), 0
+n1979   scf
+        ex      de,hl
+        ret                     ; exit with HL=old change-disk routine
+
+; DD_SET_RETRY
+n1e7c   ld      (retry_cnt),a   ; set it
+        ret
+n196a   ld      a, 10
+        or      a
+        jp      $22c7
+        defs    12
+
+; Low-level read sector subroutine for drives A: & B:
+
+n197c   call    n1918           ; check if disk change required
+        jp      n1bff           ; DD_READ_SECTOR
+
+; Low-level write sector subroutine for drives A: & B:
+
+n1982   call    n1918           ; check if disk change required
+        jp      n1c0d           ; DD_WRITE_SECTOR
+
+; Low-level login disk subroutine for drives A: & B:
+
+n1988   call    n1918           ; check if disk change required
+        call    n1c80           ; DD_LOGIN
+        ret     nc              ; exit if error
+        ld      a,(ix+$0f)
+        xor     $02
+        ld      a,$06           ; "unrecognised disk format"
+        ret     nz              ; error if sectorsize <> 512
+        rr      d
+        rr      e
+        ld      hl,$ffd2
+        add     hl,de
+        ccf
+        ret     nc              ; error if alloc vector size/2 >$2d
+        ld      e,(ix+$0b)
+        ld      a,(ix+$0c)
+        and     $7f
+        ld      d,a
+        ld      hl,$ffbf
+        add     hl,de
+        ccf
+        ret     c               ; success if chksum size <= $40
+        ld      (ix+$0b),$40
+        ld      a,(ix+$0c)
+        and     $80
+        or      $00
+        ld      (ix+$0c),a      ; else set chksum size to $40
+        scf
+        ret
+
+n10ea   ld      a,c
+        ld      (rw_page),a     ; save page & address to read to
+        ld      (rw_add),hl
+        call    n0514           ; test if file B open for reading
+        ret     nc              ; exit if not
+        add     hl,de           ; calculate final address
+        push    hl
+        call    n1107           ; do the read
+        pop     hl
+        ret     c               ; exit if successful
+        push    af
+        ld      de,(rw_add)     ; get current address
+        or      a
+        sbc     hl,de
+        ex      de,hl           ; DE=unread bytes
+        pop     af
+        ret 
+
+; Subroutine to read DE bytes from file
+
+n1107   push    bc
+        push    de
+        ld      hl,$0023
+        add     hl,bc
+        ld      e,(hl)
+        inc     hl
+        ld      d,(hl)
+        inc     hl
+        ld      b,(hl)          ; get BDE=file length
+        inc     hl
+        ld      a,e
+        scf
+        sbc     a,(hl)
+        ld      e,a
+        inc     hl
+        ld      a,d
+        sbc     a,(hl)
+        ld      d,a
+        inc     hl
+        ld      a,b
+        sbc     a,(hl)
+        ex      de,hl           ; AHL=filelength available to read
+        pop     de
+        pop     bc
+        jr      c,n1130         ; exit if none
+        dec     de              ; DE=#bytes to read-1
+        sbc     hl,de
+        add     hl,de
+        sbc     a,$00
+        jr      nc,n1134        ; if enough bytes in file, move on
+        ex      de,hl
+        call    n1134           ; else read what's available
+        ret     nc              ; exit if error
+n1130   ld      a,$19           ; "end of file" error
+        or      a
+        ret
+n1134
+      ENDIF
 
 ; Subroutine to do an ALERT message for error A (IX=XDPB)
 
@@ -25315,9 +25739,10 @@ n1e75   call    n1f6a           ; get equipment address
         ret
 
 ; DD_SET_RETRY
-
+      IF garry=0
 n1e7c   ld      (retry_cnt),a   ; set it
         ret
+      ENDIF
 
 ; Subroutine to try operation in HL on track D multiple times
 

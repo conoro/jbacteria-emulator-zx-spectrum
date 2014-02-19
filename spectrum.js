@@ -692,9 +692,9 @@ function rp(addr) {
   else{
     t= parseInt(st/224);
     u= st%224;
-    if( u<0xc0
-     && t<124
-     && !(t&4) )
+    if( t<192
+     && u<124
+     && !(u&4) )
       j=  m [ t>>1 & 1 
             | t>>2 
             | ( t&1 
