@@ -19318,11 +19318,11 @@ m3b29   call    m2b89
         ld      a, c
         cpl
         ld      c, a
-        ld      a, ($ec11)
+        ld      a, (ed_ATTR_T)
         and     c
         or      d
-        ld      ($ec11), a
-        ld      ($ec0f), a
+        ld      (ed_ATTR_T), a
+        ld      (ed_ATTR_P), a
         call    m2b64
         ld      hl, FLAGS3
         bit     6, (hl)
@@ -20281,27 +20281,27 @@ n0095   ld      bc,$7ffd
         jp      $2529
         jp      $2a0f
         jp      $2bd6
-        jp      $2df0
+        jp      n2df0
         jp      $2d19
         jp      $2f94
         jp      $2c1d
         jp      $2b77
         jp      $2ba0
         jp      $2c49
-        jp      $2ca2
-        jp      $2ce9
+        jp      n2ca2
+        jp      n2ce9
         jp      $306d
         jp      $3084
         jp      $317e
-        jp      $2ce9
+        jp      n2ce9
         jp      $3124
         jp      $3107
         jp      $3141
         jp      $30b0
         jp      $30bc
         jp      $31d4
-        jp      $321a
-        jp      $3363
+        jp      n321a
+        jp      n3363
         jp      $33c0
         jp      $349f
         jp      $3524
@@ -24468,7 +24468,7 @@ n17d0   ld      a,'A'
         ret     nc
         ld      a, 3
         ld      l, $42
-        jp      $321a
+        jp      n321a
       ELSE
         ld      c,$01           ; B: should be unit 1 or disabled
         jp      n1943           ; exit via DOS_MAP_B
@@ -24880,7 +24880,7 @@ n1a2e   push    hl              ; save HL
         ret                     ; return to call routine
 
       IF garry
-        jp      (hl)
+n1909   jp      (hl)
 n1918   push    hl
         ld      c,(ix+$1d)
         ld      a,c
@@ -25041,7 +25041,91 @@ n1107   push    bc
 n1130   ld      a,$19           ; "end of file" error
         or      a
         ret
-n1134
+n1134   inc     de
+        ld      a, d
+        and     $fe
+        jr      z, n1a65
+        push    bc
+        push    de
+        xor     a
+        ld      hl, $f516
+        call    $3879
+        pop     de
+        pop     bc
+        jr      nc, $1a65
+        ld      ix, $f518
+        push    de
+        ld      hl, $0026
+        add     hl, bc
+        ld      a, (hl)
+        add     a, e
+        ld      (hl), a
+        inc     hl
+        ld      a, (hl)
+        adc     a, d
+        ld      (hl), a
+        inc     hl
+        ld      a, (hl)
+        adc     a, 0
+        ld      (hl), a
+        ld      hl, $0022
+        add     hl, bc
+        res     5, (hl)
+        ld      l, (ix-$02)
+        ld      h, (ix-$01)
+        call    $2558
+        call    $25c2
+        ld      hl, (rw_add)
+        jr      n1a4c
+n1a49   call    $2558        
+n1a4c   ld      a, (rw_page)
+        call    $021b
+        ex      (sp), hl
+        and     a
+        sbc     hl, de
+        jr      c, n1a8b
+        ex      (sp), hl
+        call    $25ab
+        ex      (sp), hl
+        ld      a, h
+        or      l
+        ex      (sp), hl
+        jr      nz, n1a49
+        pop     de
+        jr      n1a98
+n1a65   dec     de
+        ld      hl,$0026
+        add     hl,bc
+        ld      a,(hl)
+        and     $7f
+        jr      z,n1144         ; move on if filepointer on record boundary
+        call    $10d9           ; read byte
+        ret     nc              ; exit if error
+        ret     z               ; exit if finished
+        jp      n1134           ; loop back
+n1144   ld      hl,$ff81
+        add     hl,de
+        jr      nc,n1151        ; move on if don't need any more full records
+        call    $10f6           ; read a record
+        ret     nc              ; exit if error
+        ret     z               ; exit if finished
+        jr      n1144           ; loop back
+n1151   call    $10d9           ; read byte
+        ret     nc              ; exit if error
+        ret     z               ; exit if finished
+        jr      n1151           ; loop back
+n1a8b   add     hl, de
+        ex      de, hl
+        and     a
+        sbc     hl, de
+        ex      (sp), hl
+        call    $25ab
+        pop     de
+        call    $26e5
+n1a98   call    $25d7
+        ld      (rw_add), hl
+        scf
+        ret
       ENDIF
 
 ; Subroutine to do an ALERT message for error A (IX=XDPB)
@@ -25068,24 +25152,41 @@ n1a48   ld      a,(spec_m+5)
         ld      l,a             ; L=# buffers
         ret
 
+n1a52
+      IF garry
+n1abe   ld      ix, xdpb_m
+        ld      a, (ix+$1c)
+        and     a
+        jr      z, n1acc
+        call    $181b
+        ret     nc
+n1acc
+      ELSE
 ; Subroutine to change the RAMdisk to first buffer=H, number of buffers=L
 
-n1a52   ld      a,'M'
+        ld      a,'M'
         call    n184d           ; get XDPB of drive M:
         jr      nc,n1a5d        ; move on if doesn't exist
         call    n189d           ; log drive M: out
         ret     nc              ; exit if error
+      ENDIF
 n1a5d   push    hl
         ld      hl,n1aae
         ld      de,spec_m
         ld      bc,$0008
         ldir                    ; copy initial disk spec for M:
         pop     de
+      IF garry=0
         ld      hl,$0000
         ld      (xdpb_ptrs+$18),hl ; set M:s XDPB to null
         ld      a,e
         cp      $04
         ret     c               ; exit with M: disabled if <2K allowed
+      ELSE
+        ld      a,e
+        cp      $04
+        jr      c, n1b14
+      ENDIF
         add     a,d
         ld      (spec_m+2),a    ; #tracks=size+offset (=last buffer+1)
         ld      a,d
@@ -25110,9 +25211,29 @@ n1a7c   ld      a,d
         call    n1d30           ; initialise DPB
         ld      (ix+$0b),$00
         ld      (ix+$0c),$80    ; M: is permanent (fixed)
+      IF garry
+        scf                     ; success
+        ret
+n1b14   ld      a, (ix+$0c)
+        ld      (ix+$0c), 0
+        call    $04ff
+        sub     $41
+        ret     c
+        ld      e, a
+        ld      d, 0
+        ld      hl, $e2a0
+        add     hl, de
+        add     hl, de
+        ld      (hl), 0
+        inc     hl
+        ld      (hl), 0
+        scf
+        ret
+      ELSE
         ld      (xdpb_ptrs+$18),ix ; set pointer to XDPB for M:
         scf                     ; success
         ret
+      ENDIF
 
 ; Disk spec for RAMdisk
 
@@ -25184,8 +25305,9 @@ n1ae7   add     a,(hl)          ; form checksum of all bytes in sector
 n1b22   out     (c),a           ; page in RAM 4,7,6,3; keep disk motor on
         jp      $fe10           ; jump to boot routine
 
+      IF garry=0
         defs    9
-
+      ENDIF
 
 ; ********************** LOW-LEVEL ROUTINES *********************
 
@@ -25236,7 +25358,7 @@ n1b69   call    n1b9c           ; setup basic parameter block data
         ld      hl,(rt_encode)
         ld      a,h
         or      l
-        call    nz,n1ef2        ; call encode routine if required
+        call    nz,n1909        ; call encode routine if required
         ld      a,e
         ld      (ddl_parms+$0a),a ; store 1st sector ID
         ld      l,(ix+$0f)
@@ -25800,7 +25922,7 @@ n1ecc   call    n1f76           ; seek to track D
         push    hl
         push    de
         push    bc
-        call    n1ef2           ; call routine address in HL
+        call    n1909           ; call routine address in HL
         pop     bc
         pop     de
         call    n204a           ; process results buffer
@@ -25825,8 +25947,9 @@ n1ee9   call    n212b           ; turn on motor
         jp      n2150           ; start motor off timeout & exit
 
 ; Call is made here to call the address in HL
-
-n1ef2   jp      (hl)
+      IF garry=0
+n1909   jp      (hl)
+      ENDIF
 
 ; Subroutine to calculate N/128 - 1
 ; given A=log2 (N/128)
@@ -25859,7 +25982,9 @@ n1f07   srl     h
         djnz    n1f07           ; loop back
         ret
 
+      IF garry=0
         defs    18
+      ENDIF
 
 ; Default setup data, used by DD_INIT
 
@@ -26173,10 +26298,12 @@ n20ba   call    n20de           ; output command except last byte
 
 
 ; DD_L_READ
-
-n20c3   call    n20de           ; output command except last byte
+n20c3
+      IF garry=0
+        call    n20de           ; output command except last byte
         call    n21b7           ; read the bytes
         jp      n2090           ; get results string & exit
+      ENDIF
 
 ; DD_L_WRITE
 
@@ -26292,8 +26419,16 @@ n2150   push    af
 n2162   pop     af
         ret
 
+      IF garry
+n2164
+n2173   push    bc
+        ld      bc, $1ffd
+        ld      (BANK678), a
+        out     (c), a
+        pop     bc
+        ret
+      ELSE
 ; DD_L_OFF_MOTOR
-
 n2164   push    af
         xor     a
         ld      (timeout),a     ; zero timeout value
@@ -26317,7 +26452,7 @@ n2173   push    bc
         ret     po
         ei                      ; re-enable interrupts if necessary
         ret
-
+      ENDIF
 ; Subroutine to output last command byte to FDC and read E bytes to buffer
 
 n2185   call    n2114           ; send command
@@ -26380,8 +26515,9 @@ n21ef   ld      a,(BANKM)
         ei
         ret
 
+      IF garry=0
         defs    165
-
+      ENDIF
 
 ; ******************** KEYBOARD SCANNING ROUTINES *****************
 
@@ -26437,6 +26573,1726 @@ n231d   defb    $d0,$ce,$a8,$ca
         defb    $d3,$d4,$d1,$d2
         defb    $a9,$cf
 
+      IF garry
+        xor     a
+        ld      a, b
+        push    hl
+        ld      hl,(CURCHL)
+        ex      (sp),hl
+        push    hl
+        ld      hl,(FLAGS)
+        ex      (sp),hl
+        push    hl
+        ld      hl,(FLAGS2)
+        ex      (sp),hl
+        ld      hl, $22f3
+        ld      (al_resp), hl
+        push    af
+        call    $032d
+        pop     af
+        call    n3e00
+        defw    $3ff7
+        pop     hl
+        ld      (FLAGS2),hl
+        pop     hl
+        ld      (FLAGS),hl
+        pop     hl
+        ld      (CURCHL),hl
+        ret
+        defm    $8b, 13, $fb, "Not ready", 13
+        defm    $8e, $ff, $8b, 13, $fb, "Write protected", 13
+        defm    $8e, $ff, $8c, 13, $fb, "Seek fail", 13
+        defm    $8e, $ff, $8d, "Data error", 13
+        defm    $8e, $ff, $8d, "No data", 13
+        defm    $8e, $ff, $8d, "Missing address mark", 13
+        defm    $8e, $ff, $8b, 13, $fb, "Bad format", 13
+        defm    $8e, $ff, $8d, "Unknown error", 13
+        defm    $8e, $ff, $8b, 13, $fb, "Disk changed, please replace", 13
+        defm    $8e, $ff, $8b, 13, $fb, "Disk unsuitable", 13
+        defm    $8e, $ff, "Please put the disk for ", $fe
+        defm    ": into the drive then press any key", $ff
+        defm    "Drive ", $fe
+        defm    ":", $ff, $8b, " track ", $fd, $ff, $8c
+        defm    " sector ", $fc, 13, $fb, $ff, $fa
+        defm    "Retry, Ignore or Cancel?", $ff
+        defs    $4f
+        push    bc
+        push    de
+        ld      a, b
+        call    $021b
+        push    hl
+        push    bc
+        ld      d, h
+        ld      e, l
+        inc     de
+        xor     a
+        ld      bc, 20
+        ld      (hl), a
+        ldir
+        ld      (hl), '0'
+        ld      c, 20
+        ldir
+        ld      (hl), a
+        ld      c, 6
+        ldir
+        ld      (hl), '0'
+        ld      c, 48
+        ldir
+        ld      (hl), a
+        ld      bc, $01a1
+        ldir
+        pop     bc
+        inc     c
+        dec     c
+        ld      hl, $ef98
+        call    $266d
+        ld      a, 0
+        jr      nc, n251d
+        ld      hl, ($ef9e)
+        ld      a, h
+        ld      h, l
+        ld      l, a
+        ld      a, ($efa0)
+        rrca
+        rrca
+        adc     hl, hl
+        rlca
+        rlca
+        adc     hl, hl
+        inc     hl
+        ld      bc, ($efa1)
+        ld      a, c
+        and     3
+        rl      b
+        rla
+        ld      c, a
+        ld      a, ($ef9d)
+        and     15
+        add     a, c
+        inc     a
+        ld      de, 0
+n24d2   add     hl, hl
+        ex      de, hl
+        adc     hl, hl
+        ex      de, hl
+        dec     a
+        jr      nz, n24d2
+        ex      (sp), ix
+        ld      (ix+$72), h
+        ld      (ix+$73), e
+        ld      (ix+$74), d
+        ld      (ix+$78), h
+        ld      (ix+$79), e
+        ld      (ix+$7a), d
+        ld      (ix+$6c), e
+        ld      (ix+$6d), d
+        ld      (ix+$02), e
+        ld      (ix+$03), d
+        ld      (ix+$6e), 2
+        ld      (ix+$06), 2
+        ld      (ix+$70), $80
+        ld      (ix+$0c), $80
+        ld      (ix+$00), $80
+        ld      (ix+$63), 3
+        ld      (ix+$65), $40
+        ld      (ix+$6a), 1
+        ex      (sp), ix
+        scf
+n251d   pop     hl
+        push    af
+        inc     h
+        inc     h
+        pop     af
+        jr      n254e
+n2524   push    bc
+        set     7, b
+        jr      n252c
+n2529   push    bc
+        res     7, b
+n252c   push    de
+        push    hl
+        call    $25cd
+        ex      (sp), ix
+        jr      nc, n254c
+        push    af
+        ld      a, b
+        and     7
+        call    $021b
+        bit     7, b
+        ld      b, 1
+        jr      nz, n2548
+        pop     af
+        call    $2710
+        jr      n254c
+n2548   pop     af
+        call    $26b8
+n254c   pop     ix
+n254e   push    af
+        ld      a, 7
+        call    $021b
+        pop     af
+        pop     de
+        pop     bc
+        ret
+n2558   push    hl
+        call    $26d7
+        ld      e, (ix+$00)
+        ld      d, (ix+$01)
+        ld      l, (ix+$02)
+        ld      h, (ix+$03)
+        bit     7, (ix+$04)
+        ld      a, $51
+        call    $2637
+n2571   call    $26a6
+        cp      $fe
+        jr      nz, n2571
+        ld      de, $0200
+        ld      c, $3f
+        pop     hl
+        and     a
+        rl      (ix+$04)
+        dec     (ix+$04)
+        dec     (ix+$04)
+        jr      z, n25a0
+        rr      (ix+$04)
+        ld      a, (ix+$01)
+        add     a, 2
+        ld      (ix+$01), a
+        ret     nc
+        inc     (ix+$02)
+        ret     nz
+        inc     (ix+$03)
+        ret
+n25a0   inc     ix
+        inc     ix
+        inc     ix
+        inc     ix
+        inc     ix
+        ret
+n25ab   ld      c, $3f
+        inc     e
+        dec     e
+        ld      b, e
+        jr      z, n25b7
+        inir
+        inc     d
+        jr      n25b9
+n25b7   inir
+n25b9   dec     d
+        jr      nz, n25b7
+        ld      e, d
+        ld      a, 7
+        jp      $021b
+n25c2   ld      c, $3f
+        ld      a, h
+        or      l
+        ret     z
+        in      a, (c)
+        dec     hl
+        dec     de
+        jr      n25c2
+n25cd   xor     a
+        push    bc
+        push    de
+        ld      l, (ix+$07)
+        ld      h, (ix+$08)
+        sbc     hl, de
+        ld      l, (ix+$09)
+        ld      h, (ix+$0a)
+        ld      b, a
+        sbc     hl, bc
+        jr      nc, n25e9
+        pop     de
+        pop     bc
+        ld      a, 2
+        and     a
+        ret
+n25e9   ld      d, a
+        ld      e, (ix+$02)
+        ld      h, (ix+$01)
+        ld      l, (ix+$03)
+        rrc     l
+        pop     bc
+        add     hl, bc
+        pop     bc
+        ld      a, b
+        ld      b, 0
+        ex      de, hl
+        adc     hl, bc
+        ld      b, a
+        ld      h, l
+        ld      l, d
+        ld      d, e
+        ld      e, 0
+        ex      de, hl
+        add     hl, hl
+        ex      de, hl
+        adc     hl, hl
+        bit     4, (ix+$10)
+        scf
+        ret
+n260f   push    af
+        ld      a, $ff
+        jr      n261d
+n2614   and     1
+n2616   push    af
+        ld      a, $fe
+        jr      z, n261d
+        ld      a, $fd
+n261d   out     ($1f), a
+        pop     af
+        ret
+n2621   push    af
+        push    bc
+        ld      b, 4
+n2625   in      a, ($3f)
+        djnz    n2625
+        pop     bc
+        pop     af
+        ret
+n262c   push    hl
+        ld      hl, $8000
+n2630   dec     hl
+        ld      a, h
+        or      l
+        jr      nz, n2630
+        pop     hl
+        ret
+n2637   push    bc
+        ld      c, a
+        call    n260f
+        call    n2621
+        nop
+        call    n2616
+        ld      a, c
+        out     ($3f), a
+        ld      a, h
+        nop
+        out     ($3f), a
+        ld      a, l
+        nop
+        out     ($3f), a
+        ld      a, d
+        nop
+        out     ($3f), a
+        ld      a, e
+        nop
+        out     ($3f), a
+        ld      a, $ff
+        nop
+        out     ($3f), a
+        call    n2695
+        and     a
+        jr      nz, n2664
+        pop     bc
+        scf
+        ret
+n2664   push    af
+        call    n260f
+        in      a, ($3f)
+        pop     af
+        pop     bc
+        ret
+n266d   push    bc
+        push    de
+        push    hl
+        ld      h, 0
+        ld      l, h
+        ld      d, h
+        ld      e, h
+        ld      a, $49
+        call    n2637
+        pop     hl
+        jr      nc, n2692
+        call    n26a6
+        cp      $fe
+        jr      z, n2689
+        ld      a, 2
+        and     a
+        jr      n2692
+n2689   ld      b, $12
+        ld      c, $3f
+n268d   ini
+        jr      nz, n268d
+        scf
+n2692   pop     de
+        jr      n2664
+n2695   push    bc
+        ld      bc, 50
+n2699   in      a, ($3f)
+        cp      $ff
+        jr      nz, n26a4
+        djnz    n2699
+        dec     c
+        jr      nz, n2699
+n26a4   pop     bc
+        ret
+n26a6   push    bc
+        ld      b, 10
+n26a9   call    n2695
+        cp      $fe
+        jr      z, n26b6
+        cp      $ff
+        jr      nz, n26b6
+        djnz    n26a9
+n26b6   pop     bc
+        ret
+n26b8   ld      a, $51
+        call    n2637
+n26bd   ld      a, 0
+        ret     nc
+        call    n26a6
+        cp      $fe
+        jr      z, n26ca
+        and     a
+        jr      n26bd
+n26ca   push    ix
+        pop     hl
+        push    bc
+        ld      bc, $003f
+        inir
+        nop
+        inir
+        pop     bc
+n26d7   in      a, ($3f)
+        nop
+        nop
+        in      a, ($3f)
+        call    n260f
+        call    n2621
+        scf
+        ret
+n26e5   ld      c, $3f
+        in      a, (c)
+        dec     de
+        ld      a, d
+        or      e
+        jr      nz, n26e5
+        jr      n26d7
+n26f0   call    n2614
+        ld      a, $50
+        out     ($3f), a
+        xor     a
+        nop
+        out     ($3f), a
+        nop
+        nop
+        out     ($3f), a
+        ld      a, d
+        nop
+        out     ($3f), a
+        ld      a, e
+        nop
+        out     ($3f), a
+        ld      a, $ff
+        nop
+        out     ($3f), a
+        nop
+        nop
+        jr      n26d7
+n2710   ld      a, $58
+        call    n2637
+        ld      a, 0
+        ret     nc
+        ld      a, $fe
+        out     ($3f), a
+        push    bc
+        ld      bc, $003f
+        push    hl
+        push    ix
+        pop     hl
+        otir
+        nop
+        otir
+        push    hl
+        pop     ix
+        pop     hl
+        ld      a, $95
+        out     ($3f), a
+        nop
+        nop
+        out     ($3f), a
+        call    n2695
+        pop     bc
+        and     $1f
+        cp      5
+        jr      nz, n2757
+        ld      a, d
+        add     a, 2
+        jr      nc, n2745
+        inc     hl
+n2745   ld      d, a
+n2746   call    n2695
+        cp      0
+        jr      z, n2746
+        call    n260f
+        call    n2621
+        djnz    n2710
+        scf
+        ret
+n2757   ld      a, 0
+        and     a
+        ret
+n275b   ld      bc, $0200
+n275e   ld      a, 2
+        sub     b
+        ld      hl, tmp_buff
+        call    n266d
+        jr      c, n2771
+        bit     0, a
+        jr      nz, n2779
+        inc     a
+        jr      z, n2779
+n2770   dec     c
+n2771   inc     c
+        djnz    n275e
+        ld      a, c
+        ld      ($df9d), a
+        ret
+n2779   ld      a, b
+        sub     2
+        call    n278c
+        jr      nc, n2770
+        ld      a, b
+        sub     2
+        ld      de, $0200
+        call    n26f0
+        jr      n275e
+n278c   push    bc
+        push    af
+        call    n260f
+        ld      b, 10
+        ld      a, $ff
+n2795   out     ($3f), a
+        djnz    n2795
+        pop     af
+        push    af
+        call    n2614
+        ld      a, $40
+        call    n27e2
+        call    n2695
+        cp      1
+        jr      nz, n27d9
+        ld      bc, $0078
+n27ad   call    n260f
+        ld      a, $ff
+        out     ($3f), a
+        pop     af
+        push    af
+        call    n2614
+        ld      a, $41
+        call    n27e2
+        call    n2695
+        bit     0, a
+        jr      z, n27ce
+        djnz    n27ad
+        dec     c
+        jr      nz, n27ad
+        ld      a, 2
+        jr      n27db
+n27ce   call    n260f
+        in      a, ($3f)
+        call    n262c
+        scf
+        jr      n27df
+n27d9   ld      a, 1
+n27db   call    n260f
+        and     a
+n27df   pop     bc
+        pop     bc
+        ret
+n27e2   push    bc
+        out     ($3f), a
+        ld      b, 4
+        xor     a
+n27e8   out     ($3f), a
+        djnz    n27e8
+        ld      a, $95
+        nop
+        out     ($3f), a
+        pop     bc
+        ret
+n27f3   scf
+        ret
+n27f5   sla     e
+        srl     d
+        rr      e
+        ld      c, 0
+        push    hl
+        ld      l, (ix+$17)
+        ld      h, (ix+$18)
+        ex      (sp), hl
+        ex      (sp), ix
+        call    n2524
+        pop     ix
+        ret
+n280d   sla     e
+        srl     d
+        rr      e
+        ld      c, 0
+        push    hl
+        ld      l, (ix+$17)
+        ld      h, (ix+$18)
+        ex      (sp), hl
+        ex      (sp), ix
+        call    n2529
+        pop     ix
+        ret
+n2825   ld      de, $0106
+        scf
+        ret
+n282a   srl     a
+        ld      ix, $e883
+        jr      nc, n2836
+        ld      ix, $e88d
+n2836   and     a
+        ld      a, $16
+        ret     nz
+        ld      a, (ix+$00)
+        or      (ix+$01)
+        ld      a, $16
+        ret     z
+        scf
+        ret
+n2845   ld      hl, $e897
+        ld      de, $e898
+        ld      bc, $004b
+        ld      (hl), 0
+        ldir
+        ld      hl, $e8e3
+        ld      de, $e8e4
+        ld      bc, $025f
+        ld      (hl), 0
+        ldir
+        ld      hl, $e883
+        ld      de, $e897
+        ld      a, $a0
+        call    n2945
+        ld      hl, $e88d
+        ld      de, $e8aa
+        ld      a, $b0
+        call    n2945
+        ld      bc, $fefe
+        in      a, (c)
+        rra
+        ccf
+        ret     c
+        xor     a
+        ld      b, a
+        ld      c, a
+        ld      l, 8
+        call    n306d
+        jr      nc, n28ad
+        ld      (ed_ATTR_P), a
+        ld      (ed_ATTR_T), a
+        ld      (ATTR_T), a
+        ld      (BORDCR), a
+        ld      d, a
+        rra
+        rra
+        rra
+        and     7
+        out     ($fe), a
+        ld      hl, $5800
+        ld      bc, $0300
+n28a1   ld      a, (hl)
+        cp      $38
+        jr      nz, n28a7
+        ld      (hl), d
+n28a7   inc     hl
+        dec     bc
+        ld      a, b
+        or      c
+        jr      nz, n28a1
+n28ad   xor     a
+        ld      b, a
+        ld      c, a
+        ld      l, 9
+        call    n306d
+        jr      nc, n28ba
+        ld      (ATTR_P), a
+n28ba   ld      hl, FLAGS3
+        res     6, (hl)
+        xor     a
+        ld      b, a
+        ld      c, a
+        ld      hl, $ef11
+        call    n2b77
+        jr      nc, n28fc
+        ld      hl, $ef3b
+        ld      de, $2942
+        ld      b, 3
+n28d2   ld      a, (hl)
+        and     a
+        jr      z, n28e1
+        push    hl
+        push    de
+        push    bc
+        ld      a, (de)
+        ld      l, a
+        call    n3363
+        pop     bc
+        pop     de
+        pop     hl
+n28e1   inc     hl
+        inc     de
+        djnz    n28d2
+        ld      hl, $ef3e
+        ld      b, 3
+n28ea   ld      a, (hl)
+        and     a
+        jr      z, n28f9
+        push    hl
+        push    bc
+        ld      l, a
+        ld      a, 5
+        sub     b
+        call    n321a
+        pop     bc
+        pop     hl
+n28f9   inc     hl
+        djnz    n28ea
+n28fc   xor     a
+n28fd   ld      bc, 0
+        push    af
+n2901   pop     af
+        push    af
+        ld      l, $1c
+        call    n306d
+        jr      nc, n2938
+        jr      z, n2914
+        ld      l, a
+        pop     af
+        push    af
+        push    bc
+        call    n321a
+        pop     bc
+n2914   inc     bc
+        ld      a, b
+        or      c
+        jr      nz, n2901
+n2919   pop     af
+        inc     a
+        cp      $02
+        jr      nz, n28fd
+        xor     a
+        ld      b, a
+        ld      c, a
+        ld      l, $10
+        call    n306d
+        jr      nc, n2936
+        jr      z, n2936
+        call    n012d
+        jr      nc, n2936
+        ld      (LODDRV), a
+        ld      (SAVDRV), a
+n2936   scf
+        ret
+
+n2938   cp      $38
+        jr      z, n2919
+        cp      $16
+        jr      z, n2919
+        jr      n2914
+        ld      b, c
+        ld      b, d
+        ld      c, l
+n2945   push    hl
+        push    de
+        ld      hl, n29b5
+        ld      bc, $0010
+        ldir
+        ex      de, hl
+        ld      (hl), a
+        inc     hl
+        ld      (hl), 0
+        inc     hl
+        ld      (hl), 0
+        pop     hl
+        pop     de
+        push    de
+        push    hl
+        ld      hl, n29c0
+        ld      bc, 8
+        ldir
+        ex      de, hl
+        pop     de
+        push    de
+        ld      (hl), e
+        inc     hl
+        ld      (hl), d
+        rlca
+        rlca
+        rlca
+        rlca
+        and     1
+        push    af
+        ld      hl, n29c8
+        call    n2bd6
+        pop     bc
+        jr      nc, n2980
+        ld      a, ($ef21)
+        cp      $01
+        jr      z, n299a
+n2980   ld      a, b
+        ex      (sp), ix
+        inc     (ix+$03)
+        inc     (ix+$06)
+        ex      (sp), ix
+        ld      hl, n29c8
+        call    n2bd6
+        jr      nc, n29ad
+        ld      a, ($ef21)
+        cp      1
+        jr      nz, n29ad
+n299a   ld      hl, $ef21
+        pop     de
+        ld      bc, $0010
+        ldir    
+        ld      hl, $ef31
+        pop     de
+        ld      bc, 8
+        ldir
+        ret
+        
+n29ad   xor     a
+        pop     hl
+        ld      (hl), a
+        pop     hl
+        ld      (hl), a
+        inc     hl
+        ld      (hl), a
+        ret
+
+n29b5   defb    1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+n29c0   defb    1, 0, 2, 2, 4, 0, 0, 0
+n29c8   defm    "PLUSIDEDOS      "
+n29d8   rlca    
+        rlca    
+        rlca    
+        rlca    
+        ld      c, a
+        ld      ix, $e897
+        ld      b, 4
+        ld      e, 0
+        ld      h, e
+        ld      l, e
+n29e7   ld      a, (ix+$00)
+        and     a
+        jr      z, n2a0a
+        ld      a, (ix+$10)
+        and     $10
+        cp      c
+        jr      nz, n29fe
+        ld      a, (ix+$11)
+        or      (ix+$12)
+        jr      z, n29fe
+        inc     e
+n29fe   push    de
+        ld      de, $0013
+        add     ix, de
+        pop     de
+        djnz    n29e7
+        ld      a, e
+        scf     
+        ret     
+n2a0a   push    ix
+        pop     hl
+        jr      n29fe
+        push    bc
+        push    hl
+        push    ix
+        push    af
+        call    n29d8
+        and     a
+        jr      z, n2a21
+        ld      a, $3b
+n2a1c   pop     bc
+        pop     bc
+n2a1e   pop     bc
+        pop     bc
+        ret     
+n2a21   pop     af
+        push    af
+        call    n282a
+        jr      c, n2a34
+        ld      a, h
+        or      l
+        ld      a, $3c
+        jr      z, n2a1c
+        ld      (ix+$08), l
+        ld      (ix+$09), h
+n2a34   pop     af
+        pop     de
+        ld      (ix+$00), e
+        ld      (ix+$01), d
+        pop     bc
+        ld      (ix+$02), b
+        ld      (ix+$03), c
+        ld      hl, 0
+        ld      d, h
+        ld      e, c
+        res     7, b
+n2a4a   add     hl, de
+        djnz    n2a4a
+        ld      (ix+$04), l
+        ld      (ix+$05), h
+        pop     hl
+        ld      (ix+$06), l
+        ld      (ix+$07), h
+        push    af
+        srl     h
+        rr      l
+        srl     h
+        rr      l
+        srl     h
+        rr      l
+        xor     a
+        call    n2edb
+        bit     7, (ix+$02)
+        res     7, (ix+$02)
+        ld      l, (ix+$08)
+        ld      h, (ix+$09)
+        push    hl
+        ex      (sp), ix
+        push    af
+        ld      a, 0
+        ld      (ix+$01), a
+        ld      (ix+$02), a
+        jr      z, n2a88
+        inc     a
+n2a88   ld      (ix+$03), a
+        pop     af
+        ex      (sp), ix
+        call    nz, n2efd
+        ex      (sp), ix
+        ld      (ix+$00), 1
+        ld      (ix+$04), e
+        ld      (ix+$05), d
+        ld      (ix+$06), a
+        ex      (sp), ix
+        ld      de, $0010
+        and     a
+        sbc     hl, de
+        call    n2f05
+        ex      (sp), ix
+        pop     de
+        pop     af
+        push    af
+        rlca
+        rlca
+        rlca
+        rlca
+        or      $a0
+        ld      (ix+$10), a
+        xor     a
+        ld      (ix+$11), a
+        ld      (ix+$12), a
+        push    de
+        ld      d, a
+        ld      e, a
+        call    n2d15
+        jp      nc, n2a1e
+        ld      hl, $ef11
+        ld      d, h
+        ld      e, l
+        inc     de
+        ld      bc, $003f
+        ld      (hl), b
+        ldir
+        ld      a, $ff
+        ld      ($ef21), a
+        ld      e, (ix+$04)
+        ld      d, (ix+$05)
+        ld      a, (ix+$06)
+        ex      (sp), ix
+        call    n2efd
+        ld      ($ef22), de
+        ld      ($ef24), a
+        ld      l, (ix+$00)
+        ld      h, (ix+$01)
+        dec     hl
+        ld      ($ef25), hl
+        ld      a, (ix+$02)
+        dec     a
+        ld      ($ef27), a
+        ld      hl, $ef11
+        call    n2f05
+        ex      (sp), ix
+        pop     de
+        pop     af
+        push    af
+        push    de
+        ld      bc, 1
+        call    n2ba0
+        jp      nc, n2a1e
+        ld      hl, n29c8
+        ld      de, $ef11
+        ld      bc, $0010
+        ldir
+        push    ix
+        pop     hl
+        ld      bc, 11
+        ldir
+        pop     hl
+        ld      de, $ef31
+        ld      bc, 8
+        ldir
+        ex      de,hl
+        ld      (hl), $38
+        inc     hl
+        ld      (hl), $38
+        pop     af
+        ld      hl, $ef11
+        call    n2ba0
+        ret
+        
+n2b3f   call    n282a
+        ret     nc
+        ld      l, (ix+$06)
+        ld      h, (ix+$07)
+        and     a
+        sbc     hl, bc
+        ld      a, $38
+        ccf
+        ret     nc
+        ld      l, (ix+$08)
+        ld      h, (ix+$09)
+        push    hl
+        pop     ix
+        push    bc
+        srl     b
+        rr      c
+        srl     b
+        rr      c
+        srl     b
+        rr      c
+        ld      d, b
+        ld      e, c
+        pop     bc
+        ld      a, c
+        and     7
+        ld      c, 0
+        rra
+        rr      c
+        rra
+        rr      c
+        ld      b, a
+        scf
+        ret
+
+n2b77   push    bc
+        push    ix
+        push    hl
+        call    n2b3f
+        jr      nc, n2b9b
+        push    bc
+        ld      c, 0
+        ld      b, 7
+        ld      hl, $ed11
+        call    n2524
+        pop     bc
+        jr      nc, n2b9b
+        ld      hl, $ed11
+        add     hl, bc
+        pop     de
+        ld      bc, $0040
+        ldir
+        scf
+        jr      n2b9c
+n2b9b   pop     hl
+n2b9c   pop     ix
+        pop     bc
+        ret
+
+n2ba0   push    bc
+        push    ix
+        push    hl
+        call    n2b3f
+        jr      nc, n2bd1
+        push    de
+        push    bc
+        ld      c, 0
+        ld      b, 7
+        ld      hl, $ed11
+        call    n2524
+        pop     bc
+        pop     de
+        jr      nc, n2bd1
+        ld      hl, $ed11
+        add     hl, bc
+        ex      de, hl
+        ex      (sp), hl
+        ld      bc, $0040
+        ldir
+        ld      c, 0
+        ld      b, 7
+        ld      hl, $ed11
+        pop     de
+        call    n2529
+        jr      n2bd2
+
+n2bd1   pop     hl
+n2bd2   pop     ix
+        pop     bc
+        ret     
+
+n2bd6   push    ix
+        ld      bc, 0
+n2bdb   push    af
+        push    bc
+        push    hl
+        ld      hl, $ef11
+        call    n2b77
+        jr      nc, n2c0b
+        pop     hl
+        push    hl
+        ld      de, $ef11
+        ld      b, $10
+n2bed   ld      a, (de)
+        cp      (hl)
+        jr      z, n2c06
+        cp      $41
+        jr      c, n2bf9
+        cp      $5b
+        jr      c, n2c01
+n2bf9   cp      $61
+        jr      c, n2c11
+        cp      $7b
+        jr      nc, n2c11
+n2c01   xor     $20
+        cp      (hl)
+        jr      nz, n2c11
+n2c06   inc     de
+        inc     hl
+        djnz    n2bed
+        scf
+n2c0b   pop     hl
+        pop     bc
+n2c0d   pop     hl
+        pop     ix
+        ret
+
+n2c11   pop     hl
+        pop     bc
+        inc     bc
+        ld      a, b
+        or      c
+        ld      a, $38
+        jr      z, n2c0d
+        pop     af
+        jr      n2bdb
+
+n2c1d   push    hl
+        push    af
+        push    bc
+        call    n2bd6
+        pop     bc
+        ccf
+        ld      a, $39
+        jr      nc, n2c46
+        pop     af
+        push    af
+        ld      hl, $ef11
+        call    n2b77
+        jr      nc, n2c46
+        pop     af
+        pop     hl
+        ld      de, $ef11
+        push    bc
+        ld      bc, $0010
+        ldir
+        pop     bc
+        ld      hl, $ef11
+        call    n2ba0
+        ret
+        
+n2c46   pop     hl
+        pop     hl
+        ret     
+        
+n2c49   push    hl
+        push    af
+        ld      hl, $ef11
+        call    n2b77
+        jr      nc, n2c66
+        pop     af
+        pop     hl
+        ld      de, $ef31
+        push    bc
+        ld      bc, $0020
+        ldir    
+        pop     bc
+        ld      hl, $ef11
+        call    n2ba0
+        ret     
+        
+n2c66   pop     hl
+        pop     hl
+        ret     
+
+n2c69   push    ix
+        push    de
+        push    hl
+        add     a, a
+        add     a, a
+        add     a, a
+        add     a, a
+        ld      d, a
+        ld      ix, $e897
+        ld      e, 4
+n2c78   ld      a, (ix+$00)
+        and     a
+        jr      z, n2c92
+        ld      a, (ix+$10)
+        and     $10
+        cp      d
+        jr      nz, n2c92
+        ld      l, (ix+$11)
+        ld      h, (ix+$12)
+        sbc     hl, bc
+        ld      a, $3b
+        jr      z, n2c9d
+n2c92   push    bc
+        ld      bc, $0013
+        add     ix, bc
+        pop     bc
+        dec     e
+        jr      nz, n2c78
+n2c9c   scf
+n2c9d   pop     hl
+        pop     de
+        pop     ix
+        ret
+        
+n2ca2   push    af
+        call    n2c69
+        jr      nc, n2ce7
+        ld      ix, $e897
+        ld      e, 4
+n2cae   ld      a, (ix+$00)
+        and     a
+        jr      z, n2cc2
+        push    bc
+        ld      bc, $0013
+        add     ix, bc
+        pop     bc
+        dec     e
+        jr      nz, n2cae
+        ld      a, $3c
+        jr      n2ce7
+
+n2cc2   pop     af
+        push    af
+        ld      hl, $ef11
+        call    n2b77
+        jr      nc, n2ce7
+        ld      a, ($ef21)
+        dec     a
+        cp      $fd
+        ld      a, $38
+        jr      nc, n2ce7
+        pop     af
+        call    n2cef
+        ld      hl, $ef21
+        push    ix
+        pop     de
+        ld      bc, $0010
+        ldir
+        scf
+        ret
+        
+n2ce7   pop     hl
+        ret
+        
+n2ce9   ld      (ix+$00), 0
+        scf
+        ret
+
+n2cef   push    af
+        push    ix
+        call    n282a
+        ld      a, (ix+$02)
+        and     $40
+        pop     ix
+        ld      (ix+$10), a
+        pop     af
+        and     1
+        add     a, a
+        add     a, a
+        add     a, a
+        add     a, a
+        add     a, $a0
+        or      (ix+$10)
+        ld      (ix+$10), a
+        ld      (ix+$11), c
+        ld      (ix+$12), b
+        ret
+
+n2d15   push    ix
+        jr      n2d39
+        push    ix
+        push    hl
+        push    af
+        call    n2c69
+        jr      nc, n2d71
+        pop     af
+        push    af
+        ld      hl, $ef11
+        call    n2b77
+        jr      nc, n2d71
+        pop     af
+        pop     hl
+        push    ix
+        pop     de
+        ld      ix, $ef21
+        call    n2cef
+        ld      a, l
+n2d39   push    de
+        ld      hl, $ed11
+        ld      (hl), a
+        ld      de, $ed12
+        ld      bc, $01ff
+        ldir
+        pop     de
+        ld      c, 0
+        ld      a, d
+        or      e
+        jr      nz, n2d56
+        ld      e, (ix+$07)
+        ld      d, (ix+$08)
+        ld      c, (ix+$09)
+n2d56   ld      b, 7
+        ld      hl, $ed11
+        push    de
+        call    n2529
+        pop     de
+        jr      nc, n2d73
+        ld      a, c
+        or      d
+        or      e
+        scf
+        jr      z, n2d73
+        dec     de
+        ld      a, d
+        and     e
+        inc     a
+        jr      nz, n2d56
+        dec     c
+        jr      n2d56
+n2d71   pop     hl
+        pop     hl
+n2d73   pop     ix
+        ret
+
+n2d76   ld      bc, $ffff
+        ld      ($ef92), bc
+        ld      ($ef94), bc
+        inc     bc
+        ld      ($ef96), bc
+n2d86   push    af
+        push    de
+        push    hl
+        ld      hl, $ef11
+        call    n2b77
+        pop     hl
+        pop     de
+        jr      nc, n2de6
+        ld      a, ($ef21)
+        cp      h
+        jr      nz, n2dde
+        ld      a, ($ef2b)
+        and     a
+        jr      nz, n2dae
+        ld      a, l
+        push    hl
+        ld      hl, ($ef28)
+        sbc     hl, de
+        ld      l, a
+        ld      a, ($ef2a)
+        sbc     a, l
+        pop     hl
+        jr      c, n2dde
+n2dae   pop     af
+        push    af
+        call    n2c69
+        jr      nc, n2dde
+        push    de
+        push    hl
+        ld      de, ($ef92)
+        ld      hl, ($ef28)
+        and     a
+        sbc     hl, de
+        ld      de, ($ef94)
+        ld      hl, ($ef2a)
+        sbc     hl, de
+        jr      nc, n2ddc
+        ld      hl, ($ef28)
+        ld      ($ef92), hl
+        ld      hl, ($ef2a)
+        ld      ($ef94), hl
+        ld      ($ef96), bc
+n2ddc   pop     hl
+        pop     de
+n2dde   inc     bc
+        ld      a, b
+        or      c
+        jr      z, n2de6
+        pop     af
+        jr      n2d86
+
+n2de6   pop     af
+        ld      bc, ($ef96)
+        ld      a, b
+        or      c
+        ret     z
+        scf
+        ret
+
+n2df0   push    ix
+        push    af
+        push    hl
+        call    n2bd6
+        ld      a, $39
+        ccf
+        jp      nc, n2ed6
+        pop     ix
+        ld      e, (ix+$17)
+        ld      d, (ix+$18)
+        ld      l, (ix+$19)
+        ld      h, $ff
+        pop     af
+        push    af
+        call    n2d76
+        ld      a, $1a
+        jp      nc, n2ed7
+        pop     af
+        push    af
+        ld      hl, $ef11
+        call    n2b77
+        jp      nc, n2ed7
+        ld      l, (ix+$17)
+        ld      h, (ix+$18)
+        ld      e, (ix+$19)
+        pop     af
+        push    af
+        push    ix
+        call    n282a
+        jp      nc, n2ed6
+        ld      a, e
+        call    n2edb
+        ld      hl, ($ef22)
+        add     hl, de
+        ld      e, a
+        ld      a, ($ef24)
+        add     a, e
+        cp      (ix+$02)
+        jr      c, n2e48
+        sub     (ix+$02)
+        inc     hl
+n2e48   ex      de, hl
+        ld      l, a
+        ld      a, ($ef27)
+        cp      l
+        ld      a, l
+        jr      nz, n2e58
+        ld      hl, ($ef25)
+        sbc     hl, de
+        jr      z, n2eab
+n2e58   pop     hl
+        ex      (sp), hl
+        ld      l, a
+        push    bc
+        push    de
+        push    hl
+        ld      bc, 0
+n2e61   pop     af
+        push    af
+        ld      hl, $ef51
+        call    n2b77
+        jr      nc, n2ed2
+        ld      a, ($ef61)
+        and     a
+        jr      z, n2e78
+        inc     bc
+        ld      a, b
+        or      c
+        jr      nz, n2e61
+        jr      n2ed2
+
+n2e78   ld      a, $ff
+        ld      ($ef61), a
+        ld      a, ($ef27)
+        ld      ($ef67), a
+        ld      hl, ($ef25)
+        ld      ($ef65), hl
+        pop     hl
+        pop     de
+        push    de
+        push    hl
+        ld      a, l
+        call    n2efd
+        ld      ($ef64), a
+        ld      ($ef62), de
+        ld      hl, $ef51
+        call    n2f05
+        pop     af
+        push    af
+        call    n2ba0
+        jr      nc, n2ed4
+        pop     hl
+        ld      a, l
+        pop     de
+        pop     bc
+        ex      (sp), hl
+        push    hl
+n2eab   ld      ($ef27), a
+        ld      ($ef25), de
+        ld      hl, $ef11
+        call    n2f05
+        pop     de
+        push    de
+        push    bc
+        ld      hl, $ef22
+        ld      bc, $0011
+        ex      de, hl
+        add     hl, bc
+        ex      de, hl
+        ld      bc, 15
+        ldir
+        pop     bc
+        pop     hl
+        pop     af
+        call    n2ba0
+        pop     ix
+        ret
+        
+n2ed2   ld      a, $1a
+n2ed4   pop     hl
+        pop     hl
+n2ed6   pop     hl
+n2ed7   pop     hl
+        pop     ix
+        ret
+
+n2edb   push    bc
+        scf
+        ld      c, (ix+$04)
+        ld      b, (ix+$05)
+        ld      de, 0
+        and     a
+n2ee7   sbc     hl, bc
+        sbc     a, 0
+        inc     de
+        jr      nc, n2ee7
+        add     hl, bc
+        dec     de
+        xor     a
+        ld      c, (ix+$03)
+        ld      b, a
+n2ef5   sbc     hl, bc
+        inc     a
+        jr      nc, n2ef5
+        dec     a
+        pop     bc
+        ret
+
+n2efd   inc     a
+        cp      (ix+$02)
+        ret     c
+        inc     de
+        xor     a
+        ret
+        
+n2f05   push    bc
+        push    de
+        push    hl
+        ex      (sp), ix
+        ld      e, (ix+$14)
+        ld      d, (ix+$15)
+        ld      c, (ix+$16)
+        inc     c
+        ex      (sp), ix
+        call    n2f64
+        ex      de, hl
+        ld      a, c
+        ex      (sp), ix
+        ld      e, (ix+$11)
+        ld      d, (ix+$12)
+        ld      c, (ix+$13)
+        ex      (sp), ix
+        call    n2f64
+        and     a
+        sbc     hl, de
+        sbc     a, c
+        ex      de, hl
+        ld      c, a
+        ld      b, 0
+        ld      a, (ix+$03)
+        push    ix
+        ld      ix, 0
+        ld      h, b
+        ld      l, b
+n2f3e   add     ix, de
+        adc     hl, bc
+        dec     a
+        jr      nz, n2f3e
+        push    ix
+        pop     bc
+        ld      a, b
+        or      c
+        jr      nz, n2f4d
+        dec     hl
+n2f4d   dec     bc
+        pop     ix
+        ex      (sp), ix
+        ld      (ix+$17), c
+        ld      (ix+$18), b
+        ld      (ix+$19), l
+        ld      (ix+$1a), h
+        ex      (sp), ix
+        pop     hl
+        pop     de
+        pop     bc
+        ret
+
+n2f64   push    af
+        push    hl
+        push    bc
+        ld      b, (ix+$02)
+        call    n2f78
+        pop     bc
+        ld      b, 0
+        ex      de, hl
+        add     hl, bc
+        ex      de, hl
+        adc     a, b
+        ld      c, a
+        pop     hl
+        pop     af
+        ret
+        
+n2f78   ex      de, hl
+        xor     a
+        ex      af, af'
+        push    af
+        xor     a
+        ld      d, a
+        ld      e, a
+n2f7f   srl     b
+        jr      nc, n2f8a
+        ld      c, a
+        ex      af, af'
+        ex      de, hl
+        add     hl, de
+        ex      de, hl
+        adc     a, c
+        ex      af, af'
+n2f8a   jr      z, n2f91
+        add     hl, hl
+        adc     a, a
+        jp      n2f7f
+n2f91   pop     af
+        ex      af, af'
+        ret     
+
+n2f94   push    ix
+        push    bc
+        push    af
+        call    n282a
+        jp      nc, n3048
+        pop     af
+        push    af
+        call    n2c69
+        jp      nc, n3048
+        pop     af
+        push    af
+        ld      hl, $ef11
+        call    n2b77
+        jp      nc, n3048
+n2fb1   ld      bc, 0
+        pop     af
+        push    af
+        ld      hl, $ef51
+        call    n2b77
+        jp      nc, n3053
+        ld      a, ($ef61)
+        cp      $ff
+        jp      nz, n304d
+        ld      a, ($ef67)
+        ld      de, ($ef65)
+        call    n2efd
+        ld      l, a
+        ld      a, ($ef24)
+        sub     l
+        jr      nz, n2fdf
+        ld      hl, ($ef22)
+        sbc     hl, de
+        jr      z, n2ff9
+n2fdf   ld      a, ($ef27)
+        ld      de, ($ef25)
+        call    n2efd
+        ld      l, a
+        ld      a, ($ef64)
+        sub     l
+        jr      nz, n304d
+        ld      hl, ($ef62)
+        sbc     hl, de
+        jr      z, n3007
+        jr      n304d
+
+n2ff9   ld      a, ($ef27)
+        ld      ($ef67), a
+        ld      hl, ($ef25)
+        ld      ($ef65), hl
+        jr      n3013
+
+n3007   ld      a, ($ef24)
+        ld      ($ef64), a
+        ld      hl, ($ef22)
+        ld      ($ef62), hl
+n3013   ld      hl, $ef51
+        call    n2f05
+        pop     af
+        push    af
+        call    n2ba0
+        jr      nc, n3048
+        pop     af
+        pop     de
+        push    bc
+        push    af
+        push    de
+        ld      b, $40
+        ld      hl, $ef11
+n302a   ld      (hl), 0
+        inc     hl
+        djnz    n302a
+        pop     bc
+        pop     af
+        push    af
+        ld      hl, $ef11
+        call    n2ba0
+        jr      nc, n3048
+        ld      hl, $ef51
+        ld      de, $ef11
+        ld      bc, $0040
+        ldir
+        jp      n2fb1
+n3048   pop     bc
+        pop     bc
+        pop     ix
+        ret
+
+n304d
+n3053
+n306d
+n321a
+n3363
+
+        
+
+
+      ENDIF
 
 ; This is a copy of the "keyboard scanning" subroutine from
 ; $028e in ROM 3
@@ -31296,7 +33152,7 @@ o0BDB:  LD       A,H            ; fetch high byte $40 - $57
         AND     $03             ; range is now 0 - 2
         OR      $58             ; form correct high byte for third of screen
         LD      H,A             ; HL is now correct
-        LD      DE,($5C8F)      ; make D hold ATTR_T, E hold MASK-T
+        LD      DE,(ATTR_T)     ; make D hold ATTR_T, E hold MASK-T
         LD      A,(HL)          ; fetch existing attribute
         XOR     E               ; apply masks
         AND     D               ;
@@ -31507,7 +33363,7 @@ o0C88:  DEC     (IY+$52)        ; decrease SCR_CT
         LD      A,$18           ; reset
         SUB     B               ; the
         LD      ($5C8C),A       ; SCR_CT scroll count
-        LD      HL,($5C8F)      ; L=ATTR_T, H=MASK_T
+        LD      HL,(ATTR_T)     ; L=ATTR_T, H=MASK_T
         PUSH    HL              ; save on stack
         LD      A,($5C91)       ; P_FLAG
         PUSH    AF              ; save on stack to prevent lower screen
@@ -31546,7 +33402,7 @@ o0C88:  DEC     (IY+$52)        ; decrease SCR_CT
         POP     AF              ; restore original P_FLAG
         LD      ($5C91),A       ; and save in P_FLAG.
         POP     HL              ; restore original ATTR_T, MASK_T
-        LD      ($5C8F),HL      ; and reset ATTR_T, MASK-T as 'scroll?' has
+        LD      (ATTR_T),HL     ; and reset ATTR_T, MASK-T as 'scroll?' has
                                 ; been printed.
 
 ;; PO-SCR-3
@@ -31615,7 +33471,7 @@ o0D02:  CP      $02             ; is line number less than 2 ?
         NEG                     ; Negate to give number of scrolls required.
         PUSH    BC              ; save line/column
         LD      B,A             ; count to B
-        LD      HL,($5C8F)      ; fetch current ATTR_T, MASK_T to HL.
+        LD      HL,(ATTR_T)     ; fetch current ATTR_T, MASK_T to HL.
         PUSH    HL              ; and save
         LD      HL,($5C91)      ; fetch P_FLAG
         PUSH    HL              ; and save.
@@ -31652,7 +33508,7 @@ o0D2D:  CALL    o0E00           ; routine CL-SCROLL scrolls B lines
         LD      (IY+$57),L      ; and overwrite system variable P_FLAG.
 
         POP     HL              ; restore original ATTR_T/MASK_T.
-        LD      ($5C8F),HL      ; and update system variables.
+        LD      (ATTR_T),HL     ; and update system variables.
 
         LD      BC,($5C88)      ; fetch S_POSN to BC.
         RES     0,(IY+$02)      ; signal to TV_FLAG  - main screen in use.
@@ -31679,7 +33535,7 @@ o0D4D:  XOR     A               ; clear the accumulator
                                 ; screen.
 
 ;; TEMPS-1
-o0D5B:  LD      ($5C8F),HL      ; transfer values to ATTR_T and MASK_T
+o0D5B:  LD      (ATTR_T),HL     ; transfer values to ATTR_T and MASK_T
 
 ; for the print flag the permanent values are odd bits, temporary even bits.
 
@@ -33267,7 +35123,7 @@ o121C:
         LD      A,$38           ; the colour system is set to white paper,
                                 ; black ink, no flash or bright.
         LD      (ATTR_P),A      ; set ATTR_P permanent colour attributes.
-        LD      ($5C8F),A       ; set ATTR_T temporary colour attributes.
+        LD      (ATTR_T),A      ; set ATTR_T temporary colour attributes.
         LD      (BORDCR),A      ; set BORDCR the border colour/lower screen
                                 ; attributes.
 
@@ -34976,11 +36832,11 @@ o18B6:  CP      $0E             ; character fourteen ?
 ;; OUT-FLASH
 o18C1:  EXX                     ; switch in alternate set
 
-        LD      HL,($5C8F)      ; fetch L = ATTR_T, H = MASK-T
+        LD      HL,(ATTR_T)     ; fetch L = ATTR_T, H = MASK-T
         PUSH    HL              ; save masks.
         RES     7,H             ; reset flash mask bit so active.
         SET     7,L             ; make attribute FLASH.
-        LD      ($5C8F),HL      ; resave ATTR_T and MASK-T
+        LD      (ATTR_T),HL     ; resave ATTR_T and MASK-T
 
         LD      HL,$5C91        ; address P_FLAG
         LD      D,(HL)          ; fetch to D
@@ -34993,7 +36849,7 @@ o18C1:  EXX                     ; switch in alternate set
         POP     HL              ; pop P_FLAG to H.
         LD      (IY+$57),H      ; and restore system variable P_FLAG.
         POP     HL              ; restore temporary masks
-        LD      ($5C8F),HL      ; and restore system variables ATTR_T/MASK_T
+        LD      (ATTR_T),HL     ; and restore system variables ATTR_T/MASK_T
 
         EXX                     ; switch back to main set
         RET                     ; return
@@ -36469,7 +38325,7 @@ o1CA5:  SUB     (o1AEB-$D8)%256 ; convert $EB to $D8 ('INK') etc.
 
 ; return here in runtime.
 
-        LD      HL,($5C8F)      ; pick up ATTR_T and MASK_T
+        LD      HL,(ATTR_T)     ; pick up ATTR_T and MASK_T
         LD      (ATTR_P),HL     ; and store in ATTR_P and MASK_P
         LD      HL,$5C91        ; point to P_FLAG.
         LD      A,(HL)          ; pick up in A
@@ -38356,7 +40212,7 @@ o2244:  RST     08H             ; ERROR-1
         DEFB    $13             ; Error Report: Invalid colour
 
 ;; CO-TEMP-9
-o2246:  LD      HL,$5C8F        ; address system variable ATTR_T initially.
+o2246:  LD      HL,ATTR_T       ; address system variable ATTR_T initially.
         CP      $08             ; compare with 8
         JR      C,o2258         ; forward to CO-TEMP-B with 0-7.
 
@@ -38440,7 +40296,7 @@ o227D:  LD      C,A             ; store value in C
 
 ;; CO-TEMP-E
 o2287:  LD      A,C             ; value to A
-        LD      HL,$5C8F        ; address ATTR_T
+        LD      HL,ATTR_T       ; address ATTR_T
         CALL    o226C           ; routine CO-CHANGE addressing ATTR_T
         LD      A,C             ; fetch value
         RRCA                    ; for flash8/bright8 complete
