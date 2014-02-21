@@ -828,10 +828,10 @@ l030a   dec     bc
 ; to routines to handle them if necessary
       IF garry
         jr      l0302           ; sound tone again
-       call    $089f
+        call    l089f
         ld      (hl), a
         ret
-       call    $089f
+        call    l089f
         ld      a, (hl)
         ret
         inc     b
@@ -1786,7 +1786,7 @@ l086b   defb    $03
       ENDIF
     IF garry
 l0884   defs    27
-        ld      hl, (CURCHL)
+l089f   ld      hl, (CURCHL)
         ld      de, 13
         add     hl, de
         ld      c, (hl)
@@ -4037,7 +4037,7 @@ l15f0   push    hl
         ld      hl,(PROG)       ; get start of program
         call    l15d3           ; check if end
       IF garry
-       jp      $3873
+        jp      n3871+2
 l15fe   ld      hl, (CURCHL)
 l1601   jp      l387f
       ELSE
@@ -6464,7 +6464,7 @@ l227a   push    af
         push    bc
         push    de
         push    hl
-       call    $27d0
+        call    l27d0
         pop     hl
         pop     de
         pop     bc
@@ -11656,7 +11656,7 @@ m05e8   ld      hl,(CH_ADD)
         cp      ':'
         jr      z,m062b         ; or if end-of-statement
       IF garry
-       jp      $3b55
+        jp      n3b55
         nop
       ELSE
         cp      $b9
@@ -12451,7 +12451,7 @@ m0a89   ld      (ix+$00),$03    ; type 3 to workspace header
 m0a8f   cp      $ca             ; check for LINE
         jr      z,m0a9c         ; move on if present
       IF garry
-       jp      $24c7           ; check for end-of-statement
+        jp      n24c7           ; check for end-of-statement
       ELSE
         call    m10b1           ; check for end-of-statement
       ENDIF
@@ -14083,7 +14083,7 @@ m1506   rst     $18
         rst     $28
         defw    $1dab
         ret
-m1515  call    $2b35
+m1515   call    m2b35
         call    m3f00
         defw    $005c
         rst     $28
@@ -15370,7 +15370,7 @@ m1df7   call    m10b1
         ld      a, 1
         rst     $28
         defw    $1601
-        jp      $37fe
+        jp      m37fe
       ELSE
         rst     $28
         defw    $0018           ; get character at CH_ADD
@@ -20365,9 +20365,9 @@ n0196   jp      n212b           ; DD_L_ON_MOTOR
 n0199   jp      n2150           ; DD_L_T_OFF_MOTOR
 n019c   jp      n2164           ; DD_L_OFF_MOTOR
       IF garry
-        jp      $39bd
-n01a2   jp      $2475
-n01a5   jp      $29d8
+        jp      n39bd
+n01a2   jp      n2475
+n01a5   jp      n29d8
 n019f   ld      a, ($df9d)
         push    af
       ELSE
@@ -20399,10 +20399,10 @@ n01c2   push    de
         pop     de
         call    n1539           ; setup cache
       IF garry
-        call    $0508
+        call    n0500
         pop     af
         ld      ($df9d), a
-        jp      $2845
+        jp      n2845
       ELSE
         jp      n0500           ; set default drive and exit
       ENDIF
@@ -20801,7 +20801,7 @@ n0365   or      a
         inc     ix
         ld      a, (BORDCR)
         and     7
-        jr      $03c7
+        jr      n03a8
 n037d   ld      (ix), $10
         inc     ix
         ld      a, (BORDCR)
@@ -20811,7 +20811,7 @@ n037d   ld      (ix), $10
         ld      a, 5
         jr      nn392
 nn390   ld      a, 2
-nn392   jr      $03c7
+nn392   jr      n03a8
       ELSE
         jr      nz,n0349        ; if not sector, go to include submessage
       ENDIF
@@ -20924,7 +20924,7 @@ n04ef   ret     c
 n0500   ld      bc,$1041        ; 16 drives, A: to P:
 n0503   ld      a,c
       IF garry
-        call    $17cb
+        call    n184d
         ld      a, c
         jr      c, n0517
         inc     c               ; increment drive letter
@@ -22645,7 +22645,7 @@ n0e7d   push    hl
         ld      d,a             ; DE=#directory records
       IF garry
         ld      a, 2
-        call    $04eb
+        call    n04d9
       ENDIF
         call    n19c0           ; DE=first non-directory sector
         sbc     hl,de           ; test logical sector
@@ -23121,15 +23121,15 @@ n10e7   pop     af
 
 ; DOS_READ
       IF garry
-n10d9   call    $114c
+n10d9   call    n11cb
         ret     nc
         push    de
         ld      e, a
         ld      a, (rw_page)
         ld      hl, (rw_add)
-        call    $021b
+        call    n0207
         ld      (hl), e
-        call    $021b
+        call    n0207
         inc     hl
         ld      (rw_add), hl
         pop     de
@@ -23140,11 +23140,11 @@ n10d9   call    $114c
         ret
 
 n10f6   push    de
-        call    $12fe
+        call    n137d
         pop     de
         ret     nc
         push    de
-        call    $1088
+        call    n1099
         ld      hl, $002d
         add     hl, bc
         ld      e, (hl)
@@ -23158,7 +23158,7 @@ n10f6   push    de
         ld      hl, (rw_add)
         ex      de, hl
         ld      ix, $0080
-        call    $0245
+        call    n023d
         pop     bc
         ld      (rw_add), de
         pop     de
@@ -24499,9 +24499,9 @@ n17d0   ld      a,'A'
       IF garry
         ld      hl, xdpb_b
         ld      ($e2a2), hl
-        ld      c,$01           ; B: should be unit 1 or disabled
-        call    $1935
-        call    $1f52
+        ld      c, 1            ; B: should be unit 1 or disabled
+        call    n1943
+        call    n1edd
         ret     nc
         ld      a, 3
         ld      l, $42
@@ -24712,15 +24712,15 @@ n18fd   bit     2,(ix+$1b)
 
       IF garry=0
 n1918   push    hl
-        ld      c,(ix+$1d)
+        ld      c, (ix+$1d)
         ld      a,c
         or      a
-        jr      nz,n1935        ; exit if drive not mapped to unit 0
-        ld      hl,unit0
-        ld      a,(ix+$1c)
+        jr      nz, n1935       ; exit if drive not mapped to unit 0
+        ld      hl, unit0
+        ld      a, (ix+$1c)
         cp      (hl)
-        jr      z,n1935         ; exit if unit 0 is currently mapped to drive
-        ld      (hl),a          ; change unit 0 mapping to this drive
+        jr      z, n1935        ; exit if unit 0 is currently mapped to drive
+        ld      (hl), a         ; change unit 0 mapping to this drive
         push    ix
         push    de
         push    bc
@@ -24825,7 +24825,7 @@ n19c0   push    hl
         ld      d,(ix+$01)      ; DE=# records per track
       IF garry
         ld      a, 2
-        call    $04eb
+        call    n04d9
       ENDIF
         jr      n19d3
 n19d1   add     hl,de
@@ -24857,7 +24857,7 @@ n19df   push    hl
         ld      d,(ix+$01)      ; DE=records per track
       IF garry
         ld      a, 2
-        call    $04eb
+        call    n04d9
       ENDIF
         ld      bc,$ffff        ; BC=logical track counter
         or      a
@@ -24951,7 +24951,7 @@ n1937   push    af
 
 ; DOS_MAP_B
 n1943   ld      ix, xdpb_b
-        call    $181b
+        call    n189d
         ret     nc              ; exit if error
         ld      a,c
         or      a
@@ -24978,7 +24978,7 @@ n1e7c   ld      (retry_cnt),a   ; set it
         ret
 n196a   ld      a, 10
         or      a
-        jp      $22c7
+        jp      n22c7
         defs    12
 
 ; Low-level read sector subroutine for drives A: & B:
@@ -25086,7 +25086,7 @@ n1134   inc     de
         push    de
         xor     a
         ld      hl, $f516
-        call    $3879
+        call    n3879
         pop     de
         pop     bc
         jr      nc, n1a65
@@ -25116,7 +25116,7 @@ n1134   inc     de
         jr      n1a4c
 n1a49   call    n2558        
 n1a4c   ld      a, (rw_page)
-        call    $021b
+        call    n0207
         ex      (sp), hl
         and     a
         sbc     hl, de
@@ -25195,7 +25195,7 @@ n1abe   ld      ix, xdpb_m
         ld      a, (ix+$1c)
         and     a
         jr      z, n1acc
-        call    $181b
+        call    n189d
         ret     nc
 n1acc
       ELSE
@@ -25253,7 +25253,7 @@ n1a7c   ld      a,d
         ret
 n1b14   ld      a, (ix+$1c)
         ld      (ix+$1c), 0
-        call    $04ff
+        call    n04ed
         sub     $41
         ret     c
         ld      e, a
@@ -26612,7 +26612,7 @@ n231d   defb    $d0,$ce,$a8,$ca
       IF garry
 n22c5x  xor     a
         ld      a, b
-        push    hl
+n22c7   push    hl
         ld      hl,(CURCHL)
         ex      (sp),hl
         push    hl
@@ -26624,7 +26624,7 @@ n22c5x  xor     a
         ld      hl, $22f3
         ld      (al_resp), hl
         push    af
-        call    $032d
+        call    n033a
         pop     af
         call    n3e00
         defw    $3ff7
@@ -26652,10 +26652,11 @@ n22c5x  xor     a
         defm    " sector ", $fc, 13, $fb, $ff, $fa
         defm    "Retry, Ignore or Cancel?", $ff
         defs    $4f
-        push    bc
+
+n2475   push    bc
         push    de
         ld      a, b
-        call    $021b
+        call    n0207
         push    hl
         push    bc
         ld      d, h
@@ -26681,7 +26682,7 @@ n22c5x  xor     a
         inc     c
         dec     c
         ld      hl, $ef98
-        call    $266d
+        call    n266d
         ld      a, 0
         jr      nc, n251d
         ld      hl, ($ef9e)
@@ -26701,7 +26702,7 @@ n22c5x  xor     a
         and     3
         rl      b
         rla
-        ld      c, a
+n24c7   ld      c, a
         ld      a, ($ef9d)
         and     15
         add     a, c
@@ -26747,39 +26748,39 @@ n2529   push    bc
         res     7, b
 n252c   push    de
         push    hl
-        call    $25cd
+        call    n25cd
         ex      (sp), ix
         jr      nc, n254c
         push    af
         ld      a, b
         and     7
-        call    $021b
+        call    n0207
         bit     7, b
         ld      b, 1
         jr      nz, n2548
         pop     af
-        call    $2710
+        call    n2710
         jr      n254c
 n2548   pop     af
-        call    $26b8
+        call    n26b8
 n254c   pop     ix
 n254e   push    af
         ld      a, 7
-        call    $021b
+        call    n0207
         pop     af
         pop     de
         pop     bc
         ret
 n2558   push    hl
-        call    $26d7
+        call    n26d7
         ld      e, (ix+$00)
         ld      d, (ix+$01)
         ld      l, (ix+$02)
         ld      h, (ix+$03)
         bit     7, (ix+$04)
         ld      a, $51
-        call    $2637
-n2571   call    $26a6
+        call    n2637
+n2571   call    n26a6
         cp      $fe
         jr      nz, n2571
         ld      de, $0200
@@ -26818,7 +26819,7 @@ n25b9   dec     d
         jr      nz, n25b7
         ld      e, d
         ld      a, 7
-        jp      $021b
+        jp      n0207
 n25c2   ld      c, mmcdata
         ld      a, h
         or      l
@@ -28843,7 +28844,7 @@ n3363   call    n31fb
         jr      z, n33ae
         push    de
         pop     ix
-        call    $181b
+        call    n189d
         jr      nc, n33bd
         xor     a
         ld      (hl), a
@@ -29106,7 +29107,7 @@ n3526   ld      a, (de)
         ex      de, hl
         ld      ($4015), a
         push    af
-        call    $0521
+        call    n0514
         pop     af
         ld      hl, $506b
         call    n3879
@@ -29526,7 +29527,7 @@ n3879   push    de
         jr      nz, n38a7
         inc     hl
         ld      a, (hl)
-        call    $17c5
+        call    n1847
         jr      nc, n38a7
         ld      a, (ix+$06)
         and     a
@@ -29542,7 +29543,7 @@ n38a7   pop     de
         pop     de
         ret
         
-n38aa   call    $1063
+n38aa   call    n1074
         push    ix
         ld      ix, ($f514)
         ld      (ix+$00), l
@@ -29591,11 +29592,11 @@ n38ef   srl     h
         ld      ($f513), a
         ld      a, (ix+$02)
         sub     2
-        call    nz, $04eb
+        call    nz, n04d9
 n390b   push    de
         ld      a, (ix+$02)
-        call    $04f5
-        call    $0d05
+        call    n04e3
+        call    n0d19x
         ex      de, hl
         ld      hl, $000c
         add     hl, bc
@@ -29606,7 +29607,7 @@ n390b   push    de
         inc     hl
         inc     hl
         ld      (hl), e
-        call    $0d3a
+        call    n0d4a
         pop     de
         ret     nc
         ld      a, e
@@ -29626,7 +29627,7 @@ n3930   push    de
         ld      a, (ix+$02)
         sub     2
         push    af
-        call    nz, $04f5
+        call    nz, n04e3
         ld      c, 0
         ld      a, ($f513)
         add     a, e
@@ -29914,7 +29915,7 @@ n3ad4   ld      a, (hl)
 n3aeb   push    bc
         call    n3d8e
         call    n3da8
-        call    $053c
+        call    n052f
         call    n3de4
         call    n3d6a
         pop     bc
@@ -29968,7 +29969,7 @@ n3b41   call    n3a01
         push    de
         push    hl
         ld      hl, n3b6f
-        ld      bc, $0013
+n3b55   ld      bc, $0013
         ld      de, $000d
         call    n3c99
         ld      bc, $000d
@@ -30541,14 +30542,14 @@ n2164   push    af
         ld      ($e600), a
         ld      a, ($5b67)
         and     $f7
-        call    $21bd
+        call    n2173
         pop     af
         ret
 
 ; DD_L_READ
-n20c3   call    $2137
-        call    $21fa
-        jp      $20f2
+n20c3   call    n20de
+        call    n21b7
+        jp      n2090
         nop
         nop
   ELSE
@@ -51051,7 +51052,7 @@ o3A08   EX      AF,AF'
         DI      
         LD      (BANK678),A
         OUT     (C),A           ; at this point, routine continues in ROM 1
-        JP      $3D00
+        JP      o3D00
 o3A1B   EX      AF,AF'
         POP     AF
         LD      BC,$1FFD
@@ -51162,7 +51163,7 @@ o3AB1   DEFM    "SPECTRU", 'M'+$80
 o3AB9   DEFM    "PLA", 'Y'+$80
         
 
-        JP      $3C01           ; what's this for???
+        JP      o3C01           ; what's this for???
 
         DEFS    319
 
