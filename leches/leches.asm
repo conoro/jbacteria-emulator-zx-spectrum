@@ -1,7 +1,7 @@
         DEFINE  copymsg
         DEFINE  resetplay
 
-        OUTPUT  fireplay.rom
+        OUTPUT  leches.rom
 
 ;************************************************************************
 ;** An Assembly File Listing to generate a 16K ROM for the ZX Spectrum **
@@ -6088,7 +6088,7 @@ L1539:
    ELSE
         DEFB    $7F                                     ; copyright
       IFDEF copymsg
-        DEFM    " 2012 Fireplay Research Lt"
+        DEFM    " 2012 CgLeches Research Lt"
       ELSE
         DEFM    " 1982 Sinclair Research Lt"
       ENDIF
@@ -19619,7 +19619,7 @@ L3BCA:  DEFB    $31             ;;duplicate       v,v.
         RET                     ; return with H'L' pointing to location
                                 ; after last number in series.
 
-        DEFB    'Fireplay'
+        DEFB    'CgLeches'
 
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF; 277 bytes
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
@@ -20732,10 +20732,10 @@ L3D00:  DEFB    %00000000
 ; Alvin Albrecht            for comments.
 ; Andy Styles               for full relocatability implementation and testing.
 ; Andrew Owen               for ZASM compatibility and format improvements.
-; Francisco Villa           for Fireplay main ultraloader code.
-; Antonio Villena           for Fireplay rest of code.
+; Francisco Villa           for CgLeches main ultraloader code.
+; Antonio Villena           for CgLeches rest of code.
 
-; Fireplay modification: The file assembles well in sjasmplus, delete
+; CgLeches modification: The file assembles well in sjasmplus, delete
 ; or comment the first directive "OUTPUT 48.rom" and conditional assembly
 ; directives "IFDEF,ELSE,ENDIF" if you have problems with your assembler.
 
