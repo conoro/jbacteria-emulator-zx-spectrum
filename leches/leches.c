@@ -4,11 +4,24 @@
 #ifdef __DMC__
   #define strcasecmp stricmp
 #endif
+
+unsigned char table1[][4]=
+  { {1, 2, 2, 3}, {2, 2, 3, 3}, {2, 3, 3, 4}, {3, 3, 4, 4},
+    {1, 2, 3, 4}, {2, 3, 4, 5}, {2, 3, 4, 5}, {3, 4, 5, 6}};
+unsigned char table2[][4]=
+  { {1, 1, 2, 2}, {1, 2, 2, 3}, {2, 2, 3, 3}, {2, 3, 3, 4},
+    {1, 2, 3, 4}, {1, 2, 3, 4}, {2, 3, 4, 5}, {2, 3, 4, 5}};
+unsigned char byvel[][8]=
+  { { 0xed, 0xde, 0xd2, 0xc3, 0x00, 0x71, 0x62, 0x53 },
+    { 0xf1, 0xe5, 0xd6, 0xc7, 0x04, 0x78, 0x69, 0x5d }};
+unsigned char termin[][8]=
+  { { 21, 22, 23, 24, 23, 24, 25, 26 },
+    { 13, 14, 15, 16, 15, 16, 17, 18 }};
 unsigned char *mem, *precalc;
-unsigned char inibit= 0, tzx= 0, channel_type= 1, checksum;
+unsigned char inibit= 0, tzx= 0, channel_type= 1, checksum, mlow, velo, refconf;
 FILE *fi, *fo;
-int i, j, k, ind= 0;
-unsigned short length, flag, outbyte= 1, frequency= 44100, pilotts, pilotpulses;
+int i, j, k, flag, ind= 0;
+unsigned short length, outbyte= 1, frequency= 44100, pilotts, pilotpulses;
 
 void outbits( short val ){
   if( tzx )
@@ -60,17 +73,19 @@ int parseHex(char * name, int index){
 int main(int argc, char* argv[]){
   mem= (unsigned char *) malloc (0x20000);
   if( argc==1 )
-    printf("\nleches v0.01, an ultra load block generator by Antonio Villena, 18 Feb 2013\n\n"),
+    printf("\nleches v0.02, an ultra load block generator by Antonio Villena, 18 Feb 2014\n\n"),
     printf("  leches <srate> <channel_type> <ofile> <flag> <pilot_ms> <pause_ms> <ifile>\n\n"),
     printf("  <srate>         Sample rate, 44100 or 48000. Default is 44100\n"),
     printf("  <channel_type>  Possible values are: mono (default), stereo or stereoinv\n"),
     printf("  <ofile>         Output file, between TZX or WAV file\n"),
     printf("  <flag>          Flag byte, 00 for header, ff or another for data blocks\n"),
+    printf("  <speed>         A number between 0 and 7. [0..3] for Safer and [4..7] for Reckless\n"),
+    printf("  <offset>        -2,-1,0,1 or 2. Fine grain adjust for symbol offset. Change if you see loading errors\n"),
     printf("  <pilot_ms>      Duration of pilot in milliseconds\n"),
     printf("  <pause_ms>      Duration of pause after block in milliseconds\n"),
     printf("  <ifile>         Hexadecimal string or filename as data origin of that block\n\n"),
     exit(0);
-  if( argc!=8 )
+  if( argc!=10 )
     printf("\nInvalid number of parameters\n"),
     exit(-1);
   frequency= atoi(argv[1]);
@@ -111,14 +126,18 @@ int main(int argc, char* argv[]){
   else
     printf("Output format not allowed, use only TZX or WAV\n"),
     exit(-1);
-  pilotts= frequency==48000 ? 875 : 952;
-  pilotpulses= atof(argv[5])*3500/pilotts+0.5;
+  mlow= frequency==48000 ? 1 : 0;
+  pilotts= mlow ? 875 : 952;
+  pilotpulses= atof(argv[7])*3500/pilotts+0.5;
   pilotpulses&1 || ++pilotpulses;
-  fi= fopen(argv[7], "rb");
+  fi= fopen(argv[9], "rb");
   if( fi )
     length= fread(mem, 1, 0x20000, fi);
   else
-    length= parseHex(argv[7], 0);
+    length= parseHex(argv[9], 0);
+  velo= atoi(argv[5]);
+  refconf= (byvel[mlow][velo]                &128)
+         + (byvel[mlow][velo]+3*atoi(argv[6])&127);
   for ( checksum= i= 0; i<length; i++ )
     checksum^= mem[i];
   if( tzx )
@@ -128,8 +147,8 @@ int main(int argc, char* argv[]){
     *(short*)(precalc+4)= pilotts,
     *(short*)(precalc+6)= pilotpulses,
     precalc[8]= 0x15,
-    *(short*)(precalc+9)= frequency==48000 ? 73 : 79,
-    *(short*)(precalc+11)= atof(argv[6]),
+    *(short*)(precalc+9)= mlow ? 73 : 79,
+    *(short*)(precalc+11)= atof(argv[8]),
     ind= 17;
   else
     while( pilotpulses-- )
@@ -139,21 +158,26 @@ int main(int argc, char* argv[]){
   while( pilotpulses-- )
     outbits( 12 );
   outbits( 2 );
-  outbits( frequency==48000 ? 4 : 8 );
-  flag= strtol(argv[4], NULL, 16) | checksum<<8;
-  for ( j= 0; j<16; j++, flag<<= 1 )
-    outbits( k= flag&0x8000 ? 4 : 8 ),
+  outbits( mlow ? 4 : 8 );
+  flag= refconf | strtol(argv[4], NULL, 16)<<8 | checksum<<16;
+ printf("%x,%x,%x, %x", atoi(argv[6]), checksum, strtol(argv[4], NULL, 16), flag);
+  for ( j= 0; j<24; j++, flag<<= 1 )
+    outbits( k= flag&0x800000 ? 4 : 8 ),
     outbits( k );
   outbits( 2 );
   outbits( 3 );
   --mem;
   while( length-- )
-    outbits( 1+(*++mem  & 3) ),
-    outbits( 1+(*mem>>2 & 3) ),
-    outbits( 1+(*mem>>4 & 3) ),
-    outbits( 1+(*mem>>6    ) );
-  outbits( 1 );
-  outbits( frequency==48000 ? 22 : 11 );
+    outbits( table1[velo][*++mem>>6  ] ),
+    outbits( table2[velo][  *mem>>6  ] ),
+    outbits( table1[velo][*mem>>4 & 3] ),
+    outbits( table2[velo][*mem>>4 & 3] ),
+    outbits( table1[velo][*mem>>2 & 3] ),
+    outbits( table2[velo][*mem>>2 & 3] ),
+    outbits( table1[velo][*mem    & 3] ),
+    outbits( table2[velo][*mem    & 3] );
+  outbits( termin[mlow][velo]>>1 );
+  outbits( termin[mlow][velo]-(termin[mlow][velo]>>1) );
   outbits( 1 );
   outbits( 1 );
   if( tzx ){
@@ -166,7 +190,7 @@ int main(int argc, char* argv[]){
   }
   else
     fwrite( precalc, 1, ind, fo ),
-    fwrite( precalc+0x100000, 1, frequency*(channel_type&3)*atof(argv[6])/1000, fo),
+    fwrite( precalc+0x100000, 1, frequency*(channel_type&3)*atof(argv[8])/1000, fo),
     i= ftell(fo)-8,
     fseek(fo, 4, SEEK_SET),
     fwrite(&i, 4, 1, fo),
