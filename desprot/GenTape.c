@@ -84,33 +84,34 @@ void tapewrite( unsigned char *buff, int length ){
 int main(int argc, char* argv[]){
   mem= (unsigned char *) malloc (0x20000);
   if( argc==1 )
-    printf("\nGenTape v0.20, a Tape File Generator by Antonio Villena, 20 Feb 2013\n\n"),
-    printf("  GenTape [<frequency>] [<channel_type>] <output_file>\n"),
-    printf("          [ basic <name> <startline> <input_file>\n"),
-    printf("          | hdata <name> <address>   <input_file>\n"),
-    printf("          |  data                    <input_file>\n"),
-    printf("          | pilot <pilot_ts> <pilot_ms>\n"),
-    printf("          | pulse <M> <pulse1_ts> <pulse2_ts> .. <pulseM_ts>\n"),
-    printf("          | pause <pause_ms>\n"),
-    printf("          |  pure <zero_ts> <one_ts> <pause_ms> <input_file>\n"),
-    printf("          | turbo <pilot_ts> <syn1_ts> <syn2_ts> <zero_ts> <one_ts>\n"),
-    printf("                                 <pilot_ms> <pause_ms> <input_file>\n"),
-    printf("          | plug-xxx-N <param1> <param2> .. <paramN> ]\n\n"),
-    printf("  <output_file>  Target file, between TAP, TZX or WAV file\n"),
-    printf("  <name>         Up to 10 chars name between single quotes or in hexadecimal\n"),
-    printf("  <startline>    In decimal, first BASIC line to execute\n"),
-    printf("  <address>      In hexadecimal, address of the binary block\n"),
-    printf("  <input_file>   Hexadecimal string or filename as data origin of that block\n"),
-    printf("  <zero_ts> <one_ts> <syn1_ts> <syn2_ts> <pilot_ts>\n"),
-    printf("                 Length of zero/one/syncs/pilot pulses at 3.528MHz clock\n"),
-    printf("  <pilot_ms> <pause_ms>\n"),
-    printf("                 Duration of pilot/pause after block in milliseconds\n"),
-    printf("  <M>            Number of pulses in the sequence of pulses\n"),
-    printf("  <pulseX_ts>    Length of X-th pulse in the sequence at 3.528MHz clock\n"),
-    printf("  <plug-xxx-N>   External generator, must exists xxx.exe and accept N params\n\n"),
-    printf("  WAV options:\n"),
-    printf("      <frequency>    Sample frequency, 44100 or 48000. Default is 44100\n"),
-    printf("      <channel_type> Possible values are: mono (default), stereo or stereoinv\n\n"),
+    printf("\n"
+    "GenTape v0.20, a Tape File Generator by Antonio Villena, 20 Feb 2013\n\n"
+    "  GenTape [<frequency>] [<channel_type>] <output_file>\n"
+    "          [ basic <name> <startline> <input_file>\n"
+    "          | hdata <name> <address>   <input_file>\n"
+    "          |  data                    <input_file>\n"
+    "          | pilot <pilot_ts> <pilot_ms>\n"
+    "          | pulse <M> <pulse1_ts> <pulse2_ts> .. <pulseM_ts>\n"
+    "          | pause <pause_ms>\n"
+    "          |  pure <zero_ts> <one_ts> <pause_ms> <input_file>\n"
+    "          | turbo <pilot_ts> <syn1_ts> <syn2_ts> <zero_ts> <one_ts>\n"
+    "                                 <pilot_ms> <pause_ms> <input_file>\n"
+    "          | plug-xxx-N <param1> <param2> .. <paramN> ]\n\n"
+    "  <output_file>  Target file, between TAP, TZX or WAV file\n"
+    "  <name>         Up to 10 chars name between single quotes or in hexadecimal\n"
+    "  <startline>    In decimal, first BASIC line to execute\n"
+    "  <address>      In hexadecimal, address of the binary block\n"
+    "  <input_file>   Hexadecimal string or filename as data origin of that block\n"
+    "  <zero_ts> <one_ts> <syn1_ts> <syn2_ts> <pilot_ts>\n"
+    "                 Length of zero/one/syncs/pilot pulses at 3.528MHz clock\n"
+    "  <pilot_ms> <pause_ms>\n"
+    "                 Duration of pilot/pause after block in milliseconds\n"
+    "  <M>            Number of pulses in the sequence of pulses\n"
+    "  <pulseX_ts>    Length of X-th pulse in the sequence at 3.528MHz clock\n"
+    "  <plug-xxx-N>   External generator, must exists xxx.exe and accept N params\n\n"
+    "  WAV options:\n"
+    "      <frequency>    Sample frequency, 44100 or 48000. Default is 44100\n"
+    "      <channel_type> Possible values are: mono (default), stereo or stereoinv\n\n"),
     exit(0);
   while( 1 )
     if( !strcasecmp(argv[1], "mono") || !strcasecmp(argv[1], "44100") )
