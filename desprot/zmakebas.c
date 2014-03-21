@@ -140,18 +140,18 @@ char *tokens[]=
 
 #ifdef MSDOS
 #define MAX_LABELS  500
-char filebuf[32768];
+unsigned char filebuf[32768];
 char infile[256],outfile[256];
 #else
 #define MAX_LABELS  2000
-char filebuf[49152];
+unsigned char filebuf[49152];
 char infile[1024],outfile[1024];
 #endif
 
 #define MAX_LABEL_LEN	16
 
 /* this is needed for tap files too: */
-char headerbuf[17];
+unsigned char headerbuf[17];
 
 int output_tap=1,use_labels=0;
 unsigned int startline=0x8000;
@@ -159,10 +159,10 @@ int autostart=10,autoincr=2;
 char speccy_filename[11];
 
 int labelend=0;
-char labels[MAX_LABELS][MAX_LABEL_LEN+1];
+unsigned char labels[MAX_LABELS][MAX_LABEL_LEN+1];
 int label_lines[MAX_LABELS];
 
-char startlabel[MAX_LABEL_LEN+1];
+unsigned char startlabel[MAX_LABEL_LEN+1];
 
 
 #ifndef HAVE_GETOPT
@@ -319,10 +319,10 @@ return(1);
 }
 
 
-unsigned long grok_hex(char **ptrp,int textlinenum)
+unsigned long grok_hex(unsigned char **ptrp,int textlinenum)
 {
 static char *hexits="0123456789abcdefABCDEF",*lookup;
-char *ptr=*ptrp;
+unsigned char *ptr=*ptrp;
 unsigned long v=0,n;
 
 /* we know the number starts with "0x" and we're pointing to it */
@@ -347,10 +347,10 @@ return(v);
 }
 
 
-unsigned long grok_binary(char **ptrp,int textlinenum)
+unsigned long grok_binary(unsigned char **ptrp,int textlinenum)
 {
 unsigned long v=0;
-char *ptr=*ptrp;
+unsigned char *ptr=*ptrp;
 
 while(isspace(*ptr)) ptr++;
 
@@ -416,7 +416,7 @@ do
         if(strlen(optarg+1)>MAX_LABEL_LEN)
           fprintf(stderr,"Auto-start label too long\n"),exit(1);
         else
-          strcpy(startlabel,optarg+1);
+          strcpy((char *)startlabel,optarg+1);
       else
         {
         startline=(unsigned int)atoi(optarg);
@@ -488,7 +488,7 @@ if(optind==argc-1)	/* one remaining arg */
 }
 
 
-int grok_block(char *ptr,int textlinenum)
+int grok_block(unsigned char *ptr,int textlinenum)
 {
 static char *lookup[]=
   {
@@ -501,7 +501,7 @@ int f=128,v=-1;
             
 for(lptr=lookup;*lptr!=NULL;lptr++,f++)
   {
-  if(strncmp(ptr+1,*lptr,2)==0)
+  if(strncmp((char *)ptr+1,*lptr,2)==0)
     {
     v=f;
     break;
@@ -522,13 +522,13 @@ return(v);
 int main(int argc,char *argv[])
 {
 #ifdef MSDOS
-static char buf[512],lcasebuf[512],outbuf[1024];
+static unsigned char buf[512],lcasebuf[512],outbuf[1024];
 #else
-static char buf[2048],lcasebuf[2048],outbuf[4096];
+static unsigned char buf[2048],lcasebuf[2048],outbuf[4096];
 #endif
 int f,toknum,toklen,linenum,linelen,in_quotes,in_rem,lastline;
 char **tarrptr;
-char *ptr,*ptr2,*linestart,*outptr,*remptr,*fileptr,*asciiptr;
+unsigned char *ptr,*ptr2,*linestart,*outptr,*remptr,*fileptr,*asciiptr;
 double num;
 int num_exp;
 unsigned long num_mantissa,num_ascii;
@@ -563,13 +563,13 @@ do
     exit(1);
     }
   
-  while(fgets(buf+1,sizeof(buf)-1,in)!=NULL)
+  while(fgets((char *)buf+1,sizeof(buf)-1,in)!=NULL)
     {
     buf[0]=32;		/* just in case, for all the ptr[-1] stuff */
     textlinenum++;
     lastline=linenum;
     
-    if(buf[strlen(buf)-1]=='\n') buf[strlen(buf)-1]=0;
+    if(buf[strlen((char *)buf)-1]=='\n') buf[strlen((char *)buf)-1]=0;
     
     /* allow for (shell-style) comments which don't appear in the program,
      * and also ignore blank lines.
@@ -577,15 +577,15 @@ do
     if(buf[1]==0 || buf[1]=='#') continue;
     
     /* check for line continuation */
-    while(buf[strlen(buf)-1]=='\\')
+    while(buf[strlen((char *)buf)-1]=='\\')
       {
-      f=strlen(buf)-1;
-      fgets(buf+f,sizeof(buf)-f,in);
+      f=strlen((char *)buf)-1;
+      fgets((char *)buf+f,sizeof(buf)-f,in);
       textlinenum++;
-      if(buf[strlen(buf)-1]=='\n') buf[strlen(buf)-1]=0;
+      if(buf[strlen((char *)buf)-1]=='\n') buf[strlen((char *)buf)-1]=0;
       }
     
-    if(strlen(buf)>=sizeof(buf)-MAX_LABEL_LEN-1)
+    if(strlen((char *)buf)>=sizeof(buf)-MAX_LABEL_LEN-1)
       {
       /* this is nasty, but given how the label substitution works it's
        * probably the safest thing to do.
@@ -615,7 +615,7 @@ do
         fprintf(stderr,"line %d: missing line number\n",textlinenum);
         exit(1);
         }
-      linenum=(int)strtol(ptr,(char **)&linestart,10);
+      linenum=(int)strtol((char *)ptr,(char **)&linestart,10);
     
       if(linenum<=lastline)
         {
@@ -644,7 +644,7 @@ do
     
     if(use_labels && *linestart=='@')
       {
-      if((ptr=strchr(linestart,':'))==NULL)
+      if((ptr=(unsigned char *)strchr((char *)linestart,':'))==NULL)
         {
         fprintf(stderr,"line %d: incomplete token definition\n",textlinenum);
         exit(1);
@@ -658,14 +658,14 @@ do
         {
         *ptr=0;
         label_lines[labelend]=linenum;
-        strcpy(labels[labelend++],linestart+1);
+        strcpy((char *)labels[labelend++],(char *)linestart+1);
         if(labelend>=MAX_LABELS)
           {
           fprintf(stderr,"line %d: too many labels\n",textlinenum);
           exit(1);
           }
         for(f=0;f<labelend-1;f++)
-          if(strcmp(linestart+1,labels[f])==0)
+          if(strcmp((char *)linestart+1,(char *)labels[f])==0)
             {
             fprintf(stderr,"iine %d: attempt to redefine label\n",textlinenum);
             exit(1);
@@ -714,7 +714,7 @@ do
      */
     remptr=NULL;
     
-    if((ptr=strstr(lcasebuf,"rem"))!=NULL &&
+    if((ptr=(unsigned char *)strstr((char *)lcasebuf,"rem"))!=NULL &&
        !isalpha(ptr[-1]) && !isalpha(ptr[3]))
       {
       ptr2=linestart+(ptr-lcasebuf);
@@ -735,7 +735,7 @@ do
       if(**tarrptr==0) continue;
       toklen=strlen(*tarrptr);
       ptr=lcasebuf;
-      while((ptr=strstr(ptr,*tarrptr))!=NULL)
+      while((ptr=(unsigned char *)strstr((char *)ptr,*tarrptr))!=NULL)
         {
         /* check it's not in the middle of a word etc., except for
          * <>, <=, >=.
@@ -775,7 +775,7 @@ do
        */
       
       ptr=linestart;
-      while((ptr=strchr(ptr,'@'))!=NULL)
+      while((ptr=(unsigned char *)strchr((char *)ptr,'@'))!=NULL)
         {
         if(ptr[-1]=='\\')
           {
@@ -793,23 +793,23 @@ do
         ptr++;
         for(f=0;f<labelend;f++)
           {
-          int len=strlen(labels[f]);
+          int len=strlen((char *)labels[f]);
           if(memcmp(labels[f],ptr,len)==0 &&
             (ptr[len]<33 || ptr[len]>126 || ptr[len]==':'))
             {
-            char numbuf[20];
+            unsigned char numbuf[20];
             
             /* this could be optimised to use a single memmove(), but
              * at least this way it's clear(er) what's happening.
              */
             /* switch text for label. first, remove text */
-            memmove(ptr-1,ptr+len,strlen(ptr+len)+1);
+            memmove(ptr-1,ptr+len,strlen((char *)ptr+len)+1);
             /* make number string */
-            sprintf(numbuf,"%d",label_lines[f]);
-            len=strlen(numbuf);
+            sprintf((char *)numbuf,"%d",label_lines[f]);
+            len=strlen((char *)numbuf);
             /* insert room for number string */
             ptr--;
-            memmove(ptr+len,ptr,strlen(ptr)+1);
+            memmove(ptr+len,ptr,strlen((char *)ptr)+1);
             memcpy(ptr,numbuf,len);
             ptr+=len;
             break;
@@ -865,7 +865,7 @@ do
               break;
             case '{': /* directly specify output code */
               /* find end of number */
-              asciiptr=strchr(ptr+2,'}');
+              asciiptr=(unsigned char *)strchr((char *)ptr+2,'}');
               if(asciiptr==NULL)
                 {
                 fprintf(stderr,
@@ -874,7 +874,7 @@ do
                 exit(1);
                 }
               /* parse number in decimal, octal or hex */
-              num_ascii=strtoul(ptr+2, NULL, 0);
+              num_ascii=strtoul((char *)ptr+2, NULL, 0);
               if(num_ascii<0 || num_ascii>255)
                 {
                 fprintf(stderr,
@@ -910,7 +910,7 @@ do
         {
         if(ptr[-1]!=BIN_TOKEN_NUM)
           /* we have a number. parse with strtod(). */
-          num=strtod(ptr,(char **)&ptr2);
+          num=strtod((char *)ptr,(char **)&ptr2);
         else
           {
           /* however, if the number was after a BIN token, the inline
@@ -983,7 +983,7 @@ if(*startlabel)
     fprintf(stderr,"Auto-start label specified, but not using labels!\n"),
       exit(1);
   for(f=0;f<labelend;f++)
-    if(strcmp(startlabel,labels[f])==0)
+    if(strcmp((char *)startlabel,(char *)labels[f])==0)
       {
       startline=label_lines[f]; break;
       }
@@ -1005,7 +1005,7 @@ if(output_tap)
   headerbuf[0]=0;
   for(f=strlen(speccy_filename);f<10;f++)
     speccy_filename[f]=32;
-  strncpy(headerbuf+1,speccy_filename,10);
+  strncpy((char *)headerbuf+1,speccy_filename,10);
   headerbuf[11]=(siz&255);
   headerbuf[12]=(siz/256);
   headerbuf[13]=(startline&255);
