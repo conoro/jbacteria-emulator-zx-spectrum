@@ -26986,7 +26986,7 @@ n26bd   ld      a, 0
 n26ca   push    ix
         pop     hl
         push    bc
-        ld      bc, $003f
+        ld      bc, mmcdata
         inir
         nop
         inir
@@ -27034,7 +27034,7 @@ n2710   ld      a, $58
         ld      a, $fe
         out     (mmcdata), a
         push    bc
-        ld      bc, $003f
+        ld      bc, mmcdata
         push    hl
         push    ix
         pop     hl
@@ -29487,7 +29487,7 @@ n383b   call    n3868
 n384a   ld      (hl), a
         inc     hl
         djnz    n384a
-        ld      bc, $003f
+        ld      bc, mmcdata
         jr      n3833
 n3853   ld      (hl), $ed
         inc     l
