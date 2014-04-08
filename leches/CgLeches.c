@@ -89,7 +89,7 @@ int main(int argc, char* argv[]){
     ft= fopen("_tmp.tap", "wb+");
     fwrite(in+1, 1, length-2, ft);
     fclose(ft);
-    sprintf(command, "leches %d %s tmp.%s %02x %d %d 100 %d _tmp.tap > null\n", frequency,
+    sprintf(command, "leches %d %s tmp.%s %02x %d %d 100 %d _tmp.tap > nul\n", frequency,
             channel_type-1 ? (channel_type-2?"stereoinv":"stereo") : "mono",
             ext, in[0], velo, offset, in[0] ? 2000 : 200);
     if( system(command) )
