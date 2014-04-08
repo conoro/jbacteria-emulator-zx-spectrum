@@ -161,7 +161,6 @@ int main(int argc, char* argv[]){
   outbits( 2 );
   outbits( mlow ? 4 : 8 );
   flag= refconf | strtol(argv[4], NULL, 16)<<8 | checksum<<16;
- printf("%x,%x,%x, %x", atoi(argv[6]), checksum, strtol(argv[4], NULL, 16), flag);
   for ( j= 0; j<24; j++, flag<<= 1 )
     outbits( k= flag&0x800000 ? 4 : 8 ),
     outbits( k );

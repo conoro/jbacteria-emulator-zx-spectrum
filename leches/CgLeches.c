@@ -4,15 +4,15 @@
   #define strcasecmp stricmp
 #endif
 
-FILE *fi, *fo;
+FILE *fi, *fo, *ft;
 unsigned char in[0x10000], mem[0x20000];
-int tlength;
+int i, j, k, tlength;
 unsigned short length, param, frequency= 44100;
-char tzx= 0, wav= 0, channel_type= 1, velo= 3, offset= 0, *command, *ext;
+char tzx= 0, wav= 0, channel_type= 1, velo= 3, offset= 0, command[0x100], *ext;
 int main(int argc, char* argv[]){
   if( argc==1 )
     printf("\n"
-    "CgLeches v0.02, an ultra load block generator by Antonio Villena, 18 Feb 2014\n\n"
+    "CgLeches v0.99, an ultra load block generator by Antonio Villena, 8 Apr 2014\n\n"
     "  CgLeches <ifile> <ofile> [speed] [channel_type] [srate] [offset]\n\n"
     "  <ifile>        TAP input file, mandatory\n"
     "  <ofile>        Output file, between TZX or WAV file, mandatory\n"
@@ -64,11 +64,9 @@ int main(int argc, char* argv[]){
   if( !strcasecmp((char *)strchr(argv[2], '.'), ".tzx" ) )
     fprintf( fo, "ZXTape!" ),
     *(int*)mem= 0xa011a,
-    fwrite(mem, ++tzx, 3, fo),
-    mem[0]= 0x10;
+    fwrite(mem, ++tzx, 3, fo);
   else if( !strcasecmp((char *)strchr(argv[2], '.'), ".wav" ) ){
     memset(mem, wav++, 44);
-//    memset(precalc, 128, 0x200000);
     *(int*)mem= 0x46464952;
     *(int*)(mem+8)= 0x45564157;
     *(int*)(mem+12)= 0x20746d66;
@@ -84,23 +82,54 @@ int main(int argc, char* argv[]){
   else
     printf("\nInvalid file extension: %s\n", argv[2]),
     exit(-1);
-
-  command= (char *) malloc (0x100);
-  sprintf(command, "leches %d %s tmp.%s %x %s ", frequency,
-          channel_type-1 ? (channel_type-2?"stereoinv":"stereo") : "mono",
-          ++ext, argv[1]);
-/*  argc-= k;
-  while( k-- )
-    strcat(command, " "),
-    strcat(command, argv++[2]);*/
-
-
-  printf("%i %s\n", tlength, command);
+  ext++;
   while ( tlength ){
     fread(&length, 1, 2, fi);
     fread(in, 1, length, fi);
+    ft= fopen("_tmp.tap", "wb+");
+    fwrite(in+1, 1, length-2, ft);
+    fclose(ft);
+    sprintf(command, "leches %d %s tmp.%s %02x %d %d 100 %d _tmp.tap > null\n", frequency,
+            channel_type-1 ? (channel_type-2?"stereoinv":"stereo") : "mono",
+            ext, in[0], velo, offset, in[0] ? 2000 : 200);
+    if( system(command) )
+      printf("\nError: leches.exe not found \n"),
+      exit(-1);
+    else{
+      sprintf(command, "tmp.%s", ext);
+      ft= fopen(command, "rb");
+      if( ft ){
+        if( tzx )
+          fseek(ft, 0, SEEK_END),
+          i= ftell(ft)-10,
+          fseek(ft, 10, SEEK_SET);
+        else
+          fread(mem, 1, 44, ft),
+          i= *(int*)(mem+40);
+        j= i>>16;
+        k= i&0xffff;
+        for ( int i= 0; i<j; i++ )
+          fread(in, 1, 0x10000, ft),
+          fwrite(in, 1, 0x10000, fo);
+        fread(in, 1, k, ft);
+        fwrite(in, 1, k, fo);
+        fclose(ft);
+      }
+      else
+        printf("\nError: plug doesn't generate valid file\n"),
+        exit(-1);
+    }
     tlength-= 2+length;
-    printf("%i, ", length);
   }
-
+  if( remove(command) || remove("_tmp.tap") )
+    printf("\nError: deleting \n"),
+    exit(-1);
+  if( wav )
+    i= ftell(fo)-8,
+    fseek(fo, 4, SEEK_SET),
+    fwrite(&i, 4, 1, fo),
+    i-= 36,
+    fseek(fo, 40, SEEK_SET),
+    fwrite(&i, 4, 1, fo);
+  fclose(fo);
 }

@@ -18689,8 +18689,8 @@ ULTR4:  CP      16              ; si el contador esta entre 10 y 16 es el tono g
         EXX
         LD      H,$01           ; leo 8 bits en HL
         CALL    L39E9
-        LD      A,L
-        LD      IXL,A
+        PUSH    HL
+        POP     IX
         POP     DE              ; recupero en DE la direccion de comienzo del bloque
         INC     C               ; pongo en flag Z el signo del pulso
         LD      BC,$EFFE        ; este valor es el que necesita B para entrar en Raudo
@@ -18704,26 +18704,13 @@ ULT55:  LD      H,$33
 ULTR6:  IN      F,(C)
         JP      PO,ULTR6
         CALL    L3403           ; salto a Raudo
-ULTR7:  LD      A,B
-        CP      $7F
-        JR      Z,ULT75
-        RRCA
-        RRCA
-        RRCA
-        RRCA
-        AND     $0F
-        ADD     A,$30
-        RST     $10
-        LD      A,B
-        AND     $0F
-        ADD     A,$30
-        RST     $10
-ULT75:  EXX                     ; ya se ha acabado la ultracarga (Raudo)
+ULTR7:  EXX                     ; ya se ha acabado la ultracarga (Raudo)
         LD      B,E
         LD      E,C
         LD      C,D
-        XOR     A
-        CP      B
+        LD      A,IXH
+        INC     B
+        DEC     B
         JR      Z,ULTR8
         INC     C
 ULTR8:  XOR     (HL)
@@ -18742,7 +18729,10 @@ ULTR8:  XOR     (HL)
         SCF
         RET
 
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF; 8 bytes
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF; 26 bytes
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF;
 
 ; ------------------------
 ; THE 'MODULUS' SUBROUTINE 
@@ -20736,7 +20726,7 @@ L3D00:  DEFB    %00000000
 ; Antonio Villena           for CgLeches rest of code.
 
 ; CgLeches modification: The file assembles well in sjasmplus, delete
-; or comment the first directive "OUTPUT 48.rom" and conditional assembly
+; or comment the first directive "OUTPUT leches.rom" and conditional assembly
 ; directives "IFDEF,ELSE,ENDIF" if you have problems with your assembler.
 
 ; Bytes Location
@@ -20749,8 +20739,8 @@ L3D00:  DEFB    %00000000
 ; 30    33c2
 ; 30    3880
 ; 4     38fd
-; 8     39f9
+; 26    39f9
 ; 206   3af2
 ; 285   3be1
 ;-----
-; 627 bytes
+; 645 bytes
