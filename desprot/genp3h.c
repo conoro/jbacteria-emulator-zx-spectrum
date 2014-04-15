@@ -6,11 +6,12 @@ int main(int argc, char* argv[]){
   int i, length;
   unsigned short param;
   if( argc==1 )
-    printf("\ngenp3h v0.01, generates the PLUS3DOS header by Antonio Villena 2012-12-27\n\n"),
-    printf("  genp3h <target_file>  [ basic <startline> | hdata <address> ]\n\n"),
-    printf("  <target_file>  Origin and target file\n"),
-    printf("  <startline>    In decimal, first BASIC line to execute\n"),
-    printf("  <address>      In hexadecimal, address of the binary block\n\n"),
+    printf("\n"
+    "genp3h v0.01, generates the PLUS3DOS header by Antonio Villena 2012-12-27\n\n"
+    "  genp3h <target_file>  [ basic <startline> | hdata <address> ]\n\n"
+    "  <target_file>  Origin and target file\n"
+    "  <startline>    In decimal, first BASIC line to execute\n"
+    "  <address>      In hexadecimal, address of the binary block\n\n"),
     exit(0);
   fi= fopen(argv[1], "rb+");
   if( !fi )

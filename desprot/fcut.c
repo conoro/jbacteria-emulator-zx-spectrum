@@ -4,15 +4,16 @@ int main(int argc, char* argv[]){
   FILE *fi, *fo;
   long start, length, size, length_hi, length_lo;
   if( argc==1 )
-    printf("\nfcut v0.99, a File Hexadecimal Cutter by Antonio Villena, 01 Dec 2012\n\n"),
-    printf("  fcut <input_file> <start> <length> <output_file>\n\n"),
-    printf("  <input_file>   Origin file to cut\n"),
-    printf("  <start>        In hexadecimal, is the start offset of the segment\n"),
-    printf("  <length>       In hexadecimal, is the length of the segment\n"),
-    printf("  <output_file>  Genetated output file\n\n"),
-    printf("All params are mandatory. If <start> is negative, it's assumed a negative offset\n"),
-    printf("from the end of the file. If <length> is negative, the result length will be the\n"),
-    printf("file size minus that parameter.\n"),
+    printf("\n"
+    "fcut v0.99, a File Hexadecimal Cutter by Antonio Villena, 01 Dec 2012\n\n"
+    "  fcut <input_file> <start> <length> <output_file>\n\n"
+    "  <input_file>   Origin file to cut\n"
+    "  <start>        In hexadecimal, is the start offset of the segment\n"
+    "  <length>       In hexadecimal, is the length of the segment\n"
+    "  <output_file>  Genetated output file\n\n"
+    "All params are mandatory. If <start> is negative, it's assumed a negative offset\n"
+    "from the end of the file. If <length> is negative, the result length will be the\n"
+    "file size minus that parameter.\n"),
     exit(0);
   if( argc!=5 )
     printf("\nInvalid number of parameters\n"),
