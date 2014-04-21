@@ -17028,8 +17028,7 @@ L33BF:  IN      L,(C)
 
 
       IFDEF pokemon
-pok22   ld      (hl), e
-        pop     hl
+pok22   pop     hl
         ld      ($5c78), hl
         ld      sp, $57e0
         pop     af
@@ -18828,6 +18827,7 @@ pok21   ld      (hl), a
         dec     l
         ld      (hl), d
         dec     l
+        ld      (hl), e
         jp      pok22
       ELSE
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF; 26 bytes
