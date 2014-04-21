@@ -1,3 +1,4 @@
+        DEFINE  easy
         DEFINE  copymsg
         DEFINE  resetplay
 
@@ -473,7 +474,7 @@ L0095:  DEFB    '?'+$80
         DEFB    'E'+$80
         DEFM    "DI"
         DEFB    'M'+$80
-        DEFM    "RE"
+REMTO:  DEFM    "RE"
         DEFB    'M'+$80
         DEFM    "FO"
         DEFB    'R'+$80
@@ -514,7 +515,7 @@ L0095:  DEFB    '?'+$80
         DEFB    'R'+$80
         DEFM    "RETUR"
         DEFB    'N'+$80
-        DEFM    "COP"
+CPYTO:  DEFM    "COP"
         DEFB    'Y'+$80
 
 ; ----------------
@@ -5817,11 +5818,15 @@ L12AC:  LD      A,$00           ; select channel 'K' the keyboard
 
         CALL    L1601           ; routine CHAN-OPEN opens it
 
+      IFDEF easy
+        call    NEWED           ;+ Call the New Editor.
+      ELSE
         CALL    L0F2C           ; routine EDITOR is called.
                                 ; Note the above routine is where the Spectrum
                                 ; waits for user-interaction. Perhaps the
                                 ; most common input at this stage
                                 ; is LOAD "".
+      ENDIF
 
         CALL    L1B17           ; routine LINE-SCAN scans the input.
 
@@ -5846,15 +5851,26 @@ L12AC:  LD      A,$00           ; select channel 'K' the keyboard
 ; the branch was here if syntax has passed test.
 
 ;; MAIN-3
-L12CF:  LD      HL,($5C59)      ; fetch the edit line address from E_LINE.
+L12CF:;  LD      HL,($5C59)      ; fetch the edit line address from E_LINE.
 
-        LD      ($5C5D),HL      ; system variable CH_ADD is set to first
+;        LD      ($5C5D),HL      ; system variable CH_ADD is set to first
                                 ; character of edit line.
                                 ; Note. the above two instructions are a little
                                 ; inadequate. 
                                 ; They are repeated with a subtle difference 
                                 ; at the start of the next subroutine and are 
                                 ; therefore not required above.
+      IFDEF easy
+        nop
+        nop
+        ld      (iy+$07), 0     ;+ Set MODE to 'KLC' ( not extended or graph)
+      ELSE
+        jp      L12D5
+        nop
+        nop
+        nop
+L12D5:
+      ENDIF
 
         CALL    L19FB           ; routine E-LINE-NO will fetch any line
                                 ; number to BC if this is a program line.
@@ -7294,12 +7310,24 @@ L1881:  PUSH    DE              ; save flag E for a return value.
         EX      DE,HL           ; save HL address in DE.
         RES     2,(IY+$30)      ; update FLAGS2 - signal NOT in QUOTES.
 
+      IFDEF easy
+        call    IMPOSE
+        jp      L1894
+        nop
+        nop
+        nop
+        nop
+        nop
+        nop
+        nop
+      ELSE
         LD      HL,$5C3B        ; point to FLAGS.
         RES     2,(HL)          ; signal 'K' mode. (starts before keyword)
         BIT     5,(IY+$37)      ; test FLAGX - input mode ?
         JR      Z,L1894         ; forward to OUT-LINE4 if not.
 
         SET     2,(HL)          ; signal 'L' mode. (used for input)
+      ENDIF
 
 ;; OUT-LINE4
 L1894:  LD      HL,($5C5F)      ; fetch X_PTR - possibly the error pointer
@@ -7546,9 +7574,14 @@ L1937:  CALL    L2D1B           ; routine NUMERIC tests if it is a digit ?
         CP      $21             ; less than quote character ?
         JR      C,L196C         ; to OUT-CH-3 to output controls and space.
 
+      IFDEF easy
+        call    IMPOSE
+        nop
+      ELSE
         RES     2,(IY+$01)      ; initialize FLAGS to 'K' mode and leave
                                 ; unchanged if this character would precede
                                 ; a keyword.
+      ENDIF
 
         CP      $CB             ; is character 'THEN' token ?
         JR      Z,L196C         ; to OUT-CH-3 to output if so.
@@ -19611,7 +19644,204 @@ L3BCA:  DEFB    $31             ;;duplicate       v,v.
 
         DEFB    'CgLeches'
 
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF; 277 bytes
+      IFDEF easy
+; -----
+; NEWED
+; -----
+;   The new editor sets flags that allow the old editor to be called to enter
+;   lower-case text.
+
+NEWED:  res     3, (iy+$02)     ;
+        call    IMPOSE          ; Set flags. HL addresses System Variable FLAGS
+        dec     l               ; Points to ERR_NR
+        ld      (hl), $ff       ; Set to 'OK'
+        call    L0F2C           ; Original EDITOR prepares line
+        bit     5, (iy+$30)     ; Test NEW FLAG
+        ret     nz              ; Return if not set
+
+;   Otherwise continue into the tokenizer that converts text to tokens.
+
+; ---------------
+; THE 'TOKENIZER'
+; ---------------
+;   Note the tokenizer should not tokenize anything after rem
+;   Also no keywords within quotes although this is normally permissible.
+;   keywords in any order e.g. 'AT', 'ATTR', 'ATN'
+;   print pi is taken as the constant and not a variable pi
+;   REM is treated separately first.
+;   Then COPY down to RND.
+;   REM is done again as its easier to just process than avoid.
+;   Spaces in goto and deffn are optional.
+
+        ld      de, REMTO       ; Start of 'REM' in ROM token table.
+        xor     a               ; A zero detects first pass for 'REM'
+NEWTOK: push    de              ; The same token may be repeated many times.
+        pop     ix              ; Save token table position in IX
+        ld      hl, ($5C59)     ; Get edit line start from E_LINE.
+CHAR0:  push    af              ; Preserve the token number on the stack.
+        ld      bc, 0           ; Flag that previous character is non-alpha
+CHAR1:  push    ix              ; Transfer the start of current token
+        pop     de              ; to the DE register.
+L3:     ld      a, (hl)         ; Get edit line character.
+        cp      $0d             ; Carriage return?
+        jr      z, EOL          ; End of edit line - next token
+        cp      $EA             ; Is token REM ?
+        jr      z, EOL          ; Treat same as end of line - no more tokens.
+        cp      $22             ; Is this quote character
+        jr      nz, NOQ         ; Skip if not to no quotes
+        inc     c               ; Increment quotes flag toggling bit 0.
+NOQ:    bit     0, c            ; Within quotes?
+        jr      nz, SKIP        ; Forward if so to repeat loop
+        call    UCASE           ; Make uppercase sets carry if alpha
+        jr      nc, NOT_AZ      ; Forward if not A-Z
+
+;   If this is alpha then previous must not be to avoid 'INT' in 'PRINT' etc.
+
+        bit     7, b            ; Is previous alpha?
+        jr      nz, SKIP        ; Forward if previous is alpha to ignore
+NOT_AZ: ex      de, hl          ; Switch in first character of token
+        cp      (hl)            ; Is there a match
+        ex      de, hl          ; Switch out.
+        jr      z, MATCH1       ; Forward if first character matches.
+SKIP:   inc     hl              ; Address next character in edit line
+        jr      L3              ; Back - check next character against 1st char.
+
+;   The first characters match.
+                
+MATCH1: ld      ($5cac), hl     ; Store position within 
+INTRA:  inc     hl              ; Increment edit line pointer.
+        ld      a, (hl)         ; Next BASIC character.
+        call    UCASE           ; Make uppercase.
+        ex      af, af'         ; Create an entry point.
+INTRA2: ex      af, af'         ; Start of loop for internal characters
+        inc     de              ; Point to next character in token
+        ex      de, hl          ; 
+        cp      (hl)            ; compare with token - intra?
+        ex      de, hl          ;
+        jr      z, INTRA        ; loop while token characters match
+
+;   If DE is a space then allow to be skipped now e.g. 'goto' and 'GO TO'
+
+        ex      af, af'         ; Save the edit line character.
+        ld      a, (de)         ; Fetch the token character to A.
+        cp      $20             ; Is it a space?
+        jr      z, INTRA2       ; Consider next token character if so.
+
+;   First check for a '.' which indicates an abbreviated keyword.  
+;   as suggested by Andrew Owen 18-OCT-2004 
+
+        ex      af, af'         ; Retrieve the edit line character.
+        cp      $2e             ; Is it an abbreviation i.e. '.' ?
+        jr      z, CHKSP        ; substitute straight away
+
+;   The only possibility now is the terminating character of token.
+
+        ex      de, hl          ; Switch in token
+        or      $80             ; Set bit 7
+        cp      (hl)            ; Is character inverted?
+        ex      de, hl          ; Switch out.
+
+;   If not go back and reset pointer (DE) to the start of the current token
+;   and continue until the end of this line.
+
+        jr      nz, CHAR1       ; Back to start at char 1 again
+                
+;   All the characters matched including the final inverted one.
+;   Examine the last character for a valid non-alpha as in 'val$a$'
+
+        cp      $40+$80         ; Is it <> or STR$ or OPEN # etc.
+        jr      c, SUBST        ; Good enough - skip the alpha test
+
+;   A full match - but check the next character and reclaim if space.
+;   Note. do not remove! This prevents hidden spaces in listing!
+;   Also don't substitute if next is alpha. e.g. 'AT' in 'ATN'.
+;   Also FOR in FORMAT.  Also no substitution if next is '$' 
+;   e.g. VAL in VAL$ credit. Andrew Owen.
+
+CHKSP:  inc     hl              ; Advance to next character in edit line.
+        ld      a, (hl)         ; Get following character in A.
+        cp      $20             ; Is it a space ?
+        jr      z, SUBST        ; Forward, if so, replacing letters AND space.
+        dec     hl              ; points to last character of token.
+        cp      $24             ; is it '$' ? e.g. VAL within VAL$
+        jr      z, CHAR1        ; abandon as could be token within token.
+        call    L2C8D           ; Call ROM routine ALPHA
+        jr      c, CHAR1        ; Start again if next char is alpha
+                                ; e.g. 'AT' in 'ATN'
+
+;   A full match - accumulator on stack gives token.
+;   For convenience we will not reclaim the last character as the new token
+;   which is a single character can go there.
+
+SUBST:  ld      de, ($5cac)     ; First character of token in edit line
+BAKT:   dec     de              ; Harvest any leading spaces
+        ld      a, (de)
+        cp      $20
+        jr      z, BAKT
+        inc     de              ; Back to first character of keyword.
+        call    L19E5           ; Use ROM routine RECLAIM-1
+
+;   HL points to empty cell, token (AF) is on stack.
+
+        pop     af              ; Retrieve token
+        push    ix              ; Transfer address within token table
+        pop     de              ; to the DE register.
+
+;   The next two lines apply only when parsing the special REM table.
+;   The normal table is at the start of ROM, the secondary table is at the end.
+
+        bit     5, d            ; Test high byte of table address.
+        ret     nz              ; Return if not standard keywords to NEWREM
+        ld      (hl), a         ; Insert the token and test it.
+        and     a               ; Will be zero if on first pass for REM
+        jr      nz, CHAR0       ; Else look for more of the same token
+
+;  There can only be one token REM in a line.
+
+        ld      (hl), $ea       ; Substitute the REM token. No more tokenization 
+        push    af              ; After the 'REM' token don't loop back.
+
+; End of BASIC line - do next token down in table.
+
+EOL:    ld      de, CPYTO       ; set to  START of COPY in case first REM pass.
+        pop     af              ; Restore token.
+        sub     $01             ; Decrement but set carry if originally zero.
+        jr      c, NXTTOK       ; Will point to new token cluster so go.
+        cp      $a4             ; RND -1 
+        ret     z               ; Finished if so
+        push    ix              ; Have to work down to find the start of the previous token
+        pop     hl
+NXTT:   dec     hl              ; Known inverted end of previous
+LLOOP:  dec     hl              ;
+        bit     7, (hl)         ; inverted?
+        jr      z, LLOOP        ;
+        inc     hl              ; point to first char.
+        ex      de, hl          ; token position to DE
+NXTTOK: jp      NEWTOK          ; back to process next token
+UCASE:  call    L2C8D           ;+ ROM routine ALPHA.
+        ld      b, c            ;+ prev to B
+        ld      c, 0            ;+ set flag to non-alpha initially
+        ret     nc              ;+ return with >= etc.
+        res     5, a            ;+ make uppercase alpha.
+        set     7, c            ;+ invert flag if alpha
+        ret                     ;+ Return.
+
+; -------------------------------------------------------------------------
+;  Impose flags on secondary flags. It is OK to use HL register. (20 bytes)
+; -------------------------------------------------------------------------
+
+IMPOSE: ld      hl, $5c3b       ; point to FLAGS. (IY+$01)
+        set     3, (hl)         ; permant flag 'L' mode
+        set     2, (hl)         ; temporary flag built up by line
+        bit     5, (iy+$30)     ; Test NEW FLAG
+        ret     z               ; Leave as 'L'
+        bit     5, (iy+$37)     ; test FLAGX - input mode ?
+        ret     nz              ; Leave as 'L' if in input state
+        res     3,(hl)          ; set permanent flag to 'K'
+        res     2,(hl)          ; set transient flag to 'K'
+        ret                     ; Return
+      ELSE
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF; 211 bytes
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
@@ -19637,6 +19867,9 @@ L3BCA:  DEFB    $31             ;;duplicate       v,v.
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF;
+      ENDIF
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF; 68 bytes
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
@@ -19644,8 +19877,7 @@ L3BCA:  DEFB    $31             ;;duplicate       v,v.
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF;
 
 ; -------------------------------
 ; THE 'ZX SPECTRUM CHARACTER SET'
