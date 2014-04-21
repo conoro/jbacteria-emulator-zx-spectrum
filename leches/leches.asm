@@ -1,6 +1,8 @@
         DEFINE  easy
         DEFINE  copymsg
         DEFINE  resetplay
+        DEFINE  pokemon
+        define  CADEN   $5800-6
 
         OUTPUT  leches.rom
 
@@ -245,6 +247,15 @@ L0055:  LD      (IY+$00),L      ; Store it in the system variable ERR_NR.
 L005F:  DEFB    $FF, $FF, $FF   ; Unused locations
         DEFB    $FF, $FF, $FF   ; before the fixed-position
         DEFB    $FF             ; NMI routine.
+      IFDEF pokemon
+        ld      (CADEN-2), sp
+        ld      sp, CADEN-13-1
+        push    af
+        push    bc
+        push    de
+        push    hl
+        jp      poke
+      ELSE
 L0066:  PUSH    AF              ; save the
         PUSH    HL              ; registers.
         LD      HL,($5CB0)      ; fetch the system variable NMIADD.
@@ -259,6 +270,7 @@ L0066:  PUSH    AF              ; save the
 L0070:  POP     HL              ; restore the
         POP     AF              ; registers.
         RETN                    ; return to previous interrupt state.
+      ENDIF
 
 ; ---------------------------
 ; THE 'CH ADD + 1' SUBROUTINE
@@ -1462,8 +1474,24 @@ L046E:  DEFB    $89, $02, $D0, $12, $86;  261.625565290         C
 ;   This routine fetches a filename in ZX81 format and is not used by the 
 ;   cassette handling routines in this ROM.
 
+      IFDEF pokemon
+pok20   di
+        ldir
+        ld      hl, $5805
+        ld      a, (hl)
+        and     $f8
+        ld      c, a
+        rra
+        rra
+        rra
+        dec     l
+        and     $07
+        or      c
+        ld      c, l
+        ld      de, $5803
+        jp      pok21
+      ELSE
 ;; zx81-name
-
 L04AA:  CALL    L24FB           ; routine SCANNING to evaluate expression.
         LD      A,($5C3B)       ; fetch system variable FLAGS.
         ADD     A,A             ; test bit 7 - syntax, bit 6 - result type.
@@ -1485,6 +1513,7 @@ L04AA:  CALL    L24FB           ; routine SCANNING to evaluate expression.
                                 ; and also clear carry.
         SET     7,(HL)          ; invert it.
         RET                     ; return.
+      ENDIF
 
 ; =========================================
 ;
@@ -5388,7 +5417,7 @@ L11A7:  LD      A,(HL)          ; fetch character
 ;   available to store 3 persistent 16-bit system variables.
 
 ;; NEW
-      IFDEF resetplay
+    IFDEF resetplay
 L11B7:  DI                      ; Disable Interrupts - machine stack will be
                                 ; cleared.
         LD      HL,($5CB2)      ; Fetch RAMTOP as top value.
@@ -5579,13 +5608,10 @@ L1201:  LD      ($5CB2),HL      ; set system variable RAMTOP to HL.
 
         JR      L1303-11        ; jump to one instruction before MAIN-4
 
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF; 32 bytes
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFM    'Reset&Play, Antonio Villena 2012'; 32 bytes
 
 L129D:  DEFB    $EF, $22, $22, $0D, $80; LOAD "" + Enter + $80
-      ELSE
+    ELSE
 L11B7:  DI                      ; Disable Interrupts - machine stack will be
                                 ; cleared.
         LD      A,$FF           ; Flag coming from NEW.
@@ -5798,7 +5824,7 @@ L121C:
                                 ; require clearing.
 
         JR      L12A9           ; forward to MAIN-1
-      ENDIF
+    ENDIF
 ; -------------------------
 ; THE 'MAIN EXECUTION LOOP'
 ; -------------------------
@@ -16740,8 +16766,13 @@ L32A9:  DEFB    $38             ;;end-calc              -4.
 
         RET                     ; return.
 
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF; 12 bytes
-        DEFB    $FF, $FF, $FF, $FF;
+      IFDEF pokemon
+tab01   defb    $ff, $00, $00, $00, $ff, $00, $00, $00, $00, $23, $05
+      ELSE
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+      ENDIF
+
+        DEFB    $FF; 1 byte
 
 ; ----------------------
 ; THE 'TANGENT' FUNCTION
@@ -16995,10 +17026,28 @@ L3302:  PUSH    DE              ; save
 L33BF:  IN      L,(C)
         JP      (HL)
 
-        DEFB    $2E, $2F, $30, $31, $32, $33, $34, $35; 30 bytes
-        DEFB    $36, $37, $38, $39, $3A, $3B, $3C, $3D;
-        DEFB    $3E, $3F, $40, $41, $42, $43, $44, $45;
-        DEFB    $46, $47, $48, $49, $4A, $4B;
+
+      IFDEF pokemon
+pok22   ld      (hl), e
+        pop     hl
+        ld      ($5c78), hl
+        ld      sp, $57e0
+        pop     af
+        ex      af, af'
+        pop     iy
+        pop     hl
+        pop     de
+        pop     bc
+        pop     af
+        ld      sp, (CADEN-2)
+        retn
+        DEFM    'PokemonAV'; 9 bytes
+      ELSE
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF; 30 bytes
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF;
+      ENDIF
 
 ; ------------------------
 ; THE 'TABLE OF CONSTANTS'
@@ -18762,10 +18811,31 @@ ULTR8:  XOR     (HL)
         SCF
         RET
 
+      IFDEF pokemon
+pok21   ld      (hl), a
+        lddr
+        pop     de
+        ld      hl, $5c41
+        ld      (hl), d
+        ld      l, $3b
+        ld      (hl), e
+        pop     de
+        ld      l, $91
+        ld      a, e
+        ld      i, a
+        ld      (hl), d
+        pop     de
+        dec     l
+        ld      (hl), d
+        dec     l
+        jp      pok22
+      ELSE
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF; 26 bytes
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF;
+        DEFB    $FF, $FF
+      ENDIF
+
 
 ; ------------------------
 ; THE 'MODULUS' SUBROUTINE 
@@ -18878,7 +18948,8 @@ L38F8:  RST     28H             ;; FP-CALC
 
         RET                     ; return.
 
-        DEFB    $FF, $FF, $FF, $FF; 4 bytes
+        DEFM    'AV'; 2 bytes
+        DEFB    $FF, $FF;
 
 ; --------------------------------
 ; THE 'NATURAL LOGARITHM' FUNCTION 
@@ -19235,7 +19306,8 @@ L39E9:  LD      B,0             ; 16 bytes
         JR      NC,L39E9
         RET
 
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF; 8 bytes
+        DEFB    'leches'; 6 bytes
+        DEFB    $FF, $FF;
 
 ;****************************************
 ;** Part 10. FLOATING-POINT CALCULATOR **
@@ -19536,7 +19608,139 @@ L3AE6:  PUSH    DE              ; save STKEND
         POP     HL              ; original STKEND is now RESULT pointer.
         RET                     ; return.
 
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF; 206 bytes
+      IFDEF pokemon
+poke    ld      bc, 11
+        push    iy
+        ld      iy, $5c3a
+        ld      hl, $5c78
+        defb    $11, $ff, $ff
+        ex      af, af'
+        push    af
+        ld      sp, $5700
+        ld      e, (hl)
+        inc     l
+        ld      d, (hl)
+        ld      (hl), b
+        push    de
+        ld      l, $8f
+        ld      e, (hl)
+        ld      (hl), $39
+        inc     l
+        ld      d, (hl)
+        ld      (hl), b
+        push    de
+        inc     l
+        ld      a, i
+        ld      e, a
+        ld      a, $18
+        ld      ($57ec), a
+        ld      i, a
+        ld      d, (hl)
+        ld      (hl), b
+        push    de
+        ld      l, $3b
+        ld      e, (hl)
+        ld      (hl), 8
+        ld      l, $41
+        ld      d, (hl)
+        ld      (hl), b
+        push    de
+        ld      l, b
+        ld      de, CADEN-13
+        ldir
+        ex      de, hl
+        ld      hl, tab01+10
+        ld      c, e
+        dec     e
+        lddr
+        push    bc
+        ld      hl, CADEN
+        xor     a
+        ei
+pok01   ld      (hl), 1
+        inc     l
+        jr      nz, pok01
+        or      a
+pok02   ld      l, CADEN & $ff
+        ld      (hl), l
+pok03   ld      de, CADEN+1
+        jr      z, pok04
+        ld      (de), a
+        ld      (hl), 2
+pok04   ld      hl, $4000
+        ld      b, $5
+pok05   ld      a, (de)
+        push    de
+        ex      de, hl
+        ld      l, a
+        ld      h, 7
+        add     hl, hl
+        inc     h
+        add     hl, hl
+        add     hl, hl
+        ex      de, hl
+        call    $0b99
+        pop     de
+        inc     de
+        djnz    pok05
+        ld      hl, $5c3b
+pok06   bit     5, (hl)
+        jr      z, pok06
+        res     5, (hl)
+        ld      a, ($5c08)
+        or      $20
+        ld      hl, CADEN
+        ld      c, (hl)
+        cp      $2d
+        jr      z, pok13
+        jr      nc, pok07
+        dec     (hl)
+        jr      z, pok07
+        xor     a
+        dec     c
+        dec     (hl)
+pok07   inc     (hl)
+        jp      m, pok01
+        add     hl, bc
+        ld      (hl), a
+        xor     a
+        jr      pok03
+pok08   inc     l
+pok09   sub     10
+pok10   inc     (hl)
+        jr      nc, pok09
+        inc     l
+pok11   add     a, 10+$30
+pok12   ld      (hl), a
+        xor     a
+        inc     l
+        jr      nz, pok12
+        jr      pok02
+pok13   dec     c
+        jp      m, pok19
+        ld      b, c
+        ex      de, hl
+        ld      h, l
+pok14   inc     e
+        ld      a, (de)
+        and     $0f
+        push    bc
+        add     hl, hl
+        ld      b, h
+        ld      c, l
+        add     hl, hl
+        add     hl, hl
+        add     hl, bc
+        ld      b, 0
+        ld      c, a
+        add     hl, bc
+        pop     bc
+        djnz    pok14
+        ld      a, l
+        bit     2, c
+        jp      pok15
+      ELSE
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF; 204 bytes
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
@@ -19561,8 +19765,8 @@ L3AE6:  PUSH    DE              ; save STKEND
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF;
-
+        DEFB    $FF, $FF, $FF, $FF;
+      ENDIF
 ; ------------------------------
 ; THE 'SERIES GENERATOR' ROUTINE
 ; ------------------------------
@@ -19642,8 +19846,6 @@ L3BCA:  DEFB    $31             ;;duplicate       v,v.
         RET                     ; return with H'L' pointing to location
                                 ; after last number in series.
 
-        DEFB    'CgLeches'
-
       IFDEF easy
 ; -----
 ; NEWED
@@ -19678,12 +19880,16 @@ NEWED:  res     3, (iy+$02)     ;
 NEWTOK: push    de              ; The same token may be repeated many times.
         pop     ix              ; Save token table position in IX
         ld      hl, ($5C59)     ; Get edit line start from E_LINE.
-CHAR0:  push    af              ; Preserve the token number on the stack.
-        ld      bc, 0           ; Flag that previous character is non-alpha
+CHAR0:  ld      b, 0
+        jr      CHAR05
+        defb    $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff
+        defb    $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff
+CHAR05: push    af              ; Preserve the token number on the stack.
+        ld      c, b
 CHAR1:  push    ix              ; Transfer the start of current token
         pop     de              ; to the DE register.
 L3:     ld      a, (hl)         ; Get edit line character.
-        cp      $0d             ; Carriage return?
+L4:     cp      $0d             ; Carriage return?
         jr      z, EOL          ; End of edit line - next token
         cp      $EA             ; Is token REM ?
         jr      z, EOL          ; Treat same as end of line - no more tokens.
@@ -19794,7 +20000,7 @@ BAKT:   dec     de              ; Harvest any leading spaces
         ret     nz              ; Return if not standard keywords to NEWREM
         ld      (hl), a         ; Insert the token and test it.
         and     a               ; Will be zero if on first pass for REM
-        jr      nz, CHAR0       ; Else look for more of the same token
+        jp      nz, CHAR0       ; Else look for more of the same token
 
 ;  There can only be one token REM in a line.
 
@@ -19841,7 +20047,7 @@ IMPOSE: ld      hl, $5c3b       ; point to FLAGS. (IY+$01)
         res     2,(hl)          ; set transient flag to 'K'
         ret                     ; Return
       ELSE
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF; 211 bytes
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF; 231 bytes
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
@@ -19867,17 +20073,53 @@ IMPOSE: ld      hl, $5c3b       ; point to FLAGS. (IY+$01)
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF;
       ENDIF
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF; 68 bytes
+
+      IFDEF pokemon
+pok15   jr      z, pok18
+        pop     bc
+pok16   push    hl
+        ld      a, (hl)
+        ex      (sp), hl
+        ld      hl, CADEN+2
+        ld      (hl), $2f
+        dec     l
+        ld      (hl), $32
+        sub     200
+        jp      nc, pok08
+        dec     (hl)
+        add     a, 100
+        jr      pok17
+        jp      $0038
+pok17   jp      c, pok08
+        dec     (hl)
+        dec     (hl)
+        add     a, 90
+        jp      nc, pok11
+        ccf
+        jp      pok10
+pok18   pop     hl
+        ld      (hl), a
+        inc     hl
+        jr      pok16
+pok19   pop     hl
+        ld      c, 11
+        ld      hl, CADEN-13
+        ld      de, $5c00
+        jp      pok20
+      ELSE
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF; 58 bytes
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF;
+      ENDIF
 
 ; -------------------------------
 ; THE 'ZX SPECTRUM CHARACTER SET'
@@ -20956,23 +21198,3 @@ L3D00:  DEFB    %00000000
 ; Andrew Owen               for ZASM compatibility and format improvements.
 ; Francisco Villa           for CgLeches main ultraloader code.
 ; Antonio Villena           for CgLeches rest of code.
-
-; CgLeches modification: The file assembles well in sjasmplus, delete
-; or comment the first directive "OUTPUT leches.rom" and conditional assembly
-; directives "IFDEF,ELSE,ENDIF" if you have problems with your assembler.
-
-; Bytes Location
-; 5     0013
-; 3     0025
-; 5     002b
-; 7     005f
-; 32    127d
-; 12    32ab
-; 30    33c2
-; 30    3880
-; 4     38fd
-; 26    39f9
-; 206   3af2
-; 285   3be1
-;-----
-; 645 bytes
