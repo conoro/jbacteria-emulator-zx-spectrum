@@ -1475,21 +1475,19 @@ L046E:  DEFB    $89, $02, $D0, $12, $86;  261.625565290         C
 ;   cassette handling routines in this ROM.
 
       IFDEF pokemon
-pok20   di
+pok19   pop     hl
+        ld      c, 11
+        ld      hl, CADEN-13
+        ld      de, $5c00
         ldir
+        di
         ld      hl, $5805
         ld      a, (hl)
         and     $f8
         ld      c, a
         rra
         rra
-        rra
-        dec     l
-        and     $07
-        or      c
-        ld      c, l
-        ld      de, $5803
-        jp      pok21
+        jp      pok20
       ELSE
 ;; zx81-name
 L04AA:  CALL    L24FB           ; routine SCANNING to evaluate expression.
@@ -17028,7 +17026,15 @@ L33BF:  IN      L,(C)
 
 
       IFDEF pokemon
-pok22   pop     hl
+pok21   ld      a, e
+        ld      i, a
+        ld      (hl), d
+        pop     de
+        dec     l
+        ld      (hl), d
+        dec     l
+        ld      (hl), e
+        pop     hl
         ld      ($5c78), hl
         ld      sp, $57e0
         pop     af
@@ -17040,7 +17046,6 @@ pok22   pop     hl
         pop     af
         ld      sp, (CADEN-2)
         retn
-        DEFM    'PokemonAV'; 9 bytes
       ELSE
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF; 30 bytes
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
@@ -18811,7 +18816,13 @@ ULTR8:  XOR     (HL)
         RET
 
       IFDEF pokemon
-pok21   ld      (hl), a
+pok20   rra
+        dec     l
+        and     $07
+        or      c
+        ld      c, l
+        ld      de, $5803
+        ld      (hl), a
         lddr
         pop     de
         ld      hl, $5c41
@@ -18820,15 +18831,7 @@ pok21   ld      (hl), a
         ld      (hl), e
         pop     de
         ld      l, $91
-        ld      a, e
-        ld      i, a
-        ld      (hl), d
-        pop     de
-        dec     l
-        ld      (hl), d
-        dec     l
-        ld      (hl), e
-        jp      pok22
+        jp      pok21
       ELSE
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF; 26 bytes
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
@@ -20079,9 +20082,13 @@ IMPOSE: ld      hl, $5c3b       ; point to FLAGS. (IY+$01)
       ENDIF
 
       IFDEF pokemon
-pok15   jr      z, pok18
-        pop     bc
-pok16   push    hl
+pok15   jr      nz, pok16
+        pop     hl
+        ld      (hl), a
+        inc     hl
+        defb    $3e
+pok16   pop     bc
+        push    hl
         ld      a, (hl)
         ex      (sp), hl
         ld      hl, CADEN+2
@@ -20089,27 +20096,19 @@ pok16   push    hl
         dec     l
         ld      (hl), $32
         sub     200
-        jp      nc, pok08
-        dec     (hl)
-        add     a, 100
+        jr      nc, pok18
         jr      pok17
         jp      $0038
-pok17   jp      c, pok08
+pok17   dec     (hl)
+        sub     -100
+pok18   jp      nc, pok08
         dec     (hl)
         dec     (hl)
         add     a, 90
         jp      nc, pok11
         ccf
         jp      pok10
-pok18   pop     hl
-        ld      (hl), a
-        inc     hl
-        jr      pok16
-pok19   pop     hl
-        ld      c, 11
-        ld      hl, CADEN-13
-        ld      de, $5c00
-        jp      pok20
+        DEFM    "PokemonAV 2013"; 14 bytes
       ELSE
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF; 58 bytes
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
