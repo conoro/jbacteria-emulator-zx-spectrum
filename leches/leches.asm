@@ -248,13 +248,12 @@ L005F:  DEFB    $FF, $FF, $FF   ; Unused locations
         DEFB    $FF, $FF, $FF   ; before the fixed-position
         DEFB    $FF             ; NMI routine.
       IFDEF pokemon
-        ld      (CADEN-2), sp
-        ld      sp, CADEN-13-1
         push    af
-        push    bc
-        push    de
-        push    hl
-        jp      poke
+        ld      a, ($5c8f)
+        cp      $39
+        jp      nz, poke
+        pop     af
+        ret
       ELSE
 L0066:  PUSH    AF              ; save the
         PUSH    HL              ; registers.
@@ -268,9 +267,9 @@ L0066:  PUSH    AF              ; save the
 
 ;; NO-RESET
 L0070:  POP     HL              ; restore the
+      ENDIF
         POP     AF              ; registers.
         RETN                    ; return to previous interrupt state.
-      ENDIF
 
 ; ---------------------------
 ; THE 'CH ADD + 1' SUBROUTINE
@@ -1475,19 +1474,20 @@ L046E:  DEFB    $89, $02, $D0, $12, $86;  261.625565290         C
 ;   cassette handling routines in this ROM.
 
       IFDEF pokemon
-pok19   pop     hl
-        ld      c, 11
-        ld      hl, CADEN-13
+pok21   pop     hl
+        ld      hl, CADEN-15
         ld      de, $5c00
         ldir
-        di
         ld      hl, $5805
         ld      a, (hl)
-        and     $f8
-        ld      c, a
         rra
         rra
-        jp      pok20
+        rra
+        xor     (hl)
+        and     %00000111
+        xor     (hl)
+        dec     l
+        jp      pok22
       ELSE
 ;; zx81-name
 L04AA:  CALL    L24FB           ; routine SCANNING to evaluate expression.
@@ -17026,11 +17026,7 @@ L33BF:  IN      L,(C)
 
 
       IFDEF pokemon
-pok21   ld      a, e
-        ld      i, a
-        ld      (hl), d
-        pop     de
-        dec     l
+pok23   dec     l
         ld      (hl), d
         dec     l
         ld      (hl), e
@@ -17043,9 +17039,12 @@ pok21   ld      a, e
         pop     hl
         pop     de
         pop     bc
+        ld      a, r
+        jp      p, pok24
+        ei
+pok24   ld      sp, (CADEN-2)
         pop     af
-        ld      sp, (CADEN-2)
-        retn
+        ret
       ELSE
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF; 30 bytes
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
@@ -18816,13 +18815,9 @@ ULTR8:  XOR     (HL)
         RET
 
       IFDEF pokemon
-pok20   rra
-        dec     l
-        and     $07
-        or      c
-        ld      c, l
-        ld      de, $5803
+pok22   ld      c, l
         ld      (hl), a
+        ld      de, $5803
         lddr
         pop     de
         ld      hl, $5c41
@@ -18831,7 +18826,11 @@ pok20   rra
         ld      (hl), e
         pop     de
         ld      l, $91
-        jp      pok21
+        ld      a, e
+        ld      i, a
+        ld      (hl), d
+        pop     de
+        jp      pok23
       ELSE
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF; 26 bytes
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
@@ -19612,11 +19611,16 @@ L3AE6:  PUSH    DE              ; save STKEND
         RET                     ; return.
 
       IFDEF pokemon
-poke    ld      bc, 11
+poke    ld      (CADEN-2), sp
+        ld      sp, CADEN-15-1
+        push    bc
+        push    de
+        ld      bc, 11
+        defb    $11, $ff, $ff
+        push    hl
         push    iy
         ld      iy, $5c3a
         ld      hl, $5c78
-        defb    $11, $ff, $ff
         ex      af, af'
         push    af
         ld      sp, $5700
@@ -19636,7 +19640,9 @@ poke    ld      bc, 11
         ld      a, i
         ld      e, a
         ld      a, $18
-        ld      ($57ec), a
+        jp      po, pok01
+        ld      a, l
+pok01   ld      r, a
         ld      i, a
         ld      d, (hl)
         ld      (hl), b
@@ -19649,7 +19655,7 @@ poke    ld      bc, 11
         ld      (hl), b
         push    de
         ld      l, b
-        ld      de, CADEN-13
+        ld      de, CADEN-15
         ldir
         ex      de, hl
         ld      hl, tab01+10
@@ -19659,72 +19665,73 @@ poke    ld      bc, 11
         push    bc
         ld      hl, CADEN
         xor     a
-        ei
-pok01   ld      (hl), 1
+pok02   ld      (hl), 0
         inc     l
-        jr      nz, pok01
+        jr      nz, pok02
         or      a
-pok02   ld      l, CADEN & $ff
+pok03   ld      l, CADEN & $ff
         ld      (hl), l
-pok03   ld      de, CADEN+1
-        jr      z, pok04
+pok04   ld      de, CADEN+1
+        jr      z, pok05
         ld      (de), a
         ld      (hl), 2
-pok04   ld      hl, $4000
+pok05   ld      hl, $4000
         ld      b, $5
-pok05   ld      a, (de)
-        push    de
+pok06   push    de
         ex      de, hl
-        ld      l, a
-        ld      h, 7
+        ld      l, (hl)
         add     hl, hl
-        inc     h
+        ld      h, 15
         add     hl, hl
         add     hl, hl
         ex      de, hl
         call    $0b99
         pop     de
         inc     de
-        djnz    pok05
+        djnz    pok06
         ld      hl, $5c3b
-pok06   bit     5, (hl)
-        jr      z, pok06
+        ei
+pok07   bit     5, (hl)
+        jr      z, pok07
+        di
         res     5, (hl)
         ld      a, ($5c08)
         or      $20
         ld      hl, CADEN
         ld      c, (hl)
         cp      $2d
-        jr      z, pok13
-        jr      nc, pok07
+        jr      z, pok14
+        jr      nc, pok08
         dec     (hl)
-        jr      z, pok07
+        jr      z, pok08
         xor     a
         dec     c
         dec     (hl)
-pok07   inc     (hl)
-        jp      m, pok01
+pok08   inc     (hl)
+        jp      m, pok02
         add     hl, bc
         ld      (hl), a
         xor     a
-        jr      pok03
-pok08   inc     l
-pok09   sub     10
-pok10   inc     (hl)
-        jr      nc, pok09
+        jr      pok04
+pok09   inc     l
+pok10   sub     10
+pok11   inc     (hl)
+        jr      nc, pok10
         inc     l
-pok11   add     a, 10+$30
-pok12   ld      (hl), a
+pok12   add     a, 10+$30
+pok13   ld      (hl), a
         xor     a
         inc     l
-        jr      nz, pok12
-        jr      pok02
-pok13   dec     c
-        jp      m, pok19
-        ld      b, c
+        jr      nz, pok13
+        jr      pok03
+pok14   dec     c
+        jp      p, pok15
+        ld      c, 11
+        jp      pok21
+pok15   ld      b, c
         ex      de, hl
         ld      h, l
-pok14   inc     e
+pok16   inc     e
         ld      a, (de)
         and     $0f
         push    bc
@@ -19732,18 +19739,11 @@ pok14   inc     e
         ld      b, h
         ld      c, l
         add     hl, hl
-        add     hl, hl
-        add     hl, bc
-        ld      b, 0
-        ld      c, a
-        add     hl, bc
-        pop     bc
-        djnz    pok14
-        ld      a, l
-        bit     2, c
-        jp      pok15
+        jp      pok17
+        DEFB    'AVG'; 3 bytes
       ELSE
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF; 204 bytes
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF; 212 bytes
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
@@ -19880,14 +19880,13 @@ NEWED:  res     3, (iy+$02)     ;
 
         ld      de, REMTO       ; Start of 'REM' in ROM token table.
         xor     a               ; A zero detects first pass for 'REM'
+        jr      NEWTOK
+        defb    $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff
 NEWTOK: push    de              ; The same token may be repeated many times.
         pop     ix              ; Save token table position in IX
         ld      hl, ($5C59)     ; Get edit line start from E_LINE.
 CHAR0:  ld      b, 0
-        jr      CHAR05
-        defb    $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff
-        defb    $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff
-CHAR05: push    af              ; Preserve the token number on the stack.
+        push    af              ; Preserve the token number on the stack.
         ld      c, b
 CHAR1:  push    ix              ; Transfer the start of current token
         pop     de              ; to the DE register.
@@ -20050,8 +20049,7 @@ IMPOSE: ld      hl, $5c3b       ; point to FLAGS. (IY+$01)
         res     2,(hl)          ; set transient flag to 'K'
         ret                     ; Return
       ELSE
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF; 231 bytes
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF; 223 bytes
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
@@ -20082,33 +20080,42 @@ IMPOSE: ld      hl, $5c3b       ; point to FLAGS. (IY+$01)
       ENDIF
 
       IFDEF pokemon
-pok15   jr      nz, pok16
+pok17   add     hl, hl
+        add     hl, bc
+        ld      b, 0
+        ld      c, a
+        add     hl, bc
+        pop     bc
+        dec     b
+        jp      nz, pok16
+        ld      a, l
+        bit     2, c
+        jr      nz, pok18
         pop     hl
         ld      (hl), a
         inc     hl
         defb    $3e
-pok16   pop     bc
+pok18   pop     bc
         push    hl
-        ld      a, (hl)
+        jr      pok19
+        jp      $0038
+pok19   ld      a, (hl)
         ex      (sp), hl
         ld      hl, CADEN+2
         ld      (hl), $2f
         dec     l
         ld      (hl), $32
         sub     200
-        jr      nc, pok18
-        jr      pok17
-        jp      $0038
-pok17   dec     (hl)
+        jr      nc, pok20
+        dec     (hl)
         sub     -100
-pok18   jp      nc, pok08
+pok20   jp      nc, pok09
         dec     (hl)
         dec     (hl)
         add     a, 90
-        jp      nc, pok11
+        jp      nc, pok12
         ccf
-        jp      pok10
-        DEFM    "PokemonAV 2013"; 14 bytes
+        jp      pok11
       ELSE
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF; 58 bytes
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;

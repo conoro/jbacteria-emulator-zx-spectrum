@@ -12,20 +12,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-        defw    $0066, 14
-        ld      (CADEN-2), sp
-        ld      sp, CADEN-13-1
+        defw    $0066, 11
         push    af
-        push    bc
-        push    de
-        push    hl
-        jp      poke
+        ld      a, ($5c8f)
+        cp      $39
+        jp      nz, poke
+        pop     af
+        ret
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
         defw    poke, pokef-poke
         org     $38b5
-poke    ld      bc, 11
+poke    ld      (CADEN-2), sp
+        ld      sp, CADEN-15-1
+        push    bc
+        push    de
+        push    hl
+        ld      bc, 11
         push    iy
         ld      iy, $5c3a
         ex      af, af'
@@ -49,6 +53,9 @@ poke    ld      bc, 11
         ld      e, a
         ld      a, $18
         ld      ($57ec), a
+        jp      po, pok00
+        ld      a, l
+pok00   ld      r, a
         ld      i, a
         ld      d, (hl)
         ld      (hl), b
@@ -61,7 +68,9 @@ poke    ld      bc, 11
         ld      (hl), b
         push    de
         ld      l, b
-        ld      de, CADEN-13
+        jr      $+4
+        defb    $ff, $ff
+        ld      de, CADEN-15
         ldir
         ex      de, hl
         ld      hl, tab01+10
@@ -70,9 +79,7 @@ poke    ld      bc, 11
         lddr
         push    bc
         ld      hl, CADEN
-        defb    $ca, $ff, $ff
         xor     a
-        ei
 pok01   ld      (hl), 1
         inc     l
         jr      nz, pok01
@@ -100,8 +107,10 @@ pok05   ld      a, (de)
         inc     de
         djnz    pok05
         ld      hl, $5c3b
+        ei
 pok06   bit     5, (hl)
         jr      z, pok06
+        di
         res     5, (hl)
         ld      a, ($5c08)
         or      $20
@@ -183,23 +192,21 @@ pok16   pop     hl
         ld      (hl), a
         inc     hl
         jr      pok15
-pok17   halt
+pok17   ;halt
         ex      af, af'
-pok18   di
-        pop     hl
+pok18   pop     hl
         ld      c, 11
-        ld      hl, CADEN-13
+        ld      hl, CADEN-15
         ld      de, $5c00
         ldir
         ld      hl, $5805
         ld      a, (hl)
-        and     $f8
-        ld      c, a
         rra
         rra
         rra
-        and     $07
-        or      c
+        xor     (hl)
+        and     %00000111
+        xor     (hl)
         dec     l
         ld      c, l
         ld      (hl), a
@@ -227,13 +234,17 @@ pok18   di
 pok19   ld      sp, $57e0
         pop     af
         ex      af, af'
+        ld      a, ($ffff)
         pop     iy
         pop     hl
         pop     de
         pop     bc
+        ld      a, r
+        jp      p, pok20
+        ei
+pok20   ld      sp, (CADEN-2)
         pop     af
-        ld      sp, (CADEN-2)
-        retn
+        ret
 pokef
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -281,7 +292,7 @@ tab04   defb    $21, 0,   0,   $e5, $f1, $08, $01, 0,   0,   $11
 ;57f8       sp
 ;57ed-57f7  keyboard variables            5c00
 ;57ec       unused                        im
-;57ea       af
+;57ea       unused
 ;57e8       bc
 ;57e6       de
 ;57e4       hl
@@ -365,8 +376,6 @@ sav02   ld      hl, ($57f8)
         sbc     a, a
         call    $04c6
         ld      ix, ($56f1)
-;        ld      hl, ($56f4)   ;af
-;        ld      ($57ea), hl
         jp      pok19
 tablef
 
