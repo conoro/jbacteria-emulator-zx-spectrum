@@ -277,6 +277,27 @@ function paintUlap(){
   ct.putImageData(elm, 0, 0);
 }
 
+function paintRadas(){
+  for ( o= 0
+      , u= 0x4000
+      ; u < 0x5800
+      ; o+= 0x400)
+    for ( k= 0
+        ; k < 0x40
+        ; k++
+        , o+= 16)
+      col= m[u++],
+      t= ulap[col>>4],
+      eld[o  ]= eld[o+4]= eld[o+0x400]= eld[o+0x404]= t[0],
+      eld[o+1]= eld[o+5]= eld[o+0x401]= eld[o+0x405]= t[1],
+      eld[o+2]= eld[o+6]= eld[o+0x402]= eld[o+0x406]= t[2],
+      t= ulap[col&15],
+      eld[o+8 ]= eld[o+12]= eld[o+0x408]= eld[o+0x40c]= t[0],
+      eld[o+9 ]= eld[o+13]= eld[o+0x409]= eld[o+0x40d]= t[1],
+      eld[o+10]= eld[o+14]= eld[o+0x40a]= eld[o+0x40e]= t[2];
+  ct.putImageData(elm, 0, 0);
+}
+
 function wp(addr, val) {                // write port, only border color emulation
   if( ~addr & 1 ){
     if( (bor^val) & 0x10 )
@@ -301,7 +322,7 @@ function wp(addr, val) {                // write port, only border color emulati
     ula= val;
   else if( addr == 0xff3b ){
     if( ula==0x40 )
-      paintScreen= val&1 ? paintUlap : paintNormal;
+      paintScreen= val&1 ? (val&2?paintRadas:paintUlap) : paintNormal;
     else if( ula<0x40 )
       ulap[ula]= [parseInt((val>>2 & 7)*255/7), parseInt((val>>5)*255/7), parseInt((val&3)*255/3)],
       ula-8==bor&7 && (document.body.style.backgroundColor= 'rgb('+ulap[ula]+')');
