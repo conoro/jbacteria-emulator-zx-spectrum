@@ -252,8 +252,7 @@ L005F:  DEFB    $FF, $FF, $FF   ; Unused locations
         ld      a, ($5c8f)
         cp      $39
         jp      nz, poke
-        pop     af
-        ret
+        ld      a, 0
       ELSE
 L0066:  PUSH    AF              ; save the
         PUSH    HL              ; registers.

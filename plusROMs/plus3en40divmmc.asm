@@ -4,4 +4,5 @@
         define  garry   1
         define  mmcen   $e7
         define  mmcdata $eb
+        define  curkl   0
         include plus3.asm

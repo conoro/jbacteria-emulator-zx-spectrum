@@ -5,7 +5,7 @@
 ;        DEFINE  plus
 ;        DEFINE  spanish
 
-        OUTPUT  48.rom
+        OUTPUT  antleches.rom
 
 ;************************************************************************
 ;** An Assembly File Listing to generate a 16K ROM for the ZX Spectrum **

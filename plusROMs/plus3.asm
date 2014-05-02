@@ -1417,9 +1417,15 @@ l05e6   defb    $15
 ; The menu keys table
 
 l0626   defb    $04
+      IF curkl
+        defb    $6c             ; cursor up
+        defw    l07dc
+        defb    $6b             ; cursor down
+      ELSE
         defb    $0b             ; cursor up
         defw    l07dc
         defb    $0a             ; cursor down
+      ENDIF
         defw    l07df
         defb    $07             ; edit
         defw    l07c5
