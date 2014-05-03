@@ -321,9 +321,9 @@ int main(int argc, char* argv[]){
           *(char*)(mem+6)= 8;
           *(unsigned short*)(mem+7)= atoi(argv++[2]);
           if( fi )
-            length= fread(mem+20, 1, 0x20000-20, fi);
+            length= fread(mem+12, 1, 0x20000-12, fi);
           else
-            length= parseHex(argv[2], 20);
+            length= parseHex(argv[2], 12);
           *(unsigned short*)(mem+9)= length;
           *(unsigned char*)(mem+11)= length>>16;
           fwrite(mem+1, 1, length+11, fo);
