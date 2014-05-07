@@ -1472,22 +1472,6 @@ L046E:  DEFB    $89, $02, $D0, $12, $86;  261.625565290         C
 ;   This routine fetches a filename in ZX81 format and is not used by the 
 ;   cassette handling routines in this ROM.
 
-      IFDEF pokemon
-pok21   pop     hl
-        ld      hl, CADEN-15
-        ld      de, $5c00
-        ldir
-        ld      hl, $5805
-        ld      a, (hl)
-        rra
-        rra
-        rra
-        xor     (hl)
-        and     %00000111
-        xor     (hl)
-        dec     l
-        jp      pok22
-      ELSE
 ;; zx81-name
 L04AA:  CALL    L24FB           ; routine SCANNING to evaluate expression.
         LD      A,($5C3B)       ; fetch system variable FLAGS.
@@ -1510,7 +1494,6 @@ L04AA:  CALL    L24FB           ; routine SCANNING to evaluate expression.
                                 ; and also clear carry.
         SET     7,(HL)          ; invert it.
         RET                     ; return.
-      ENDIF
 
 ; =========================================
 ;
@@ -3541,7 +3524,7 @@ L0B93:  CP      C               ; this test is really for screen - new line ?
         CALL    Z,L0C55         ; routine PO-SCR considers scrolling
 
         POP     DE              ; restore source
-        PUSH    BC              ; save line/column
+L0B99   PUSH    BC              ; save line/column
         PUSH    HL              ; and destination
         LD      A,($5C91)       ; fetch P_FLAG to accumulator
         LD      B,$FF           ; prepare OVER mask in B.
@@ -17025,7 +17008,7 @@ L33BF:  IN      L,(C)
 
 
       IFDEF pokemon
-pok23   dec     l
+pok20   dec     l
         ld      (hl), d
         dec     l
         ld      (hl), e
@@ -17039,9 +17022,9 @@ pok23   dec     l
         pop     de
         pop     bc
         ld      a, r
-        jp      p, pok24
+        jp      p, pok21
         ei
-pok24   ld      sp, (CADEN-2)
+pok21   ld      sp, (CADEN-2)
         pop     af
         ret
       ELSE
@@ -18778,34 +18761,31 @@ ULTR4:  CP      16              ; si el contador esta entre 10 y 16 es el tono g
         POP     DE              ; recupero en DE la direccion de comienzo del bloque
         INC     C               ; pongo en flag Z el signo del pulso
         LD      BC,$EFFE        ; este valor es el que necesita B para entrar en Raudo
-        JP      Z,ULT55
+        JP      Z,ULTR6
         LD      H,$37
 ULTR5:  IN      F,(C)
         JP      PE,ULTR5
         CALL    L37C3           ; salto a Raudo segun el signo del pulso en flag Z
-        JR      ULTR7
-ULT55:  LD      H,$33
-ULTR6:  IN      F,(C)
-        JP      PO,ULTR6
+        JR      ULTR8
+ULTR6:  LD      H,$33
+ULTR7:  IN      F,(C)
+        JP      PO,ULTR7
         CALL    L3403           ; salto a Raudo
-ULTR7:  EXX                     ; ya se ha acabado la ultracarga (Raudo)
+ULTR8:  EXX                     ; ya se ha acabado la ultracarga (Raudo)
+        DEC     DE
         LD      B,E
-        LD      E,C
-        LD      C,D
-        LD      A,IXH
         INC     B
-        DEC     B
-        JR      Z,ULTR8
-        INC     C
-ULTR8:  XOR     (HL)
+        INC     D
+        LD      A,IXH
+ULTR9:  XOR     (HL)
         INC     HL
-        DJNZ    ULTR8
-        DEC     C
-        JP      NZ,ULTR8
+        DJNZ    ULTR9
+        DEC     D
+        JP      NZ,ULTR9
         PUSH    HL              ; ha ido bien
-        XOR     E
+        XOR     C
         LD      H,B
-        LD      L,E
+        LD      L,C
         LD      D,B
         LD      E,B
         POP     IX              ; IX debe apuntar al siguiente byte despues del bloque
@@ -18814,7 +18794,10 @@ ULTR8:  XOR     (HL)
         RET
 
       IFDEF pokemon
-pok22   ld      c, l
+pok19   and     %00000111
+        xor     (hl)
+        dec     l
+        ld      c, l
         ld      (hl), a
         ld      de, $5803
         lddr
@@ -18829,12 +18812,12 @@ pok22   ld      c, l
         ld      i, a
         ld      (hl), d
         pop     de
-        jp      pok23
+        jp      pok20
       ELSE
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF; 26 bytes
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF; 30 bytes
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF
       ENDIF
 
 
@@ -19609,246 +19592,22 @@ L3AE6:  PUSH    DE              ; save STKEND
         POP     HL              ; original STKEND is now RESULT pointer.
         RET                     ; return.
 
-      IFDEF pokemon
-poke    ld      (CADEN-2), sp
-        ld      sp, CADEN-15-1
-        push    bc
-        push    de
-        ld      bc, 11
-        defb    $11, $ff, $ff
-        push    hl
-        push    iy
-        ld      iy, $5c3a
-        ld      hl, $5c78
-        ex      af, af'
-        push    af
-        ld      sp, $5700
-        ld      e, (hl)
-        inc     l
-        ld      d, (hl)
-        ld      (hl), b
-        push    de
-        ld      l, $8f
-        ld      e, (hl)
-        ld      (hl), $39
-        inc     l
-        ld      d, (hl)
-        ld      (hl), b
-        push    de
-        inc     l
-        ld      a, i
-        ld      e, a
-        ld      a, $18
-        jp      po, pok01
-        ld      a, l
-pok01   ld      r, a
-        ld      i, a
-        ld      d, (hl)
-        ld      (hl), b
-        push    de
-        ld      l, $3b
-        ld      e, (hl)
-        ld      (hl), 8
-        ld      l, $41
-        ld      d, (hl)
-        ld      (hl), b
-        push    de
-        ld      l, b
-        ld      de, CADEN-15
-        ldir
-        ex      de, hl
-        ld      hl, tab01+10
-        ld      c, e
-        dec     e
-        lddr
-        push    bc
-        ld      hl, CADEN
-        xor     a
-pok02   ld      (hl), 0
-        inc     l
-        jr      nz, pok02
-        or      a
-pok03   ld      l, CADEN & $ff
-        ld      (hl), l
-pok04   ld      de, CADEN+1
-        jr      z, pok05
-        ld      (de), a
-        ld      (hl), 2
-pok05   ld      hl, $4000
-        ld      b, $5
-pok06   push    de
-        ex      de, hl
-        ld      l, (hl)
-        add     hl, hl
-        ld      h, 15
-        add     hl, hl
-        add     hl, hl
-        ex      de, hl
-        call    $0b99
-        pop     de
-        inc     de
-        djnz    pok06
-        ld      hl, $5c3b
-        ei
-pok07   bit     5, (hl)
-        jr      z, pok07
-        di
-        res     5, (hl)
-        ld      a, ($5c08)
-        or      $20
-        ld      hl, CADEN
-        ld      c, (hl)
-        cp      $2d
-        jr      z, pok14
-        jr      nc, pok08
-        dec     (hl)
-        jr      z, pok08
-        xor     a
-        dec     c
-        dec     (hl)
-pok08   inc     (hl)
-        jp      m, pok02
-        add     hl, bc
-        ld      (hl), a
-        xor     a
-        jr      pok04
-pok09   inc     l
-pok10   sub     10
-pok11   inc     (hl)
-        jr      nc, pok10
-        inc     l
-pok12   add     a, 10+$30
-pok13   ld      (hl), a
-        xor     a
-        inc     l
-        jr      nz, pok13
-        jr      pok03
-pok14   dec     c
-        jp      p, pok15
-        ld      c, 11
-        jp      pok21
-pok15   ld      b, c
-        ex      de, hl
-        ld      h, l
-pok16   inc     e
-        ld      a, (de)
-        and     $0f
-        push    bc
-        add     hl, hl
-        ld      b, h
-        ld      c, l
-        add     hl, hl
-        jp      pok17
-        DEFB    'AVG'; 3 bytes
-      ELSE
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF; 212 bytes
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF, $FF, $FF;
-      ENDIF
-; ------------------------------
-; THE 'SERIES GENERATOR' ROUTINE
-; ------------------------------
-; (offset: $86 'series-06')
-; (offset: $88 'series-08')
-; (offset: $8C 'series-0C')
-;   The Spectrum uses Chebyshev polynomials to generate approximations for
-;   SIN, ATN, LN and EXP.  These are named after the Russian mathematician
-;   Pafnuty Chebyshev, born in 1821, who did much pioneering work on numerical
-;   series.  As far as calculators are concerned, Chebyshev polynomials have an
-;   advantage over other series, for example the Taylor series, as they can
-;   reach an approximation in just six iterations for SIN, eight for EXP and
-;   twelve for LN and ATN.  The mechanics of the routine are interesting but
-;   for full treatment of how these are generated with demonstrations in
-;   Sinclair BASIC see "The Complete Spectrum ROM Disassembly" by Dr Ian Logan
-;   and Dr Frank O'Hara, published 1983 by Melbourne House.
-
-;; series-xx
-L3BC0:  LD      B,A             ; parameter $00 - $1F to B counter
-        CALL    L3410           ; routine GEN-ENT-1 is called.
-                                ; A recursive call to a special entry point
-                                ; in the calculator that puts the B register
-                                ; in the system variable BREG. The return
-                                ; address is the next location and where
-                                ; the calculator will expect its first
-                                ; instruction - now pointed to by HL'.
-                                ; The previous pointer to the series of
-                                ; five-byte numbers goes on the machine stack.
-
-; The initialization phase.
-
-        DEFB    $31             ;;duplicate       x,x
-        DEFB    $0F             ;;addition        x+x
-        DEFB    $C0             ;;st-mem-0        x+x
-        DEFB    $02             ;;delete          .
-        DEFB    $A0             ;;stk-zero        0
-        DEFB    $C2             ;;st-mem-2        0
-
-; a loop is now entered to perform the algebraic calculation for each of
-; the numbers in the series
-
-;; G-LOOP
-L3BCA:  DEFB    $31             ;;duplicate       v,v.
-        DEFB    $E0             ;;get-mem-0       v,v,x+2
-        DEFB    $04             ;;multiply        v,v*x+2
-        DEFB    $E2             ;;get-mem-2       v,v*x+2,v
-        DEFB    $C1             ;;st-mem-1
-        DEFB    $03             ;;subtract
-        DEFB    $38             ;;end-calc
-
-; the previous pointer is fetched from the machine stack to H'L' where it
-; addresses one of the numbers of the series following the series literal.
-
-        CALL    L3A85           ; routine STK-DATA is called directly to
-                                ; push a value and advance H'L'.
-        CALL    L3414           ; routine GEN-ENT-2 recursively re-enters
-                                ; the calculator without disturbing
-                                ; system variable BREG
-                                ; H'L' value goes on the machine stack and is
-                                ; then loaded as usual with the next address.
-
-        DEFB    $0F             ;;addition
-        DEFB    $01             ;;exchange
-        DEFB    $C2             ;;st-mem-2
-        DEFB    $02             ;;delete
-
-        DEFB    $35             ;;dec-jr-nz
-        DEFB    $EE             ;;back to L3BCA, G-LOOP
-
-; when the counted loop is complete the final subtraction yields the result
-; for example SIN X.
-
-        DEFB    $E1             ;;get-mem-1
-        DEFB    $03             ;;subtract
-        DEFB    $38             ;;end-calc
-
-        RET                     ; return with H'L' pointing to location
-                                ; after last number in series.
-
       IFDEF easy
+; -------------------------------------------------------------------------
+;  Impose flags on secondary flags. It is OK to use HL register. (20 bytes)
+; -------------------------------------------------------------------------
+
+IMPOSE: ld      hl, $5c3b       ; point to FLAGS. (IY+$01)
+        set     3, (hl)         ; permant flag 'L' mode
+        set     2, (hl)         ; temporary flag built up by line
+        bit     5, (iy+$30)     ; Test NEW FLAG
+        ret     z               ; Leave as 'L'
+        jp      z, $ffff
+        bit     5, (iy+$37)     ; test FLAGX - input mode ?
+        ret     nz              ; Leave as 'L' if in input state
+        res     3,(hl)          ; set permanent flag to 'K'
+        res     2,(hl)          ; set transient flag to 'K'
+        ret                     ; Return
 ; -----
 ; NEWED
 ; -----
@@ -19879,8 +19638,6 @@ NEWED:  res     3, (iy+$02)     ;
 
         ld      de, REMTO       ; Start of 'REM' in ROM token table.
         xor     a               ; A zero detects first pass for 'REM'
-        jr      NEWTOK
-        defb    $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff
 NEWTOK: push    de              ; The same token may be repeated many times.
         pop     ix              ; Save token table position in IX
         ld      hl, ($5C59)     ; Get edit line start from E_LINE.
@@ -20033,20 +19790,6 @@ UCASE:  call    L2C8D           ;+ ROM routine ALPHA.
         set     7, c            ;+ invert flag if alpha
         ret                     ;+ Return.
 
-; -------------------------------------------------------------------------
-;  Impose flags on secondary flags. It is OK to use HL register. (20 bytes)
-; -------------------------------------------------------------------------
-
-IMPOSE: ld      hl, $5c3b       ; point to FLAGS. (IY+$01)
-        set     3, (hl)         ; permant flag 'L' mode
-        set     2, (hl)         ; temporary flag built up by line
-        bit     5, (iy+$30)     ; Test NEW FLAG
-        ret     z               ; Leave as 'L'
-        bit     5, (iy+$37)     ; test FLAGX - input mode ?
-        ret     nz              ; Leave as 'L' if in input state
-        res     3,(hl)          ; set permanent flag to 'K'
-        res     2,(hl)          ; set transient flag to 'K'
-        ret                     ; Return
       ELSE
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF; 223 bytes
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
@@ -20078,52 +19821,292 @@ IMPOSE: ld      hl, $5c3b       ; point to FLAGS. (IY+$01)
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF;
       ENDIF
 
+; ------------------------------
+; THE 'SERIES GENERATOR' ROUTINE
+; ------------------------------
+; (offset: $86 'series-06')
+; (offset: $88 'series-08')
+; (offset: $8C 'series-0C')
+;   The Spectrum uses Chebyshev polynomials to generate approximations for
+;   SIN, ATN, LN and EXP.  These are named after the Russian mathematician
+;   Pafnuty Chebyshev, born in 1821, who did much pioneering work on numerical
+;   series.  As far as calculators are concerned, Chebyshev polynomials have an
+;   advantage over other series, for example the Taylor series, as they can
+;   reach an approximation in just six iterations for SIN, eight for EXP and
+;   twelve for LN and ATN.  The mechanics of the routine are interesting but
+;   for full treatment of how these are generated with demonstrations in
+;   Sinclair BASIC see "The Complete Spectrum ROM Disassembly" by Dr Ian Logan
+;   and Dr Frank O'Hara, published 1983 by Melbourne House.
+
+;; series-xx
+L3BC0:  LD      B,A             ; parameter $00 - $1F to B counter
+        CALL    L3410           ; routine GEN-ENT-1 is called.
+                                ; A recursive call to a special entry point
+                                ; in the calculator that puts the B register
+                                ; in the system variable BREG. The return
+                                ; address is the next location and where
+                                ; the calculator will expect its first
+                                ; instruction - now pointed to by HL'.
+                                ; The previous pointer to the series of
+                                ; five-byte numbers goes on the machine stack.
+
+; The initialization phase.
+
+        DEFB    $31             ;;duplicate       x,x
+        DEFB    $0F             ;;addition        x+x
+        DEFB    $C0             ;;st-mem-0        x+x
+        DEFB    $02             ;;delete          .
+        DEFB    $A0             ;;stk-zero        0
+        DEFB    $C2             ;;st-mem-2        0
+
+; a loop is now entered to perform the algebraic calculation for each of
+; the numbers in the series
+
+;; G-LOOP
+L3BCA:  DEFB    $31             ;;duplicate       v,v.
+        DEFB    $E0             ;;get-mem-0       v,v,x+2
+        DEFB    $04             ;;multiply        v,v*x+2
+        DEFB    $E2             ;;get-mem-2       v,v*x+2,v
+        DEFB    $C1             ;;st-mem-1
+        DEFB    $03             ;;subtract
+        DEFB    $38             ;;end-calc
+
+; the previous pointer is fetched from the machine stack to H'L' where it
+; addresses one of the numbers of the series following the series literal.
+
+        CALL    L3A85           ; routine STK-DATA is called directly to
+                                ; push a value and advance H'L'.
+        CALL    L3414           ; routine GEN-ENT-2 recursively re-enters
+                                ; the calculator without disturbing
+                                ; system variable BREG
+                                ; H'L' value goes on the machine stack and is
+                                ; then loaded as usual with the next address.
+
+        DEFB    $0F             ;;addition
+        DEFB    $01             ;;exchange
+        DEFB    $C2             ;;st-mem-2
+        DEFB    $02             ;;delete
+
+        DEFB    $35             ;;dec-jr-nz
+        DEFB    $EE             ;;back to L3BCA, G-LOOP
+
+; when the counted loop is complete the final subtraction yields the result
+; for example SIN X.
+
+        DEFB    $E1             ;;get-mem-1
+        DEFB    $03             ;;subtract
+        DEFB    $38             ;;end-calc
+
+        RET                     ; return with H'L' pointing to location
+                                ; after last number in series.
+
       IFDEF pokemon
-pok17   add     hl, hl
-        add     hl, bc
-        ld      b, 0
-        ld      c, a
-        add     hl, bc
-        pop     bc
-        dec     b
-        jp      nz, pok16
+poke    ld      (CADEN-2), sp
+        ld      sp, CADEN-15-1
+        push    bc
+        push    de
+        ld      bc, 11
+        push    hl
+        push    iy
+        ld      iy, $5c3a
+        jr      pok01
+        defb    $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff
+pok01   ld      hl, $5c78
+        ex      af, af'
+        push    af
+        ld      sp, $5700
+        ld      e, (hl)
+        inc     l
+        ld      d, (hl)
+        ld      (hl), b
+        push    de
+        ld      l, $8f
+        ld      e, (hl)
+        ld      (hl), $39
+        inc     l
+        ld      d, (hl)
+        ld      (hl), b
+        push    de
+        inc     l
+        ld      a, i
+        ld      e, a
+        ld      a, $18
+        jp      po, pok02
         ld      a, l
+pok02   ld      r, a
+        ld      i, a
+        ld      d, (hl)
+        ld      (hl), b
+        push    de
+        ld      l, $3b
+        ld      e, (hl)
+        ld      (hl), 8
+        ld      l, $41
+        ld      d, (hl)
+        ld      (hl), b
+        push    de
+        ld      l, b
+        ld      de, CADEN-15
+        ldir
+        ex      de, hl
+        ld      hl, tab01+10
+        ld      c, e
+        dec     e
+        lddr
+        push    bc
+        ld      hl, CADEN
+        xor     a
+pok03   ld      (hl), b
+pok04   inc     l
+        jr      nz, pok03
+        or      a
+        ld      l, CADEN & $ff
+        ld      (hl), l
+pok05   ld      de, CADEN+1
+        jr      z, pok06
+        ld      (de), a
+        ld      (hl), 2
+pok06   ld      hl, $4000
+        ld      b, 5
+pok07   push    de
+        ex      de, hl
+        ld      l, (hl)
+        add     hl, hl
+        ld      h, 15
+        add     hl, hl
+        add     hl, hl
+        ex      de, hl
+        call    L0B99
+        pop     de
+        inc     de
+        djnz    pok07
+        ld      hl, $5c3b
+        ei
+pok08   bit     5, (hl)
+        jr      z, pok08
+        di
+        res     5, (hl)
+        ld      a, ($5c08)
+        or      $20
+        ld      hl, CADEN
+        ld      c, (hl)
+        cp      $2d
+        jr      z, pok14
+        jr      nc, pok09
+        dec     (hl)
+        jr      z, pok09
+        xor     a
+        dec     c
+        dec     (hl)
+pok09   inc     (hl)
+        jp      m, pok03
+        add     hl, bc
+        ld      (hl), a
+        xor     a
+        jr      pok05
+pok10   inc     l
+pok11   add     a, -10
+pok12   inc     (hl)
+        jr      c, pok11
+        inc     l
+pok13   add     a, 10+$30
+        ld      (hl), a
+        xor     a
+        jr      pok04
+pok14   dec     c
+        jp      m, pok18
+        ld      b, c
+        ex      de, hl
+        ld      h, l
+pok15   inc     e
+        ld      a, (de)
+        and     $0f
+        push    bc
+        add     hl, hl
+        ld      b, h
+        ld      c, l
+        add     hl, hl
+        add     hl, hl
+        add     hl, bc
+        add     a, l
+        ld      l, a
+        jr      nc, pok16
+        inc     h
+pok16   pop     bc
+        djnz    pok15
         bit     2, c
-        jr      nz, pok18
-        pop     hl
+        pop     de
+        jr      nz, pok17
+        ex      de, hl
         ld      (hl), a
         inc     hl
-        defb    $3e
-pok18   pop     bc
-        push    hl
-        jr      pok19
-        jp      $0038
-pok19   ld      a, (hl)
-        ex      (sp), hl
+pok17   push    hl
+        ld      a, (hl)
         ld      hl, CADEN+2
         ld      (hl), $2f
         dec     l
         ld      (hl), $32
         sub     200
-        jr      nc, pok20
+        jr      nc, pok10
         dec     (hl)
         sub     -100
-pok20   jp      nc, pok09
+        jr      nc, pok10
         dec     (hl)
+        defb    $11
+        jp      $0038
         dec     (hl)
         add     a, 90
-        jp      nc, pok12
-        ccf
-        jp      pok11
+        jr      nc, pok13
+        jr      pok12
+pok18   ld      c, 11
+        pop     hl
+        ld      hl, CADEN-15
+        ld      de, $5c00
+        ldir
+        ld      hl, $5805
+        ld      a, (hl)
+        rra
+        rra
+        rra
+        xor     (hl)
+        jp      pok19
+        DEFB    'AV'; 2 bytes
       ELSE
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF; 58 bytes
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF; 270 bytes
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
-        DEFB    $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF
       ENDIF
 
 ; -------------------------------
