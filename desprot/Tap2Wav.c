@@ -34,7 +34,7 @@ int main(int argc, char* argv[]){
   if( argc==1 )
     printf("\n"
     "Tap2Wav v0.01, ZX Spectrum .TAP to .WAV file converter, 7 May 2014\n\n"
-    "  Tap2Wav [<frequency>] [<channel_type>] <output_file> [<output_file>]\n\n"
+    "  Tap2Wav [<frequency>] [<channel_type>] <input_file> [<output_file>]\n\n"
     "  <frequency>    Sample frequency, 44100 or 48000. Default is 44100\n"
     "  <channel_type> Possible values are: mono (default), stereo or stereoinv\n"
     "  <input_file>   Input TAP file\n"
