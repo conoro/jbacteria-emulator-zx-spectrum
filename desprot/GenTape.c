@@ -85,7 +85,7 @@ int main(int argc, char* argv[]){
   mem= (unsigned char *) malloc (0x20000);
   if( argc==1 )
     printf("\n"
-    "GenTape v0.20, a Tape File Generator by Antonio Villena, 20 Feb 2013\n\n"
+    "GenTape v0.21, a Tape File Generator by Antonio Villena, 12 May 2014\n\n"
     "  GenTape [<frequency>] [<channel_type>] <output_file>\n"
     "          [ basic <name> <startline> <input_file>\n"
     "          | hdata <name> <address>   <input_file>\n"
@@ -367,18 +367,18 @@ int main(int argc, char* argv[]){
       *strchr(argv[1], '-')= 0;
       command= (char *) malloc (0x100);
       sprintf(command, "%s %d %s tmp.%s", argv[1], frequency,
-              channel_type-1 ? (channel_type-2?"stereoinv":"stereo") : "mono", ++ext);
+              channel_type-1 ? (channel_type-2?"stereoinv":"stereo") : "mono", ext+1);
       argc-= k;
       while( k-- )
         strcat(command, " "),
         strcat(command, argv++[2]);
       if( system(command) )
-        printf("\nError: plug error with command:\n", command),
+        printf("\nError: plug error with command: %s\n", command),
         exit(-1);
       else{
         fwrite( precalc, 1, ind, fo );
         rem= ind= 0;
-        sprintf(command, "tmp.%s", ext);
+        sprintf(command, "tmp.%s", ext+1);
         fi= fopen(command, "rb");
         if( fi ){
           if( tzx )
