@@ -397,7 +397,7 @@ int main(int argc, char* argv[]){
           fwrite(precalc, 1, k, fo);
           fclose(fi);
           if( remove(command) )
-            printf("\nError: deleting \n", command),
+            printf("\nError: deleting %s\n", command),
             exit(-1);
         }
         else
