@@ -96,6 +96,7 @@ int main(int argc, char* argv[]){
     "          |  pure <zero_ts> <one_ts> <pause_ms> <input_file>\n"
     "          | turbo <pilot_ts> <syn1_ts> <syn2_ts> <zero_ts> <one_ts>\n"
     "                                 <pilot_ms> <pause_ms> <input_file>\n"
+    "          | stop48\n"
     "          | plug-xxx-N <param1> <param2> .. <paramN> ]\n\n"
     "  <output_file>  Target file, between TAP, TZX or WAV file\n"
     "  <name>         Up to 10 chars name between single quotes or in hexadecimal\n"
@@ -108,7 +109,8 @@ int main(int argc, char* argv[]){
     "                 Duration of pilot/pause after block in milliseconds\n"
     "  <M>            Number of pulses in the sequence of pulses\n"
     "  <pulseX_ts>    Length of X-th pulse in the sequence at 3.528MHz clock\n"
-    "  <plug-xxx-N>   External generator, must exists xxx.exe and accept N params\n\n"
+    "  <plug-xxx-N>   External generator, must exists xxx.exe and accept N params\n"
+    "  stop48         Only TZX. Signal end of tape on 48K machines\n\n"
     "  WAV options:\n"
     "      <frequency>    Sample frequency, 44100 or 48000. Default is 44100\n"
     "      <channel_type> Possible values are: mono (default), stereo or stereoinv\n\n"),
@@ -293,6 +295,14 @@ int main(int argc, char* argv[]){
       nextsilence= 0;
       argc-= k+1;
     }
+    else if( !strcasecmp(argv[1], "stop48")){
+      if( tzx )
+        mem[1]= 0x2a,
+        *(unsigned int*)(mem+2)= 0,
+        fwrite(mem+1, 1, 5, fo);
+      else
+        printf("\nWarning: stop48 does nothing in TAP or WAV files\n");
+    }
     else if( (turbo= !strcasecmp(argv[1], "turbo")) || !strcasecmp(argv[1], "pure") ){
       fi= fopen(argv[5+turbo*4], "rb");
       if( tzx ){
@@ -430,6 +440,7 @@ int main(int argc, char* argv[]){
           fseek(fo, length+1, SEEK_CUR);
           break;
         case 0x12:
+        case 0x2a:
           j= 0;
           fseek(fo, 4, SEEK_CUR);
           break;
