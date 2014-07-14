@@ -62,33 +62,19 @@ function init() {
   document.onkeypress= kpress;
   document.onresize= document.body.onresize= onresize;
   trein= 32000;
-  myrun= run;
-  if(typeof webkitAudioContext == 'function'){
-    cts= new webkitAudioContext();
+  if(typeof AudioContext == 'function'){
+    cts= new AudioContext();
     if( cts.sampleRate>44000 && cts.sampleRate<50000 )
       trein*= 50*1024/cts.sampleRate,
       paso= 69888/1024,
-      node= cts.createJavaScriptNode(1024, 1, 1),
+      node= cts.createScriptProcessor(1024, 1, 1),
       node.onaudioprocess= audioprocess,
       node.connect(cts.destination);
     else
-      interval= setInterval(myrun, 20);
+      interval= setInterval(run, 20);
   }
-  else{
-    if( typeof Audio == 'function'
-     && (audioOutput= new Audio())
-     && typeof audioOutput.mozSetup == 'function' ){
-      try{
-        audioOutput.mozSetup(1, 51200);
-        myrun= mozrun;
-      }
-      catch (e){}
-      paso= 69888/2048;
-      interval= setInterval(myrun, 20);
-    }
-    else
-      interval= setInterval(myrun, 20);
-  }
+  else
+    interval= setInterval(run, 20);
   self.focus();
 }
 

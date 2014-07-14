@@ -204,7 +204,7 @@ function kdown(ev) {
       }
       else{
         if( trein==32000 )
-          interval= setInterval(myrun, 20);
+          interval= setInterval(run, 20);
         else
           node.onaudioprocess= audioprocess;
         dv.style.display= he.style.display= 'none';
@@ -338,17 +338,6 @@ function audioprocess(e){
       data[j++]= 0;
 }
 
-function mozrun(){
-  run();
-  if( localStorage.ft & 4 ){
-    j= 0;
-    while( j<1248 )
-      aymute(),
-      data[j++]= aystep();
-    audioOutput.mozWriteAudio(data);
-  }
-}
-
 function rt(f){
   rm(f);
   pbcs= pbc= pbt;
@@ -358,7 +347,7 @@ function rt(f){
   tim.innerHTML= '';
   pbt= 0;
   if( trein==32000 )
-    interval= setInterval(myrun, 20);
+    interval= setInterval(run, 20);
   else
     node.onaudioprocess= audioprocess;
 }

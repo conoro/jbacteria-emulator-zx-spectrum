@@ -70,33 +70,19 @@ function init() {
   document.onkeypress= kpress;
   document.onresize= document.body.onresize= onresize;
   trein= 32000;
-  myrun= run;
-  if(typeof webkitAudioContext == 'function'){
-    cts= new webkitAudioContext();
+  if(typeof AudioContext == 'function'){
+    cts= new AudioContext();
     if( cts.sampleRate>44000 && cts.sampleRate<50000 )
       trein*= 50*1024/cts.sampleRate,
       paso= 70908/1024,
-      node= cts.createJavaScriptNode(1024, 1, 1),
+      node= cts.createScriptProcessor(1024, 1, 1),
       node.onaudioprocess= audioprocess,
       node.connect(cts.destination);
     else
-      interval= setInterval(myrun, 20);
+      interval= setInterval(run, 20);
   }
-  else{
-    if( typeof Audio == 'function'
-     && (audioOutput= new Audio())
-     && typeof audioOutput.mozSetup == 'function' ){
-      try{
-        audioOutput.mozSetup(1, 55400);
-        myrun= mozrun;
-      }
-      catch (er){}
-      paso= 70908/1108; // 55400/1108= 50  70908/1108= 16*4
-      interval= setInterval(myrun, 20);
-    }
-    else
-      interval= setInterval(myrun, 20);
-  }
+  else
+    interval= setInterval(run, 20);
   self.focus();
 }
 
@@ -126,25 +112,6 @@ function audioprocess(e){
   else
     while( j<1024 )
       data[j++]= 0;
-}
-
-function mozrun(){
-  vbp= play= playp= 0;
-  run();
-  if( localStorage.ft & 4 ){
-    j= 0;
-    while( j<1108 ){
-      aymute();
-      aymute();
-      aymute();
-      data[j++]= (aystep()+sample)/2;
-      play+= paso;
-      if( play > vb[playp] && playp<vbp )
-        playp++,
-        sample^= 1;
-    }
-    audioOutput.mozWriteAudio(data);
-  }
 }
 
 function rp(addr) {

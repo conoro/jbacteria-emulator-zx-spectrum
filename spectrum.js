@@ -300,33 +300,19 @@ function init() {
   document.onkeypress= kpress;
   document.onresize= document.body.onresize= onresize;
   trein= 32000;
-  myrun= run;
-  if(typeof webkitAudioContext == 'function'){
-    cts= new webkitAudioContext();
+  if(typeof AudioContext == 'function'){
+    cts= new AudioContext();
     if( cts.sampleRate>44000 && cts.sampleRate<50000 )
       trein*= 50*1024/cts.sampleRate,
       paso= 69888/1024,
-      node= cts.createJavaScriptNode(1024, 1, 1),
+      node= cts.createScriptProcessor(1024, 1, 1),
       node.onaudioprocess= audioprocess,
       node.connect(cts.destination);
     else
-      interval= setInterval(myrun, 20);
+      interval= setInterval(run, 20);
   }
-  else{
-    if( typeof Audio == 'function'
-     && (audioOutput= new Audio())
-     && typeof audioOutput.mozSetup == 'function' ){
-      try{
-        audioOutput.mozSetup(1, 51200);
-        myrun= mozrun;
-      }
-      catch (er){}
-      paso= 69888/2048;
-      interval= setInterval(myrun, 20);
-    }
-    else
-      interval= setInterval(myrun, 20);
-  }
+  else
+    interval= setInterval(run, 20);
   self.focus();
 }
 
@@ -353,22 +339,6 @@ function audioprocess(e){
   else
     while( j<1024 )
       data[j++]= 0;
-}
-
-function mozrun(){
-  vbp= play= playp= 0;
-  run();
-  if( localStorage.ft & 4 ){
-    j= 0;
-    while( j < 2048 ){
-      data[j++]= sample;
-      play+= paso;
-      if( play > vb[playp] && playp<vbp )
-        playp++,
-        sample^= 1;
-    }
-    audioOutput.mozWriteAudio(data);
-  }
 }
 
 function handleFileSelect(ev) {
@@ -495,7 +465,7 @@ function kdown(ev) {
       }
       else{
         if( trein==32000 )
-          interval= setInterval(myrun, 20);
+          interval= setInterval(run, 20);
         else
           node.onaudioprocess= audioprocess;
         dv.style.display= 'none';
@@ -867,7 +837,7 @@ function rt(f){
   tim.innerHTML= '';
   pbt= 0;
   if( trein==32000 )
-    interval= setInterval(myrun, 20);
+    interval= setInterval(run, 20);
   else
     node.onaudioprocess= audioprocess;
 }
