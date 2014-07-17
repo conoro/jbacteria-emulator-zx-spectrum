@@ -143,6 +143,7 @@ halted: .byte   0
         ldr     lr, [mem, pcff, lsr #16]
         add     pcff, #0x00020000
         pkhbt   \regis, \regis, lr, lsl #16
+        PREFIX0
       .endm
 
       .macro    LDRIM   regis, ofs
@@ -151,12 +152,19 @@ halted: .byte   0
         ldrb    lr, [mem, pcff, lsr #16]
         add     pcff, #0x00010000
         orr     \regis, lr, lsl #16+\ofs
+        PREFIX0
       .endm
 
       .macro    LDXX    dst, ofd, src, ofs
         TIME    4
         bic     \dst, #0x00ff0000 << \ofd
-        orr     \dst, \src, ror #\ofs
+        and     lr, \src, #0x00ff0000 << \ofs
+      .if \ofs-\ofd==-8
+        orr     \dst, lr, ror #24
+      .else
+        orr     \dst, lr, ror #\ofs-\ofd
+      .endif
+        PREFIX0
       .endm
 
       .macro    INC     regis, ofs
@@ -732,20 +740,14 @@ opfd:   TIME    4
         PREFIX2
 
 ldbcnn: LDRRIM  bcfb
-        PREFIX0
-
 lddenn: LDRRIM  defr
-        PREFIX0
 
 ldxxnn: movs    lr, arvpref, lsl #24
         beq     ldhlnn
         bmi     ldiynn
         LDRRIM  ixstart
-        PREFIX0
 ldiynn: LDRRIM  iy
-        PREFIX0
 ldhlnn: LDRRIM  hlmp
-        PREFIX0
 
 ldspxx: TIME    4
         movs    lr, arvpref, lsl #24
@@ -821,319 +823,203 @@ jpnn:   TIME    10
         PREFIX0
 
 ldbn:   LDRIM   bcfb, 8
-        PREFIX0
-
 ldcn:   LDRIM   bcfb, 0
-        PREFIX0
-
 lddn:   LDRIM   defr, 8
-        PREFIX0
-
 lden:   LDRIM   defr, 0
-        PREFIX0
 
 lxhn:   movs    lr, arvpref, lsl #24
         beq     ldhn
         bmi     ldyhn
         LDRIM   ixstart, 8
-        PREFIX0
 ldyhn:  LDRIM   iy, 8
-        PREFIX0
 ldhn:   LDRIM   hlmp, 8
-        PREFIX0
 
 lxln:   movs    lr, arvpref, lsl #24
         beq     ldln
         bmi     ldyln
         LDRIM   ixstart, 0
-        PREFIX0
 ldyln:  LDRIM   iy, 0
-        PREFIX0
 ldln:   LDRIM   hlmp, 0
-        PREFIX0
 
 ldan:   LDRIM   arvpref, 8
-        PREFIX0
 
-ldbc:   LDXX    bcfb, 8, bcfb, 24
-        PREFIX0
-
-ldbd:   LDXX    bcfb, 8, defr, 0
-        PREFIX0
-
-ldbe:   LDXX    bcfb, 8, defr, 24
-        PREFIX0
-
+ldbc:   LDXX    bcfb, 8, bcfb, 0
+ldbd:   LDXX    bcfb, 8, defr, 8
+ldbe:   LDXX    bcfb, 8, defr, 0
 lxbh:   movs    lr, arvpref, lsl #24
         beq     ldbh
         bmi     ldbyh
-        LDXX    bcfb, 8, ixstart, 0
-        PREFIX0
-ldbyh:  LDXX    bcfb, 8, iy, 0
-        PREFIX0
-ldbh:   LDXX    bcfb, 8, hlmp, 0
-        PREFIX0
+        LDXX    bcfb, 8, ixstart, 8
+ldbyh:  LDXX    bcfb, 8, iy, 8
+ldbh:   LDXX    bcfb, 8, hlmp, 8
 
 lxbl:   movs    lr, arvpref, lsl #24
         beq     ldbl
         bmi     ldbyl
-        LDXX    bcfb, 8, ixstart, 24
-        PREFIX0
-ldbyl:  LDXX    bcfb, 8, iy, 24
-        PREFIX0
-ldbl:   LDXX    bcfb, 8, hlmp, 24
-        PREFIX0
+        LDXX    bcfb, 8, ixstart, 0
+ldbyl:  LDXX    bcfb, 8, iy, 0
+ldbl:   LDXX    bcfb, 8, hlmp, 0
 
-ldba:   LDXX    bcfb, 8, arvpref, 0
-        PREFIX0
-
+ldba:   LDXX    bcfb, 8, arvpref, 8
 ldcb:   LDXX    bcfb, 0, bcfb, 8
-        PREFIX0
-
 ldcd:   LDXX    bcfb, 0, defr, 8
-        PREFIX0
-
 ldce:   LDXX    bcfb, 0, defr, 0
-        PREFIX0
 
 lxch:   movs    lr, arvpref, lsl #24
         beq     ldch
         bmi     ldcyh
         LDXX    bcfb, 0, ixstart, 8
-        PREFIX0
 ldcyh:  LDXX    bcfb, 0, iy, 8
-        PREFIX0
 ldch:   LDXX    bcfb, 0, hlmp, 8
-        PREFIX0
 
 lxcl:   movs    lr, arvpref, lsl #24
         beq     ldcl
         bmi     ldcyl
         LDXX    bcfb, 0, ixstart, 0
-        PREFIX0
 ldcyl:  LDXX    bcfb, 0, iy, 0
-        PREFIX0
 ldcl:   LDXX    bcfb, 0, hlmp, 0
-        PREFIX0
 
 ldca:   LDXX    bcfb, 0, arvpref, 8
-        PREFIX0
-
-lddb:   LDXX    defr, 8, bcfb, 0
-        PREFIX0
-
-lddc:   LDXX    defr, 8, bcfb, 24
-        PREFIX0
-
-ldde:   LDXX    defr, 8, bcfb, 0
-        PREFIX0
+lddb:   LDXX    defr, 8, bcfb, 8
+lddc:   LDXX    defr, 8, bcfb, 0
+ldde:   LDXX    defr, 8, defr, 0
 
 lxdh:   movs    lr, arvpref, lsl #24
         beq     lddh
         bmi     lddyh
-        LDXX    defr, 8, ixstart, 0
-        PREFIX0
-lddyh:  LDXX    defr, 8, iy, 0
-        PREFIX0
-lddh:   LDXX    defr, 8, hlmp, 0
-        PREFIX0
+        LDXX    defr, 8, ixstart, 8
+lddyh:  LDXX    defr, 8, iy, 8
+lddh:   LDXX    defr, 8, hlmp, 8
 
 lxdl:   movs    lr, arvpref, lsl #24
         beq     lddl
         bmi     lddyl
-        LDXX    defr, 8, ixstart, 24
-        PREFIX0
-lddyl:  LDXX    defr, 8, iy, 24
-        PREFIX0
-lddl:   LDXX    defr, 8, hlmp, 24
-        PREFIX0
+        LDXX    defr, 8, ixstart, 0
+lddyl:  LDXX    defr, 8, iy, 0
+lddl:   LDXX    defr, 8, hlmp, 0
 
-ldda:   LDXX    defr, 8, arvpref, 0
-        PREFIX0
-
+ldda:   LDXX    defr, 8, arvpref, 8
 ldeb:   LDXX    defr, 0, bcfb, 8
-        PREFIX0
-
 ldec:   LDXX    defr, 0, bcfb, 0
-        PREFIX0
-
-lded:   LDXX    defr, 0, defr, 0
-        PREFIX0
-
+lded:   LDXX    defr, 0, defr, 8
 lxeh:   movs    lr, arvpref, lsl #24
         beq     ldeh
         bmi     ldeyh
         LDXX    defr, 0, ixstart, 8
-        PREFIX0
 ldeyh:  LDXX    defr, 0, iy, 8
-        PREFIX0
 ldeh:   LDXX    defr, 0, hlmp, 8
-        PREFIX0
 
 lxel:   movs    lr, arvpref, lsl #24
         beq     ldel
         bmi     ldeyl
         LDXX    defr, 0, ixstart, 0
-        PREFIX0
 ldeyl:  LDXX    defr, 0, iy, 0
-        PREFIX0
 ldel:   LDXX    defr, 0, hlmp, 0
-        PREFIX0
 
 ldea:   LDXX    defr, 0, arvpref, 8
-        PREFIX0
 
 lxhb:   movs    lr, arvpref, lsl #24
         beq     ldhb
         bmi     ldyhb
-        LDXX    ixstart, 8, bcfb, 0
-        PREFIX0
-ldyhb:  LDXX    iy, 8, bcfb, 0
-        PREFIX0
-ldhb:   LDXX    hlmp, 8, bcfb, 0
-        PREFIX0
+        LDXX    ixstart, 8, bcfb, 8
+ldyhb:  LDXX    iy, 8, bcfb, 8
+ldhb:   LDXX    hlmp, 8, bcfb, 8
 
 lxhc:   movs    lr, arvpref, lsl #24
         beq     ldhc
         bmi     ldyhc
-        LDXX    ixstart, 8, bcfb, 24
-        PREFIX0
-ldyhc:  LDXX    iy, 8, bcfb, 24
-        PREFIX0
-ldhc:   LDXX    hlmp, 8, bcfb, 24
-        PREFIX0
+        LDXX    ixstart, 8, bcfb, 0
+ldyhc:  LDXX    iy, 8, bcfb, 0
+ldhc:   LDXX    hlmp, 8, bcfb, 0
 
 lxhd:   movs    lr, arvpref, lsl #24
         beq     ldhd
         bmi     ldyhd
-        LDXX    ixstart, 8, defr, 0
-        PREFIX0
-ldyhd:  LDXX    iy, 8, defr, 0
-        PREFIX0
-ldhd:   LDXX    hlmp, 8, defr, 0
-        PREFIX0
+        LDXX    ixstart, 8, defr, 8
+ldyhd:  LDXX    iy, 8, defr, 8
+ldhd:   LDXX    hlmp, 8, defr, 8
 
 lxhe:   movs    lr, arvpref, lsl #24
         beq     ldhe
         bmi     ldyhe
-        LDXX    ixstart, 8, defr, 24
-        PREFIX0
-ldyhe:  LDXX    iy, 8, defr, 24
-        PREFIX0
-ldhe:   LDXX    hlmp, 8, defr, 24
-        PREFIX0
+        LDXX    ixstart, 8, defr, 0
+ldyhe:  LDXX    iy, 8, defr, 0
+ldhe:   LDXX    hlmp, 8, defr, 0
 
 lxhl:   movs    lr, arvpref, lsl #24
         beq     ldhl
         bmi     ldyhl
-        LDXX    ixstart, 8, ixstart, 24
-        PREFIX0
-ldyhl:  LDXX    iy, 8, iy, 24
-        PREFIX0
-ldhl:   LDXX    hlmp, 8, hlmp, 24
-        PREFIX0
+        LDXX    ixstart, 8, ixstart, 0
+ldyhl:  LDXX    iy, 8, iy, 0
+ldhl:   LDXX    hlmp, 8, hlmp, 0
 
 lxha:   movs    lr, arvpref, lsl #24
         beq     ldha
         bmi     ldyha
-        LDXX    ixstart, 8, arvpref, 0
-        PREFIX0
-ldyha:  LDXX    iy, 8, arvpref, 0
-        PREFIX0
-ldha:   LDXX    hlmp, 8, arvpref, 0
-        PREFIX0
+        LDXX    ixstart, 8, arvpref, 8
+ldyha:  LDXX    iy, 8, arvpref, 8
+ldha:   LDXX    hlmp, 8, arvpref, 8
 
 lxlb:   movs    lr, arvpref, lsl #24
         beq     ldlb
         bmi     ldylb
         LDXX    ixstart, 0, bcfb, 8
-        PREFIX0
 ldylb:  LDXX    iy, 0, bcfb, 8
-        PREFIX0
 ldlb:   LDXX    hlmp, 0, bcfb, 8
-        PREFIX0
 
 lxlc:   movs    lr, arvpref, lsl #24
         beq     ldlc
         bmi     ldylc
         LDXX    ixstart, 0, bcfb, 0
-        PREFIX0
 ldylc:  LDXX    iy, 0, bcfb, 0
-        PREFIX0
 ldlc:   LDXX    hlmp, 0, bcfb, 0
-        PREFIX0
 
 lxld:   movs    lr, arvpref, lsl #24
         beq     ldld
         bmi     ldyld
         LDXX    ixstart, 0, defr, 8
-        PREFIX0
 ldyld:  LDXX    iy, 0, defr, 8
-        PREFIX0
 ldld:   LDXX    hlmp, 0, defr, 8
-        PREFIX0
 
 lxle:   movs    lr, arvpref, lsl #24
         beq     ldle
         bmi     ldyle
         LDXX    ixstart, 0, defr, 0
-        PREFIX0
 ldyle:  LDXX    iy, 0, defr, 0
-        PREFIX0
 ldle:   LDXX    hlmp, 0, defr, 0
-        PREFIX0
 
 lxlh:   movs    lr, arvpref, lsl #24
         beq     ldlh
         bmi     ldylh
         LDXX    ixstart, 0, ixstart, 8
-        PREFIX0
 ldylh:  LDXX    iy, 0, iy, 8
-        PREFIX0
 ldlh:   LDXX    hlmp, 0, hlmp, 8
-        PREFIX0
 
 lxla:   movs    lr, arvpref, lsl #24
         beq     ldla
         bmi     ldyla
-        LDXX    ixstart, 0, defr, 8
-        PREFIX0
+        LDXX    ixstart, 0, arvpref, 8
 ldyla:  LDXX    iy, 0, arvpref, 8
-        PREFIX0
 ldla:   LDXX    hlmp, 0, arvpref, 8
-        PREFIX0
 
-ldab:   LDXX    arvpref, 8, bcfb, 0
-        PREFIX0
-
-ldac:   LDXX    arvpref, 8, bcfb, 24
-        PREFIX0
-
-ldad:   LDXX    arvpref, 8, defr, 0
-        PREFIX0
-
-ldae:   LDXX    arvpref, 8, defr, 24
-        PREFIX0
+ldab:   LDXX    arvpref, 8, bcfb, 8
+ldac:   LDXX    arvpref, 8, bcfb, 0
+ldad:   LDXX    arvpref, 8, defr, 8
+ldae:   LDXX    arvpref, 8, defr, 0
 
 lxah:   movs    lr, arvpref, lsl #24
         beq     ldah
         bmi     ldayh
-        LDXX    arvpref, 8, ixstart, 0
-        PREFIX0
-ldayh:  LDXX    arvpref, 8, iy, 0
-        PREFIX0
-ldah:   LDXX    arvpref, 8, hlmp, 0
-        PREFIX0
+        LDXX    arvpref, 8, ixstart, 8
+ldayh:  LDXX    arvpref, 8, iy, 8
+ldah:   LDXX    arvpref, 8, hlmp, 8
 
 lxal:   movs    lr, arvpref, lsl #24
         beq     ldal
         bmi     ldayl
-        LDXX    arvpref, 8, ixstart, 24
-        PREFIX0
-ldayl:  LDXX    arvpref, 8, iy, 24
-        PREFIX0
-ldal:   LDXX    arvpref, 8, hlmp, 24
-        PREFIX0
+        LDXX    arvpref, 8, ixstart, 0
+ldayl:  LDXX    arvpref, 8, iy, 0
+ldal:   LDXX    arvpref, 8, hlmp, 0
 
 inca:   INC     arvpref, 8
 incb:   INC     bcfb, 8

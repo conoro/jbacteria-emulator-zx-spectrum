@@ -2,7 +2,7 @@
  *            into an actual program file loadable on a speccy.
  *
  * Public domain by Russell Marks, 1998
- * Modified by Antonio Villena, 2014
+ * Modified by Antonio Villena, 2014. v20140717
  *
  * warning: this is probably the least structured program ever.
  * I guess that's what comes from hacking something into existence... :-/
@@ -563,8 +563,7 @@ int main( int argc, char *argv[] ){
           exit(1);
         linenum= (int)strtol( (char *)ptr, (char **)&linestart, 10);
         if(linenum<=lastline)
-          fprintf( stderr, "line %d: line no. not greater than previous one\n", textlinenum ),
-          exit(1);
+          fprintf( stderr, "warning: line %d: line no. not greater than previous one\n", textlinenum );
       }
 
       if( linenum<0 || linenum>9999 )
