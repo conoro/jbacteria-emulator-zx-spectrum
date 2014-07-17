@@ -306,7 +306,7 @@ int main (int argc, char **argv){
     fread(&sttap, 4, 1, fh);
     tap= sttap;
   }
-  else
+  else if( ft )
     sttap= tap= tapcycles();
   fclose(fh);
   if( !size )
@@ -315,7 +315,7 @@ int main (int argc, char **argv){
   execute();
   if( tap && st>sttap )
     sttap= st+( tap= tapcycles() );
-  printf("%llu\n", st);
+  printf("%llu %x\n", st, mem[pc]);
   if( output ){
     fh= fopen(output, "wb+");
     if( !fh )
