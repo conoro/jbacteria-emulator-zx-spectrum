@@ -435,9 +435,9 @@ void parse_options( int argc,char *argv[] ){
 
 int grok_block( unsigned char *ptr, int textlinenum ){
   static char *lookup[]={
-    "  ", "' ", " '", "''", "_ ", "! ", "_'", "!'",
-    "!!", "_!", "!_", "__", "'!", " !", "'_", " _",
-    "!A", "!B", "!C", "!a", "!b", "!c",
+    "  ", "' ", " '", "''", ". ", ": ", ".'", ":'",
+    "::", ".:", ":.", "..", "':", " :", "'.", " .",
+    "!:", "!.", "!'", "|:", "|.", "|'",
     NULL};
   char **lptr;
   int f= 0
@@ -768,7 +768,13 @@ int main( int argc, char *argv[] ){
                 *outptr++= ptr[1]+108; break;
               case '"': *outptr++=0x8b; break;
               case '$': *outptr++=0x8d;  break;
-              case ':': *outptr++=0x8e;  break;
+              case ':': 
+                if( strchr("'.: ",ptr[2])==NULL )
+                  *outptr++=0x8e;
+                else
+                  *outptr++= grok_block(ptr,textlinenum),
+                  ptr++;
+                break;
               case '?': *outptr++=0x8f;  break;
               case '(': *outptr++=0x90;  break;
               case ')': *outptr++=0x91;  break;
@@ -781,11 +787,17 @@ int main( int argc, char *argv[] ){
               case '/': *outptr++=0x98;  break;
               case ';': *outptr++=0x99;  break;
               case ',': *outptr++=0x9a;  break;
-              case '.': *outptr++=0x9b;  break;
+              case '.':
+                if( strchr("'.: ",ptr[2])==NULL )
+                  *outptr++=0x9b;
+                else
+                  *outptr++= grok_block(ptr,textlinenum),
+                  ptr++;
+                break;
               case '\\':  *outptr++=0x0c;  break;  /* pound symbol */
               case '@':   *outptr++=0x8c;  break;  /* inverse pound symbol */
-              case '\'': case '_': case '!': case ' ': /* block graphics char */
-                *outptr++=grok_block(ptr,textlinenum);
+              case '\'': case '!': case '|': case ' ': /* block graphics char */
+                *outptr++= grok_block(ptr,textlinenum);
                 ptr++;
                 break;
               case '{': /* directly specify output code */

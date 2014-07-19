@@ -21,7 +21,6 @@
 #define MSDOS
 #endif
 
-#define DEFAULT_OUTPUT          "out.tap"
 #define REM_TOKEN_NUM           234
 #define BIN_TOKEN_NUM           196
 
@@ -127,6 +126,76 @@ char *tokens[]={
   "spectrum", "",
   NULL};
 
+char *tokens81[]={
+  "copy", "",
+  "return", "",
+  "clear", "",
+  "unplot", "",
+  "cls", "",
+  "if", "",
+  "rand", "",
+  "save", "",
+  "run", "",
+  "plot", "",
+  "print", "",
+  "poke", "",
+  "next", "",
+  "pause", "",
+  "let", "",
+  "list", "",
+  "load", "",
+  "input", "",
+  "go sub", "gosub",
+  "go to", "goto",
+  "for", "",
+  "rem", "",
+  "dim", "",
+  "cont", "",
+  "scroll", "",
+  "new", "",
+  "fast", "",
+  "slow", "",
+  "stop", "",
+  "llist", "",
+  "lprint", "",
+  "step", "",
+  "to", "",
+  "then", "",
+  "<>", "",
+  ">=", "",
+  "<=", "",
+  "and", "",
+  "or", "",
+  "**", "",
+  "not", "",
+  "chr$", "",
+  "str$", "",
+  "usr", "",
+  "peek", "",
+  "abs", "",
+  "sgn", "",
+  "sqr", "",
+  "int", "",
+  "exp", "",
+  "ln", "",
+  "atn", "",
+  "acs", "",
+  "asn", "",
+  "tan", "",
+  "cos", "",
+  "sin", "",
+  "len", "",
+  "val", "",
+  "code", "",
+  "val$", "",
+  "tab", "",
+  "at", "",
+  "\"\"", "",
+  "pi", "",
+  "inkey$", "",
+  "rnd", "",
+  NULL};
+
 /* the whole raw basic file is written to filebuf; no output is generated
  * until the whole program has been converted. This is to allow a TAP
  * to be output on a non-seekable file (stdout).
@@ -145,8 +214,8 @@ char infile[1024],outfile[1024];
 #define MAX_LABEL_LEN   16
 
 /* this is needed for tap files too: */
-unsigned char headerbuf[17];
-int output_tap=1,use_labels=0;
+unsigned char headerbuf[0x74];
+int output_tape= 1, use_labels= 0, zx81mode= 0;
 unsigned int startline=0x8000;
 int autostart=10,autoincr=2;
 char speccy_filename[11];
@@ -166,6 +235,45 @@ char *optarg=NULL;
 
 /* holds offset in current argv[] value */
 static int optpos=1;
+
+/* This routine converts normal ASCII code to special code used in ZX81.
+ */
+void *memcpycnv(void *dst, void *src, size_t num){
+  unsigned char in;
+
+  while (num--){
+    in= *((char *)src)++;
+    if( in>=0x7d && in<=0x7f ) // RND, INKEY$, PI
+      *((char *)dst)++= in-0x3d;
+    else if( in>='0' && in<='9' )
+      *((char *)dst)++= in-20;
+    else if( in>='A' && in<='Z' )
+      *((char *)dst)++= in-27;
+    else if( in>='a' && in<='z' )
+      *((char *)dst)++= in+69;
+    else switch( in ){
+      case 0x0d: *((char *)dst)++= 0x76; break; // enter
+      case 0x20: *((char *)dst)++= 0x00; break; // space
+      case 0x22: *((char *)dst)++= 0x0b; break; // "
+      case 0x24: *((char *)dst)++= 0x0d; break; // $
+      case 0x28: *((char *)dst)++= 0x10; break; // (
+      case 0x29: *((char *)dst)++= 0x11; break; // )
+      case 0x2a: *((char *)dst)++= 0x17; break; // *
+      case 0x2b: *((char *)dst)++= 0x15; break; // +
+      case 0x2c: *((char *)dst)++= 0x1a; break; // ,
+      case 0x2d: *((char *)dst)++= 0x16; break; // -
+      case 0x2e: *((char *)dst)++= 0x1b; break; // .
+      case 0x2f: *((char *)dst)++= 0x18; break; // /
+      case 0x3a: *((char *)dst)++= 0x0e; break; // :
+      case 0x3b: *((char *)dst)++= 0x19; break; // ;
+      case 0x3c: *((char *)dst)++= 0x13; break; // <
+      case 0x3d: *((char *)dst)++= 0x14; break; // =
+      case 0x3e: *((char *)dst)++= 0x15; break; // >
+      case 0x3f: *((char *)dst)++= 0x0f; break; // ?
+      default: *((char *)dst)++= in;
+    }
+  }
+}
 
 /* This routine assumes that the caller is pretty sane and doesn't
  * try passing an invalid 'optstring' or varying argc/argv.
@@ -349,17 +457,17 @@ unsigned long grok_binary( unsigned char **ptrp, int textlinenum ){
 
 void usage_help(){
   printf( "zmakebas - public domain by Russell Marks.\n\n"
-          "usage: zmakebas [-hlr] [-a line] [-i incr] [-n speccy_filename]\n"
+          "usage: zmakebas [-hplr] [-a line] [-i incr] [-n speccy_filename]\n"
           "                [-o output_file] [-s line] [input_file]\n\n"
-          "        -a      set auto-start line of basic file (default none).\n"
           "        -h      give this usage help.\n"
-          "        -i      in labels mode, set line number incr. (default 2).\n"
+          "        -p      output .p instead (set ZX81 mode).\n"
           "        -l      use labels rather than line numbers.\n"
+          "        -r      output raw headerless file (default is .tap/.p file).\n"
+          "        -a      set auto-start line of basic file (default none).\n"
+          "        -i      in labels mode, set line number incr. (default 2).\n"
           "        -n      set Spectrum filename (to be given in tape header).\n"
-          "        -o      specify output file (default `%s').\n"
-          "        -r      output raw headerless file (default is .tap file).\n"
-          "        -s      in labels mode, set starting line number "
-          "(default 10).\n", DEFAULT_OUTPUT);
+          "        -o      specify output file (default `out.tap').\n"
+          "        -s      in labels mode, set starting line number (default 10).\n");
 }
 
 
@@ -372,7 +480,9 @@ void parse_options( int argc,char *argv[] ){
   startlabel[0]= 0;
 
   do
-    switch( getopt( argc, argv, "a:hi:ln:o:rs:" ) ){
+    switch( getopt( argc, argv, "pa:hi:ln:o:rs:" ) ){
+      case 'p':
+        zx81mode= 1; break;
       case 'a':
         if( *optarg=='@' )
           if( strlen(optarg+1)>MAX_LABEL_LEN )
@@ -408,7 +518,7 @@ void parse_options( int argc,char *argv[] ){
         strcpy( outfile, optarg );
         break;
       case 'r':   /* output raw file */
-        output_tap= 0;
+        output_tape= 0;
         break;
       case 's':
         autostart= (int)atoi(optarg);
@@ -416,6 +526,7 @@ void parse_options( int argc,char *argv[] ){
           fprintf( stderr, "Label start line must be in the range 0 to 9999.\n" ),
           exit(1);
         break;
+      case ':':
       case '?':
         switch(optopt){
           case 'a':
@@ -434,7 +545,7 @@ void parse_options( int argc,char *argv[] ){
             fprintf( stderr, "The `s' option takes a line number arg.\n" );
             break;
           default:
-            fprintf( stderr, "Option `%c' not recognised.\n", optopt );
+            fprintf( stderr, "Option `%c' not recognised.\n", argv[optind][1] );
         }
         exit(1);
       case -1:
@@ -455,13 +566,29 @@ int grok_block( unsigned char *ptr, int textlinenum ){
     "  ", " '", "' ", "''", " .", " :", "'.", "':",
     ". ", ".'", ": ", ":'", "..", ".:", ":.", "::",
     NULL};
+  static char *lookup81[]={
+    "  ", "' ", " '", "''", ". ", ": ", ".'", ":'",
+    "::", ".:", ":.", "..", "':", " :", "'.", " .",
+    "!:", "!.", "!'", "|:", "|.", "|'",
+    NULL};
   char **lptr;
-  int f= 128
+  int f= 0
     , v= -1;
               
-  for ( lptr= lookup; *lptr!=NULL; lptr++, f++ )
+  for ( lptr= zx81mode ? lookup81 :  lookup; *lptr!=NULL; lptr++, f++ )
     if( strncmp((char *)ptr+1, *lptr, 2)==0 ){
-      v= f;
+      if( zx81mode ){
+        if( f<8 )
+          v= f;
+        else if( f<16)
+          v= f+0x78;
+        else if( f<19 )
+          v= f-8;
+        else
+          v= f+117;
+      }
+      else
+        v= f+128;
       break;
     }
 
@@ -492,9 +619,12 @@ int main( int argc, char *argv[] ){
 
   strcpy( speccy_filename, "" );
   strcpy( infile, "-" );
-  strcpy( outfile, DEFAULT_OUTPUT );
+  strcpy( outfile, "out.tap" );
 
   parse_options( argc, argv );
+
+  if( zx81mode && !strcmp(outfile, "out.tap" ) )
+    outfile[4]= 'p', outfile[5]= 0;
 
   if( strcmp(infile,"-")!=0 && (in= fopen(infile,"r"))==NULL )
     fprintf( stderr, "Couldn't open input file.\n" ),
@@ -658,7 +788,7 @@ int main( int argc, char *argv[] ){
       
       toknum= 256;
       alttok= 1;
-      for ( tarrptr= tokens; *tarrptr!=NULL; tarrptr++ ){
+      for ( tarrptr= zx81mode ? tokens81 : tokens; *tarrptr!=NULL; tarrptr++ ){
         if(alttok)
           toknum--;
         alttok= !alttok;
@@ -672,6 +802,10 @@ int main( int argc, char *argv[] ){
            */
           if( (*tarrptr)[0]=='<' || (*tarrptr)[1]=='=' ||
              (!isalpha(ptr[-1]) && !isalpha(ptr[toklen])) ){
+            /* RND, INKEY$, PI
+             */
+            if( zx81mode && toknum>0xbc && toknum<0xc0 )
+              toknum-= 0x40;
             ptr2= linestart+(ptr-lcasebuf);
             /* the token text is overwritten in the lcase copy too, to
              * avoid problems with e.g. go to/to.
@@ -684,7 +818,7 @@ int main( int argc, char *argv[] ){
               ptr2[f++]= 1;
 
             /* for BIN, we need the token right before the number. */
-            if( toknum==BIN_TOKEN_NUM )
+            if( !zx81mode && toknum==BIN_TOKEN_NUM )
               *ptr2= *ptr= 1,
               ptr2[f-1]= ptr[f-1]= toknum;
           }
@@ -732,7 +866,10 @@ int main( int argc, char *argv[] ){
               /* insert room for number string */
               ptr--;
               memmove( ptr+len, ptr, strlen((char *)ptr)+1 );
-              memcpy( ptr, numbuf, len );
+              if( zx81mode )
+                memcpycnv( ptr, numbuf, len );
+              else
+                memcpy( ptr, numbuf, len );
               ptr+= len;
               break;
             }
@@ -772,36 +909,98 @@ int main( int argc, char *argv[] ){
           if( isalpha(ptr[1]) && strchr("VWXYZvwxyz",ptr[1])==NULL )
             *outptr++= 144+tolower(ptr[1])-'a';
           else
-            switch( ptr[1] ){
-              case '\\':  *outptr++='\\'; break;
-              case '@':   *outptr++='@';  break;
-              case '*':   *outptr++=127;  break;  /* copyright symbol */
-              case '\'': case '.': case ':': case ' ': /* block graphics char */
-                *outptr++=grok_block(ptr,textlinenum);
-                ptr++;
-                break;
-              case '{': /* directly specify output code */
-                /* find end of number */
-                asciiptr= (unsigned char *)strchr((char *)ptr+2,'}');
-                if( asciiptr==NULL )
-                  fprintf( stderr, "line %d: unclosed brace in eight-bit character code\n", textlinenum ),
-                  exit(1);
+            if( zx81mode )
+              switch( ptr[1] ){
+                case '0': case '1': case '2': case '3': case '4': /* inverted digits */
+                case '5': case '6': case '7': case '8': case '9':
+                  *outptr++= ptr[1]+108; break;
+                case '"': *outptr++=0x8b; break;
+                case '$': *outptr++=0x8d;  break;
+                case ':': 
+                  if( strchr("'.: ",ptr[2])==NULL )
+                    *outptr++=0x8e;
+                  else
+                    *outptr++= grok_block(ptr,textlinenum),
+                    ptr++;
+                  break;
+                case '?': *outptr++=0x8f;  break;
+                case '(': *outptr++=0x90;  break;
+                case ')': *outptr++=0x91;  break;
+                case '>': *outptr++=0x92;  break;
+                case '<': *outptr++=0x93;  break;
+                case '=': *outptr++=0x94;  break;
+                case '+': *outptr++=0x95;  break;
+                case '-': *outptr++=0x96;  break;
+                case '*': *outptr++=0x97;  break;
+                case '/': *outptr++=0x98;  break;
+                case ';': *outptr++=0x99;  break;
+                case ',': *outptr++=0x9a;  break;
+                case '.':
+                  if( strchr("'.: ",ptr[2])==NULL )
+                    *outptr++=0x9b;
+                  else
+                    *outptr++= grok_block(ptr,textlinenum),
+                    ptr++;
+                  break;
+                case '\\':  *outptr++=0x0c;  break;  /* pound symbol */
+                case '@':   *outptr++=0x8c;  break;  /* inverse pound symbol */
+                case '\'': case '!': case '|': case ' ': /* block graphics char */
+                  *outptr++= grok_block(ptr,textlinenum);
+                  ptr++;
+                  break;
+                case '{': /* directly specify output code */
+                  /* find end of number */
+                  asciiptr= (unsigned char *)strchr((char *)ptr+2,'}');
+                  if( asciiptr==NULL )
+                    fprintf( stderr, "line %d: unclosed brace in eight-bit character code\n", textlinenum ),
+                    exit(1);
 
-                /* parse number in decimal, octal or hex */
-                num_ascii= strtoul((char *)ptr+2, NULL, 0);
-                if( num_ascii<0 || num_ascii>255 )
-                  fprintf(stderr, "line %d: eight-bit character code out of range\n", textlinenum ),
-                  exit(1);
-                *outptr++= (char)num_ascii;
-                /* set pointer to the second char from the end, so we're in the
-                 * right place when we skip forward two chars below
-                 */
-                ptr= asciiptr-1;
-                break;
-              default:
-                fprintf(stderr, "line %d: warning: unknown escape `%c', inserting literally\n", textlinenum, ptr[1] );
-                *outptr++=ptr[1];
-            }
+                  /* parse number in decimal, octal or hex */
+                  num_ascii= strtoul((char *)ptr+2, NULL, 0);
+                  if( num_ascii<0 || num_ascii>255 )
+                    fprintf(stderr, "line %d: eight-bit character code out of range\n", textlinenum ),
+                    exit(1);
+                  *outptr++= (char)num_ascii;
+                  /* set pointer to the second char from the end, so we're in the
+                   * right place when we skip forward two chars below
+                   */
+                  ptr= asciiptr-1;
+                  break;
+                default:
+                  fprintf(stderr, "line %d: warning: unknown escape `%c', inserting literally\n", textlinenum, ptr[1] );
+                  *outptr++=ptr[1];
+              }
+            else
+              switch( ptr[1] ){
+                case '\\':  *outptr++='\\'; break;
+                case '@':   *outptr++='@';  break;
+                case '*':   *outptr++=127;  break;  /* copyright symbol */
+                case '\'': case '.': case ':': case ' ': /* block graphics char */
+                  *outptr++=grok_block(ptr,textlinenum);
+                  ptr++;
+                  break;
+                case '{': /* directly specify output code */
+                  /* find end of number */
+                  asciiptr= (unsigned char *)strchr((char *)ptr+2,'}');
+                  if( asciiptr==NULL )
+                    fprintf( stderr, "line %d: unclosed brace in eight-bit character code\n", textlinenum ),
+                    exit(1);
+
+                  /* parse number in decimal, octal or hex */
+                  num_ascii= strtoul((char *)ptr+2, NULL, 0);
+                  if( num_ascii<0 || num_ascii>255 )
+                    fprintf(stderr, "line %d: eight-bit character code out of range\n", textlinenum ),
+                    exit(1);
+                  *outptr++= (char)num_ascii;
+                  /* set pointer to the second char from the end, so we're in the
+                   * right place when we skip forward two chars below
+                   */
+                  ptr= asciiptr-1;
+                  break;
+                default:
+                  fprintf(stderr, "line %d: warning: unknown escape `%c', inserting literally\n", textlinenum, ptr[1] );
+                  *outptr++=ptr[1];
+              }
           ptr+= 2;
           continue;
         }
@@ -815,7 +1014,7 @@ int main( int argc, char *argv[] ){
            (isdigit(*ptr) ||
             ((*ptr=='-' || *ptr=='+' || *ptr=='.') && isdigit(ptr[1])) ||
             ((*ptr=='-' || *ptr=='+') && ptr[1]=='.' && isdigit(ptr[2]))) ){
-          if( ptr[-1]!=BIN_TOKEN_NUM )
+          if( zx81mode || ptr[-1]!=BIN_TOKEN_NUM )
             /* we have a number. parse with strtod(). */
             num= strtod((char *)ptr, (char **)&ptr2 );
           else
@@ -827,7 +1026,10 @@ int main( int argc, char *argv[] ){
             num= (double)grok_binary(&ptr2,textlinenum);
           
           /* output text of number */
-          memcpy( outptr, ptr, ptr2-ptr );
+          if( zx81mode )
+            memcpycnv( outptr, ptr, ptr2-ptr );
+          else
+            memcpy( outptr, ptr, ptr2-ptr );
           outptr+= ptr2-ptr;
 
           *outptr++=0x0e;
@@ -869,7 +1071,10 @@ int main( int argc, char *argv[] ){
       *fileptr++= (linenum&255);
       *fileptr++= (linelen&255);
       *fileptr++= (linelen>>8);
-      memcpy( fileptr, outbuf, linelen );
+      if( zx81mode )
+        memcpycnv( fileptr, outbuf, linelen );
+      else
+        memcpy( fileptr, outbuf, linelen );
       fileptr+= linelen;
     }   /* end of pass-making while() */
 
@@ -904,38 +1109,84 @@ int main( int argc, char *argv[] ){
     fprintf( stderr, "Couldn't open output file.\n" ),
     exit(1);
 
-  if(output_tap){
+  if(output_tape){
     unsigned int siz= fileptr-filebuf;
-    
-    /* make header */
-    headerbuf[0]= 0;
-    for ( f= strlen(speccy_filename); f<10; f++ )
-      speccy_filename[f]= 32;
-    strncpy( (char *)headerbuf+1, speccy_filename, 10 );
-    headerbuf[11]= (siz&255);
-    headerbuf[12]= (siz/256);
-    headerbuf[13]= (startline&255);
-    headerbuf[14]= (startline/256);
-    headerbuf[15]= (siz&255);
-    headerbuf[16]= (siz/256);
 
-    /* write header */
-    fprintf( out, "%c%c%c", 19, 0, chk= 0 );
-    for ( f= 0; f<17; f++)
-      chk^= headerbuf[f];
-    fwrite( headerbuf, 1, 17, out );
-    fputc( chk, out );
-    
-    /* write (most of) tap bit for data block */
-    fprintf ( out, "%c%c%c", (siz+2)&255, (siz+2)>>8, chk= 255 );
-    for ( f= 0; f<siz; f++)
-      chk^= filebuf[f];
+    if( zx81mode ){
+      /* make header */
+      //headerbuf[0]= 0;                        // VERSN
+      //*(short*)(headerbuf+1)= 0;              // E_PPC
+      *(short*)(headerbuf+3)= siz+0x407d;       // D_FILE
+      *(short*)(headerbuf+5)= siz+0x407e;       // DF_CC
+      *(short*)(headerbuf+7)= siz+0x4096;       // VARS
+      //*(short*)(headerbuf+9)= 0;              // DEST
+      *(short*)(headerbuf+11)= siz+0x4097;      // E_LINE
+      *(short*)(headerbuf+13)= siz+0x4096;      // CH_ADD
+      //*(short*)(headerbuf+15)= 0;             // X_PTR
+      *(short*)(headerbuf+17)= siz+0x4097;      // STKBOT
+      *(short*)(headerbuf+19)= siz+0x4097;      // STKEND
+      //headerbuf[21]= 0;                       // BERG
+      *(short*)(headerbuf+22)= 0x405d;          // MEM
+      //headerbuf[24]= 0;                       // not used
+      headerbuf[25]= 2;                         // DF_SZ
+      *(short*)(headerbuf+26)= 1;               // S_TOP
+      headerbuf[28]= -1;                        // LAST_K
+      *(short*)(headerbuf+29)= -1;
+      headerbuf[31]= 55;                        // MARGIN
+      *(short*)(headerbuf+32)= siz+0x407d;      // NXTLIN
+      //*(short*)(headerbuf+34)= 0;             // OLDPPC
+      //headerbuf[36]= 0;                       // FLAGX
+      //*(short*)(headerbuf+37)= 0;             // STRLEN
+      *(short*)(headerbuf+39)= 0x0c8d;          // T_ADDR
+      //*(short*)(headerbuf+41)= 0;             // SEED
+      *(short*)(headerbuf+43)= -1;              // FRAMES
+      //*(short*)(headerbuf+45)= 0;             // COORDS
+      headerbuf[47]= 0xbc;                      // PR_CC
+      headerbuf[48]= 33;                        // S_POSN
+      headerbuf[49]= 24;
+      headerbuf[50]= 0b01000000;                // CDFLAG
+
+      /* write header */
+      fwrite( headerbuf, 1, 0x74, out );
+    }
+    else{
+      /* make header */
+      headerbuf[0]= 0;
+      for ( f= strlen(speccy_filename); f<10; f++ )
+        speccy_filename[f]= 32;
+      strncpy( (char *)headerbuf+1, speccy_filename, 10 );
+      headerbuf[11]= (siz&255);
+      headerbuf[12]= (siz/256);
+      headerbuf[13]= (startline&255);
+      headerbuf[14]= (startline/256);
+      headerbuf[15]= (siz&255);
+      headerbuf[16]= (siz/256);
+
+      /* write header */
+      fprintf( out, "%c%c%c", 19, 0, chk= 0 );
+      for ( f= 0; f<17; f++)
+        chk^= headerbuf[f];
+      fwrite( headerbuf, 1, 17, out );
+      fputc( chk, out );
+      
+      /* write (most of) tap bit for data block */
+      fprintf ( out, "%c%c%c", (siz+2)&255, (siz+2)>>8, chk= 255 );
+      for ( f= 0; f<siz; f++)
+        chk^= filebuf[f];
+    }
   }
 
   fwrite( filebuf, 1, fileptr-filebuf, out );
 
-  if( output_tap )
-    fputc(chk, out);
+  if( output_tape ){
+    if( zx81mode ){
+      for ( int i= 0; i<25; i++ )
+        fputc(0x76, out);
+      fputc(0x80, out);
+    }
+    else
+      fputc(chk, out);
+  }
 
   if( out!=stdout )
     fclose(out);
