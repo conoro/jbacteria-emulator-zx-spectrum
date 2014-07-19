@@ -243,9 +243,7 @@ void *memcpycnv(void *dst, void *src, size_t num){
 
   while (num--){
     in= *((char *)src)++;
-    if( in>=0x7d && in<=0x7f ) // RND, INKEY$, PI
-      *((char *)dst)++= in-0x3d;
-    else if( in>='0' && in<='9' )
+    if( in>='0' && in<='9' )
       *((char *)dst)++= in-20;
     else if( in>='A' && in<='Z' )
       *((char *)dst)++= in-27;
@@ -270,6 +268,15 @@ void *memcpycnv(void *dst, void *src, size_t num){
       case 0x3d: *((char *)dst)++= 0x14; break; // =
       case 0x3e: *((char *)dst)++= 0x15; break; // >
       case 0x3f: *((char *)dst)++= 0x0f; break; // ?
+      case 0x7c: *((char *)dst)++= 0x41; break; // INKEY$
+      case 0x7d: *((char *)dst)++= 0x40; break; // RND
+      case 0x7e: *((char *)dst)++= in; // number
+                 *((char *)dst)++= *((char *)src)++;
+                 *((char *)dst)++= *((char *)src)++;
+                 *((char *)dst)++= *((char *)src)++;
+                 *((char *)dst)++= *((char *)src)++;
+                 *((char *)dst)++= *((char *)src)++; break;
+      case 0x7f: *((char *)dst)++= 0x42; break; // PI
       default: *((char *)dst)++= in;
     }
   }
@@ -331,7 +338,7 @@ int dbl2spec( double num, int *pexp, unsigned long *pman ){
   unsigned long man;
 
   /* check for small integers */
-  if( num==(long)num && num>=-65535.0 && num<=65535.0 ){
+  if( !zx81mode && num==(long)num && num>=-65535.0 && num<=65535.0 ){
     /* ignores sign - see below, which applies to ints too. */
     long tmp= (long)fabs(num);
     exp= 0;
@@ -805,7 +812,8 @@ int main( int argc, char *argv[] ){
             /* RND, INKEY$, PI
              */
             if( zx81mode && toknum>0xbc && toknum<0xc0 )
-              toknum-= 0x40;
+              toknum-= 0x40,
+              toknum==0x7e && (toknum= 0x7c);
             ptr2= linestart+(ptr-lcasebuf);
             /* the token text is overwritten in the lcase copy too, to
              * avoid problems with e.g. go to/to.
@@ -1026,13 +1034,10 @@ int main( int argc, char *argv[] ){
             num= (double)grok_binary(&ptr2,textlinenum);
           
           /* output text of number */
-          if( zx81mode )
-            memcpycnv( outptr, ptr, ptr2-ptr );
-          else
-            memcpy( outptr, ptr, ptr2-ptr );
+          memcpy( outptr, ptr, ptr2-ptr );
           outptr+= ptr2-ptr;
 
-          *outptr++=0x0e;
+          *outptr++= zx81mode ? 0x7e : 0x0e;
 
           if( *ptr2=='|' ){
             ptr= ++ptr2;
