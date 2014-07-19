@@ -1,5 +1,5 @@
-/* zmakebas - convert a text file containing a speccy Basic program
- *            into an actual program file loadable on a speccy.
+/* zmakebas81 - convert a text file containing a ZX81 Basic program
+ *              into an actual program file loadable on a ZX81.
  *
  * Public domain by Russell Marks, 1998
  * Modified by Antonio Villena, 2014. v20140717
@@ -21,9 +21,7 @@
 #define MSDOS
 #endif
 
-#define DEFAULT_OUTPUT          "out.tap"
 #define REM_TOKEN_NUM           234
-#define BIN_TOKEN_NUM           196
 
 /* tokens are stored (and looked for) in reverse speccy-char-set order,
  * to avoid def fn/fn and go to/to screwups. There are two entries for
@@ -35,10 +33,10 @@ char *tokens[]={
   "copy", "",
   "return", "",
   "clear", "",
-  "draw", "",
+  "unplot", "",
   "cls", "",
   "if", "",
-  "randomize", "randomise",
+  "rand", "",
   "save", "",
   "run", "",
   "plot", "",
@@ -55,48 +53,27 @@ char *tokens[]={
   "for", "",
   "rem", "",
   "dim", "",
-  "continue", "",
-  "border", "",
+  "cont", "",
+  "scroll", "",
   "new", "",
-  "restore", "",
-  "data", "",
-  "read", "",
+  "fast", "",
+  "slow", "",
   "stop", "",
   "llist", "",
   "lprint", "",
-  "out", "",
-  "over", "",
-  "inverse", "",
-  "bright", "",
-  "flash", "",
-  "paper", "",
-  "ink", "",
-  "circle", "",
-  "beep", "",
-  "verify", "",
-  "merge", "",
-  "close #", "close#",
-  "open #", "open#",
-  "erase", "",
-  "move", "",
-  "format", "",
-  "cat", "",
-  "def fn", "deffn",
   "step", "",
   "to", "",
   "then", "",
-  "line", "",
   "<>", "",
   ">=", "",
   "<=", "",
   "and", "",
   "or", "",
-  "bin", "",
+  "**", "",
   "not", "",
   "chr$", "",
   "str$", "",
   "usr", "",
-  "in", "",
   "peek", "",
   "abs", "",
   "sgn", "",
@@ -116,19 +93,14 @@ char *tokens[]={
   "val$", "",
   "tab", "",
   "at", "",
-  "attr", "",
-  "screen$", "",
-  "point", "",
-  "fn", "",
+  "\"\"", "",
   "pi", "",
   "inkey$", "",
   "rnd", "",
-  "play", "",
-  "spectrum", "",
   NULL};
 
 /* the whole raw basic file is written to filebuf; no output is generated
- * until the whole program has been converted. This is to allow a TAP
+ * until the whole program has been converted. This is to allow a .P
  * to be output on a non-seekable file (stdout).
  */
 
@@ -144,12 +116,10 @@ char infile[1024],outfile[1024];
 
 #define MAX_LABEL_LEN   16
 
-/* this is needed for tap files too: */
-unsigned char headerbuf[17];
-int output_tap=1,use_labels=0;
-unsigned int startline=0x8000;
+/* this is needed for tape files too: */
+unsigned char headerbuf[0x74];
+int output_tape=1,use_labels=0;
 int autostart=10,autoincr=2;
-char speccy_filename[11];
 int labelend=0;
 unsigned char labels[MAX_LABELS][MAX_LABEL_LEN+1];
 int label_lines[MAX_LABELS];
@@ -166,6 +136,45 @@ char *optarg=NULL;
 
 /* holds offset in current argv[] value */
 static int optpos=1;
+
+/* This routine converts normal ASCII code to special code used in ZX81.
+ */
+void *memcpycnv(void *dst, void *src, size_t num){
+  unsigned char in;
+
+  while (num--){
+    in= *((char *)src)++;
+    if( in>=0x7d && in<=0x7f ) // RND, INKEY$, PI
+      *((char *)dst)++= in-0x3d;
+    else if( in>='0' && in<='9' )
+      *((char *)dst)++= in-20;
+    else if( in>='A' && in<='Z' )
+      *((char *)dst)++= in-27;
+    else if( in>='a' && in<='z' )
+      *((char *)dst)++= in+69;
+    else switch( in ){
+      case 0x0d: *((char *)dst)++= 0x76; break; // enter
+      case 0x20: *((char *)dst)++= 0x00; break; // space
+      case 0x22: *((char *)dst)++= 0x0b; break; // "
+      case 0x24: *((char *)dst)++= 0x0d; break; // $
+      case 0x28: *((char *)dst)++= 0x10; break; // (
+      case 0x29: *((char *)dst)++= 0x11; break; // )
+      case 0x2a: *((char *)dst)++= 0x17; break; // *
+      case 0x2b: *((char *)dst)++= 0x15; break; // +
+      case 0x2c: *((char *)dst)++= 0x1a; break; // ,
+      case 0x2d: *((char *)dst)++= 0x16; break; // -
+      case 0x2e: *((char *)dst)++= 0x1b; break; // .
+      case 0x2f: *((char *)dst)++= 0x18; break; // /
+      case 0x3a: *((char *)dst)++= 0x0e; break; // :
+      case 0x3b: *((char *)dst)++= 0x19; break; // ;
+      case 0x3c: *((char *)dst)++= 0x13; break; // <
+      case 0x3d: *((char *)dst)++= 0x14; break; // =
+      case 0x3e: *((char *)dst)++= 0x15; break; // >
+      case 0x3f: *((char *)dst)++= 0x0f; break; // ?
+      default: *((char *)dst)++= in;
+    }
+  }
+}
 
 /* This routine assumes that the caller is pretty sane and doesn't
  * try passing an invalid 'optstring' or varying argc/argv.
@@ -349,17 +358,15 @@ unsigned long grok_binary( unsigned char **ptrp, int textlinenum ){
 
 void usage_help(){
   printf( "zmakebas - public domain by Russell Marks.\n\n"
-          "usage: zmakebas [-hlr] [-a line] [-i incr] [-n speccy_filename]\n"
-          "                [-o output_file] [-s line] [input_file]\n\n"
-          "        -a      set auto-start line of basic file (default none).\n"
+          "usage: zmakebas [-hlr] [-i incr] [-s line]\n"
+          "                [-o output_file] [input_file]\n\n"
           "        -h      give this usage help.\n"
-          "        -i      in labels mode, set line number incr. (default 2).\n"
           "        -l      use labels rather than line numbers.\n"
-          "        -n      set Spectrum filename (to be given in tape header).\n"
-          "        -o      specify output file (default `%s').\n"
-          "        -r      output raw headerless file (default is .tap file).\n"
-          "        -s      in labels mode, set starting line number "
-          "(default 10).\n", DEFAULT_OUTPUT);
+          "        -r      output raw headerless file (default is .p file).\n"
+          "        -i      in labels mode, set line number incr. (default 2).\n"
+          "        -s      in labels mode, set starting line number.\n"
+          "        -o      specify output file (default 'out.p')"
+          "(default 10).\n");
 }
 
 
@@ -373,20 +380,6 @@ void parse_options( int argc,char *argv[] ){
 
   do
     switch( getopt( argc, argv, "a:hi:ln:o:rs:" ) ){
-      case 'a':
-        if( *optarg=='@' )
-          if( strlen(optarg+1)>MAX_LABEL_LEN )
-            fprintf( stderr, "Auto-start label too long\n" ),
-            exit(1);
-          else
-            strcpy( (char *)startlabel, optarg+1 );
-        else{
-          startline= (unsigned int)atoi(optarg);
-          if( startline>9999 )
-            fprintf( stderr, "Auto-start line must be in the range 0 to 9999.\n"),
-            exit(1);
-        }
-        break;
       case 'h':   /* usage help */
         usage_help();
         exit(1);
@@ -400,15 +393,11 @@ void parse_options( int argc,char *argv[] ){
       case 'l':
         use_labels= 1;
         break;
-      case 'n':
-        strncpy( speccy_filename, optarg, 10 );
-        speccy_filename[10]= 0;
-        break;
       case 'o':
         strcpy( outfile, optarg );
         break;
       case 'r':   /* output raw file */
-        output_tap= 0;
+        output_tape= 0;
         break;
       case 's':
         autostart= (int)atoi(optarg);
@@ -418,14 +407,8 @@ void parse_options( int argc,char *argv[] ){
         break;
       case '?':
         switch(optopt){
-          case 'a':
-            fprintf( stderr, "The `a' option takes a line number arg.\n" );
-            break;
           case 'i':
             fprintf( stderr, "The `i' option takes a line incr. arg.\n" );
-            break;
-          case 'n':
-            fprintf( stderr, "The `n' option takes a Spectrum filename arg.\n" );
             break;
           case 'o':
             fprintf( stderr, "The `o' option takes a filename arg.\n" );
@@ -452,16 +435,24 @@ void parse_options( int argc,char *argv[] ){
 
 int grok_block( unsigned char *ptr, int textlinenum ){
   static char *lookup[]={
-    "  ", " '", "' ", "''", " .", " :", "'.", "':",
-    ". ", ".'", ": ", ":'", "..", ".:", ":.", "::",
+    "  ", "' ", " '", "''", "_ ", "! ", "_'", "!'",
+    "!!", "_!", "!_", "__", "'!", " !", "'_", " _",
+    "!A", "!B", "!C", "!a", "!b", "!c",
     NULL};
   char **lptr;
-  int f= 128
+  int f= 0
     , v= -1;
               
   for ( lptr= lookup; *lptr!=NULL; lptr++, f++ )
     if( strncmp((char *)ptr+1, *lptr, 2)==0 ){
-      v= f;
+      if( f<8 )
+        v= f;
+      else if( f<16)
+        v= f+0x78;
+      else if( f<19 )
+        v= f-8;
+      else
+        v= f+117;
       break;
     }
 
@@ -490,9 +481,8 @@ int main( int argc, char *argv[] ){
   int passnum= 1;
   FILE *in= stdin, *out= stdout;
 
-  strcpy( speccy_filename, "" );
   strcpy( infile, "-" );
-  strcpy( outfile, DEFAULT_OUTPUT );
+  strcpy( outfile, "out.p" );
 
   parse_options( argc, argv );
 
@@ -672,6 +662,10 @@ int main( int argc, char *argv[] ){
            */
           if( (*tarrptr)[0]=='<' || (*tarrptr)[1]=='=' ||
              (!isalpha(ptr[-1]) && !isalpha(ptr[toklen])) ){
+            /* RND, INKEY$, PI
+             */
+            if( toknum>0xbc && toknum<0xc0 )
+              toknum-= 0x40;
             ptr2= linestart+(ptr-lcasebuf);
             /* the token text is overwritten in the lcase copy too, to
              * avoid problems with e.g. go to/to.
@@ -683,10 +677,6 @@ int main( int argc, char *argv[] ){
             while ( ptr2[f]==' ' )
               ptr2[f++]= 1;
 
-            /* for BIN, we need the token right before the number. */
-            if( toknum==BIN_TOKEN_NUM )
-              *ptr2= *ptr= 1,
-              ptr2[f-1]= ptr[f-1]= toknum;
           }
           ptr+= toklen;
         }
@@ -732,7 +722,7 @@ int main( int argc, char *argv[] ){
               /* insert room for number string */
               ptr--;
               memmove( ptr+len, ptr, strlen((char *)ptr)+1 );
-              memcpy( ptr, numbuf, len );
+              memcpycnv( ptr, numbuf, len );
               ptr+= len;
               break;
             }
@@ -773,10 +763,28 @@ int main( int argc, char *argv[] ){
             *outptr++= 144+tolower(ptr[1])-'a';
           else
             switch( ptr[1] ){
-              case '\\':  *outptr++='\\'; break;
-              case '@':   *outptr++='@';  break;
-              case '*':   *outptr++=127;  break;  /* copyright symbol */
-              case '\'': case '.': case ':': case ' ': /* block graphics char */
+              case '0': case '1': case '2': case '3': case '4': /* inverted digits */
+              case '5': case '6': case '7': case '8': case '9':
+                *outptr++= ptr[1]+108; break;
+              case '"': *outptr++=0x8b; break;
+              case '$': *outptr++=0x8d;  break;
+              case ':': *outptr++=0x8e;  break;
+              case '?': *outptr++=0x8f;  break;
+              case '(': *outptr++=0x90;  break;
+              case ')': *outptr++=0x91;  break;
+              case '>': *outptr++=0x92;  break;
+              case '<': *outptr++=0x93;  break;
+              case '=': *outptr++=0x94;  break;
+              case '+': *outptr++=0x95;  break;
+              case '-': *outptr++=0x96;  break;
+              case '*': *outptr++=0x97;  break;
+              case '/': *outptr++=0x98;  break;
+              case ';': *outptr++=0x99;  break;
+              case ',': *outptr++=0x9a;  break;
+              case '.': *outptr++=0x9b;  break;
+              case '\\':  *outptr++=0x0c;  break;  /* pound symbol */
+              case '@':   *outptr++=0x8c;  break;  /* inverse pound symbol */
+              case '\'': case '_': case '!': case ' ': /* block graphics char */
                 *outptr++=grok_block(ptr,textlinenum);
                 ptr++;
                 break;
@@ -815,19 +823,11 @@ int main( int argc, char *argv[] ){
            (isdigit(*ptr) ||
             ((*ptr=='-' || *ptr=='+' || *ptr=='.') && isdigit(ptr[1])) ||
             ((*ptr=='-' || *ptr=='+') && ptr[1]=='.' && isdigit(ptr[2]))) ){
-          if( ptr[-1]!=BIN_TOKEN_NUM )
-            /* we have a number. parse with strtod(). */
-            num= strtod((char *)ptr, (char **)&ptr2 );
-          else
-            /* however, if the number was after a BIN token, the inline
-             * number must match the binary number, e.g. BIN 1001 would be
-             * followed by an inline 9.
-             */
-            ptr2= ptr,
-            num= (double)grok_binary(&ptr2,textlinenum);
+          /* we have a number. parse with strtod(). */
+          num= strtod((char *)ptr, (char **)&ptr2 );
           
           /* output text of number */
-          memcpy( outptr, ptr, ptr2-ptr );
+          memcpycnv( outptr, ptr, ptr2-ptr );
           outptr+= ptr2-ptr;
 
           *outptr++=0x0e;
@@ -869,7 +869,7 @@ int main( int argc, char *argv[] ){
       *fileptr++= (linenum&255);
       *fileptr++= (linelen&255);
       *fileptr++= (linelen>>8);
-      memcpy( fileptr, outbuf, linelen );
+      memcpycnv( fileptr, outbuf, linelen );
       fileptr+= linelen;
     }   /* end of pass-making while() */
 
@@ -880,62 +880,59 @@ int main( int argc, char *argv[] ){
   if( in!=stdin )
     fclose(in);
 
-  /* we only need to do this if outputting a .tap, but might as well do
-   * it to check the label's ok anyway.
-   */
-  if( *startlabel ){
-    /* this is nearly a can't happen error, but FWIW... */
-    if( !use_labels )
-      fprintf( stderr, "Auto-start label specified, but not using labels!\n" ),
-      exit(1);
-    for ( f= 0; f<labelend; f++ )
-      if( strcmp((char *)startlabel, (char *)labels[f])==0 ){
-        startline= label_lines[f];
-        break;
-      }
-    if( f==labelend )
-      fprintf( stderr, "Auto-start label is undefined\n" ),
-      exit(1);
-  }
-
   /* write output file */
 
   if( strcmp(outfile,"-")!=0 && (out=fopen(outfile,"wb"))==NULL )
     fprintf( stderr, "Couldn't open output file.\n" ),
     exit(1);
 
-  if(output_tap){
+  if(output_tape){
     unsigned int siz= fileptr-filebuf;
     
     /* make header */
-    headerbuf[0]= 0;
-    for ( f= strlen(speccy_filename); f<10; f++ )
-      speccy_filename[f]= 32;
-    strncpy( (char *)headerbuf+1, speccy_filename, 10 );
-    headerbuf[11]= (siz&255);
-    headerbuf[12]= (siz/256);
-    headerbuf[13]= (startline&255);
-    headerbuf[14]= (startline/256);
-    headerbuf[15]= (siz&255);
-    headerbuf[16]= (siz/256);
+    //headerbuf[0]= 0;                        // VERSN
+    //*(short*)(headerbuf+1)= 0;              // E_PPC
+    *(short*)(headerbuf+3)= siz+0x407d;       // D_FILE
+    *(short*)(headerbuf+5)= siz+0x407e;       // DF_CC
+    *(short*)(headerbuf+7)= siz+0x4096;       // VARS
+    //*(short*)(headerbuf+9)= 0;              // DEST
+    *(short*)(headerbuf+11)= siz+0x4097;      // E_LINE
+    *(short*)(headerbuf+13)= siz+0x4096;      // CH_ADD
+    //*(short*)(headerbuf+15)= 0;             // X_PTR
+    *(short*)(headerbuf+17)= siz+0x4097;      // STKBOT
+    *(short*)(headerbuf+19)= siz+0x4097;      // STKEND
+    //headerbuf[21]= 0;                       // BERG
+    *(short*)(headerbuf+22)= 0x405d;          // MEM
+    //headerbuf[24]= 0;                       // not used
+    headerbuf[25]= 2;                         // DF_SZ
+    *(short*)(headerbuf+26)= 1;               // S_TOP
+    headerbuf[28]= -1;                        // LAST_K
+    *(short*)(headerbuf+29)= -1;
+    headerbuf[31]= 55;                        // MARGIN
+    *(short*)(headerbuf+32)= siz+0x407d;      // NXTLIN
+    //*(short*)(headerbuf+34)= 0;             // OLDPPC
+    //headerbuf[36]= 0;                       // FLAGX
+    //*(short*)(headerbuf+37)= 0;             // STRLEN
+    *(short*)(headerbuf+39)= 0x0c8d;          // T_ADDR
+    //*(short*)(headerbuf+41)= 0;             // SEED
+    *(short*)(headerbuf+43)= -1;              // FRAMES
+    //*(short*)(headerbuf+45)= 0;             // COORDS
+    headerbuf[47]= 0xbc;                      // PR_CC
+    headerbuf[48]= 33;                        // S_POSN
+    headerbuf[49]= 24;
+    headerbuf[50]= 0b01000000;                // CDFLAG
 
     /* write header */
-    fprintf( out, "%c%c%c", 19, 0, chk= 0 );
-    for ( f= 0; f<17; f++)
-      chk^= headerbuf[f];
-    fwrite( headerbuf, 1, 17, out );
-    fputc( chk, out );
-    
-    /* write (most of) tap bit for data block */
-    fprintf ( out, "%c%c%c", (siz+2)&255, (siz+2)>>8, chk= 255 );
-    for ( f= 0; f<siz; f++)
-      chk^= filebuf[f];
+    fwrite( headerbuf, 1, 0x74, out );
   }
 
   fwrite( filebuf, 1, fileptr-filebuf, out );
 
-  if( output_tap )
-    fputc(chk, out);
+  if( output_tape ){
+    for ( int i= 0; i<25; i++ )
+      fputc(0x76, out);
+    fputc(0x80, out);
+  }
 
   if( out!=stdout )
     fclose(out);
