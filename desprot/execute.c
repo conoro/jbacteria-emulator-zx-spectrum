@@ -332,7 +332,8 @@
 
 #define RESHL(n)                \
           st+= 15,              \
-          mem[t]= mem[t= l|h<<8] & n
+          w= mem[t= l|h<<8] & n,\
+          mem[t]= w
 
 #define SET(n, r)               \
           st+= 8,               \
