@@ -1802,7 +1802,7 @@ do{
       prefix=0;break;
     case 0xfb: // EI
       st+= 4;
-      iff= 1;
+      iff= 0x80;
       prefix=0;break;
     case 0xeb: // EX DE,HL
       st+= 4;
@@ -2506,17 +2506,17 @@ do{
         case 0x5e: case 0x7e:                              // IM 2
                    st+= 8; im= 2; break;
         case 0x47: LDRR(i, a, 9); break;                   // LD I,A
-        case 0x4f: LDRR(r, a, 9); rs= r; break;            // LD R,A
+        case 0x4f: LDRR(r, a, 9); rs= r&0x80; break;       // LD R,A
         case 0x57: st+= 9;                                 // LD A,I
                    ff=  ff&-256
                       | (a= i);
                    fr= !!a;
-                   fa= fb= iff<<7 & 128; break;
+                   fa= fb= iff; break;
         case 0x5f: st+= 9;                                 // LD A,R
                    ff=  ff&-256
-                      | (a= (r&127|rs&128));
+                      | (a= (r&127|rs));
                    fr= !!a;
-                   fa= fb= iff<<7 & 128; break;
+                   fa= fb= iff; break;
         case 0x67: st+= 18;                                // RRD
                    t= mem[mp= l|h<<8]
                     | a<<8;

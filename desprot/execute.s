@@ -46,14 +46,14 @@ e_:     .byte   0
 d_:     .byte   0
 l_:     .byte   0
 h_:     .byte   0
+dummy:  .byte   0
+i:      .byte   0
 yl:     .byte   0
 yh:     .byte   0
-dummy:            .short  0
-i:      .byte   0
-iff:    .byte   0
 im:     .byte   0
-w:      .byte   0
+iff:    .byte   0
 halted: .byte   0
+w:      .byte   0
 
         .equ    ost,      0
         .equ    osttap,   8+ost
@@ -97,13 +97,14 @@ halted: .byte   0
         .equ    od_,      1+oe_
         .equ    ol_,      1+od_
         .equ    oh_,      1+ol_
-        .equ    oyl,      1+oh_
+        .equ    odummy,   1+oh_
+        .equ    oi,       1+odummy
+        .equ    oyl,      1+oi
         .equ    oyh,      1+oyl
-        .equ    oi,           3+oyh
-        .equ    oiff,     1+oi
-        .equ    oim,      1+oiff
-        .equ    ow,       1+oim
-        .equ    ohalted,  1+ow
+        .equ    oim,      1+oyh
+        .equ    oiff,     1+im
+        .equ    ohalted,  1+oiff
+        .equ    ow,       1+ohalted
 
         punt    .req      r0
         mem     .req      r1
@@ -115,7 +116,7 @@ halted: .byte   0
         hlmp    .req      r7
         arvpref .req      r8
         ixstart .req      r9
-        iy      .req      r12
+        iyi     .req      r12
 
       .macro    TIME  cycles
         adds    stlo, stlo, #\cycles
@@ -616,7 +617,7 @@ halted: .byte   0
         r7      hl | mp
         r8      ar | r7 iff im halted : prefix
         r9      ix | start
-        r12     iy |
+        r12     iy | i : intr tap
 */
 
 .text
@@ -632,10 +633,13 @@ execute:push    {r4-r12, lr}
         ldr     bcfb, [punt, #ofb]    @ bc | fb
         ldr     defr, [punt, #ofr]    @ de | fr
         ldr     hlmp, [punt, #omp]    @ hl | mp
-        ldr     arvpref, [punt, #oprefix] @ ar | r7 iff im halted : prefix
+        ldr     arvpref, [punt, #oprefix] @ ar | r7 halted_3 iff_2 im: prefix
         ldr     ixstart, [punt, #ostart]  @ ix | start
-        ldr     iy, [punt, #oyl-2]    @ iy |
-
+        ldr     iyi, [punt, #odummy]  @ iy | i: intr tap
+        ldr     lr, [punt, #oim]      @ halted | iff im    0000000h i0000000 000000mm
+        add     lr, lr, lsr #13
+        uxtb    lr, lr
+        orr     arvpref, lr, lsl #8
 
 exec1:  ldrh    lr, [punt, #ostart]
         cmp     lr, pcff, lsr #16
@@ -663,7 +667,7 @@ _st:    .word   st
         .word   decbc         @ 0b DEC BC
         .word   incc          @ 0c INC C
         .word   decc          @ 0d DEC C
-        .word   ldbn          @ 0e LD C,n
+        .word   ldcn          @ 0e LD C,n
         .word   rrca          @ 0f RRCA
         .word   nop           @ 10 DJNZ
         .word   lddenn        @ 11 LD DE,nn
@@ -892,7 +896,7 @@ _st:    .word   st
         .word   retp          @ f0 RET P
         .word   nop           @ f1 POP AF
         .word   nop           @ f2 JP P
-        .word   nop           @ f3 DI
+        .word   di            @ f3 DI
         .word   callp         @ f4 CALL P
         .word   nop           @ f5 PUSH AF
         .word   nop           @ f6 OR A,n
@@ -900,7 +904,7 @@ _st:    .word   st
         .word   retm          @ f8 RET M
         .word   ldspxx        @ f9 LD SP,HL
         .word   nop           @ fa JP M
-        .word   nop           @ fb EI
+        .word   ei            @ fb EI
         .word   callm         @ fc CALL M
         .word   opfd          @ fd op fd
         .word   nop           @ fe CP A,n
@@ -915,6 +919,14 @@ opdd:   TIME    4
 opfd:   TIME    4
         PREFIX2
 
+ei:     TIME    4
+        orr     arvpref, #0x00000400
+        PREFIX0
+
+di:     TIME    4
+        and     arvpref, #0xfffffbff
+        PREFIX0
+
 ldbcnn: LDRRIM  bcfb
 lddenn: LDRRIM  defr
 
@@ -922,7 +934,7 @@ ldxxnn: movs    lr, arvpref, lsl #24
         beq     ldhlnn
         bmi     ldiynn
         LDRRIM  ixstart
-ldiynn: LDRRIM  iy
+ldiynn: LDRRIM  iyi
 ldhlnn: LDRRIM  hlmp
 
 jpxx:   TIME    4
@@ -931,7 +943,7 @@ jpxx:   TIME    4
         bmi     jpiy
         pkhbt   pcff, pcff, ixstart
         PREFIX0
-jpiy:   pkhbt   pcff, pcff, iy
+jpiy:   pkhbt   pcff, pcff, iyi
         PREFIX0
 jphl:   pkhbt   pcff, pcff, hlmp
         PREFIX0
@@ -942,7 +954,7 @@ ldspxx: TIME    4
         bmi     ldspiy
         pkhbt   spfa, spfa, ixstart
         PREFIX0
-ldspiy: pkhbt   spfa, spfa, iy
+ldspiy: pkhbt   spfa, spfa, iyi
         PREFIX0
 ldsphl: pkhbt   spfa, spfa, hlmp
         PREFIX0
@@ -951,7 +963,7 @@ ldxxpnn:movs    lr, arvpref, lsl #24
         beq     ldhlpnn
         bmi     ldiypnn
         LDRRPNN ixstart, 16
-ldiypnn:LDRRPNN iy, 16
+ldiypnn:LDRRPNN iyi, 16
 ldhlpnn:LDRRPNN hlmp, 16
 
 ldbcpnn:LDRRPNN bcfb, 20
@@ -964,7 +976,7 @@ ldpnnxx:movs    lr, arvpref, lsl #24
         beq     ldpnnhl
         bmi     ldpnniy
         LDPNNRR ixstart, 16
-ldpnniy:LDPNNRR iy, 16
+ldpnniy:LDPNNRR iyi, 16
 ldpnnhl:LDPNNRR hlmp, 16
 
 ldpnnbc:LDPNNRR bcfb, 20
@@ -976,28 +988,28 @@ addxxbc:movs    lr, arvpref, lsl #24
         beq     addhlbc
         bmi     addiybc
         ADDRRRR ixstart, bcfb
-addiybc:ADDRRRR iy, bcfb
+addiybc:ADDRRRR iyi, bcfb
 addhlbc:ADDRRRR hlmp, bcfb
 
 addxxde:movs    lr, arvpref, lsl #24
         beq     addhlde
         bmi     addiyde
         ADDRRRR ixstart, defr
-addiyde:ADDRRRR iy, defr
+addiyde:ADDRRRR iyi, defr
 addhlde:ADDRRRR hlmp, defr
 
 addxxxx:movs    lr, arvpref, lsl #24
         beq     addhlhl
         bmi     addiyiy
         ADDRRRR ixstart, ixstart
-addiyiy:ADDRRRR iy, iy
+addiyiy:ADDRRRR iyi, iyi
 addhlhl:ADDRRRR hlmp, hlmp
 
 addxxsp:movs    lr, arvpref, lsl #24
         beq     addhlsp
         bmi     addiysp
         ADDRRRR ixstart, spfa
-addiysp:ADDRRRR iy, spfa
+addiysp:ADDRRRR iyi, spfa
 addhlsp:ADDRRRR hlmp, spfa
 
 callnn: TIME    17
@@ -1095,14 +1107,14 @@ lxhn:   movs    lr, arvpref, lsl #24
         beq     ldhn
         bmi     ldyhn
         LDRIM   ixstart, 8
-ldyhn:  LDRIM   iy, 8
+ldyhn:  LDRIM   iyi, 8
 ldhn:   LDRIM   hlmp, 8
 
 lxln:   movs    lr, arvpref, lsl #24
         beq     ldln
         bmi     ldyln
         LDRIM   ixstart, 0
-ldyln:  LDRIM   iy, 0
+ldyln:  LDRIM   iyi, 0
 ldln:   LDRIM   hlmp, 0
 
 ldan:   LDRIM   arvpref, 8
@@ -1114,14 +1126,14 @@ lxbh:   movs    lr, arvpref, lsl #24
         beq     ldbh
         bmi     ldbyh
         LDXX    bcfb, 8, ixstart, 8
-ldbyh:  LDXX    bcfb, 8, iy, 8
+ldbyh:  LDXX    bcfb, 8, iyi, 8
 ldbh:   LDXX    bcfb, 8, hlmp, 8
 
 lxbl:   movs    lr, arvpref, lsl #24
         beq     ldbl
         bmi     ldbyl
         LDXX    bcfb, 8, ixstart, 0
-ldbyl:  LDXX    bcfb, 8, iy, 0
+ldbyl:  LDXX    bcfb, 8, iyi, 0
 ldbl:   LDXX    bcfb, 8, hlmp, 0
 
 ldba:   LDXX    bcfb, 8, arvpref, 8
@@ -1133,14 +1145,14 @@ lxch:   movs    lr, arvpref, lsl #24
         beq     ldch
         bmi     ldcyh
         LDXX    bcfb, 0, ixstart, 8
-ldcyh:  LDXX    bcfb, 0, iy, 8
+ldcyh:  LDXX    bcfb, 0, iyi, 8
 ldch:   LDXX    bcfb, 0, hlmp, 8
 
 lxcl:   movs    lr, arvpref, lsl #24
         beq     ldcl
         bmi     ldcyl
         LDXX    bcfb, 0, ixstart, 0
-ldcyl:  LDXX    bcfb, 0, iy, 0
+ldcyl:  LDXX    bcfb, 0, iyi, 0
 ldcl:   LDXX    bcfb, 0, hlmp, 0
 
 ldca:   LDXX    bcfb, 0, arvpref, 8
@@ -1152,14 +1164,14 @@ lxdh:   movs    lr, arvpref, lsl #24
         beq     lddh
         bmi     lddyh
         LDXX    defr, 8, ixstart, 8
-lddyh:  LDXX    defr, 8, iy, 8
+lddyh:  LDXX    defr, 8, iyi, 8
 lddh:   LDXX    defr, 8, hlmp, 8
 
 lxdl:   movs    lr, arvpref, lsl #24
         beq     lddl
         bmi     lddyl
         LDXX    defr, 8, ixstart, 0
-lddyl:  LDXX    defr, 8, iy, 0
+lddyl:  LDXX    defr, 8, iyi, 0
 lddl:   LDXX    defr, 8, hlmp, 0
 
 ldda:   LDXX    defr, 8, arvpref, 8
@@ -1170,14 +1182,14 @@ lxeh:   movs    lr, arvpref, lsl #24
         beq     ldeh
         bmi     ldeyh
         LDXX    defr, 0, ixstart, 8
-ldeyh:  LDXX    defr, 0, iy, 8
+ldeyh:  LDXX    defr, 0, iyi, 8
 ldeh:   LDXX    defr, 0, hlmp, 8
 
 lxel:   movs    lr, arvpref, lsl #24
         beq     ldel
         bmi     ldeyl
         LDXX    defr, 0, ixstart, 0
-ldeyl:  LDXX    defr, 0, iy, 0
+ldeyl:  LDXX    defr, 0, iyi, 0
 ldel:   LDXX    defr, 0, hlmp, 0
 
 ldea:   LDXX    defr, 0, arvpref, 8
@@ -1186,84 +1198,84 @@ lxhb:   movs    lr, arvpref, lsl #24
         beq     ldhb
         bmi     ldyhb
         LDXX    ixstart, 8, bcfb, 8
-ldyhb:  LDXX    iy, 8, bcfb, 8
+ldyhb:  LDXX    iyi, 8, bcfb, 8
 ldhb:   LDXX    hlmp, 8, bcfb, 8
 
 lxhc:   movs    lr, arvpref, lsl #24
         beq     ldhc
         bmi     ldyhc
         LDXX    ixstart, 8, bcfb, 0
-ldyhc:  LDXX    iy, 8, bcfb, 0
+ldyhc:  LDXX    iyi, 8, bcfb, 0
 ldhc:   LDXX    hlmp, 8, bcfb, 0
 
 lxhd:   movs    lr, arvpref, lsl #24
         beq     ldhd
         bmi     ldyhd
         LDXX    ixstart, 8, defr, 8
-ldyhd:  LDXX    iy, 8, defr, 8
+ldyhd:  LDXX    iyi, 8, defr, 8
 ldhd:   LDXX    hlmp, 8, defr, 8
 
 lxhe:   movs    lr, arvpref, lsl #24
         beq     ldhe
         bmi     ldyhe
         LDXX    ixstart, 8, defr, 0
-ldyhe:  LDXX    iy, 8, defr, 0
+ldyhe:  LDXX    iyi, 8, defr, 0
 ldhe:   LDXX    hlmp, 8, defr, 0
 
 lxhl:   movs    lr, arvpref, lsl #24
         beq     ldhl
         bmi     ldyhl
         LDXX    ixstart, 8, ixstart, 0
-ldyhl:  LDXX    iy, 8, iy, 0
+ldyhl:  LDXX    iyi, 8, iyi, 0
 ldhl:   LDXX    hlmp, 8, hlmp, 0
 
 lxha:   movs    lr, arvpref, lsl #24
         beq     ldha
         bmi     ldyha
         LDXX    ixstart, 8, arvpref, 8
-ldyha:  LDXX    iy, 8, arvpref, 8
+ldyha:  LDXX    iyi, 8, arvpref, 8
 ldha:   LDXX    hlmp, 8, arvpref, 8
 
 lxlb:   movs    lr, arvpref, lsl #24
         beq     ldlb
         bmi     ldylb
         LDXX    ixstart, 0, bcfb, 8
-ldylb:  LDXX    iy, 0, bcfb, 8
+ldylb:  LDXX    iyi, 0, bcfb, 8
 ldlb:   LDXX    hlmp, 0, bcfb, 8
 
 lxlc:   movs    lr, arvpref, lsl #24
         beq     ldlc
         bmi     ldylc
         LDXX    ixstart, 0, bcfb, 0
-ldylc:  LDXX    iy, 0, bcfb, 0
+ldylc:  LDXX    iyi, 0, bcfb, 0
 ldlc:   LDXX    hlmp, 0, bcfb, 0
 
 lxld:   movs    lr, arvpref, lsl #24
         beq     ldld
         bmi     ldyld
         LDXX    ixstart, 0, defr, 8
-ldyld:  LDXX    iy, 0, defr, 8
+ldyld:  LDXX    iyi, 0, defr, 8
 ldld:   LDXX    hlmp, 0, defr, 8
 
 lxle:   movs    lr, arvpref, lsl #24
         beq     ldle
         bmi     ldyle
         LDXX    ixstart, 0, defr, 0
-ldyle:  LDXX    iy, 0, defr, 0
+ldyle:  LDXX    iyi, 0, defr, 0
 ldle:   LDXX    hlmp, 0, defr, 0
 
 lxlh:   movs    lr, arvpref, lsl #24
         beq     ldlh
         bmi     ldylh
         LDXX    ixstart, 0, ixstart, 8
-ldylh:  LDXX    iy, 0, iy, 8
+ldylh:  LDXX    iyi, 0, iyi, 8
 ldlh:   LDXX    hlmp, 0, hlmp, 8
 
 lxla:   movs    lr, arvpref, lsl #24
         beq     ldla
         bmi     ldyla
         LDXX    ixstart, 0, arvpref, 8
-ldyla:  LDXX    iy, 0, arvpref, 8
+ldyla:  LDXX    iyi, 0, arvpref, 8
 ldla:   LDXX    hlmp, 0, arvpref, 8
 
 ldab:   LDXX    arvpref, 8, bcfb, 8
@@ -1275,14 +1287,14 @@ lxah:   movs    lr, arvpref, lsl #24
         beq     ldah
         bmi     ldayh
         LDXX    arvpref, 8, ixstart, 8
-ldayh:  LDXX    arvpref, 8, iy, 8
+ldayh:  LDXX    arvpref, 8, iyi, 8
 ldah:   LDXX    arvpref, 8, hlmp, 8
 
 lxal:   movs    lr, arvpref, lsl #24
         beq     ldal
         bmi     ldayl
         LDXX    arvpref, 8, ixstart, 0
-ldayl:  LDXX    arvpref, 8, iy, 0
+ldayl:  LDXX    arvpref, 8, iyi, 0
 ldal:   LDXX    arvpref, 8, hlmp, 0
 
 inca:   INC     arvpref, 8
@@ -1295,14 +1307,14 @@ inchx:  movs    lr, arvpref, lsl #24
         beq     inch
         bmi     incyh
         INC     ixstart, 8
-incyh:  INC     iy, 8
+incyh:  INC     iyi, 8
 inch:   INC     hlmp, 8
 
 inclx:  movs    lr, arvpref, lsl #24
         beq     incl
         bmi     incyl
         INC     ixstart, 0
-incyl:  INC     iy, 0
+incyl:  INC     iyi, 0
 incl:   INC     hlmp, 0
 
 deca:   DEC     arvpref, 8
@@ -1315,14 +1327,14 @@ dechx:  movs    lr, arvpref, lsl #24
         beq     dech
         bmi     decyh
         DEC     ixstart, 8
-decyh:  DEC     iy, 8
+decyh:  DEC     iyi, 8
 dech:   DEC     hlmp, 8
 
 declx:  movs    lr, arvpref, lsl #24
         beq     decl
         bmi     decyl
         DEC     ixstart, 0
-decyl:  DEC     iy, 0
+decyl:  DEC     iyi, 0
 decl:   DEC     hlmp, 0
 
 rst00:  RST     0x00
@@ -1355,14 +1367,14 @@ addxh:  movs    lr, arvpref, lsl #24
         beq     addah
         bmi     addayh
         XADD    ixstart, 8, 4
-addayh: XADD    iy, 8, 4
+addayh: XADD    iyi, 8, 4
 addah:  XADD    hlmp, 8, 4
 
 addxl:  movs    lr, arvpref, lsl #24
         beq     addal
         bmi     addayl
         XADD    ixstart, 0, 4
-addayl: XADD    iy, 0, 4
+addayl: XADD    iyi, 0, 4
 addal:  XADD    hlmp, 0, 4
 
 addan:  ldrb    lr, [mem, pcff, lsr #16]
@@ -1391,14 +1403,14 @@ andxh:  movs    lr, arvpref, lsl #24
         beq     andh
         bmi     andyh
         XAND    ixstart, 8, 4
-andyh:  XAND    iy, 8, 4
+andyh:  XAND    iyi, 8, 4
 andh:   XAND    hlmp, 8, 4
 
 andxl:  movs    lr, arvpref, lsl #24
         beq     andl
         bmi     andyl
         XAND    ixstart, 0, 4
-andyl:  XAND    iy, 0, 4
+andyl:  XAND    iyi, 0, 4
 andl:   XAND    hlmp, 0, 4
 
 andan:  ldrb    lr, [mem, pcff, lsr #16]
@@ -1423,14 +1435,14 @@ xorxh:  movs    lr, arvpref, lsl #24
         beq     xorh
         bmi     xoryh
         XOR     ixstart, 8, 4
-xoryh:  XOR     iy, 8, 4
+xoryh:  XOR     iyi, 8, 4
 xorh:   XOR     hlmp, 8, 4
 
 xorxl:  movs    lr, arvpref, lsl #24
         beq     xorl
         bmi     xoryl
         XOR     ixstart, 0, 4
-xoryl:  XOR     iy, 0, 4
+xoryl:  XOR     iyi, 0, 4
 xorl:   XOR     hlmp, 0, 4
 
 xorxx:  movs    lr, arvpref, lsl #24
@@ -1442,7 +1454,7 @@ xorxx:  movs    lr, arvpref, lsl #24
         add     lr, ixstart, lsr #16
         ldrb    lr, [mem, lr]
         XOR     lr, 24, 7
-xoriy:  add     lr, iy, lsr #16
+xoriy:  add     lr, iyi, lsr #16
         ldrb    lr, [mem, lr]
         XOR     lr, 24, 7
 xorhl:  ldrb    lr, [mem, hlmp, lsr #16]
@@ -1466,14 +1478,14 @@ orxh:   movs    lr, arvpref, lsl #24
         beq     orh
         bmi     oryh
         OR      ixstart, 8
-oryh:   OR      iy, 8
+oryh:   OR      iyi, 8
 orh:    OR      hlmp, 8
 
 orxl:   movs    lr, arvpref, lsl #24
         beq     orl
         bmi     oryl
         OR      ixstart, 0
-oryl:   OR      iy, 0
+oryl:   OR      iyi, 0
 orl:    OR      hlmp, 0
 
 ora:    TIME    4
@@ -1494,14 +1506,14 @@ cpxh:   movs    lr, arvpref, lsl #24
         beq     cph
         bmi     cpyh
         CP      ixstart, 8
-cpyh:   CP      iy, 8
+cpyh:   CP      iyi, 8
 cph:    CP      hlmp, 8
 
 cpxl:   movs    lr, arvpref, lsl #24
         beq     cpl
         bmi     cpyl
         CP      ixstart, 0
-cpyl:   CP      iy, 0
+cpyl:   CP      iyi, 0
 cpl:    CP      hlmp, 0
 
 cpa:    TIME    4
@@ -1531,49 +1543,49 @@ lxbhl:  movs    lr, arvpref, lsl #24
         beq     ldbhl
         bmi     ldbiy
         LDRPI   ixstart, bcfb, 8
-ldbiy:  LDRPI   iy, bcfb, 8
+ldbiy:  LDRPI   iyi, bcfb, 8
 ldbhl:  LDRP    hlmp, bcfb, 8
 
 lxchl:  movs    lr, arvpref, lsl #24
         beq     ldchl
         bmi     ldciy
         LDRPI   ixstart, bcfb, 0
-ldciy:  LDRPI   iy, bcfb, 0
+ldciy:  LDRPI   iyi, bcfb, 0
 ldchl:  LDRP    hlmp, bcfb, 0
 
 lxdhl:  movs    lr, arvpref, lsl #24
         beq     lddhl
         bmi     lddiy
         LDRPI   ixstart, defr, 8
-lddiy:  LDRPI   iy, defr, 8
+lddiy:  LDRPI   iyi, defr, 8
 lddhl:  LDRP    hlmp, defr, 8
 
 lxehl:  movs    lr, arvpref, lsl #24
         beq     ldehl
         bmi     ldeiy
         LDRPI   ixstart, defr, 0
-ldeiy:  LDRPI   iy, defr, 0
+ldeiy:  LDRPI   iyi, defr, 0
 ldehl:  LDRP    hlmp, defr, 0
 
 lxhhl:  movs    lr, arvpref, lsl #24
         beq     ldhhl
         bmi     ldhiy
         LDRPI   ixstart, hlmp, 8
-ldhiy:  LDRPI   iy, hlmp, 8
+ldhiy:  LDRPI   iyi, hlmp, 8
 ldhhl:  LDRP    hlmp, hlmp, 8
 
 lxlhl:  movs    lr, arvpref, lsl #24
         beq     ldlhl
         bmi     ldliy
         LDRPI   ixstart, hlmp, 0
-ldliy:  LDRPI   iy, hlmp, 0
+ldliy:  LDRPI   iyi, hlmp, 0
 ldlhl:  LDRP    hlmp, hlmp, 0
 
 lxahl:  movs    lr, arvpref, lsl #24
         beq     ldahl
         bmi     ldaiy
         LDRPI   ixstart, arvpref, 8
-ldaiy:  LDRPI   iy, arvpref, 8
+ldaiy:  LDRPI   iyi, arvpref, 8
 ldahl:  LDRP    hlmp, arvpref, 8
 
 ldade:  LDRP    defr, arvpref, 8
@@ -1583,49 +1595,49 @@ ldxxb:  movs    lr, arvpref, lsl #24
         beq     ldhlb
         bmi     ldiyb
         LDPRI   ixstart, bcfb, 8
-ldiyb:  LDPRI   iy, bcfb, 8
+ldiyb:  LDPRI   iyi, bcfb, 8
 ldhlb:  LDPR    hlmp, bcfb, 8
 
 ldxxc:  movs    lr, arvpref, lsl #24
         beq     ldhlc
         bmi     ldiyc
         LDPRI   ixstart, bcfb, 0
-ldiyc:  LDPRI   iy, bcfb, 0
+ldiyc:  LDPRI   iyi, bcfb, 0
 ldhlc:  LDPR    hlmp, bcfb, 0
 
 ldxxd:  movs    lr, arvpref, lsl #24
         beq     ldhld
         bmi     ldiyd
         LDPRI   ixstart, defr, 8
-ldiyd:  LDPRI   iy, defr, 8
+ldiyd:  LDPRI   iyi, defr, 8
 ldhld:  LDPR    hlmp, defr, 8
 
 ldxxe:  movs    lr, arvpref, lsl #24
         beq     ldhle
         bmi     ldiye
         LDPRI   ixstart, defr, 0
-ldiye:  LDPRI   iy, defr, 0
+ldiye:  LDPRI   iyi, defr, 0
 ldhle:  LDPR    hlmp, defr, 0
 
 ldxxh:  movs    lr, arvpref, lsl #24
         beq     ldhlh
         bmi     ldiyh
         LDPRI   ixstart, hlmp, 8
-ldiyh:  LDPRI   iy, hlmp, 8
+ldiyh:  LDPRI   iyi, hlmp, 8
 ldhlh:  LDPR    hlmp, hlmp, 8
 
 ldxxl:  movs    lr, arvpref, lsl #24
         beq     ldhll
         bmi     ldiyl
         LDPRI   ixstart, hlmp, 0
-ldiyl:  LDPRI   iy, hlmp, 0
+ldiyl:  LDPRI   iyi, hlmp, 0
 ldhll:  LDPR    hlmp, hlmp, 0
 
 ldxxa:  movs    lr, arvpref, lsl #24
         beq     ldhla
         bmi     ldiya
         LDPRI   ixstart, arvpref, 8
-ldiya:  LDPRI   iy, arvpref, 8
+ldiya:  LDPRI   iyi, arvpref, 8
 ldhla:  LDPR    hlmp, arvpref, 8
 
 incbc:  INCW    bcfb
@@ -1636,7 +1648,7 @@ inchlx: movs    lr, arvpref, lsl #24
         beq     inchl
         bmi     incyhl
         INCW    ixstart
-incyhl: INCW    iy
+incyhl: INCW    iyi
 inchl:  INCW    hlmp
 
 decbc:  DECW    bcfb
@@ -1647,7 +1659,7 @@ dechlx: movs    lr, arvpref, lsl #24
         beq     dechl
         bmi     decyhl
         DECW    ixstart
-decyhl: DECW    iy
+decyhl: DECW    iyi
 dechl:  DECW    hlmp
 
 pushbc: PUS     bcfb
@@ -1661,7 +1673,7 @@ pushxx: movs    lr, arvpref, lsl #24
         bmi     pushiy
         PUS     ixstart
         PREFIX0
-pushiy: PUS     iy
+pushiy: PUS     iyi
         PREFIX0
 pushhl: PUS     hlmp
         PREFIX0
@@ -1677,7 +1689,7 @@ popxx:  movs    lr, arvpref, lsl #24
         bmi     popiy
         POPP    ixstart
         PREFIX0
-popiy:  POPP    iy
+popiy:  POPP    iyi
         PREFIX0
 pophl:  POPP    hlmp
         PREFIX0
@@ -1687,7 +1699,7 @@ exspxx: movs    lr, arvpref, lsl #24
         bmi     exspiy
         EXSPI   ixstart
         PREFIX0
-exspiy: EXSPI   iy
+exspiy: EXSPI   iyi
         PREFIX0
 exsphl: EXSPI   hlmp
         PREFIX0
@@ -2348,13 +2360,13 @@ opxdcb: bmi     opfdcb
 opfdcb: TIME    11
         ldr     lr, [mem, pcff, lsr #16]
         sxtb    r11, lr
-        add     r11, iy, lsr #16
+        add     r11, iyi, lsr #16
 contcb: pkhtb   hlmp, hlmp, r11
         ldrb    r10, [mem, r11]
         uxtb    lr, lr, ror #8
         add     pcff, #0x00020000
         ldr     pc, [pc, lr, lsl #2]
-        .word   0             @ relleno
+c18003: .word   0x00018003
         .word   nop8          @ 00 LD B,RLC (IX+d) // LD B,RLC (IY+d)
         .word   nop8          @ 01 LD C,RLC (IX+d) // LD C,RLC (IY+d)
         .word   nop8          @ 02 LD D,RLC (IX+d) // LD D,RLC (IY+d)
@@ -2723,10 +2735,18 @@ exec11:
         str     bcfb, [punt, #ofb]    @ bc | fb
         str     defr, [punt, #ofr]    @ de | fr
         str     hlmp, [punt, #omp]    @ hl | mp
-        str     arvpref, [punt, #oprefix] @ ar | r7 iff im halted : prefix
         str     ixstart, [punt, #ostart]  @ ix | start
-        mov     iy, iy, lsr #16
-        str     iy, [punt, #oyl]      @ iy |
+        str     iyi, [punt, #odummy]  @ iy | i : intr tap
+
+        uxtb    lr, arvpref, ror #8
+        add     lr, lr, lsl #13
+        ldr     r11, c18003
+        and     lr, r11
+        str     lr, [punt, #oim]
+
+        and     arvpref, #0xffff80ff
+        str     arvpref, [punt, #oprefix] @ ar | r7 halted_3 iff_2 im: prefix
+        
 
         pop     {r4-r12, lr}
         bx      lr

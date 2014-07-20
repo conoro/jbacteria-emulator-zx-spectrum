@@ -239,9 +239,9 @@ int main (int argc, char **argv){
         fread(&xl, 1, 1, fh);
         fread(&xh, 1, 1, fh);
         fread(&iff, 1, 1, fh);
-        iff>>= 2;
+        iff<<= 5;
         fread(&r, 1, 1, fh);
-        rs= r;
+        rs= r&0x80;
         fread(&w, 1, 1, fh);
         setf(w);
         fread(&a, 1, 1, fh);
@@ -264,7 +264,7 @@ int main (int argc, char **argv){
         fread(&sp, 2, 1, fh),
         fread(&i, 1, 1, fh),
         fread(&r, 1, 1, fh),
-        rs= r,
+        rs= r&0x80,
         fread(&e, 1, 1, fh),
         fread(&d, 1, 1, fh),
         fread(&c_, 1, 1, fh),
@@ -349,9 +349,9 @@ int main (int argc, char **argv){
       fwrite(&yh, 1, 1, fh),
       fwrite(&xl, 1, 1, fh),
       fwrite(&xh, 1, 1, fh),
-      iff<<= 2,
+      iff>>= 5,
       fwrite(&iff, 1, 1, fh),
-      r= (r&127|rs&128),
+      r= (r&127|rs),
       fwrite(&r, 1, 1, fh),
       fwrite(&t, 1, 1, fh),
       fwrite(&a, 1, 1, fh),
@@ -375,7 +375,7 @@ int main (int argc, char **argv){
       fwrite(&sp, 2, 1, fh);   // 10008 SPl
                                // 10009 SPh
       fwrite(&i, 1, 1, fh);    // 1000a I
-      r= (r&127|rs&128);
+      r= (r&127|rs);
       fwrite(&r, 1, 1, fh);    // 1000b R
       fwrite(&e, 1, 1, fh);    // 1000c E
       fwrite(&d, 1, 1, fh);    // 1000d D
