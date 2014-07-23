@@ -315,7 +315,7 @@ int main (int argc, char **argv){
   execute();
   if( tap && st>sttap )
     sttap= st+( tap= tapcycles() );
-  printf("%llu %x\n", st, mem[pc]);
+  printf("%llu %04x\n", st, mem[pc+1]|mem[pc]<<8);
   if( output ){
     fh= fopen(output, "wb+");
     if( !fh )
@@ -400,8 +400,9 @@ int main (int argc, char **argv){
       fwrite(&im, 1, 1, fh);   // 1001b IM
       fwrite(&mp, 2, 1, fh);   // 1001c MEMPTRl
                                // 1001d MEMPTRh
-      wavlen-= wavpos,
-      sttap-= st;
+      if( tap )
+        wavlen-= wavpos,
+        sttap-= st;
       wavlen= (wavlen<<1) | (ear>>6&1);
       fwrite(&wavlen, 4, 1, fh);  // 1001e wavlen
       fwrite(&sttap, 4, 1, fh);   // 10022 sttap

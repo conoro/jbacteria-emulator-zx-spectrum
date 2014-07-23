@@ -4,6 +4,7 @@
 .global a, c, b, e, d, l, h, a_, c_, b_, e_, d_, l_, h_
 .global xl, xh, yl, yh, i, r, rs, prefix, iff, im, w, halted
 
+        .align
 st:     .quad   0
 sttap:  .quad   0
 stint:  .quad   0
@@ -17,7 +18,6 @@ pc:     .short  0
 start:  .short  0
 xl:     .byte   0
 xh:     .byte   0
-endd:   .short  0
 mp:     .short  0
 l:      .byte   0
 h:      .byte   0
@@ -29,6 +29,14 @@ fa_:    .short  0
 fb_:    .short  0
 ff_:    .short  0
 fr_:    .short  0
+c_:     .byte   0
+b_:     .byte   0
+e_:     .byte   0
+d_:     .byte   0
+dummy1: .short  0
+l_:     .byte   0
+h_:     .byte   0
+endd:   .short  0
 fb:     .short  0
 c:      .byte   0
 b:      .byte   0
@@ -40,13 +48,6 @@ rs:     .byte   0
 r:      .byte   0
 a:      .byte   0
 a_:     .byte   0
-c_:     .byte   0
-b_:     .byte   0
-e_:     .byte   0
-d_:     .byte   0
-dummy1: .short  0
-l_:     .byte   0
-h_:     .byte   0
 dummy2: .byte   0
 i:      .byte   0
 yl:     .byte   0
@@ -69,8 +70,7 @@ w:      .byte   0
         .equ    ostart,   2+opc
         .equ    oxl,      2+ostart
         .equ    oxh,      1+oxl
-        .equ    oendd,    1+oxh
-        .equ    omp,      2+oendd
+        .equ    omp,      1+oxh
         .equ    ol,       2+omp
         .equ    oh,       1+ol
         .equ    ot,       1+oh
@@ -81,7 +81,15 @@ w:      .byte   0
         .equ    ofb_,     2+ofa_
         .equ    off_,     2+ofb_
         .equ    ofr_,     2+off_
-        .equ    ofb,      2+ofr_
+        .equ    oc_,      2+ofr_
+        .equ    ob_,      1+oc_
+        .equ    oe_,      1+ob_
+        .equ    od_,      1+oe_
+        .equ    odummy1,  1+od_
+        .equ    ol_,      2+odummy1
+        .equ    oh_,      1+ol_
+        .equ    oendd,    1+oh_
+        .equ    ofb,      2+oendd
         .equ    oc,       2+ofb
         .equ    ob,       1+oc
         .equ    ofr,      1+ob
@@ -92,14 +100,7 @@ w:      .byte   0
         .equ    or,       1+ors
         .equ    oa,       1+or
         .equ    oa_,      1+oa
-        .equ    oc_,      1+oa_
-        .equ    ob_,      1+oc_
-        .equ    oe_,      1+ob_
-        .equ    od_,      1+oe_
-        .equ    odummy1,  1+od_
-        .equ    ol_,      2+odummy1
-        .equ    oh_,      1+ol_
-        .equ    odummy2,  1+oh_
+        .equ    odummy2,  1+oa_
         .equ    oi,       1+odummy2
         .equ    oyl,      1+oi
         .equ    oyh,      1+oyl
@@ -236,6 +237,38 @@ w:      .byte   0
         PREFIX0
       .endm
 
+      .macro    INCPI   regis
+        TIME    19
+        add     r11, \regis, lsr #16
+        ldrb    lr, [mem, r11]
+        pkhtb   spfa, spfa, lr
+        mov     lr, #0x00000001
+        pkhtb   bcfb, bcfb, lr
+        uadd8   lr, lr, spfa
+        strb    lr, [mem, r11]
+        pkhtb   defr, defr, lr
+        and     r11, pcff, #0x00000100
+        orr     lr, r11
+        pkhtb   pcff, pcff, lr
+        PREFIX0
+      .endm
+
+      .macro    DECPI   regis
+        TIME    19
+        add     r11, \regis, lsr #16
+        ldrb    lr, [mem, r11]
+        pkhtb   spfa, spfa, lr
+        mov     lr, #0xffffffff
+        pkhtb   bcfb, bcfb, lr
+        uadd8   lr, lr, spfa
+        strb    lr, [mem, r11]
+        pkhtb   defr, defr, lr
+        and     r11, pcff, #0x00000100
+        orr     lr, r11
+        pkhtb   pcff, pcff, lr
+        PREFIX0
+      .endm
+
       .macro    XADD    regis, ofs, cycl
         TIME    \cycl
         mov     r11, arvpref, lsr #24
@@ -250,6 +283,68 @@ w:      .byte   0
         pkhtb   bcfb, bcfb, lr
     .endif
         add     lr, spfa, bcfb
+        pkhtb   pcff, pcff, lr
+        uxtb    lr, lr
+        bic     arvpref, #0xff000000
+        orr     arvpref, lr, lsl #24
+        pkhtb   defr, defr, lr
+        PREFIX0
+      .endm
+
+      .macro    XADC    regis, ofs, cycl
+        TIME    \cycl
+        mov     r11, arvpref, lsr #24
+        pkhtb   spfa, spfa, r11
+    .if \ofs==0
+        and     lr, \regis, #0x00ff0000
+        pkhtb   bcfb, bcfb, lr, asr #16
+    .else
+      .if \ofs<24
+        mov     lr, \regis, lsr #24
+      .endif
+        pkhtb   bcfb, bcfb, lr
+    .endif
+        movs    lr, pcff, lsl #24
+        adc     lr, spfa, bcfb
+        pkhtb   pcff, pcff, lr
+        uxtb    lr, lr
+        bic     arvpref, #0xff000000
+        orr     arvpref, lr, lsl #24
+        pkhtb   defr, defr, lr
+        PREFIX0
+      .endm
+
+      .macro    XSUB    regis, ofs, cycl
+        TIME    \cycl
+        mov     r11, arvpref, lsr #24
+        pkhtb   spfa, spfa, r11
+      .if \ofs<24
+        uxtb    lr, \regis, ror #16+\ofs
+      .endif
+        mvn     lr, lr
+        pkhtb   bcfb, bcfb, lr
+        add     lr, r11
+        add     lr, #0x00000001
+        pkhtb   pcff, pcff, lr
+        uxtb    lr, lr
+        bic     arvpref, #0xff000000
+        orr     arvpref, lr, lsl #24
+        pkhtb   defr, defr, lr
+        PREFIX0
+      .endm
+
+      .macro    XSBC    regis, ofs, cycl
+        TIME    \cycl
+        mov     r11, arvpref, lsr #24
+        pkhtb   spfa, spfa, r11
+      .if \ofs<24
+        uxtb    lr, \regis, ror #16+\ofs
+      .endif
+        mvn     lr, lr
+        pkhtb   bcfb, bcfb, lr
+        eor     lr, pcff, #0x00000100
+        movs    lr, lr, lsl #24
+        adc     lr, spfa, bcfb
         pkhtb   pcff, pcff, lr
         uxtb    lr, lr
         bic     arvpref, #0xff000000
@@ -284,13 +379,13 @@ w:      .byte   0
         PREFIX0
       .endm
 
-      .macro    OR      regis, ofs, cycl
+      .macro    XOR     regis, ofs, cycl
         TIME    \cycl
       .if \ofs==24
-        orr     arvpref, lr, lsl #24
+        eor     arvpref, lr, lsl #24
       .else
         and     lr, \regis, #0x00ff0000 << \ofs
-        orr     arvpref, lr, lsl #8-\ofs
+        eor     arvpref, lr, lsl #8-\ofs
       .endif
         mov     lr, arvpref, lsr #24
         pkhtb   defr, defr, lr
@@ -301,13 +396,13 @@ w:      .byte   0
         PREFIX0
       .endm
 
-      .macro    XOR     regis, ofs, cycl
+      .macro    OR      regis, ofs, cycl
         TIME    \cycl
       .if \ofs==24
-        eor     arvpref, lr, lsl #24
+        orr     arvpref, lr, lsl #24
       .else
         and     lr, \regis, #0x00ff0000 << \ofs
-        eor     arvpref, lr, lsl #8-\ofs
+        orr     arvpref, lr, lsl #8-\ofs
       .endif
         mov     lr, arvpref, lsr #24
         pkhtb   defr, defr, lr
@@ -448,6 +543,17 @@ w:      .byte   0
         PREFIX0
       .endm
 
+      .macro    LDPIM   src
+        TIME    15
+        ldr     lr, [mem, pcff, lsr #16]
+        add     pcff, #0x00020000
+        mov     r11, lr, lsr #8
+        sxtb    lr, lr
+        add     lr, \src, lr, lsl #16
+        strb    r11, [mem, lr, lsr #16]
+        PREFIX0
+      .endm
+
       .macro    RET
         ldr     lr, [mem, spfa, lsr #16]
         add     spfa, #0x00020000
@@ -571,6 +677,31 @@ w:      .byte   0
         b       salida
       .endm
 
+      .macro    SET     const, regis, ofs
+        TIME    8
+      .if \ofs==0
+        orr     \regis, #\const<<16
+      .else
+        orr     \regis, #\const<<24
+      .endif
+        b       salida
+      .endm
+
+      .macro    SETHL   const
+        TIME    15
+        ldrb    lr, [mem, hlmp, lsr #16]
+        orr     lr, #\const
+        strb    lr, [mem, hlmp, lsr #16]
+        b       salida
+      .endm
+
+      .macro    SETXD   const
+        TIME    8
+        orr     r10, #\const
+        strb    r10, [mem, r11]
+        b       salida
+      .endm
+
       .macro    BITI    const
         TIME    5
         and     r10, #\const
@@ -626,10 +757,27 @@ w:      .byte   0
         movs    lr, pcff, lsl #24
         mov     r11, hlmp, lsr #16
         mov     r10, \regis, lsr #16
-        adc     lr, r11, \regis, lsr #16
+        adc     lr, r11, r10
         pkhtb   pcff, pcff, lr, asr #8
         pkhtb   spfa, spfa, r11, asr #8
         pkhtb   bcfb, bcfb, r10, asr #8
+        add     r11, #1
+        pkhbt   hlmp, r11, lr, lsl #16
+        rev     lr, hlmp
+        pkhtb   defr, defr, lr
+        PREFIX0
+      .endm
+
+      .macro    SBCHLRR regis
+        TIME    15
+        eor     lr, pcff, #0x00000100
+        movs    lr, lr, lsl #24
+        mov     r11, hlmp, lsr #16
+        sbc     lr, r11, \regis, lsr #16
+        pkhtb   pcff, pcff, lr, asr #8
+        pkhtb   spfa, spfa, r11, asr #8
+        mvn     r10, \regis, lsr #24
+        pkhtb   bcfb, bcfb, r10
         add     r11, #1
         pkhbt   hlmp, r11, lr, lsl #16
         rev     lr, hlmp
@@ -701,13 +849,13 @@ exec2:
 _st:    .word   st
         .word   nop           @ 00 NOP
         .word   ldbcnn        @ 01 LD BC,nn
-        .word   nop           @ 02 LD (BC),A
+        .word   ldbca         @ 02 LD (BC),A
         .word   incbc         @ 03 INC BC
         .word   incb          @ 04 INC B
         .word   decb          @ 05 DEC B
         .word   ldbn          @ 06 LD B,n
-        .word   nop           @ 07 RLCA
-        .word   nop           @ 08 EX AF,AF
+        .word   rlca          @ 07 RLCA
+        .word   exafaf        @ 08 EX AF,AF
         .word   addxxbc       @ 09 ADD HL,BC
         .word   ldabc         @ 0a LD A,(BC)
         .word   decbc         @ 0b DEC BC
@@ -717,7 +865,7 @@ _st:    .word   st
         .word   rrca          @ 0f RRCA
         .word   nop           @ 10 DJNZ
         .word   lddenn        @ 11 LD DE,nn
-        .word   nop           @ 12 LD (DE),A
+        .word   lddea         @ 12 LD (DE),A
         .word   incde         @ 13 INC DE
         .word   incd          @ 14 INC D
         .word   decd          @ 15 DEC D
@@ -730,7 +878,7 @@ _st:    .word   st
         .word   ince          @ 1c INC E
         .word   dece          @ 1d DEC E
         .word   lden          @ 1e LD E,n
-        .word   nop           @ 1f RRA
+        .word   rra           @ 1f RRA
         .word   jrnz          @ 20 JR NZ,s8
         .word   ldxxnn        @ 21 LD HL,nn
         .word   ldpnnxx       @ 22 LD (nn),HL
@@ -749,15 +897,15 @@ _st:    .word   st
         .word   nop           @ 2f CPL
         .word   jrnc          @ 30 JR NC,s8
         .word   ldspnn        @ 31 LD SP,nn
-        .word   nop           @ 32 LD (nn),A
+        .word   ldnna         @ 32 LD (nn),A
         .word   incsp         @ 33 INC SP
-        .word   nop           @ 34 INC (HL)
-        .word   nop           @ 35 DEC (HL)
-        .word   nop           @ 36 LD (HL),n
+        .word   incpxx        @ 34 INC (HL)
+        .word   decpxx        @ 35 DEC (HL)
+        .word   ldxxn         @ 36 LD (HL),n
         .word   scf           @ 37 SCF
         .word   jrc           @ 38 JR C,s8
         .word   addxxsp       @ 39 ADD HL,SP
-        .word   nop           @ 3a LD A,(nn)
+        .word   ldann         @ 3a LD A,(nn)
         .word   decsp         @ 3b DEC SP
         .word   inca          @ 3c INC A
         .word   deca          @ 3d DEC A
@@ -835,30 +983,30 @@ _st:    .word   st
         .word   addxl         @ 85 ADD A,L
         .word   addaxx        @ 86 ADD A,(HL)
         .word   addaa         @ 87 ADD A,A
-        .word   nop           @ 88 ADC A,B
-        .word   nop           @ 89 ADC A,C
-        .word   nop           @ 8a ADC A,D
-        .word   nop           @ 8b ADC A,E
-        .word   nop           @ 8c ADC A,H
-        .word   nop           @ 8d ADC A,L
-        .word   nop           @ 8e ADC A,(HL
+        .word   adcab         @ 88 ADC A,B
+        .word   adcac         @ 89 ADC A,C
+        .word   adcad         @ 8a ADC A,D
+        .word   adcae         @ 8b ADC A,E
+        .word   adcxh         @ 8c ADC A,H
+        .word   adcxl         @ 8d ADC A,L
+        .word   adcaxx        @ 8e ADC A,(HL)
         .word   adcaa         @ 8f ADC A,A
-        .word   nop           @ 90 SUB A,B
-        .word   nop           @ 91 SUB A,C
-        .word   nop           @ 92 SUB A,D
-        .word   nop           @ 93 SUB A,E
-        .word   nop           @ 94 SUB A,H
-        .word   nop           @ 95 SUB A,L
-        .word   nop           @ 96 SUB A,(HL)
-        .word   nop           @ 97 SUB A,A
-        .word   nop           @ 98 SBC A,B
-        .word   nop           @ 99 SBC A,C
-        .word   nop           @ 9a SBC A,D
-        .word   nop           @ 9b SBC A,E
-        .word   nop           @ 9c SBC A,H
-        .word   nop           @ 9d SBC A,L
-        .word   nop           @ 9e SBC A,(HL)
-        .word   nop           @ 9f SBC A,A
+        .word   subb          @ 90 SUB B
+        .word   subc          @ 91 SUB C
+        .word   subd          @ 92 SUB D
+        .word   sube          @ 93 SUB E
+        .word   subh          @ 94 SUB H
+        .word   subl          @ 95 SUB L
+        .word   subxx         @ 96 SUB (HL)
+        .word   suba          @ 97 SUB A
+        .word   sbcab         @ 98 SBC A,B
+        .word   sbcac         @ 99 SBC A,C
+        .word   sbcad         @ 9a SBC A,D
+        .word   sbcae         @ 9b SBC A,E
+        .word   sbcah         @ 9c SBC A,H
+        .word   sbcal         @ 9d SBC A,L
+        .word   sbcaxx        @ 9e SBC A,(HL)
+        .word   sbcaa         @ 9f SBC A,A
         .word   andb          @ a0 AND B
         .word   andc          @ a1 AND C
         .word   andd          @ a2 AND D
@@ -905,7 +1053,7 @@ _st:    .word   st
         .word   opcb          @ cb op cb
         .word   callz         @ cc CALL Z
         .word   callnn        @ cd CALL NN
-        .word   nop           @ ce ADC A,n
+        .word   adcan         @ ce ADC A,n
         .word   rst08         @ cf RST 0x08
         .word   retnc         @ d0 RET NC
         .word   popde         @ d1 POP DE
@@ -913,7 +1061,7 @@ _st:    .word   st
         .word   nop           @ d3 OUT (n),A
         .word   callnc        @ d4 CALL NC
         .word   pushde        @ d5 PUSH DE
-        .word   nop           @ d6 SUB A,n
+        .word   subn          @ d6 SUB n
         .word   rst10         @ d7 RST 0x10
         .word   retc          @ d8 RET C
         .word   exx           @ d9 EXX
@@ -921,7 +1069,7 @@ _st:    .word   st
         .word   nop           @ db IN A,(n)
         .word   callc         @ dc CALL C
         .word   opdd          @ dd OP dd
-        .word   nop           @ de SBC A,n
+        .word   sbcan         @ de SBC A,n
         .word   rst18         @ df RST 0x18
         .word   retpo         @ e0 RET PO
         .word   popxx         @ e1 POP HL
@@ -940,7 +1088,7 @@ _st:    .word   st
         .word   xoran         @ ee XOR A,n
         .word   rst28         @ ef RST 0x28
         .word   retp          @ f0 RET P
-        .word   nop           @ f1 POP AF
+        .word   popaf         @ f1 POP AF
         .word   jpp           @ f2 JP P
         .word   di            @ f3 DI
         .word   callp         @ f4 CALL P
@@ -965,20 +1113,53 @@ opdd:   TIME    4
 opfd:   TIME    4
         PREFIX2
 
-rrca:   TIME    4
+rlca:   TIME    4
         mov     lr, arvpref, lsr #24
         add     lr, lr, lr, lsl #8
         mov     r11, lr, lsr #7
         bic     arvpref, #0xff000000
         orr     arvpref, r11, lsl #24
         eor     r11, pcff
-        and     r11, #0x00000028
+        and     r11, #0x00000128
         eor     pcff, r11
         eor     lr, spfa, defr
         and     lr, #0x00000010
-        eor     lr, bcfb
-        and     lr, #0x0000007f
-        eor     bcfb, lr
+        and     r11, bcfb, #0x00000080
+        orr     lr, r11
+        pkhtb   bcfb, bcfb, lr
+        PREFIX0
+
+rrca:   TIME    4
+        movs    lr, arvpref, lsr #25
+        orrcs   lr, #0x00000180
+        bic     arvpref, #0xff000000
+        orr     arvpref, lr, lsl #24
+        eor     lr, pcff
+        and     lr, #0x00000128
+        eor     pcff, lr
+        eor     lr, spfa, defr
+        and     lr, #0x00000010
+        and     r11, bcfb, #0x00000080
+        orr     lr, r11
+        pkhtb   bcfb, bcfb, lr
+        PREFIX0
+
+rra:    TIME    4
+        mov     lr, arvpref, lsr #24
+        add     lr, lr, lr, lsl #9
+        and     r10, pcff, #0x00000100
+        orr     lr, r10
+        mov     lr, lr, lsr #1
+        bic     arvpref, #0xff000000
+        orr     arvpref, lr, lsl #24
+        eor     lr, pcff
+        and     lr, #0x00000028
+        eor     pcff, lr
+        eor     lr, spfa, defr
+        and     lr, #0x00000010
+        and     r11, bcfb, #0x00000080
+        orr     lr, r11
+        pkhtb   bcfb, bcfb, lr
         PREFIX0
 
 ei:     TIME    4
@@ -992,6 +1173,17 @@ di:     TIME    4
 ldbcnn: LDRRIM  bcfb
 lddenn: LDRRIM  defr
 ldspnn: LDRRIM  spfa
+
+ldxxn:  movs    lr, arvpref, lsl #24
+        beq     ldhln
+        bmi     ldiyn
+        LDPIM   ixstart
+ldiyn:  LDPIM   iyi
+ldhln:  TIME    10
+        ldr     lr, [mem, pcff, lsr #16]
+        add     pcff, #0x00010000
+        strb    lr, [mem, hlmp, lsr #16]
+        PREFIX0
 
 ldxxnn: movs    lr, arvpref, lsl #24
         beq     ldhlnn
@@ -1199,6 +1391,29 @@ ldln:   LDRIM   hlmp, 0
 
 ldan:   LDRIM   arvpref, 8
 
+ldann:  TIME    13
+        ldr     lr, [mem, pcff, lsr #16]
+        mov     lr, lr, lsl #16
+        ldrb    r11, [mem, lr, lsr #16]
+        bic     arvpref, #0xff000000
+        orr     arvpref, r11, lsl #24
+        add     pcff, #0x00020000
+        add     lr, #0x00010000
+        pkhtb   hlmp, hlmp, lr, asr #16
+        PREFIX0
+
+ldnna:  TIME    13
+        ldr     lr, [mem, pcff, lsr #16]
+        mov     lr, lr, lsl #16
+        mov     r11, arvpref, lsr #24
+        strb    r11, [mem, lr, lsr #16]
+        add     pcff, #0x00020000
+        add     lr, #0x00010000
+        and     lr, #0x00ff0000
+        orr     lr, r11, lsl #24
+        pkhtb   hlmp, hlmp, lr, asr #16
+        PREFIX0
+
 ldbc:   LDXX    bcfb, 8, bcfb, 0
 ldbd:   LDXX    bcfb, 8, defr, 8
 ldbe:   LDXX    bcfb, 8, defr, 0
@@ -1397,6 +1612,47 @@ inclx:  movs    lr, arvpref, lsl #24
 incyl:  INC     iyi, 0
 incl:   INC     hlmp, 0
 
+incpxx: movs    lr, arvpref, lsl #24
+        beq     incphl
+        ldr     lr, [mem, pcff, lsr #16]
+        add     pcff, #0x00010000
+        sxtb    lr, lr
+        bmi     incpiy
+        INCPI   ixstart
+incpiy: INCPI   iyi
+incphl: TIME    11
+        ldrb    lr, [mem, hlmp, lsr #16]
+        pkhtb   spfa, spfa, lr
+        mov     lr, #0x00000001
+        pkhtb   bcfb, bcfb, lr
+        uadd8   lr, lr, spfa
+        strb    lr, [mem, hlmp, lsr #16]
+        pkhtb   defr, defr, lr
+        and     r11, pcff, #0x00000100
+        uxtab   lr, r11, lr
+        pkhtb   pcff, pcff, lr
+        PREFIX0
+
+decpxx: movs    lr, arvpref, lsl #24
+        beq     decphl
+        ldr     lr, [mem, pcff, lsr #16]
+        add     pcff, #0x00010000
+        sxtb    lr, lr
+        bmi     decpiy
+        DECPI   ixstart
+decpiy: DECPI   iyi
+decphl: TIME    11
+        ldrb    lr, [mem, hlmp, lsr #16]
+        pkhtb   spfa, spfa, lr
+        mov     lr, #0xffffffff
+        pkhtb   bcfb, bcfb, lr
+        add     lr, spfa
+        strb    lr, [mem, hlmp, lsr #16]
+        and     r11, pcff, #0x00000100
+        uxtab   lr, r11, lr
+        pkhtb   pcff, pcff, lr
+        PREFIX0
+
 deca:   DEC     arvpref, 8
 decb:   DEC     bcfb, 8
 decc:   DEC     bcfb, 0
@@ -1476,6 +1732,44 @@ addaa:  TIME    4
         pkhtb   defr, defr, lr
         PREFIX0
 
+adcab:  XADC    bcfb, 8, 4
+adcac:  XADC    bcfb, 0, 4
+adcad:  XADC    defr, 8, 4
+adcae:  XADC    defr, 0, 4
+
+adcxh:  movs    lr, arvpref, lsl #24
+        beq     adcah
+        bmi     adcayh
+        XADC    ixstart, 8, 4
+adcayh: XADC    iyi, 8, 4
+adcah:  XADC    hlmp, 8, 4
+
+adcxl:  movs    lr, arvpref, lsl #24
+        beq     adcal
+        bmi     adcayl
+        XADC    ixstart, 0, 4
+adcayl: XADC    iyi, 0, 4
+adcal:  XADC    hlmp, 0, 4
+
+adcaxx: movs    lr, arvpref, lsl #24
+        beq     adcahl
+        ldr     lr, [mem, pcff, lsr #16]
+        add     pcff, #0x00010000
+        sxtb    lr, lr
+        bmi     adcaiy
+        add     lr, ixstart, lsr #16
+        ldrb    lr, [mem, lr]
+        XADC    lr, 24, 7
+adcaiy: add     lr, iyi, lsr #16
+        ldrb    lr, [mem, lr]
+        XADC    lr, 24, 7
+adcahl: ldrb    lr, [mem, hlmp, lsr #16]
+        XADC    lr, 24, 7
+
+adcan:  ldrb    lr, [mem, pcff, lsr #16]
+        add     pcff, #0x00010000
+        XADC    lr, 24, 7
+
 adcaa:  TIME    4
         mov     lr, arvpref, lsr #24
         pkhtb   spfa, spfa, lr
@@ -1484,6 +1778,106 @@ adcaa:  TIME    4
         adc     lr, lr, lr
         pkhtb   pcff, pcff, lr
         uxtb    lr, lr  @ importante
+        bic     arvpref, #0xff000000
+        orr     arvpref, lr, lsl #24
+        pkhtb   defr, defr, lr
+        PREFIX0
+
+subb:   XSUB    bcfb, 8, 4
+subc:   XSUB    bcfb, 0, 4
+subd:   XSUB    defr, 8, 4
+sube:   XSUB    defr, 0, 4
+
+subxh:  movs    lr, arvpref, lsl #24
+        beq     subh
+        bmi     subyh
+        XSUB    ixstart, 8, 4
+subyh:  XSUB    iyi, 8, 4
+subh:   XSUB    hlmp, 8, 4
+
+subxl:  movs    lr, arvpref, lsl #24
+        beq     subl
+        bmi     subyl
+        XSUB    ixstart, 0, 4
+subyl:  XSUB    iyi, 0, 4
+subl:   XSUB    hlmp, 0, 4
+
+subxx:  movs    lr, arvpref, lsl #24
+        beq     subhl
+        ldr     lr, [mem, pcff, lsr #16]
+        add     pcff, #0x00010000
+        sxtb    lr, lr
+        bmi     subiy
+        add     lr, ixstart, lsr #16
+        ldrb    lr, [mem, lr]
+        XSUB    lr, 24, 7
+subiy:  add     lr, iyi, lsr #16
+        ldrb    lr, [mem, lr]
+        XSUB    lr, 24, 7
+subhl:  ldrb    lr, [mem, hlmp, lsr #16]
+        XSUB    lr, 24, 7
+
+subn:   ldrb    lr, [mem, pcff, lsr #16]
+        add     pcff, #0x00010000
+        XSUB    lr, 24, 7
+
+suba:   TIME    4
+        mov     lr, arvpref, lsr #24
+        pkhtb   spfa, spfa, lr
+        mvn     r11, lr
+        pkhtb   bcfb, bcfb, r11
+        bic     arvpref, #0xff000000
+        pkhtb   pcff, pcff, lr, asr #16
+        pkhtb   defr, defr, lr, asr #16
+        PREFIX0
+
+sbcab:  XSBC    bcfb, 8, 4
+sbcac:  XSBC    bcfb, 0, 4
+sbcad:  XSBC    defr, 8, 4
+sbcae:  XSBC    defr, 0, 4
+
+sbcaxh: movs    lr, arvpref, lsl #24
+        beq     sbcah
+        bmi     sbcayh
+        XSBC    ixstart, 8, 4
+sbcayh: XSBC    iyi, 8, 4
+sbcah:  XSBC    hlmp, 8, 4
+
+sbcaxl: movs    lr, arvpref, lsl #24
+        beq     sbcal
+        bmi     sbcayl
+        XSBC    ixstart, 0, 4
+sbcayl: XSBC    iyi, 0, 4
+sbcal:  XSBC    hlmp, 0, 4
+
+sbcaxx: movs    lr, arvpref, lsl #24
+        beq     sbcahl
+        ldr     lr, [mem, pcff, lsr #16]
+        add     pcff, #0x00010000
+        sxtb    lr, lr
+        bmi     sbcaiy
+        add     lr, ixstart, lsr #16
+        ldrb    lr, [mem, lr]
+        XSBC    lr, 24, 7
+sbcaiy: add     lr, iyi, lsr #16
+        ldrb    lr, [mem, lr]
+        XSBC    lr, 24, 7
+sbcahl: ldrb    lr, [mem, hlmp, lsr #16]
+        XSBC    lr, 24, 7
+
+sbcan:  ldrb    lr, [mem, pcff, lsr #16]
+        add     pcff, #0x00010000
+        XSBC    lr, 24, 7
+
+sbcaa:  TIME    4
+        mov     lr, arvpref, lsr #24
+        pkhtb   spfa, spfa, lr
+        mvn     r11, lr
+        pkhtb   bcfb, bcfb, r11
+        eor     lr, pcff, #0x00000100
+        movs    lr, lr, lsl #24
+        sbc     lr, lr
+        pkhtb   pcff, pcff, lr
         bic     arvpref, #0xff000000
         orr     arvpref, lr, lsl #24
         pkhtb   defr, defr, lr
@@ -1673,11 +2067,10 @@ cpa:    TIME    4
         pkhtb   defr, defr, lr, asr #16
         pkhtb   spfa, spfa, lr
         mvn     r11, lr
-        pkhtb   bcfb, bcfb, lr
+        pkhtb   bcfb, bcfb, r11
         and     lr, #0x00000028
         pkhtb   pcff, pcff, lr
         PREFIX0
-
 
 scf:    TIME    4
         and     lr, bcfb, #0x00000080
@@ -1741,8 +2134,11 @@ lxahl:  movs    lr, arvpref, lsl #24
 ldaiy:  LDRPI   iyi, arvpref, 8
 ldahl:  LDRP    hlmp, arvpref, 8
 
-ldade:  LDRP    defr, arvpref, 8
 ldabc:  LDRP    bcfb, arvpref, 8
+ldade:  LDRP    defr, arvpref, 8
+
+ldbca:  LDPR    bcfb, arvpref, 8
+lddea:  LDPR    defr, arvpref, 8
 
 ldxxb:  movs    lr, arvpref, lsl #24
         beq     ldhlb
@@ -1820,6 +2216,8 @@ pushaf: and     lr, arvpref, #0xff000000
         orr     r11, lr, r11, lsl #16
         movs    lr, pcff, lsr #9
         orrcs   r11, #0x00010000
+        movs    lr, bcfb, lsr #10
+        orrcs   r11, #0x00020000
         movs    lr, defr, lsl #16
         orreq   r11, #0x00400000
         eor     lr, defr, spfa
@@ -1829,9 +2227,9 @@ pushaf: and     lr, arvpref, #0xff000000
         orrcs   r11, #0x00100000
         tst     spfa, #0x00000100
         beq     over5
-        ldr     lr, c9669
+        ldr     lr, cb34
         eor     r10, defr, defr, lsr #4
-        tst     lr, lr, lsl r10
+        tst     lr, lr, ror r10
         orrmi   r11, #0x00040000
         PUS     r11
 over5:  eor     lr, spfa, defr
@@ -1850,6 +2248,27 @@ pushxx: movs    lr, arvpref, lsl #24
         PUS     ixstart
 pushiy: PUS     iyi
 pushhl: PUS     hlmp
+
+popaf:  TIME    10
+        ldr     lr, [mem, spfa, lsr #16]
+        add     spfa, #0x00020000
+        rev16   lr, lr
+        bic     arvpref, #0xff000000
+        orr     arvpref, lr, lsl #24
+        uxtb    lr, lr, ror #8
+        mvn     r11, lr
+        and     r11, #0x00000040
+        pkhtb   defr, defr, r11
+        orr     lr, lr, lr, lsl #8
+        pkhtb   pcff, pcff, lr
+        and     r11, lr, #0x00000004
+        eor     lr, r11, lsl #5
+        and     lr, #0xffffff7f
+        eor     lr, r11, lsl #5
+        pkhtb   bcfb, bcfb, lr
+        uxtb    lr, lr
+        pkhtb   spfa, spfa, lr
+        PREFIX0
 
 popbc:  POPP    bcfb
         PREFIX0
@@ -1877,6 +2296,24 @@ exspiy: EXSPI   iyi
 exsphl: EXSPI   hlmp
         PREFIX0
 
+exafaf: TIME    4
+        mov     lr, arvpref, lsr #24
+        add     r11, punt, #oa_
+        swpb    lr, lr, [r11]
+        bic     arvpref, #0xff000000
+        orr     arvpref, lr, lsl #24
+        pkhbt   r11, spfa, bcfb, lsl #16
+        add     lr, punt, #ofa_
+        swp     r11, r11, [lr]
+        pkhtb   spfa, spfa, r11
+        pkhtb   bcfb, bcfb, r11, asr #16
+        pkhbt   r11, pcff, defr, lsl #16
+        add     lr, punt, #off_
+        swp     r11, r11, [lr]
+        pkhtb   pcff, pcff, r11
+        pkhtb   defr, defr, r11, asr #16
+        PREFIX0
+
 exdehl: TIME    4
         mov     lr, hlmp
         pkhbt   hlmp, hlmp, defr
@@ -1896,9 +2333,9 @@ exx:    TIME    4
 
 callpo: tst     spfa, #0x00000100
         beq     over1
-        ldr     r11, c9669
+        ldr     r11, cb34
         eor     lr, defr, defr, lsr #4
-        tst     r11, r11, lsl lr
+        tst     r11, r11, ror lr
         bmi     callnn
         TIME    10
         add     pcff, #0x00020000
@@ -1911,9 +2348,9 @@ over1:  eor     lr, spfa, defr
 
 callpe: tst     spfa, #0x00000100
         beq     over2
-        ldr     r11, c9669
+        ldr     r11, cb34
         eor     lr, defr, defr, lsr #4
-        tst     r11, r11, lsl lr
+        tst     r11, r11, ror lr
         bpl     callnn
         TIME    10
         add     pcff, #0x00020000
@@ -1926,9 +2363,9 @@ over2:  eor     lr, spfa, defr
 
 retpo:  tst     spfa, #0x00000100
         beq     over3
-        ldr     r11, c9669
+        ldr     r11, cb34
         eor     lr, defr, defr, lsr #4
-        tst     r11, r11, lsl lr
+        tst     r11, r11, ror lr
         bmi     ret11
         TIME    5
         PREFIX0
@@ -1940,9 +2377,9 @@ over3:  eor     lr, spfa, defr
 
 retpe:  tst     spfa, #0x00000100
         beq     over4
-        ldr     r11, c9669
+        ldr     r11, cb34
         eor     lr, defr, defr, lsr #4
-        tst     r11, r11, lsl lr
+        tst     r11, r11, ror lr
         bpl     ret11
         TIME    5
         PREFIX0
@@ -1954,9 +2391,9 @@ over4:  eor     lr, spfa, defr
 
 jppo:   tst     spfa, #0x00000100
         beq     over6
-        ldr     r11, c9669
+        ldr     r11, cb34
         eor     lr, defr, defr, lsr #4
-        tst     r11, r11, lsl lr
+        tst     r11, r11, ror lr
         bmi     jpnn
         TIME    10
         add     pcff, #0x00020000
@@ -1969,9 +2406,9 @@ over6:  eor     lr, spfa, defr
 
 jppe:   tst     spfa, #0x00000100
         beq     over7
-        ldr     r11, c9669
+        ldr     r11, cb34
         eor     lr, defr, defr, lsr #4
-        tst     r11, r11, lsl lr
+        tst     r11, r11, ror lr
         bpl     jpnn
         TIME    10
         add     pcff, #0x00020000
@@ -1987,7 +2424,7 @@ oped:   mov     lr, #0x00010000
         ldrb    lr, [mem, pcff, lsr #16]
         add     pcff, #0x00010000
         ldr     pc, [pc, lr, lsl #2]
-c9669:  .word   0x96690000
+cb34:   .word   0xcb34cb34
         .word   nop8          @ 00 NOP8
         .word   nop8          @ 01 NOP8
         .word   nop8          @ 02 NOP8
@@ -2054,7 +2491,7 @@ c9669:  .word   0x96690000
         .word   nop8          @ 3f NOP8
         .word   nop8          @ 40 IN B,(C)
         .word   nop8          @ 41 OUT (C),B
-        .word   nop8          @ 42 SBC HL,BC
+        .word   sbchlbc       @ 42 SBC HL,BC
         .word   ldpnnbc       @ 43 LD (NN),BC
         .word   nop8          @ 44 NEG
         .word   nop8          @ 45 RETN
@@ -2070,7 +2507,7 @@ c9669:  .word   0x96690000
         .word   nop8          @ 4f LD R,A
         .word   nop8          @ 50 IN D,(C)
         .word   nop8          @ 51 OUT (C),D
-        .word   nop8          @ 52 SBC HL,DE
+        .word   sbchlde       @ 52 SBC HL,DE
         .word   ldpnnde       @ 53 LD (NN),DE
         .word   nop8          @ 54 NEG
         .word   nop8          @ 55 RETN
@@ -2086,7 +2523,7 @@ c9669:  .word   0x96690000
         .word   nop8          @ 5f LD A,R
         .word   nop8          @ 60 IN H,(C)
         .word   nop8          @ 61 OUT (C),H
-        .word   nop8          @ 62 SBC HL,HL
+        .word   sbchlhl       @ 62 SBC HL,HL
         .word   ldpnnxe       @ 63 LD (NN),HL
         .word   nop8          @ 64 NEG
         .word   nop8          @ 65 RETN
@@ -2102,7 +2539,7 @@ c9669:  .word   0x96690000
         .word   nop8          @ 6f RLD
         .word   nop8          @ 70 IN X,(C)
         .word   nop8          @ 71 OUT (C),X
-        .word   nop8          @ 72 SBC HL,SP
+        .word   sbchlsp       @ 72 SBC HL,SP
         .word   ldpnnsp       @ 73 LD (NN),SP
         .word   nop8          @ 74 NEG
         .word   nop8          @ 75 RETN
@@ -2164,7 +2601,7 @@ c9669:  .word   0x96690000
         .word   nop8          @ ad NOP8
         .word   nop8          @ ae NOP8
         .word   nop8          @ af NOP8
-        .word   nop8          @ b0 LDIR
+        .word   ldir          @ b0 LDIR
         .word   nop8          @ b1 CPIR
         .word   nop8          @ b2 INIR
         .word   nop8          @ b3 OTIR
@@ -2253,6 +2690,11 @@ adchlde:ADCHLRR defr
 adchlhl:ADCHLRR hlmp
 adchlsp:ADCHLRR spfa
 
+sbchlbc:SBCHLRR bcfb
+sbchlde:SBCHLRR defr
+sbchlhl:SBCHLRR hlmp
+sbchlsp:SBCHLRR spfa
+
 ldd:    TIME    16
         ldrb    lr, [mem, hlmp, lsr #16]
         strb    lr, [mem, defr, lsr #16]
@@ -2272,6 +2714,32 @@ ldd:    TIME    16
         movs    lr, bcfb, lsr #16
         eorne   spfa, #0x00000080
         pkhbt   bcfb, spfa, lr, lsl #16
+        PREFIX0
+
+ldir:   TIME    16
+        ldrb    lr, [mem, hlmp, lsr #16]
+        strb    lr, [mem, defr, lsr #16]
+        mov     r11, #0x00010000
+        add     hlmp, r11
+        add     defr, r11
+        sub     bcfb, r11
+        movs    r10, defr, lsl #24
+        pkhtbne defr, defr, r11, asr #16
+        add     lr, arvpref, lsr #24
+        and     lr, #0b00001010
+        add     lr, lr, lsl #4
+        eor     lr, pcff
+        and     lr, #40
+        eor     pcff, lr
+        pkhtb   spfa, spfa, lr, asr #8
+        movs    lr, bcfb, lsr #16
+        beq     lddr2
+        eor     spfa, #0x00000080
+        sub     pcff, #0x00010000
+        pkhtb   hlmp, hlmp, pcff, asr #16
+        sub     pcff, #0x00010000
+        TIME    5
+ldir2:  pkhbt   bcfb, spfa, lr, lsl #16
         PREFIX0
 
 lddr:   TIME    16
@@ -2500,70 +2968,70 @@ opcb:   movs    lr, arvpref, lsl #24
         .word   res7l         @ bd RES 7,L
         .word   res7hl        @ be RES 7,(HL)
         .word   res7a         @ bf RES 7,A
-        .word   nop8          @ c0 SET 0,B
-        .word   nop8          @ c1 SET 0,C
-        .word   nop8          @ c2 SET 0,D
-        .word   nop8          @ c3 SET 0,E
-        .word   nop8          @ c4 SET 0,H
-        .word   nop8          @ c5 SET 0,L
-        .word   nop8          @ c6 SET 0,(HL)
-        .word   nop8          @ c7 SET 0,A
-        .word   nop8          @ c8 SET 1,B
-        .word   nop8          @ c9 SET 1,C
-        .word   nop8          @ ca SET 1,D
-        .word   nop8          @ cb SET 1,E
-        .word   nop8          @ cc SET 1,H
-        .word   nop8          @ cd SET 1,L
-        .word   nop8          @ ce SET 1,(HL)
-        .word   nop8          @ cf SET 1,A
-        .word   nop8          @ d0 SET 2,B
-        .word   nop8          @ d1 SET 2,C
-        .word   nop8          @ d2 SET 2,D
-        .word   nop8          @ d3 SET 2,E
-        .word   nop8          @ d4 SET 2,H
-        .word   nop8          @ d5 SET 2,L
-        .word   nop8          @ d6 SET 2,(HL)
-        .word   nop8          @ d7 SET 2,A
-        .word   nop8          @ d8 SET 3,B
-        .word   nop8          @ d9 SET 3,C
-        .word   nop8          @ da SET 3,D
-        .word   nop8          @ db SET 3,E
-        .word   nop8          @ dc SET 3,H
-        .word   nop8          @ dd SET 3,L
-        .word   nop8          @ de SET 3,(HL)
-        .word   nop8          @ df SET 3,A
-        .word   nop8          @ e0 SET 4,B
-        .word   nop8          @ e1 SET 4,C
-        .word   nop8          @ e2 SET 4,D
-        .word   nop8          @ e3 SET 4,E
-        .word   nop8          @ e4 SET 4,H
-        .word   nop8          @ e5 SET 4,L
-        .word   nop8          @ e6 SET 4,(HL)
-        .word   nop8          @ e7 SET 4,A
-        .word   nop8          @ e8 SET 5,B
-        .word   nop8          @ e9 SET 5,C
-        .word   nop8          @ ea SET 5,D
-        .word   nop8          @ eb SET 5,E
-        .word   nop8          @ ec SET 5,H
-        .word   nop8          @ ed SET 5,L
-        .word   nop8          @ ee SET 5,(HL)
-        .word   nop8          @ ef SET 5,A
-        .word   nop8          @ f0 SET 6,B
-        .word   nop8          @ f1 SET 6,C
-        .word   nop8          @ f2 SET 6,D
-        .word   nop8          @ f3 SET 6,E
-        .word   nop8          @ f4 SET 6,H
-        .word   nop8          @ f5 SET 6,L
-        .word   nop8          @ f6 SET 6,(HL)
-        .word   nop8          @ f7 SET 6,A
-        .word   nop8          @ f8 SET 7,B
-        .word   nop8          @ f9 SET 7,C
-        .word   nop8          @ fa SET 7,D
-        .word   nop8          @ fb SET 7,E
-        .word   nop8          @ fc SET 7,H
-        .word   nop8          @ fd SET 7,L
-        .word   nop8          @ fe SET 7,(HL)
-        .word   nop8          @ ff SET 7,A
+        .word   set0b         @ c0 SET 0,B
+        .word   set0c         @ c1 SET 0,C
+        .word   set0d         @ c2 SET 0,D
+        .word   set0e         @ c3 SET 0,E
+        .word   set0h         @ c4 SET 0,H
+        .word   set0l         @ c5 SET 0,L
+        .word   set0hl        @ c6 SET 0,(HL)
+        .word   set0a         @ c7 SET 0,A
+        .word   set1b         @ c8 SET 1,B
+        .word   set1c         @ c9 SET 1,C
+        .word   set1d         @ ca SET 1,D
+        .word   set1e         @ cb SET 1,E
+        .word   set1h         @ cc SET 1,H
+        .word   set1l         @ cd SET 1,L
+        .word   set1hl        @ ce SET 1,(HL)
+        .word   set1a         @ cf SET 1,A
+        .word   set2b         @ d0 SET 2,B
+        .word   set2c         @ d1 SET 2,C
+        .word   set2d         @ d2 SET 2,D
+        .word   set2e         @ d3 SET 2,E
+        .word   set2h         @ d4 SET 2,H
+        .word   set2l         @ d5 SET 2,L
+        .word   set2hl        @ d6 SET 2,(HL)
+        .word   set2a         @ d7 SET 2,A
+        .word   set3b         @ d8 SET 3,B
+        .word   set3c         @ d9 SET 3,C
+        .word   set3d         @ da SET 3,D
+        .word   set3e         @ db SET 3,E
+        .word   set3h         @ dc SET 3,H
+        .word   set3l         @ dd SET 3,L
+        .word   set3hl        @ de SET 3,(HL)
+        .word   set3a         @ df SET 3,A
+        .word   set4b         @ e0 SET 4,B
+        .word   set4c         @ e1 SET 4,C
+        .word   set4d         @ e2 SET 4,D
+        .word   set4e         @ e3 SET 4,E
+        .word   set4h         @ e4 SET 4,H
+        .word   set4l         @ e5 SET 4,L
+        .word   set4hl        @ e6 SET 4,(HL)
+        .word   set4a         @ e7 SET 4,A
+        .word   set5b         @ e8 SET 5,B
+        .word   set5c         @ e9 SET 5,C
+        .word   set5d         @ ea SET 5,D
+        .word   set5e         @ eb SET 5,E
+        .word   set5h         @ ec SET 5,H
+        .word   set5l         @ ed SET 5,L
+        .word   set5hl        @ ee SET 5,(HL)
+        .word   set5a         @ ef SET 5,A
+        .word   set6b         @ f0 SET 6,B
+        .word   set6c         @ f1 SET 6,C
+        .word   set6d         @ f2 SET 6,D
+        .word   set6e         @ f3 SET 6,E
+        .word   set6h         @ f4 SET 6,H
+        .word   set6l         @ f5 SET 6,L
+        .word   set6hl        @ f6 SET 6,(HL)
+        .word   set6a         @ f7 SET 6,A
+        .word   set7b         @ f8 SET 7,B
+        .word   set7c         @ f9 SET 7,C
+        .word   set7d         @ fa SET 7,D
+        .word   set7e         @ fb SET 7,E
+        .word   set7h         @ fc SET 7,H
+        .word   set7l         @ fd SET 7,L
+        .word   set7hl        @ fe SET 7,(HL)
+        .word   set7a         @ ff SET 7,A
 
 res0b:  RES     0xfe, bcfb, 8
 res0c:  RES     0xfe, bcfb, 0
@@ -2629,6 +3097,71 @@ res7h:  RES     0x7f, hlmp, 8
 res7l:  RES     0x7f, hlmp, 0
 res7hl: RESHL   0x7f
 res7a:  RES     0x7f, arvpref, 8
+
+set0b:  SET     0x01, bcfb, 8
+set0c:  SET     0x01, bcfb, 0
+set0d:  SET     0x01, defr, 8
+set0e:  SET     0x01, defr, 0
+set0h:  SET     0x01, hlmp, 8
+set0l:  SET     0x01, hlmp, 0
+set0hl: SETHL   0x01
+set0a:  SET     0x01, arvpref, 8
+set1b:  SET     0x02, bcfb, 8
+set1c:  SET     0x02, bcfb, 0
+set1d:  SET     0x02, defr, 8
+set1e:  SET     0x02, defr, 0
+set1h:  SET     0x02, hlmp, 8
+set1l:  SET     0x02, hlmp, 0
+set1hl: SETHL   0x02
+set1a:  SET     0x02, arvpref, 8
+set2b:  SET     0x04, bcfb, 8
+set2c:  SET     0x04, bcfb, 0
+set2d:  SET     0x04, defr, 8
+set2e:  SET     0x04, defr, 0
+set2h:  SET     0x04, hlmp, 8
+set2l:  SET     0x04, hlmp, 0
+set2hl: SETHL   0x04
+set2a:  SET     0x04, arvpref, 8
+set3b:  SET     0x08, bcfb, 8
+set3c:  SET     0x08, bcfb, 0
+set3d:  SET     0x08, defr, 8
+set3e:  SET     0x08, defr, 0
+set3h:  SET     0x08, hlmp, 8
+set3l:  SET     0x08, hlmp, 0
+set3hl: SETHL   0x08
+set3a:  SET     0x08, arvpref, 8
+set4b:  SET     0x10, bcfb, 8
+set4c:  SET     0x10, bcfb, 0
+set4d:  SET     0x10, defr, 8
+set4e:  SET     0x10, defr, 0
+set4h:  SET     0x10, hlmp, 8
+set4l:  SET     0x10, hlmp, 0
+set4hl: SETHL   0x10
+set4a:  SET     0x10, arvpref, 8
+set5b:  SET     0x20, bcfb, 8
+set5c:  SET     0x20, bcfb, 0
+set5d:  SET     0x20, defr, 8
+set5e:  SET     0x20, defr, 0
+set5h:  SET     0x20, hlmp, 8
+set5l:  SET     0x20, hlmp, 0
+set5hl: SETHL   0x20
+set5a:  SET     0x20, arvpref, 8
+set6b:  SET     0x40, bcfb, 8
+set6c:  SET     0x40, bcfb, 0
+set6d:  SET     0x40, defr, 8
+set6e:  SET     0x40, defr, 0
+set6h:  SET     0x40, hlmp, 8
+set6l:  SET     0x40, hlmp, 0
+set6hl: SETHL   0x40
+set6a:  SET     0x40, arvpref, 8
+set7b:  SET     0x80, bcfb, 8
+set7c:  SET     0x80, bcfb, 0
+set7d:  SET     0x80, defr, 8
+set7e:  SET     0x80, defr, 0
+set7h:  SET     0x80, hlmp, 8
+set7l:  SET     0x80, hlmp, 0
+set7hl: SETHL   0x80
+set7a:  SET     0x80, arvpref, 8
 
 opxdcb: bmi     opfdcb
         TIME    11
