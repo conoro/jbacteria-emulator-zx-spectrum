@@ -315,7 +315,7 @@ int main (int argc, char **argv){
   execute();
   if( tap && st>sttap )
     sttap= st+( tap= tapcycles() );
-  printf("%llu %04x\n", st, mem[pc+1]|mem[pc]<<8);
+  printf("%llu %04x\n", st, mem[pc+3]|mem[pc+2]<<8|mem[pc+1]<<16|mem[pc]<<24);
   if( output ){
     fh= fopen(output, "wb+");
     if( !fh )

@@ -180,7 +180,6 @@ w:      .byte   0
         add     pcff, #0x00020000
         add     lr, #0x00000001
         pkhtb   hlmp, hlmp, lr
-        PREFIX0
       .endm
 
       .macro    LDXX    dst, ofd, src, ofs
@@ -239,13 +238,14 @@ w:      .byte   0
 
       .macro    INCPI   regis
         TIME    19
-        add     r11, \regis, lsr #16
+        add     r11, lr, \regis, lsr #16
         ldrb    lr, [mem, r11]
         pkhtb   spfa, spfa, lr
         mov     lr, #0x00000001
         pkhtb   bcfb, bcfb, lr
-        uadd8   lr, lr, spfa
+        add     lr, spfa
         strb    lr, [mem, r11]
+        uxtb    lr, lr
         pkhtb   defr, defr, lr
         and     r11, pcff, #0x00000100
         orr     lr, r11
@@ -255,13 +255,14 @@ w:      .byte   0
 
       .macro    DECPI   regis
         TIME    19
-        add     r11, \regis, lsr #16
+        add     r11, lr, \regis, lsr #16
         ldrb    lr, [mem, r11]
         pkhtb   spfa, spfa, lr
         mov     lr, #0xffffffff
         pkhtb   bcfb, bcfb, lr
-        uadd8   lr, lr, spfa
+        add     lr, spfa
         strb    lr, [mem, r11]
+        uxtb    lr, lr
         pkhtb   defr, defr, lr
         and     r11, pcff, #0x00000100
         orr     lr, r11
@@ -592,6 +593,72 @@ w:      .byte   0
         add     spfa, #0x00020000
       .endm
 
+      .macro    RLC     regis, ofs
+        TIME    8
+        uxtb    lr, \regis, ror #16+\ofs
+        add     lr, lr, lr, lsl #8
+        pkhtb   pcff, pcff, lr
+        uxtb    lr, lr
+        bic     \regis, #0x00ff0000 << \ofs
+        orr     \regis, lr, lsl #16+\ofs
+        pkhtb   defr, defr, lr
+        orr     lr, #0x00000100
+        pkhtb   spfa, spfa, lr
+        pkhtb   bcfb, bcfb, lr, asr #16
+        b       salida
+      .endm
+
+      .macro    RLCX    regis, ofs
+        TIME    8
+        add     lr, r10, r10, lsl #8
+        pkhtb   pcff, pcff, lr
+        uxtb    lr, lr
+        pkhtb   defr, defr, lr
+        orr     lr, #0x00000100
+        pkhtb   spfa, spfa, lr
+        pkhtb   bcfb, bcfb, lr, asr #16
+      .if \regis==arvpref && \ofs==0
+        bic     \regis, #0x00ff0000 << \ofs
+        orr     \regis, lr, lsl #16+\ofs
+      .endif
+        strb    lr, [mem, r11]
+        b       salida
+      .endm
+
+      .macro    RRC     regis, ofs
+        TIME    8
+        uxtb    lr, \regis, ror #16+\ofs
+        mov     lr, lr, lsr #1
+        orrcs   lr, #0x00000180
+        pkhtb   pcff, pcff, lr
+        uxtb    lr, lr
+        bic     \regis, #0x00ff0000 << \ofs
+        orr     \regis, lr, lsl #16+\ofs
+        pkhtb   defr, defr, lr
+        orr     lr, #0x00000100
+        pkhtb   spfa, spfa, lr
+        pkhtb   bcfb, bcfb, lr, asr #16
+        b       salida
+      .endm
+
+      .macro    RRCX    regis, ofs
+        TIME    8
+        mov     lr, r10, lsr #1
+        orrcs   lr, #0x00000180
+        pkhtb   pcff, pcff, lr
+        uxtb    lr, lr
+        pkhtb   defr, defr, lr
+        orr     lr, #0x00000100
+        pkhtb   spfa, spfa, lr
+        pkhtb   bcfb, bcfb, lr, asr #16
+      .if \regis==arvpref && \ofs==0
+        bic     \regis, #0x00ff0000 << \ofs
+        orr     \regis, lr, lsl #16+\ofs
+      .endif
+        strb    lr, [mem, r11]
+        b       salida
+      .endm
+
       .macro    RL      regis, ofs
         TIME    8
         movs    lr, pcff, lsl #24
@@ -605,6 +672,25 @@ w:      .byte   0
         add     lr, #0x00000100
         pkhtb   spfa, spfa, lr
         pkhtb   bcfb, bcfb, lr, asr #16
+        b       salida
+      .endm
+
+      .macro    RLX    regis, ofs
+        TIME    8
+        movs    lr, pcff, lsl #24
+        adc     lr, r10, r10
+        pkhtb   pcff, pcff, lr
+        uxtb    lr, lr
+        pkhtb   defr, defr, lr
+        orr     lr, #0x00000100
+        pkhtb   spfa, spfa, lr
+        pkhtb   bcfb, bcfb, lr, asr #16
+      .if \regis==arvpref && \ofs==0
+        bic     \regis, #0x00ff0000 << \ofs
+        orr     \regis, lr, lsl #16+\ofs
+      .endif
+        strb    lr, [mem, r11]
+        b       salida
       .endm
 
       .macro    RR      regis, ofs
@@ -621,13 +707,33 @@ w:      .byte   0
         add     lr, #0x00000100
         pkhtb   spfa, spfa, lr
         pkhtb   bcfb, bcfb, lr, asr #16
+        b       salida
+      .endm
+
+      .macro    RRX    regis, ofs
+        TIME    8
+        add     lr, r10, r10, lsl #9
+        tst     pcff, #0x00000100
+        orrne   lr, #0x00000100
+        pkhtb   pcff, pcff, lr, asr #1
+        uxtb    lr, pcff
+        pkhtb   defr, defr, lr
+        orr     lr, #0x00000100
+        pkhtb   spfa, spfa, lr
+        pkhtb   bcfb, bcfb, lr, asr #16
+      .if \regis==arvpref && \ofs==0
+        bic     \regis, #0x00ff0000 << \ofs
+        orr     \regis, lr, lsl #16+\ofs
+      .endif
+        strb    lr, [mem, r11]
+        b       salida
       .endm
 
       .macro    SLL     regis, ofs
         TIME    8
         and     lr, \regis, #0x00ff0000 << \ofs
         mov     lr, lr, lsr #15+\ofs
-        orr     lr, #1
+        orr     lr, #0x00000001
         pkhtb   pcff, pcff, lr
         uxtb    lr, lr
         bic     \regis, #0x00ff0000 << \ofs
@@ -636,6 +742,25 @@ w:      .byte   0
         add     lr, #0x00000100
         pkhtb   spfa, spfa, lr
         pkhtb   bcfb, bcfb, lr, asr #16
+        b       salida
+      .endm
+
+      .macro    SLLX    regis, ofs
+        TIME    8
+        mov     lr, r10, lsl #1
+        orr     lr, #0x00000001
+        pkhtb   pcff, pcff, lr, asr #1
+        uxtb    lr, lr
+        pkhtb   defr, defr, lr
+        orr     lr, #0x00000100
+        pkhtb   spfa, spfa, lr
+        pkhtb   bcfb, bcfb, lr, asr #16
+      .if \regis==arvpref && \ofs==0
+        bic     \regis, #0x00ff0000 << \ofs
+        orr     \regis, lr, lsl #16+\ofs
+      .endif
+        strb    lr, [mem, r11]
+        b       salida
       .endm
 
       .macro    SRL     regis, ofs
@@ -650,6 +775,56 @@ w:      .byte   0
         add     lr, #0x00000100
         pkhtb   spfa, spfa, lr
         pkhtb   bcfb, bcfb, lr, asr #16
+        b       salida
+      .endm
+
+      .macro    SRLX    regis, ofs
+        TIME    8
+        add     lr, r10, r10, lsl #9
+        orr     lr, #0x00000001
+        pkhtb   pcff, pcff, lr, asr #1
+        uxtb    lr, pcff
+        pkhtb   defr, defr, lr
+        orr     lr, #0x00000100
+        pkhtb   spfa, spfa, lr
+        pkhtb   bcfb, bcfb, lr, asr #16
+      .if \regis==arvpref && \ofs==0
+        bic     \regis, #0x00ff0000 << \ofs
+        orr     \regis, lr, lsl #16+\ofs
+      .endif
+        strb    lr, [mem, r11]
+        b       salida
+      .endm
+
+      .macro    BIT     const, regis, ofs
+        TIME    8
+        mov     lr, \regis, lsr #16+\ofs
+        and     r11, lr, #\const
+        pkhtb   defr, defr, r11
+        and     lr, #0x00000028
+        orr     lr, r11
+        bic     pcff, #0x000000ff
+        uxtab   pcff, pcff, lr
+        mvn     r11, r11
+        pkhtb   spfa, spfa, r11
+        pkhtb   bcfb, bcfb, lr, asr #16
+        b       salida
+      .endm
+
+      .macro    BITHL   const
+        TIME    12
+        ldrb    r10, [mem, hlmp, lsr #16]
+        and     r10, #\const
+        eor     lr, r10, hlmp, lsr #8
+        and     lr, #0xffffffd7
+        eor     lr, hlmp, lsr #8
+        bic     pcff, #0x000000ff
+        uxtab   pcff, pcff, lr
+        pkhtb   defr, defr, r10
+        mvn     lr, r10
+        pkhtb   spfa, spfa, lr
+        pkhtb   bcfb, bcfb, r10, asr #16
+        b       salida
       .endm
 
       .macro    RES     const, regis, ofs
@@ -679,11 +854,7 @@ w:      .byte   0
 
       .macro    SET     const, regis, ofs
         TIME    8
-      .if \ofs==0
-        orr     \regis, #\const<<16
-      .else
-        orr     \regis, #\const<<24
-      .endif
+        orr     \regis, #\const<<(16+\ofs)
         b       salida
       .endm
 
@@ -765,7 +936,7 @@ w:      .byte   0
         pkhbt   hlmp, r11, lr, lsl #16
         rev     lr, hlmp
         pkhtb   defr, defr, lr
-        PREFIX0
+        b       salida
       .endm
 
       .macro    SBCHLRR regis
@@ -782,7 +953,7 @@ w:      .byte   0
         pkhbt   hlmp, r11, lr, lsl #16
         rev     lr, hlmp
         pkhtb   defr, defr, lr
-        PREFIX0
+        b       salida
       .endm
 
       .macro    RST     addr
@@ -886,7 +1057,7 @@ _st:    .word   st
         .word   inchx         @ 24 INC H
         .word   dechx         @ 25 DEC H
         .word   lxhn          @ 26 LD H,n
-        .word   nop           @ 27 DAA
+        .word   daa           @ 27 DAA
         .word   jrz           @ 28 JR Z,s8
         .word   addxxxx       @ 29 ADD HL,HL
         .word   ldxxpnn       @ 2a LD HL,(nn)
@@ -894,7 +1065,7 @@ _st:    .word   st
         .word   inclx         @ 2c INC L
         .word   declx         @ 2d DEC L
         .word   lxln          @ 2e LD L,n
-        .word   nop           @ 2f CPL
+        .word   cpl           @ 2f CPL
         .word   jrnc          @ 30 JR NC,s8
         .word   ldspnn        @ 31 LD SP,nn
         .word   ldnna         @ 32 LD (nn),A
@@ -910,7 +1081,7 @@ _st:    .word   st
         .word   inca          @ 3c INC A
         .word   deca          @ 3d DEC A
         .word   ldan          @ 3e LD A,n
-        .word   nop           @ 3f CCF
+        .word   ccf           @ 3f CCF
         .word   nop           @ 40 LD B,B
         .word   ldbc          @ 41 LD B,C
         .word   ldbd          @ 42 LD B,D
@@ -987,24 +1158,24 @@ _st:    .word   st
         .word   adcac         @ 89 ADC A,C
         .word   adcad         @ 8a ADC A,D
         .word   adcae         @ 8b ADC A,E
-        .word   adcxh         @ 8c ADC A,H
-        .word   adcxl         @ 8d ADC A,L
+        .word   adcaxh        @ 8c ADC A,H
+        .word   adcaxl        @ 8d ADC A,L
         .word   adcaxx        @ 8e ADC A,(HL)
         .word   adcaa         @ 8f ADC A,A
         .word   subb          @ 90 SUB B
         .word   subc          @ 91 SUB C
         .word   subd          @ 92 SUB D
         .word   sube          @ 93 SUB E
-        .word   subh          @ 94 SUB H
-        .word   subl          @ 95 SUB L
+        .word   subxh         @ 94 SUB H
+        .word   subxl         @ 95 SUB L
         .word   subxx         @ 96 SUB (HL)
         .word   suba          @ 97 SUB A
         .word   sbcab         @ 98 SBC A,B
         .word   sbcac         @ 99 SBC A,C
         .word   sbcad         @ 9a SBC A,D
         .word   sbcae         @ 9b SBC A,E
-        .word   sbcah         @ 9c SBC A,H
-        .word   sbcal         @ 9d SBC A,L
+        .word   sbcaxh        @ 9c SBC A,H
+        .word   sbcaxl        @ 9d SBC A,L
         .word   sbcaxx        @ 9e SBC A,(HL)
         .word   sbcaa         @ 9f SBC A,A
         .word   andb          @ a0 AND B
@@ -1113,6 +1284,51 @@ opdd:   TIME    4
 opfd:   TIME    4
         PREFIX2
 
+daa:    TIME    4
+        and     lr, pcff, #0x00000100
+        mov     r11, #0x00000000
+        mov     r10, arvpref, lsr #24
+        orr     r10, lr
+        cmp     r10, #0x00000099
+        movhi   r11, #0x00000160
+        and     r10, #0x0000000f
+        eor     lr, defr, spfa
+        eor     lr, bcfb
+        eor     lr, bcfb, lsr #8
+        and     lr, #0x00000010
+        orr     lr, r10
+        cmp     lr, #0x00000009
+        addhi   r11, #0x00000006
+        mov     r10, arvpref, lsr #24
+        pkhtb   spfa, spfa, r10
+        orr     spfa, #0x00000100
+        tst     bcfb, #0x00000200
+        mov     lr, r11
+        mvnne   lr, r11
+        pkhtb   bcfb, bcfb, lr
+        subne   arvpref, r11, lsl #24
+        addeq   arvpref, r11, lsl #24
+        mov     lr, arvpref, lsr #24
+        pkhtb   defr, defr, lr
+        and     r11, #0x00000100
+        orr     lr, r11
+        pkhtb   pcff, pcff, lr
+        PREFIX0
+
+cpl:    TIME    4
+        eor     arvpref, #0xff000000
+        mov     lr, arvpref, lsr #24
+        eor     lr, pcff
+        and     lr, #0x00000028
+        eor     pcff, lr
+        orr     bcfb, #0x0000007f
+        orr     bcfb, #0x0000ff00
+        mvn     lr, defr
+        eor     lr, spfa
+        and     lr, #0x00000010
+        eor     spfa, lr
+        PREFIX0
+
 rlca:   TIME    4
         mov     lr, arvpref, lsr #24
         add     lr, lr, lr, lsl #8
@@ -1218,26 +1434,39 @@ ldxxpnn:movs    lr, arvpref, lsl #24
         beq     ldhlpnn
         bmi     ldiypnn
         LDRRPNN ixstart, 16
+        PREFIX0
 ldiypnn:LDRRPNN iyi, 16
+        PREFIX0
 ldhlpnn:LDRRPNN hlmp, 16
+        PREFIX0
 
 ldbcpnn:LDRRPNN bcfb, 20
+        b       salida
 lddepnn:LDRRPNN defr, 20
+        b       salida
 ldxepnn:LDRRPNN hlmp, 20
+        b       salida
 ldsppnn:LDRRPNN spfa, 20
-
+        b       salida
 
 ldpnnxx:movs    lr, arvpref, lsl #24
         beq     ldpnnhl
         bmi     ldpnniy
         LDPNNRR ixstart, 16
+        PREFIX0
 ldpnniy:LDPNNRR iyi, 16
+        PREFIX0
 ldpnnhl:LDPNNRR hlmp, 16
+        PREFIX0
 
 ldpnnbc:LDPNNRR bcfb, 20
+        b       salida
 ldpnnde:LDPNNRR defr, 20
+        b       salida
 ldpnnxe:LDPNNRR hlmp, 20
+        b       salida
 ldpnnsp:LDPNNRR spfa, 20
+        b       salida
 
 addxxbc:movs    lr, arvpref, lsl #24
         beq     addhlbc
@@ -1737,14 +1966,14 @@ adcac:  XADC    bcfb, 0, 4
 adcad:  XADC    defr, 8, 4
 adcae:  XADC    defr, 0, 4
 
-adcxh:  movs    lr, arvpref, lsl #24
+adcaxh: movs    lr, arvpref, lsl #24
         beq     adcah
         bmi     adcayh
         XADC    ixstart, 8, 4
 adcayh: XADC    iyi, 8, 4
 adcah:  XADC    hlmp, 8, 4
 
-adcxl:  movs    lr, arvpref, lsl #24
+adcaxl: movs    lr, arvpref, lsl #24
         beq     adcal
         bmi     adcayl
         XADC    ixstart, 0, 4
@@ -2037,11 +2266,11 @@ cpyh:   CP      iyi, 8, 4
 cph:    CP      hlmp, 8, 4
 
 cpxl:   movs    lr, arvpref, lsl #24
-        beq     cpl
+        beq     cp_l
         bmi     cpyl
         CP      ixstart, 0, 4
 cpyl:   CP      iyi, 0, 4
-cpl:    CP      hlmp, 0, 4
+cp_l:   CP      hlmp, 0, 4
 
 cpan:   ldrb    lr, [mem, pcff, lsr #16]
         add     pcff, #0x00010000
@@ -2082,6 +2311,20 @@ scf:    TIME    4
         and     r11, pcff, #0x00000080
         orr     r11, lr, lsr #24
         orr     r11, #0x00000100
+        pkhtb   pcff, pcff, r11
+        PREFIX0
+
+ccf:    TIME    4
+        and     lr, bcfb, #0x00000080
+        eor     r11, defr, spfa
+        eor     r11, pcff, lsr #4
+        and     r11, #0x00000010
+        orr     lr, r11
+        pkhtb   bcfb, bcfb, lr
+        and     lr, arvpref, #0x28000000
+        and     r11, pcff, #0x00000180
+        orr     r11, lr, lsr #24
+        eor     r11, #0x00000100
         pkhtb   pcff, pcff, r11
         PREFIX0
 
@@ -2421,6 +2664,7 @@ over7:  eor     lr, spfa, defr
 
 oped:   mov     lr, #0x00010000
         uadd8   arvpref, arvpref, lr
+        bic     arvpref, #0xff
         ldrb    lr, [mem, pcff, lsr #16]
         add     pcff, #0x00010000
         ldr     pc, [pc, lr, lsl #2]
@@ -2586,7 +2830,7 @@ cb34:   .word   0xcb34cb34
         .word   nop8          @ 9e NOP8
         .word   nop8          @ 9f NOP8
         .word   nop8          @ a0 LDI
-        .word   nop8          @ a1 CPI
+        .word   cpi           @ a1 CPI
         .word   nop8          @ a2 INI
         .word   nop8          @ a3 OUTI
         .word   nop8          @ a4 NOP8
@@ -2594,7 +2838,7 @@ cb34:   .word   0xcb34cb34
         .word   nop8          @ a6 NOP8
         .word   nop8          @ a7 NOP8
         .word   ldd           @ a8 LDD
-        .word   nop8          @ a9 CPD
+        .word   cpd           @ a9 CPD
         .word   nop8          @ aa IND
         .word   nop8          @ ab OUTD
         .word   nop8          @ ac NOP8
@@ -2602,7 +2846,7 @@ cb34:   .word   0xcb34cb34
         .word   nop8          @ ae NOP8
         .word   nop8          @ af NOP8
         .word   ldir          @ b0 LDIR
-        .word   nop8          @ b1 CPIR
+        .word   cpir          @ b1 CPIR
         .word   nop8          @ b2 INIR
         .word   nop8          @ b3 OTIR
         .word   nop8          @ b4 NOP8
@@ -2610,7 +2854,7 @@ cb34:   .word   0xcb34cb34
         .word   nop8          @ b6 NOP8
         .word   nop8          @ b7 NOP8
         .word   lddr          @ b8 LDDR
-        .word   nop8          @ b9 CPDR
+        .word   cpdr          @ b9 CPDR
         .word   nop8          @ ba INDR
         .word   nop8          @ bb OTDR
         .word   nop8          @ bc NOP8
@@ -2714,7 +2958,153 @@ ldd:    TIME    16
         movs    lr, bcfb, lsr #16
         eorne   spfa, #0x00000080
         pkhbt   bcfb, spfa, lr, lsl #16
-        PREFIX0
+        b       salida
+
+cpi:    TIME    16
+        ldrb    lr, [mem, hlmp, lsr #16]
+        rsb     r11, lr, arvpref, lsr #24
+        uxtb    r11, r11
+        mov     r10, #0x00000001
+        orr     r10, #0x00010000
+        uadd16  hlmp, hlmp, r10
+        sub     bcfb, #0x00010000
+        and     r10, r11, #0x0000007f
+        orr     r10, r11, lsr #7
+        pkhtb   defr, defr, r10
+        orr     r10, lr, #0x00000080
+        mvn     r10, r10
+        pkhtb   bcfb, bcfb, r10
+        mov     r10, arvpref, lsr #24
+        and     r10, #0x0000007f
+        pkhtb   spfa, spfa, r10
+        movs    r10, bcfb, lsr #16
+        orrne   bcfb, #0x00000080
+        orrne   spfa, #0x00000080
+        bic     pcff, #0x000000ff
+        and     r10, r11, #0x000000d7
+        uxtab   pcff, pcff, r10
+        eor     r10, r11, lr
+        eor     r10, arvpref, lsr #24
+        tst     r10,  #0x00000010
+        subne   r11,  #0x00000001
+        tst     r11,  #0x00000008
+        orrne   pcff, #0x00000008
+        tst     r11,  #0x00000002
+        orrne   pcff, #0x00000020
+        b       salida
+
+cpir:   TIME    16
+        ldrb    lr, [mem, hlmp, lsr #16]
+        rsb     r11, lr, arvpref, lsr #24
+        uxtb    r11, r11
+        mov     r10, #0x00000001
+        orr     r10, #0x00010000
+        uadd16  hlmp, hlmp, r10
+        sub     bcfb, #0x00010000
+        and     r10, r11, #0x0000007f
+        orr     r10, r11, lsr #7
+        pkhtb   defr, defr, r10
+        orr     r10, lr, #0x00000080
+        mvn     r10, r10
+        pkhtb   bcfb, bcfb, r10
+        mov     r10, arvpref, lsr #24
+        and     r10, #0x0000007f
+        pkhtb   spfa, spfa, r10
+        movs    r10, bcfb, lsr #16
+        beq     cpdr3
+        orr     bcfb, #0x00000080
+        orr     spfa, #0x00000080
+        orrs    r11, r11
+        beq     cpdr3
+        TIME    5
+        sub     pcff, #0x00010000
+        pkhtb   hlmp, hlmp, pcff, asr #16
+        sub     pcff, #0x00010000
+cpdr3:  bic     pcff, #0x000000ff
+        and     r10, r11, #0x000000d7
+        uxtab   pcff, pcff, r10
+        eor     r10, r11, lr
+        eor     r10, arvpref, lsr #24
+        tst     r10,  #0x00000010
+        subne   r11,  #0x00000001
+        tst     r11,  #0x00000008
+        orrne   pcff, #0x00000008
+        tst     r11,  #0x00000002
+        orrne   pcff, #0x00000020
+        b       salida
+
+cpd:    TIME    16
+        ldrb    lr, [mem, hlmp, lsr #16]
+        rsb     r11, lr, arvpref, lsr #24
+        uxtb    r11, r11
+        mov     r10, #0x00000001
+        orr     r10, #0x00010000
+        usub16  hlmp, hlmp, r10
+        sub     bcfb, #0x00010000
+        and     r10, r11, #0x0000007f
+        orr     r10, r11, lsr #7
+        pkhtb   defr, defr, r10
+        orr     r10, lr, #0x00000080
+        mvn     r10, r10
+        pkhtb   bcfb, bcfb, r10
+        mov     r10, arvpref, lsr #24
+        and     r10, #0x0000007f
+        pkhtb   spfa, spfa, r10
+        movs    r10, bcfb, lsr #16
+        orrne   bcfb, #0x00000080
+        orrne   spfa, #0x00000080
+        bic     pcff, #0x000000ff
+        and     r10, r11, #0x000000d7
+        uxtab   pcff, pcff, r10
+        eor     r10, r11, lr
+        eor     r10, arvpref, lsr #24
+        tst     r10,  #0x00000010
+        subne   r11,  #0x00000001
+        tst     r11,  #0x00000008
+        orrne   pcff, #0x00000008
+        tst     r11,  #0x00000002
+        orrne   pcff, #0x00000020
+        b       salida
+
+cpdr:   TIME    16
+        ldrb    lr, [mem, hlmp, lsr #16]
+        rsb     r11, lr, arvpref, lsr #24
+        uxtb    r11, r11
+        mov     r10, #0x00000001
+        orr     r10, #0x00010000
+        usub16  hlmp, hlmp, r10
+        sub     bcfb, #0x00010000
+        and     r10, r11, #0x0000007f
+        orr     r10, r11, lsr #7
+        pkhtb   defr, defr, r10
+        orr     r10, lr, #0x00000080
+        mvn     r10, r10
+        pkhtb   bcfb, bcfb, r10
+        mov     r10, arvpref, lsr #24
+        and     r10, #0x0000007f
+        pkhtb   spfa, spfa, r10
+        movs    r10, bcfb, lsr #16
+        beq     cpdr2
+        orr     bcfb, #0x00000080
+        orr     spfa, #0x00000080
+        orrs    r11, r11
+        beq     cpdr2
+        TIME    5
+        sub     pcff, #0x00010000
+        pkhtb   hlmp, hlmp, pcff, asr #16
+        sub     pcff, #0x00010000
+cpdr2:  bic     pcff, #0x000000ff
+        and     r10, r11, #0x000000d7
+        uxtab   pcff, pcff, r10
+        eor     r10, r11, lr
+        eor     r10, arvpref, lsr #24
+        tst     r10,  #0x00000010
+        subne   r11,  #0x00000001
+        tst     r11,  #0x00000008
+        orrne   pcff, #0x00000008
+        tst     r11,  #0x00000002
+        orrne   pcff, #0x00000020
+        b       salida
 
 ldir:   TIME    16
         ldrb    lr, [mem, hlmp, lsr #16]
@@ -2740,7 +3130,7 @@ ldir:   TIME    16
         sub     pcff, #0x00010000
         TIME    5
 ldir2:  pkhbt   bcfb, spfa, lr, lsl #16
-        PREFIX0
+        b       salida
 
 lddr:   TIME    16
         ldrb    lr, [mem, hlmp, lsr #16]
@@ -2766,7 +3156,7 @@ lddr:   TIME    16
         sub     pcff, #0x00010000
         TIME    5
 lddr2:  pkhbt   bcfb, spfa, lr, lsl #16
-        PREFIX0
+        b       salida
 
 opcb:   movs    lr, arvpref, lsl #24
         bne     opxdcb
@@ -2776,22 +3166,22 @@ opcb:   movs    lr, arvpref, lsl #24
         add     pcff, #0x00010000
         ldr     pc, [pc, lr, lsl #2]
         .word   0             @ relleno
-        .word   nop8          @ 00 RLC B
-        .word   nop8          @ 01 RLC C
-        .word   nop8          @ 02 RLC D
-        .word   nop8          @ 03 RLC E
-        .word   nop8          @ 04 RLC H
-        .word   nop8          @ 05 RLC L
-        .word   nop8          @ 06 RLC (HL)
-        .word   nop8          @ 07 RLC A
-        .word   nop8          @ 08 RRC B
-        .word   nop8          @ 09 RRC C
-        .word   nop8          @ 0a RRC D
-        .word   nop8          @ 0b RRC E
-        .word   nop8          @ 0c RRC H
-        .word   nop8          @ 0d RRC L
-        .word   nop8          @ 0e RRC (HL)
-        .word   nop8          @ 0f RRC A
+        .word   rlc_b         @ 00 RLC B
+        .word   rlc_c         @ 01 RLC C
+        .word   rlc_d         @ 02 RLC D
+        .word   rlc_e         @ 03 RLC E
+        .word   rlc_h         @ 04 RLC H
+        .word   rlc_l         @ 05 RLC L
+        .word   rlc_hl        @ 06 RLC (HL)
+        .word   rlc_a         @ 07 RLC A
+        .word   rrc_b         @ 08 RRC B
+        .word   rrc_c         @ 09 RRC C
+        .word   rrc_d         @ 0a RRC D
+        .word   rrc_e         @ 0b RRC E
+        .word   rrc_h         @ 0c RRC H
+        .word   rrc_l         @ 0d RRC L
+        .word   rrc_hl        @ 0e RRC (HL)
+        .word   rrc_a         @ 0f RRC A
         .word   rl_b          @ 10 RL B
         .word   rl_c          @ 11 RL C
         .word   rl_d          @ 12 RL D
@@ -2840,70 +3230,70 @@ opcb:   movs    lr, arvpref, lsl #24
         .word   srl_l         @ 3d SRL L
         .word   srl_hl        @ 3e SRL (HL)
         .word   srl_a         @ 3f SRL A
-        .word   nop8          @ 40 BIT 0,B
-        .word   nop8          @ 41 BIT 0,C
-        .word   nop8          @ 42 BIT 0,D
-        .word   nop8          @ 43 BIT 0,E
-        .word   nop8          @ 44 BIT 0,H
-        .word   nop8          @ 45 BIT 0,L
-        .word   nop8          @ 46 BIT 0,(HL)
-        .word   nop8          @ 47 BIT 0,A
-        .word   nop8          @ 48 BIT 1,B
-        .word   nop8          @ 49 BIT 1,C
-        .word   nop8          @ 4a BIT 1,D
-        .word   nop8          @ 4b BIT 1,E
-        .word   nop8          @ 4c BIT 1,H
-        .word   nop8          @ 4d BIT 1,L
-        .word   nop8          @ 4e BIT 1,(HL)
-        .word   nop8          @ 4f BIT 1,A
-        .word   nop8          @ 50 BIT 2,B
-        .word   nop8          @ 51 BIT 2,C
-        .word   nop8          @ 52 BIT 2,D
-        .word   nop8          @ 53 BIT 2,E
-        .word   nop8          @ 54 BIT 2,H
-        .word   nop8          @ 55 BIT 2,L
-        .word   nop8          @ 56 BIT 2,(HL)
-        .word   nop8          @ 57 BIT 2,A
-        .word   nop8          @ 58 BIT 3,B
-        .word   nop8          @ 59 BIT 3,C
-        .word   nop8          @ 5a BIT 3,D
-        .word   nop8          @ 5b BIT 3,E
-        .word   nop8          @ 5c BIT 3,H
-        .word   nop8          @ 5d BIT 3,L
-        .word   nop8          @ 5e BIT 3,(HL)
-        .word   nop8          @ 5f BIT 3,A
-        .word   nop8          @ 60 BIT 4,B
-        .word   nop8          @ 61 BIT 4,C
-        .word   nop8          @ 62 BIT 4,D
-        .word   nop8          @ 63 BIT 4,E
-        .word   nop8          @ 64 BIT 4,H
-        .word   nop8          @ 65 BIT 4,L
-        .word   nop8          @ 66 BIT 4,(HL)
-        .word   nop8          @ 67 BIT 4,A
-        .word   nop8          @ 68 BIT 5,B
-        .word   nop8          @ 69 BIT 5,C
-        .word   nop8          @ 6a BIT 5,D
-        .word   nop8          @ 6b BIT 5,E
-        .word   nop8          @ 6c BIT 5,H
-        .word   nop8          @ 6d BIT 5,L
-        .word   nop8          @ 6e BIT 5,(HL)
-        .word   nop8          @ 6f BIT 5,A
-        .word   nop8          @ 70 BIT 6,B
-        .word   nop8          @ 71 BIT 6,C
-        .word   nop8          @ 72 BIT 6,D
-        .word   nop8          @ 73 BIT 6,E
-        .word   nop8          @ 74 BIT 6,H
-        .word   nop8          @ 75 BIT 6,L
-        .word   nop8          @ 76 BIT 6,(HL)
-        .word   nop8          @ 77 BIT 6,A
-        .word   nop8          @ 78 BIT 7,B
-        .word   nop8          @ 79 BIT 7,C
-        .word   nop8          @ 7a BIT 7,D
-        .word   nop8          @ 7b BIT 7,E
-        .word   nop8          @ 7c BIT 7,H
-        .word   nop8          @ 7d BIT 7,L
-        .word   nop8          @ 7e BIT 7,(HL)
-        .word   nop8          @ 7f BIT 7,A
+        .word   bit0b         @ 40 BIT 0,B
+        .word   bit0c         @ 41 BIT 0,C
+        .word   bit0d         @ 42 BIT 0,D
+        .word   bit0e         @ 43 BIT 0,E
+        .word   bit0h         @ 44 BIT 0,H
+        .word   bit0l         @ 45 BIT 0,L
+        .word   bit0hl        @ 46 BIT 0,(HL)
+        .word   bit0a         @ 47 BIT 0,A
+        .word   bit1b         @ 48 BIT 1,B
+        .word   bit1c         @ 49 BIT 1,C
+        .word   bit1d         @ 4a BIT 1,D
+        .word   bit1e         @ 4b BIT 1,E
+        .word   bit1h         @ 4c BIT 1,H
+        .word   bit1l         @ 4d BIT 1,L
+        .word   bit1hl        @ 4e BIT 1,(HL)
+        .word   bit1a         @ 4f BIT 1,A
+        .word   bit2b         @ 50 BIT 2,B
+        .word   bit2c         @ 51 BIT 2,C
+        .word   bit2d         @ 52 BIT 2,D
+        .word   bit2e         @ 53 BIT 2,E
+        .word   bit2h         @ 54 BIT 2,H
+        .word   bit2l         @ 55 BIT 2,L
+        .word   bit2hl        @ 56 BIT 2,(HL)
+        .word   bit2a         @ 57 BIT 2,A
+        .word   bit3b         @ 58 BIT 3,B
+        .word   bit3c         @ 59 BIT 3,C
+        .word   bit3d         @ 5a BIT 3,D
+        .word   bit3e         @ 5b BIT 3,E
+        .word   bit3h         @ 5c BIT 3,H
+        .word   bit3l         @ 5d BIT 3,L
+        .word   bit3hl        @ 5e BIT 3,(HL)
+        .word   bit3a         @ 5f BIT 3,A
+        .word   bit4b         @ 60 BIT 4,B
+        .word   bit4c         @ 61 BIT 4,C
+        .word   bit4d         @ 62 BIT 4,D
+        .word   bit4e         @ 63 BIT 4,E
+        .word   bit4h         @ 64 BIT 4,H
+        .word   bit4l         @ 65 BIT 4,L
+        .word   bit4hl        @ 66 BIT 4,(HL)
+        .word   bit4a         @ 67 BIT 4,A
+        .word   bit5b         @ 68 BIT 5,B
+        .word   bit5c         @ 69 BIT 5,C
+        .word   bit5d         @ 6a BIT 5,D
+        .word   bit5e         @ 6b BIT 5,E
+        .word   bit5h         @ 6c BIT 5,H
+        .word   bit5l         @ 6d BIT 5,L
+        .word   bit5hl        @ 6e BIT 5,(HL)
+        .word   bit5a         @ 6f BIT 5,A
+        .word   bit6b         @ 70 BIT 6,B
+        .word   bit6c         @ 71 BIT 6,C
+        .word   bit6d         @ 72 BIT 6,D
+        .word   bit6e         @ 73 BIT 6,E
+        .word   bit6h         @ 74 BIT 6,H
+        .word   bit6l         @ 75 BIT 6,L
+        .word   bit6hl        @ 76 BIT 6,(HL)
+        .word   bit6a         @ 77 BIT 6,A
+        .word   bit7b         @ 78 BIT 7,B
+        .word   bit7c         @ 79 BIT 7,C
+        .word   bit7d         @ 7a BIT 7,D
+        .word   bit7e         @ 7b BIT 7,E
+        .word   bit7h         @ 7c BIT 7,H
+        .word   bit7l         @ 7d BIT 7,L
+        .word   bit7hl        @ 7e BIT 7,(HL)
+        .word   bit7a         @ 7f BIT 7,A
         .word   res0b         @ 80 RES 0,B
         .word   res0c         @ 81 RES 0,C
         .word   res0d         @ 82 RES 0,D
@@ -3032,6 +3422,125 @@ opcb:   movs    lr, arvpref, lsl #24
         .word   set7l         @ fd SET 7,L
         .word   set7hl        @ fe SET 7,(HL)
         .word   set7a         @ ff SET 7,A
+
+rlc_b:  RLC     bcfb, 8
+rlc_c:  RLC     bcfb, 0
+rlc_d:  RLC     defr, 8
+rlc_e:  RLC     defr, 0
+rlc_h:  RLC     hlmp, 8
+rlc_l:  RLC     hlmp, 0
+rlc_hl: @ revisar
+rlc_a:  RLC     arvpref, 8
+
+rrc_b:  RRC     bcfb, 8
+rrc_c:  RRC     bcfb, 0
+rrc_d:  RRC     defr, 8
+rrc_e:  RRC     defr, 0
+rrc_h:  RRC     hlmp, 8
+rrc_l:  RRC     hlmp, 0
+rrc_hl: @ revisar
+rrc_a:  RRC     arvpref, 8
+
+rl_b:   RL      bcfb, 8
+rl_c:   RL      bcfb, 0
+rl_d:   RL      defr, 8
+rl_e:   RL      defr, 0
+rl_h:   RL      hlmp, 8
+rl_l:   RL      hlmp, 0
+rl_hl:  @ revisar
+rl_a:   RL      arvpref, 8
+
+rr_b:   RR      bcfb, 8
+rr_c:   RR      bcfb, 0
+rr_d:   RR      defr, 8
+rr_e:   RR      defr, 0
+rr_h:   RR      hlmp, 8
+rr_l:   RR      hlmp, 0
+rr_hl:  @ revisar
+rr_a:   RR      arvpref, 8
+
+sll_b:  SLL     bcfb, 8
+sll_c:  SLL     bcfb, 0
+sll_d:  SLL     defr, 8
+sll_e:  SLL     defr, 0
+sll_h:  SLL     hlmp, 8
+sll_l:  SLL     hlmp, 0
+sll_hl: @ revisar
+sll_a:  SLL     arvpref, 8
+
+srl_b:  SRL     bcfb, 8
+srl_c:  SRL     bcfb, 0
+srl_d:  SRL     defr, 8
+srl_e:  SRL     defr, 0
+srl_h:  SRL     hlmp, 8
+srl_l:  SRL     hlmp, 0
+srl_hl: @ revisar
+srl_a:  SRL     arvpref, 8
+
+bit0b:  BIT     0x01, bcfb, 8
+bit0c:  BIT     0x01, bcfb, 0
+bit0d:  BIT     0x01, defr, 8
+bit0e:  BIT     0x01, defr, 0
+bit0h:  BIT     0x01, hlmp, 8
+bit0l:  BIT     0x01, hlmp, 0
+bit0hl: BITHL   0x01
+bit0a:  BIT     0x01, arvpref, 8
+bit1b:  BIT     0x02, bcfb, 8
+bit1c:  BIT     0x02, bcfb, 0
+bit1d:  BIT     0x02, defr, 8
+bit1e:  BIT     0x02, defr, 0
+bit1h:  BIT     0x02, hlmp, 8
+bit1l:  BIT     0x02, hlmp, 0
+bit1hl: BITHL   0x02
+bit1a:  BIT     0x02, arvpref, 8
+bit2b:  BIT     0x04, bcfb, 8
+bit2c:  BIT     0x04, bcfb, 0
+bit2d:  BIT     0x04, defr, 8
+bit2e:  BIT     0x04, defr, 0
+bit2h:  BIT     0x04, hlmp, 8
+bit2l:  BIT     0x04, hlmp, 0
+bit2hl: BITHL   0x04
+bit2a:  BIT     0x04, arvpref, 8
+bit3b:  BIT     0x08, bcfb, 8
+bit3c:  BIT     0x08, bcfb, 0
+bit3d:  BIT     0x08, defr, 8
+bit3e:  BIT     0x08, defr, 0
+bit3h:  BIT     0x08, hlmp, 8
+bit3l:  BIT     0x08, hlmp, 0
+bit3hl: BITHL   0x08
+bit3a:  BIT     0x08, arvpref, 8
+bit4b:  BIT     0x10, bcfb, 8
+bit4c:  BIT     0x10, bcfb, 0
+bit4d:  BIT     0x10, defr, 8
+bit4e:  BIT     0x10, defr, 0
+bit4h:  BIT     0x10, hlmp, 8
+bit4l:  BIT     0x10, hlmp, 0
+bit4hl: BITHL   0x10
+bit4a:  BIT     0x10, arvpref, 8
+bit5b:  BIT     0x20, bcfb, 8
+bit5c:  BIT     0x20, bcfb, 0
+bit5d:  BIT     0x20, defr, 8
+bit5e:  BIT     0x20, defr, 0
+bit5h:  BIT     0x20, hlmp, 8
+bit5l:  BIT     0x20, hlmp, 0
+bit5hl: BITHL   0x20
+bit5a:  BIT     0x20, arvpref, 8
+bit6b:  BIT     0x40, bcfb, 8
+bit6c:  BIT     0x40, bcfb, 0
+bit6d:  BIT     0x40, defr, 8
+bit6e:  BIT     0x40, defr, 0
+bit6h:  BIT     0x40, hlmp, 8
+bit6l:  BIT     0x40, hlmp, 0
+bit6hl: BITHL   0x40
+bit6a:  BIT     0x40, arvpref, 8
+bit7b:  BIT     0x80, bcfb, 8
+bit7c:  BIT     0x80, bcfb, 0
+bit7d:  BIT     0x80, defr, 8
+bit7e:  BIT     0x80, defr, 0
+bit7h:  BIT     0x80, hlmp, 8
+bit7l:  BIT     0x80, hlmp, 0
+bit7hl: BITHL   0x80
+bit7a:  BIT     0x80, arvpref, 8
 
 res0b:  RES     0xfe, bcfb, 8
 res0c:  RES     0xfe, bcfb, 0
@@ -3180,38 +3689,38 @@ contcb: bic     arvpref, #0xff
         add     pcff, #0x00020000
         ldr     pc, [pc, lr, lsl #2]
 c18003: .word   0x00018003
-        .word   nop8          @ 00 LD B,RLC (IX+d) // LD B,RLC (IY+d)
-        .word   nop8          @ 01 LD C,RLC (IX+d) // LD C,RLC (IY+d)
-        .word   nop8          @ 02 LD D,RLC (IX+d) // LD D,RLC (IY+d)
-        .word   nop8          @ 03 LD E,RLC (IX+d) // LD E,RLC (IY+d)
-        .word   nop8          @ 04 LD H,RLC (IX+d) // LD H,RLC (IY+d)
-        .word   nop8          @ 05 LD L,RLC (IX+d) // LD L,RLC (IY+d)
-        .word   nop8          @ 06 RLC (IX+d) // RLC (IY+d)
-        .word   nop8          @ 07 LD A,RLC (IX+d) // LD A,RLC (IY+d)
-        .word   nop8          @ 08 LD B,RRC (IX+d) // LD B,RRC (IY+d)
-        .word   nop8          @ 09 LD C,RRC (IX+d) // LD C,RRC (IY+d)
-        .word   nop8          @ 0a LD D,RRC (IX+d) // LD D,RRC (IY+d)
-        .word   nop8          @ 0b LD E,RRC (IX+d) // LD E,RRC (IY+d)
-        .word   nop8          @ 0c LD H,RRC (IX+d) // LD H,RRC (IY+d)
-        .word   nop8          @ 0d LD L,RRC (IX+d) // LD L,RRC (IY+d)
-        .word   nop8          @ 0e RRC (IX+d) // RRC (IY+d)
-        .word   nop8          @ 0f LD A,RRC (IX+d) // LD A,RRC (IY+d)
-        .word   nop8          @ 10 LD B,RL (IX+d) // LD B,RL (IY+d)
-        .word   nop8          @ 11 LD C,RL (IX+d) // LD C,RL (IY+d)
-        .word   nop8          @ 12 LD D,RL (IX+d) // LD D,RL (IY+d)
-        .word   nop8          @ 13 LD E,RL (IX+d) // LD E,RL (IY+d)
-        .word   nop8          @ 14 LD H,RL (IX+d) // LD H,RL (IY+d)
-        .word   nop8          @ 15 LD L,RL (IX+d) // LD L,RL (IY+d)
-        .word   nop8          @ 16 RL (IX+d) // RL (IY+d)
-        .word   nop8          @ 17 LD A,RL (IX+d) // LD A,RL (IY+d)
-        .word   nop8          @ 18 LD B,RR (IX+d) // LD B,RR (IY+d)
-        .word   nop8          @ 19 LD C,RR (IX+d) // LD C,RR (IY+d)
-        .word   nop8          @ 1a LD D,RR (IX+d) // LD D,RR (IY+d)
-        .word   nop8          @ 1b LD E,RR (IX+d) // LD E,RR (IY+d)
-        .word   nop8          @ 1c LD H,RR (IX+d) // LD H,RR (IY+d)
-        .word   nop8          @ 1d LD L,RR (IX+d) // LD L,RR (IY+d)
-        .word   nop8          @ 1e RR (IX+d) // RR (IY+d)
-        .word   nop8          @ 1f LD A,RR (IX+d) // LD A,RR (IY+d)
+        .word   b_rlcx        @ 00 LD B,RLC (IX+d) // LD B,RLC (IY+d)
+        .word   c_rlcx        @ 01 LD C,RLC (IX+d) // LD C,RLC (IY+d)
+        .word   d_rlcx        @ 02 LD D,RLC (IX+d) // LD D,RLC (IY+d)
+        .word   e_rlcx        @ 03 LD E,RLC (IX+d) // LD E,RLC (IY+d)
+        .word   h_rlcx        @ 04 LD H,RLC (IX+d) // LD H,RLC (IY+d)
+        .word   l_rlcx        @ 05 LD L,RLC (IX+d) // LD L,RLC (IY+d)
+        .word   rlcx          @ 06 RLC (IX+d) // RLC (IY+d)
+        .word   a_rlcx        @ 07 LD A,RLC (IX+d) // LD A,RLC (IY+d)
+        .word   b_rrcx        @ 08 LD B,RRC (IX+d) // LD B,RRC (IY+d)
+        .word   c_rrcx        @ 09 LD C,RRC (IX+d) // LD C,RRC (IY+d)
+        .word   d_rrcx        @ 0a LD D,RRC (IX+d) // LD D,RRC (IY+d)
+        .word   e_rrcx        @ 0b LD E,RRC (IX+d) // LD E,RRC (IY+d)
+        .word   h_rrcx        @ 0c LD H,RRC (IX+d) // LD H,RRC (IY+d)
+        .word   l_rrcx        @ 0d LD L,RRC (IX+d) // LD L,RRC (IY+d)
+        .word   rrcx          @ 0e RRC (IX+d) // RRC (IY+d)
+        .word   a_rrcx        @ 0f LD A,RRC (IX+d) // LD A,RRC (IY+d)
+        .word   b_rlx         @ 10 LD B,RL (IX+d) // LD B,RL (IY+d)
+        .word   c_rlx         @ 11 LD C,RL (IX+d) // LD C,RL (IY+d)
+        .word   d_rlx         @ 12 LD D,RL (IX+d) // LD D,RL (IY+d)
+        .word   e_rlx         @ 13 LD E,RL (IX+d) // LD E,RL (IY+d)
+        .word   h_rlx         @ 14 LD H,RL (IX+d) // LD H,RL (IY+d)
+        .word   l_rlx         @ 15 LD L,RL (IX+d) // LD L,RL (IY+d)
+        .word   rlx           @ 16 RL (IX+d) // RL (IY+d)
+        .word   a_rlx         @ 17 LD A,RL (IX+d) // LD A,RL (IY+d)
+        .word   b_rrx         @ 18 LD B,RR (IX+d) // LD B,RR (IY+d)
+        .word   c_rrx         @ 19 LD C,RR (IX+d) // LD C,RR (IY+d)
+        .word   d_rrx         @ 1a LD D,RR (IX+d) // LD D,RR (IY+d)
+        .word   e_rrx         @ 1b LD E,RR (IX+d) // LD E,RR (IY+d)
+        .word   h_rrx         @ 1c LD H,RR (IX+d) // LD H,RR (IY+d)
+        .word   l_rrx         @ 1d LD L,RR (IX+d) // LD L,RR (IY+d)
+        .word   rrx           @ 1e RR (IX+d) // RR (IY+d)
+        .word   a_rrx         @ 1f LD A,RR (IX+d) // LD A,RR (IY+d)
         .word   nop8          @ 20 LD B,SLA (IX+d) // LD B,SLA (IY+d)
         .word   nop8          @ 21 LD C,SLA (IX+d) // LD C,SLA (IY+d)
         .word   nop8          @ 22 LD D,SLA (IX+d) // LD D,SLA (IY+d)
@@ -3308,134 +3817,167 @@ c18003: .word   0x00018003
         .word   biti7         @ 7d BIT 7,(IX+d) // BIT 7,(IY+d)
         .word   biti7         @ 7e BIT 7,(IX+d) // BIT 7,(IY+d)
         .word   biti7         @ 7f BIT 7,(IX+d) // BIT 7,(IY+d)
-        .word   nop8          @ 80 LD B,RES 0,(IX+d) // LD B,RES 0,(IY+d)
-        .word   nop8          @ 81 LD C,RES 0,(IX+d) // LD C,RES 0,(IY+d)
-        .word   nop8          @ 82 LD D,RES 0,(IX+d) // LD D,RES 0,(IY+d)
-        .word   nop8          @ 83 LD E,RES 0,(IX+d) // LD E,RES 0,(IY+d)
-        .word   nop8          @ 84 LD H,RES 0,(IX+d) // LD H,RES 0,(IY+d)
-        .word   nop8          @ 85 LD L,RES 0,(IX+d) // LD L,RES 0,(IY+d)
-        .word   nop8          @ 86 RES 0,(IX+d) // RES 0,(IY+d)
-        .word   nop8          @ 87 LD A,RES 0,(IX+d) // LD A,RES 0,(IY+d)
-        .word   nop8          @ 88 LD B,RES 1,(IX+d) // LD B,RES 1,(IY+d)
-        .word   nop8          @ 89 LD C,RES 1,(IX+d) // LD C,RES 1,(IY+d)
-        .word   nop8          @ 8a LD D,RES 1,(IX+d) // LD D,RES 1,(IY+d)
-        .word   nop8          @ 8b LD E,RES 1,(IX+d) // LD E,RES 1,(IY+d)
-        .word   nop8          @ 8c LD H,RES 1,(IX+d) // LD H,RES 1,(IY+d)
-        .word   nop8          @ 8d LD L,RES 1,(IX+d) // LD L,RES 1,(IY+d)
-        .word   nop8          @ 8e RES 1,(IX+d) // RES 1,(IY+d)
-        .word   nop8          @ 8f LD A,RES 1,(IX+d) // LD A,RES 1,(IY+d)
-        .word   nop8          @ 90 LD B,RES 2,(IX+d) // LD B,RES 2,(IY+d)
-        .word   nop8          @ 91 LD C,RES 2,(IX+d) // LD C,RES 2,(IY+d)
-        .word   nop8          @ 92 LD D,RES 2,(IX+d) // LD D,RES 2,(IY+d)
-        .word   nop8          @ 93 LD E,RES 2,(IX+d) // LD E,RES 2,(IY+d)
-        .word   nop8          @ 94 LD H,RES 2,(IX+d) // LD H,RES 2,(IY+d)
-        .word   nop8          @ 95 LD L,RES 2,(IX+d) // LD L,RES 2,(IY+d)
-        .word   nop8          @ 96 RES 2,(IX+d) // RES 2,(IY+d)
-        .word   nop8          @ 97 LD A,RES 2,(IX+d) // LD A,RES 2,(IY+d)
-        .word   nop8          @ 98 LD B,RES 3,(IX+d) // LD B,RES 3,(IY+d)
-        .word   nop8          @ 99 LD C,RES 3,(IX+d) // LD C,RES 3,(IY+d)
-        .word   nop8          @ 9a LD D,RES 3,(IX+d) // LD D,RES 3,(IY+d)
-        .word   nop8          @ 9b LD E,RES 3,(IX+d) // LD E,RES 3,(IY+d)
-        .word   nop8          @ 9c LD H,RES 3,(IX+d) // LD H,RES 3,(IY+d)
-        .word   nop8          @ 9d LD L,RES 3,(IX+d) // LD L,RES 3,(IY+d)
-        .word   nop8          @ 9e RES 3,(IX+d) // RES 3,(IY+d)
-        .word   nop8          @ 9f LD A,RES 3,(IX+d) // LD A,RES 3,(IY+d)
-        .word   nop8          @ a0 LD B,RES 4,(IX+d) // LD B,RES 4,(IY+d)
-        .word   nop8          @ a1 LD C,RES 4,(IX+d) // LD C,RES 4,(IY+d)
-        .word   nop8          @ a2 LD D,RES 4,(IX+d) // LD D,RES 4,(IY+d)
-        .word   nop8          @ a3 LD E,RES 4,(IX+d) // LD E,RES 4,(IY+d)
-        .word   nop8          @ a4 LD H,RES 4,(IX+d) // LD H,RES 4,(IY+d)
-        .word   nop8          @ a5 LD L,RES 4,(IX+d) // LD L,RES 4,(IY+d)
-        .word   res4xx        @ a6 RES 4,(IX+d) // RES 4,(IY+d)
-        .word   nop8          @ a7 LD A,RES 4,(IX+d) // LD A,RES 4,(IY+d)
-        .word   nop8          @ a8 LD B,RES 5,(IX+d) // LD B,RES 5,(IY+d)
-        .word   nop8          @ a9 LD C,RES 5,(IX+d) // LD C,RES 5,(IY+d)
-        .word   nop8          @ aa LD D,RES 5,(IX+d) // LD D,RES 5,(IY+d)
-        .word   nop8          @ ab LD E,RES 5,(IX+d) // LD E,RES 5,(IY+d)
-        .word   nop8          @ ac LD H,RES 5,(IX+d) // LD H,RES 5,(IY+d)
-        .word   nop8          @ ad LD L,RES 5,(IX+d) // LD L,RES 5,(IY+d)
-        .word   nop8          @ ae RES 5,(IX+d) // RES 5,(IY+d)
-        .word   nop8          @ af LD A,RES 5,(IX+d) // LD A,RES 5,(IY+d)
-        .word   nop8          @ b0 LD B,RES 6,(IX+d) // LD B,RES 6,(IY+d)
-        .word   nop8          @ b1 LD C,RES 6,(IX+d) // LD C,RES 6,(IY+d)
-        .word   nop8          @ b2 LD D,RES 6,(IX+d) // LD D,RES 6,(IY+d)
-        .word   nop8          @ b3 LD E,RES 6,(IX+d) // LD E,RES 6,(IY+d)
-        .word   nop8          @ b4 LD H,RES 6,(IX+d) // LD H,RES 6,(IY+d)
-        .word   nop8          @ b5 LD L,RES 6,(IX+d) // LD L,RES 6,(IY+d)
-        .word   nop8          @ b6 RES 6,(IX+d) // RES 6,(IY+d)
-        .word   nop8          @ b7 LD A,RES 6,(IX+d) // LD A,RES 6,(IY+d)
-        .word   nop8          @ b8 LD B,RES 7,(IX+d) // LD B,RES 7,(IY+d)
-        .word   nop8          @ b9 LD C,RES 7,(IX+d) // LD C,RES 7,(IY+d)
-        .word   nop8          @ ba LD D,RES 7,(IX+d) // LD D,RES 7,(IY+d)
-        .word   nop8          @ bb LD E,RES 7,(IX+d) // LD E,RES 7,(IY+d)
-        .word   nop8          @ bc LD H,RES 7,(IX+d) // LD H,RES 7,(IY+d)
-        .word   nop8          @ bd LD L,RES 7,(IX+d) // LD L,RES 7,(IY+d)
-        .word   nop8          @ be RES 7,(IX+d) // RES 7,(IY+d)
-        .word   nop8          @ bf LD A,RES 7,(IX+d) // LD A,RES 7,(IY+d)
-        .word   nop8          @ c0 LD B,SET 0,(IX+d) // LD B,SET 0,(IY+d)
-        .word   nop8          @ c1 LD C,SET 0,(IX+d) // LD C,SET 0,(IY+d)
-        .word   nop8          @ c2 LD D,SET 0,(IX+d) // LD D,SET 0,(IY+d)
-        .word   nop8          @ c3 LD E,SET 0,(IX+d) // LD E,SET 0,(IY+d)
-        .word   nop8          @ c4 LD H,SET 0,(IX+d) // LD H,SET 0,(IY+d)
-        .word   nop8          @ c5 LD L,SET 0,(IX+d) // LD L,SET 0,(IY+d)
-        .word   nop8          @ c6 SET 0,(IX+d) // SET 0,(IY+d)
-        .word   nop8          @ c7 LD A,SET 0,(IX+d) // LD A,SET 0,(IY+d)
-        .word   nop8          @ c8 LD B,SET 1,(IX+d) // LD B,SET 1,(IY+d)
-        .word   nop8          @ c9 LD C,SET 1,(IX+d) // LD C,SET 1,(IY+d)
-        .word   nop8          @ ca LD D,SET 1,(IX+d) // LD D,SET 1,(IY+d)
-        .word   nop8          @ cb LD E,SET 1,(IX+d) // LD E,SET 1,(IY+d)
-        .word   nop8          @ cc LD H,SET 1,(IX+d) // LD H,SET 1,(IY+d)
-        .word   nop8          @ cd LD L,SET 1,(IX+d) // LD L,SET 1,(IY+d)
-        .word   nop8          @ ce SET 1,(IX+d) // SET 1,(IY+d)
-        .word   nop8          @ cf LD A,SET 1,(IX+d) // LD A,SET 1,(IY+d)
-        .word   nop8          @ d0 LD B,SET 2,(IX+d) // LD B,SET 2,(IY+d)
-        .word   nop8          @ d1 LD C,SET 2,(IX+d) // LD C,SET 2,(IY+d)
-        .word   nop8          @ d2 LD D,SET 2,(IX+d) // LD D,SET 2,(IY+d)
-        .word   nop8          @ d3 LD E,SET 2,(IX+d) // LD E,SET 2,(IY+d)
-        .word   nop8          @ d4 LD H,SET 2,(IX+d) // LD H,SET 2,(IY+d)
-        .word   nop8          @ d5 LD L,SET 2,(IX+d) // LD L,SET 2,(IY+d)
-        .word   nop8          @ d6 SET 2,(IX+d) // SET 2,(IY+d)
-        .word   nop8          @ d7 LD A,SET 2,(IX+d) // LD A,SET 2,(IY+d)
-        .word   nop8          @ d8 LD B,SET 3,(IX+d) // LD B,SET 3,(IY+d)
-        .word   nop8          @ d9 LD C,SET 3,(IX+d) // LD C,SET 3,(IY+d)
-        .word   nop8          @ da LD D,SET 3,(IX+d) // LD D,SET 3,(IY+d)
-        .word   nop8          @ db LD E,SET 3,(IX+d) // LD E,SET 3,(IY+d)
-        .word   nop8          @ dc LD H,SET 3,(IX+d) // LD H,SET 3,(IY+d)
-        .word   nop8          @ dd LD L,SET 3,(IX+d) // LD L,SET 3,(IY+d)
-        .word   nop8          @ de SET 3,(IX+d) // SET 3,(IY+d)
-        .word   nop8          @ df LD A,SET 3,(IX+d) // LD A,SET 3,(IY+d)
-        .word   nop8          @ e0 LD B,SET 4,(IX+d) // LD B,SET 4,(IY+d)
-        .word   nop8          @ e1 LD C,SET 4,(IX+d) // LD C,SET 4,(IY+d)
-        .word   nop8          @ e2 LD D,SET 4,(IX+d) // LD D,SET 4,(IY+d)
-        .word   nop8          @ e3 LD E,SET 4,(IX+d) // LD E,SET 4,(IY+d)
-        .word   nop8          @ e4 LD H,SET 4,(IX+d) // LD H,SET 4,(IY+d)
-        .word   nop8          @ e5 LD L,SET 4,(IX+d) // LD L,SET 4,(IY+d)
-        .word   nop8          @ e6 SET 4,(IX+d) // SET 4,(IY+d)
-        .word   nop8          @ e7 LD A,SET 4,(IX+d) // LD A,SET 4,(IY+d)
-        .word   nop8          @ e8 LD B,SET 5,(IX+d) // LD B,SET 5,(IY+d)
-        .word   nop8          @ e9 LD C,SET 5,(IX+d) // LD C,SET 5,(IY+d)
-        .word   nop8          @ ea LD D,SET 5,(IX+d) // LD D,SET 5,(IY+d)
-        .word   nop8          @ eb LD E,SET 5,(IX+d) // LD E,SET 5,(IY+d)
-        .word   nop8          @ ec LD H,SET 5,(IX+d) // LD H,SET 5,(IY+d)
-        .word   nop8          @ ed LD L,SET 5,(IX+d) // LD L,SET 5,(IY+d)
-        .word   nop8          @ ee SET 5,(IX+d) // SET 5,(IY+d)
-        .word   nop8          @ ef LD A,SET 5,(IX+d) // LD A,SET 5,(IY+d)
-        .word   nop8          @ f0 LD B,SET 6,(IX+d) // LD B,SET 6,(IY+d)
-        .word   nop8          @ f1 LD C,SET 6,(IX+d) // LD C,SET 6,(IY+d)
-        .word   nop8          @ f2 LD D,SET 6,(IX+d) // LD D,SET 6,(IY+d)
-        .word   nop8          @ f3 LD E,SET 6,(IX+d) // LD E,SET 6,(IY+d)
-        .word   nop8          @ f4 LD H,SET 6,(IX+d) // LD H,SET 6,(IY+d)
-        .word   nop8          @ f5 LD L,SET 6,(IX+d) // LD L,SET 6,(IY+d)
-        .word   nop8          @ f6 SET 6,(IX+d) // SET 6,(IY+d)
-        .word   nop8          @ f7 LD A,SET 6,(IX+d) // LD A,SET 6,(IY+d)
-        .word   nop8          @ f8 LD B,SET 7,(IX+d) // LD B,SET 7,(IY+d)
-        .word   nop8          @ f9 LD C,SET 7,(IX+d) // LD C,SET 7,(IY+d)
-        .word   nop8          @ fa LD D,SET 7,(IX+d) // LD D,SET 7,(IY+d)
-        .word   nop8          @ fb LD E,SET 7,(IX+d) // LD E,SET 7,(IY+d)
-        .word   nop8          @ fc LD H,SET 7,(IX+d) // LD H,SET 7,(IY+d)
-        .word   nop8          @ fd LD L,SET 7,(IX+d) // LD L,SET 7,(IY+d)
-        .word   nop8          @ fe SET 7,(IX+d) // SET 7,(IY+d)
-        .word   nop8          @ ff LD A,SET 7,(IX+d) // LD A,SET 7,(IY+d)
+        .word   b_res0x       @ 80 LD B,RES 0,(IX+d) // LD B,RES 0,(IY+d)
+        .word   c_res0x       @ 81 LD C,RES 0,(IX+d) // LD C,RES 0,(IY+d)
+        .word   d_res0x       @ 82 LD D,RES 0,(IX+d) // LD D,RES 0,(IY+d)
+        .word   e_res0x       @ 83 LD E,RES 0,(IX+d) // LD E,RES 0,(IY+d)
+        .word   h_res0x       @ 84 LD H,RES 0,(IX+d) // LD H,RES 0,(IY+d)
+        .word   l_res0x       @ 85 LD L,RES 0,(IX+d) // LD L,RES 0,(IY+d)
+        .word   res0x         @ 86 RES 0,(IX+d) // RES 0,(IY+d)
+        .word   a_res0x       @ 87 LD A,RES 0,(IX+d) // LD A,RES 0,(IY+d)
+        .word   b_res1x       @ 88 LD B,RES 1,(IX+d) // LD B,RES 1,(IY+d)
+        .word   c_res1x       @ 89 LD C,RES 1,(IX+d) // LD C,RES 1,(IY+d)
+        .word   d_res1x       @ 8a LD D,RES 1,(IX+d) // LD D,RES 1,(IY+d)
+        .word   e_res1x       @ 8b LD E,RES 1,(IX+d) // LD E,RES 1,(IY+d)
+        .word   h_res1x       @ 8c LD H,RES 1,(IX+d) // LD H,RES 1,(IY+d)
+        .word   l_res1x       @ 8d LD L,RES 1,(IX+d) // LD L,RES 1,(IY+d)
+        .word   res1x         @ 8e RES 1,(IX+d) // RES 1,(IY+d)
+        .word   a_res1x       @ 8f LD A,RES 1,(IX+d) // LD A,RES 1,(IY+d)
+        .word   b_res2x       @ 90 LD B,RES 2,(IX+d) // LD B,RES 2,(IY+d)
+        .word   c_res2x       @ 91 LD C,RES 2,(IX+d) // LD C,RES 2,(IY+d)
+        .word   d_res2x       @ 92 LD D,RES 2,(IX+d) // LD D,RES 2,(IY+d)
+        .word   e_res2x       @ 93 LD E,RES 2,(IX+d) // LD E,RES 2,(IY+d)
+        .word   h_res2x       @ 94 LD H,RES 2,(IX+d) // LD H,RES 2,(IY+d)
+        .word   l_res2x       @ 95 LD L,RES 2,(IX+d) // LD L,RES 2,(IY+d)
+        .word   res2x         @ 96 RES 2,(IX+d) // RES 2,(IY+d)
+        .word   a_res2x       @ 97 LD A,RES 2,(IX+d) // LD A,RES 2,(IY+d)
+        .word   b_res3x       @ 98 LD B,RES 3,(IX+d) // LD B,RES 3,(IY+d)
+        .word   c_res3x       @ 99 LD C,RES 3,(IX+d) // LD C,RES 3,(IY+d)
+        .word   d_res3x       @ 9a LD D,RES 3,(IX+d) // LD D,RES 3,(IY+d)
+        .word   e_res3x       @ 9b LD E,RES 3,(IX+d) // LD E,RES 3,(IY+d)
+        .word   h_res3x       @ 9c LD H,RES 3,(IX+d) // LD H,RES 3,(IY+d)
+        .word   l_res3x       @ 9d LD L,RES 3,(IX+d) // LD L,RES 3,(IY+d)
+        .word   res3x         @ 9e RES 3,(IX+d) // RES 3,(IY+d)
+        .word   a_res3x       @ 9f LD A,RES 3,(IX+d) // LD A,RES 3,(IY+d)
+        .word   b_res4x       @ a0 LD B,RES 4,(IX+d) // LD B,RES 4,(IY+d)
+        .word   c_res4x       @ a1 LD C,RES 4,(IX+d) // LD C,RES 4,(IY+d)
+        .word   d_res4x       @ a2 LD D,RES 4,(IX+d) // LD D,RES 4,(IY+d)
+        .word   e_res4x       @ a3 LD E,RES 4,(IX+d) // LD E,RES 4,(IY+d)
+        .word   h_res4x       @ a4 LD H,RES 4,(IX+d) // LD H,RES 4,(IY+d)
+        .word   l_res4x       @ a5 LD L,RES 4,(IX+d) // LD L,RES 4,(IY+d)
+        .word   res4x         @ a6 RES 4,(IX+d) // RES 4,(IY+d)
+        .word   a_res4x       @ a7 LD A,RES 4,(IX+d) // LD A,RES 4,(IY+d)
+        .word   b_res5x       @ a8 LD B,RES 5,(IX+d) // LD B,RES 5,(IY+d)
+        .word   c_res5x       @ a9 LD C,RES 5,(IX+d) // LD C,RES 5,(IY+d)
+        .word   d_res5x       @ aa LD D,RES 5,(IX+d) // LD D,RES 5,(IY+d)
+        .word   e_res5x       @ ab LD E,RES 5,(IX+d) // LD E,RES 5,(IY+d)
+        .word   h_res5x       @ ac LD H,RES 5,(IX+d) // LD H,RES 5,(IY+d)
+        .word   l_res5x       @ ad LD L,RES 5,(IX+d) // LD L,RES 5,(IY+d)
+        .word   res5x         @ ae RES 5,(IX+d) // RES 5,(IY+d)
+        .word   a_res5x       @ af LD A,RES 5,(IX+d) // LD A,RES 5,(IY+d)
+        .word   b_res6x       @ b0 LD B,RES 6,(IX+d) // LD B,RES 6,(IY+d)
+        .word   c_res6x       @ b1 LD C,RES 6,(IX+d) // LD C,RES 6,(IY+d)
+        .word   d_res6x       @ b2 LD D,RES 6,(IX+d) // LD D,RES 6,(IY+d)
+        .word   e_res6x       @ b3 LD E,RES 6,(IX+d) // LD E,RES 6,(IY+d)
+        .word   h_res6x       @ b4 LD H,RES 6,(IX+d) // LD H,RES 6,(IY+d)
+        .word   l_res6x       @ b5 LD L,RES 6,(IX+d) // LD L,RES 6,(IY+d)
+        .word   res6x         @ b6 RES 6,(IX+d) // RES 6,(IY+d)
+        .word   a_res6x       @ b7 LD A,RES 6,(IX+d) // LD A,RES 6,(IY+d)
+        .word   b_res7x       @ b8 LD B,RES 7,(IX+d) // LD B,RES 7,(IY+d)
+        .word   c_res7x       @ b9 LD C,RES 7,(IX+d) // LD C,RES 7,(IY+d)
+        .word   d_res7x       @ ba LD D,RES 7,(IX+d) // LD D,RES 7,(IY+d)
+        .word   e_res7x       @ bb LD E,RES 7,(IX+d) // LD E,RES 7,(IY+d)
+        .word   h_res7x       @ bc LD H,RES 7,(IX+d) // LD H,RES 7,(IY+d)
+        .word   l_res7x       @ bd LD L,RES 7,(IX+d) // LD L,RES 7,(IY+d)
+        .word   res7x         @ be RES 7,(IX+d) // RES 7,(IY+d)
+        .word   a_res7x       @ bf LD A,RES 7,(IX+d) // LD A,RES 7,(IY+d)
+        .word   b_set0x       @ c0 LD B,SET 0,(IX+d) // LD B,SET 0,(IY+d)
+        .word   c_set0x       @ c1 LD C,SET 0,(IX+d) // LD C,SET 0,(IY+d)
+        .word   d_set0x       @ c2 LD D,SET 0,(IX+d) // LD D,SET 0,(IY+d)
+        .word   e_set0x       @ c3 LD E,SET 0,(IX+d) // LD E,SET 0,(IY+d)
+        .word   h_set0x       @ c4 LD H,SET 0,(IX+d) // LD H,SET 0,(IY+d)
+        .word   l_set0x       @ c5 LD L,SET 0,(IX+d) // LD L,SET 0,(IY+d)
+        .word   set0x         @ c6 SET 0,(IX+d) // SET 0,(IY+d)
+        .word   a_set0x       @ c7 LD A,SET 0,(IX+d) // LD A,SET 0,(IY+d)
+        .word   b_set1x       @ c8 LD B,SET 1,(IX+d) // LD B,SET 1,(IY+d)
+        .word   c_set1x       @ c9 LD C,SET 1,(IX+d) // LD C,SET 1,(IY+d)
+        .word   d_set1x       @ ca LD D,SET 1,(IX+d) // LD D,SET 1,(IY+d)
+        .word   e_set1x       @ cb LD E,SET 1,(IX+d) // LD E,SET 1,(IY+d)
+        .word   h_set1x       @ cc LD H,SET 1,(IX+d) // LD H,SET 1,(IY+d)
+        .word   l_set1x       @ cd LD L,SET 1,(IX+d) // LD L,SET 1,(IY+d)
+        .word   set1x         @ ce SET 1,(IX+d) // SET 1,(IY+d)
+        .word   a_set1x       @ cf LD A,SET 1,(IX+d) // LD A,SET 1,(IY+d)
+        .word   b_set2x       @ d0 LD B,SET 2,(IX+d) // LD B,SET 2,(IY+d)
+        .word   c_set2x       @ d1 LD C,SET 2,(IX+d) // LD C,SET 2,(IY+d)
+        .word   d_set2x       @ d2 LD D,SET 2,(IX+d) // LD D,SET 2,(IY+d)
+        .word   e_set2x       @ d3 LD E,SET 2,(IX+d) // LD E,SET 2,(IY+d)
+        .word   h_set2x       @ d4 LD H,SET 2,(IX+d) // LD H,SET 2,(IY+d)
+        .word   l_set2x       @ d5 LD L,SET 2,(IX+d) // LD L,SET 2,(IY+d)
+        .word   set2x         @ d6 SET 2,(IX+d) // SET 2,(IY+d)
+        .word   a_set2x       @ d7 LD A,SET 2,(IX+d) // LD A,SET 2,(IY+d)
+        .word   b_set3x       @ d8 LD B,SET 3,(IX+d) // LD B,SET 3,(IY+d)
+        .word   c_set3x       @ d9 LD C,SET 3,(IX+d) // LD C,SET 3,(IY+d)
+        .word   d_set3x       @ da LD D,SET 3,(IX+d) // LD D,SET 3,(IY+d)
+        .word   e_set3x       @ db LD E,SET 3,(IX+d) // LD E,SET 3,(IY+d)
+        .word   h_set3x       @ dc LD H,SET 3,(IX+d) // LD H,SET 3,(IY+d)
+        .word   l_set3x       @ dd LD L,SET 3,(IX+d) // LD L,SET 3,(IY+d)
+        .word   set3x         @ de SET 3,(IX+d) // SET 3,(IY+d)
+        .word   a_set3x       @ df LD A,SET 3,(IX+d) // LD A,SET 3,(IY+d)
+        .word   b_set4x       @ e0 LD B,SET 4,(IX+d) // LD B,SET 4,(IY+d)
+        .word   c_set4x       @ e1 LD C,SET 4,(IX+d) // LD C,SET 4,(IY+d)
+        .word   d_set4x       @ e2 LD D,SET 4,(IX+d) // LD D,SET 4,(IY+d)
+        .word   e_set4x       @ e3 LD E,SET 4,(IX+d) // LD E,SET 4,(IY+d)
+        .word   h_set4x       @ e4 LD H,SET 4,(IX+d) // LD H,SET 4,(IY+d)
+        .word   l_set4x       @ e5 LD L,SET 4,(IX+d) // LD L,SET 4,(IY+d)
+        .word   set4x         @ e6 SET 4,(IX+d) // SET 4,(IY+d)
+        .word   a_set4x       @ e7 LD A,SET 4,(IX+d) // LD A,SET 4,(IY+d)
+        .word   b_set5x       @ e8 LD B,SET 5,(IX+d) // LD B,SET 5,(IY+d)
+        .word   c_set5x       @ e9 LD C,SET 5,(IX+d) // LD C,SET 5,(IY+d)
+        .word   d_set5x       @ ea LD D,SET 5,(IX+d) // LD D,SET 5,(IY+d)
+        .word   e_set5x       @ eb LD E,SET 5,(IX+d) // LD E,SET 5,(IY+d)
+        .word   h_set5x       @ ec LD H,SET 5,(IX+d) // LD H,SET 5,(IY+d)
+        .word   l_set5x       @ ed LD L,SET 5,(IX+d) // LD L,SET 5,(IY+d)
+        .word   set5x         @ ee SET 5,(IX+d) // SET 5,(IY+d)
+        .word   a_set5x       @ ef LD A,SET 5,(IX+d) // LD A,SET 5,(IY+d)
+        .word   b_set6x       @ f0 LD B,SET 6,(IX+d) // LD B,SET 6,(IY+d)
+        .word   c_set6x       @ f1 LD C,SET 6,(IX+d) // LD C,SET 6,(IY+d)
+        .word   d_set6x       @ f2 LD D,SET 6,(IX+d) // LD D,SET 6,(IY+d)
+        .word   e_set6x       @ f3 LD E,SET 6,(IX+d) // LD E,SET 6,(IY+d)
+        .word   h_set6x       @ f4 LD H,SET 6,(IX+d) // LD H,SET 6,(IY+d)
+        .word   l_set6x       @ f5 LD L,SET 6,(IX+d) // LD L,SET 6,(IY+d)
+        .word   set6x         @ f6 SET 6,(IX+d) // SET 6,(IY+d)
+        .word   a_set6x       @ f7 LD A,SET 6,(IX+d) // LD A,SET 6,(IY+d)
+        .word   b_set7x       @ f8 LD B,SET 7,(IX+d) // LD B,SET 7,(IY+d)
+        .word   c_set7x       @ f9 LD C,SET 7,(IX+d) // LD C,SET 7,(IY+d)
+        .word   d_set7x       @ fa LD D,SET 7,(IX+d) // LD D,SET 7,(IY+d)
+        .word   e_set7x       @ fb LD E,SET 7,(IX+d) // LD E,SET 7,(IY+d)
+        .word   h_set7x       @ fc LD H,SET 7,(IX+d) // LD H,SET 7,(IY+d)
+        .word   l_set7x       @ fd LD L,SET 7,(IX+d) // LD L,SET 7,(IY+d)
+        .word   set7x         @ fe SET 7,(IX+d) // SET 7,(IY+d)
+        .word   a_set7x       @ ff LD A,SET 7,(IX+d) // LD A,SET 7,(IY+d)
+
+b_rlcx: RLCX    bcfb, 8
+c_rlcx: RLCX    bcfb, 0
+d_rlcx: RLCX    defr, 8
+e_rlcx: RLCX    defr, 0
+h_rlcx: RLCX    hlmp, 8
+l_rlcx: RLCX    hlmp, 0
+rlcx:   RLCX    arvpref, 0
+a_rlcx: RLCX    arvpref, 8
+b_rrcx:
+c_rrcx:
+d_rrcx:
+e_rrcx:
+h_rrcx:
+l_rrcx:
+rrcx:
+a_rrcx:
+b_rlx: 
+c_rlx: 
+d_rlx: 
+e_rlx: 
+h_rlx: 
+l_rlx: 
+rlx:
+a_rlx: 
+b_rrx: 
+c_rrx: 
+d_rrx: 
+e_rrx: 
+h_rrx: 
+l_rrx: 
+rrx:
+a_rrx:
 
 biti0:  BITI    0x01
 biti1:  BITI    0x02
@@ -3446,71 +3988,134 @@ biti5:  BITI    0x20
 biti6:  BITI    0x40
 biti7:  BITI    0x80
 
-res4xx: RESXD   0xffffffef
-
-rl_b:   RL      bcfb, 8
-        b       salida
-rl_c:   RL      bcfb, 0
-        b       salida
-rl_d:   RL      defr, 8
-        b       salida
-rl_e:   RL      defr, 0
-        b       salida
-rl_h:   RL      hlmp, 8
-        b       salida
-rl_l:   RL      hlmp, 0
-        b       salida
-rl_hl:  b       salida @ revisar
-rl_a:   RL      arvpref, 8
-        b       salida
-
-rr_b:   RR      bcfb, 8
-        b       salida
-rr_c:   RR      bcfb, 0
-        b       salida
-rr_d:   RR      defr, 8
-        b       salida
-rr_e:   RR      defr, 0
-        b       salida
-rr_h:   RR      hlmp, 8
-        b       salida
-rr_l:   RR      hlmp, 0
-        b       salida
-rr_hl:  b       salida @ revisar
-rr_a:   RR      arvpref, 8
-        b       salida
-
-sll_b:  SLL     bcfb, 8
-        b       salida
-sll_c:  SLL     bcfb, 0
-        b       salida
-sll_d:  SLL     defr, 8
-        b       salida
-sll_e:  SLL     defr, 0
-        b       salida
-sll_h:  SLL     hlmp, 8
-        b       salida
-sll_l:  SLL     hlmp, 0
-        b       salida
-sll_hl: b       salida @ revisar
-sll_a:  SLL     arvpref, 8
-        b       salida
-
-srl_b:  SRL     bcfb, 8
-        b       salida
-srl_c:  SRL     bcfb, 0
-        b       salida
-srl_d:  SRL     defr, 8
-        b       salida
-srl_e:  SRL     defr, 0
-        b       salida
-srl_h:  SRL     hlmp, 8
-        b       salida
-srl_l:  SRL     hlmp, 0
-        b       salida
-srl_hl: b       salida @ revisar
-srl_a:  SRL     arvpref, 8
-@        b       salida
+b_res0x:
+c_res0x:
+d_res0x:
+e_res0x:
+h_res0x:
+l_res0x:
+res0x:
+a_res0x:
+b_res1x:
+c_res1x:
+d_res1x:
+e_res1x:
+h_res1x:
+l_res1x:
+res1x:
+a_res1x:
+b_res2x:
+c_res2x:
+d_res2x:
+e_res2x:
+h_res2x:
+l_res2x:
+res2x:
+a_res2x:
+b_res3x:
+c_res3x:
+d_res3x:
+e_res3x:
+h_res3x:
+l_res3x:
+res3x:
+a_res3x:
+b_res4x:
+c_res4x:
+d_res4x:
+e_res4x:
+h_res4x:
+l_res4x:
+res4x:  RESXD   0xffffffef
+a_res4x:
+b_res5x:
+c_res5x:
+d_res5x:
+e_res5x:
+h_res5x:
+l_res5x:
+res5x:
+a_res5x:
+b_res6x:
+c_res6x:
+d_res6x:
+e_res6x:
+h_res6x:
+l_res6x:
+res6x:
+a_res6x:
+b_res7x:
+c_res7x:
+d_res7x:
+e_res7x:
+h_res7x:
+l_res7x:
+res7x:
+a_res7x:
+b_set0x:
+c_set0x:
+d_set0x:
+e_set0x:
+h_set0x:
+l_set0x:
+set0x:  SETXD   0x01
+a_set0x:
+b_set1x:
+c_set1x:
+d_set1x:
+e_set1x:
+h_set1x:
+l_set1x:
+set1x:
+a_set1x:
+b_set2x:
+c_set2x:
+d_set2x:
+e_set2x:
+h_set2x:
+l_set2x:
+set2x:
+a_set2x:
+b_set3x:
+c_set3x:
+d_set3x:
+e_set3x:
+h_set3x:
+l_set3x:
+set3x:
+a_set3x:
+b_set4x:
+c_set4x:
+d_set4x:
+e_set4x:
+h_set4x:
+l_set4x:
+set4x:
+a_set4x:
+b_set5x:
+c_set5x:
+d_set5x:
+e_set5x:
+h_set5x:
+l_set5x:
+set5x:
+a_set5x:
+b_set6x:
+c_set6x:
+d_set6x:
+e_set6x:
+h_set6x:
+l_set6x:
+set6x:
+a_set6x:
+b_set7x:
+c_set7x:
+d_set7x:
+e_set7x:
+h_set7x:
+l_set7x:
+set7x:
+a_set7x:
 
 salida: ldrh    lr, [punt, #oendd]
         cmp     lr, pcff, lsr #16
