@@ -341,7 +341,8 @@
 
 #define SETHL(n)                \
           st+= 15,              \
-          mem[t]= mem[t= l|h<<8] | n
+          w= mem[t= l|h<<8] | n,\
+          mem[t]= w
 
 #define INR(r)                  \
           st+= 12,              \
