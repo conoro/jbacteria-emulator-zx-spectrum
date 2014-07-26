@@ -561,12 +561,12 @@ w:      .byte   0
         PREFIX0
       .endm
 
-      .macro    RET
+      .macro    RET     cycl
+        TIME    \cycl
         ldr     lr, [mem, spfa, lsr #16]
         add     spfa, #0x00020000
         pkhtb   hlmp, hlmp, lr
         pkhbt   pcff, pcff, lr, lsl #16
-        PREFIX0
       .endm
 
       .macro    JRC
@@ -1054,6 +1054,43 @@ w:      .byte   0
         PREFIX0
       .endm
 
+      .macro    INR     regis, ofs
+        TIME    12
+        push    {r0-r3}
+        mov     r0, bcfb, lsr #16
+        add     r11, r0, #0x00000001
+        pkhtb   hlmp, hlmp, r11
+        bl      in
+      .if \regis!=arvpref || \ofs!=0
+        bic     \regis, #0x00ff0000 << \ofs
+        orr     \regis, r0, lsl #16+\ofs
+      .endif
+        pkhtb   defr, defr, r0
+        bic     pcff, #0x000000ff
+        orr     pcff, r0
+        orr     r0, #0x00000100
+        pkhtb   spfa, spfa, r0
+        pkhtb   bcfb, bcfb, r0, asr #16
+        pop     {r0-r3}
+        b       salida
+      .endm
+
+      .macro    OUTR    regis, ofs
+        TIME    12
+        push    {r0-r3}
+        mov     r0, bcfb, lsr #16
+        add     r11, r0, #0x00000001
+        pkhtb   hlmp, hlmp, r11
+      .if \regis!=arvpref || \ofs!=0
+        uxtb    r1, \regis, ror #16+\ofs
+      .else
+        mov     r1, #0x00000000
+      .endif
+        bl      out
+        pop     {r0-r3}
+        b       salida
+      .endm
+
 /*      r0      punt
         r1      mem
         r2      stlo
@@ -1218,7 +1255,7 @@ _st:    .word   st
         .word   ldxxe         @ 73 LD (HL),E
         .word   ldxxh         @ 74 LD (HL),H
         .word   ldxxl         @ 75 LD (HL),L
-        .word   nop           @ 76 HALT
+        .word   halt          @ 76 HALT
         .word   ldxxa         @ 77 LD (HL),A
         .word   ldab          @ 78 LD A,B
         .word   ldac          @ 79 LD A,C
@@ -1311,7 +1348,7 @@ _st:    .word   st
         .word   retnc         @ d0 RET NC
         .word   popde         @ d1 POP DE
         .word   jpnc          @ d2 JP NC
-        .word   nop           @ d3 OUT (n),A
+        .word   outna         @ d3 OUT (n),A
         .word   callnc        @ d4 CALL NC
         .word   pushde        @ d5 PUSH DE
         .word   subn          @ d6 SUB n
@@ -1319,7 +1356,7 @@ _st:    .word   st
         .word   retc          @ d8 RET C
         .word   exx           @ d9 EXX
         .word   jpc           @ da JP C
-        .word   nop           @ db IN A,(n)
+        .word   inan          @ db IN A,(n)
         .word   callc         @ dc CALL C
         .word   opdd          @ dd OP dd
         .word   sbcan         @ de SBC A,n
@@ -1521,6 +1558,33 @@ rra:    TIME    4
         pkhtb   bcfb, bcfb, lr*/
         PREFIX0
 
+outna:  TIME    11
+        ldrb    lr, [mem, pcff, lsr #16]
+        add     pcff, #0x00010000
+        push    {r0-r3}
+        mov     r1, arvpref, lsr #24
+        orr     r0, lr, r1, lsl #8
+        mov     r11, #0x00000001
+        uadd8   r11, r11, r0
+        pkhtb   hlmp, hlmp, r11
+        bl      out
+        pop     {r0-r3}
+        PREFIX0
+
+inan:   TIME    11
+        ldrb    lr, [mem, pcff, lsr #16]
+        add     pcff, #0x00010000
+        mov     r11, arvpref, lsr #24
+        push    {r0-r3}
+        orr     r0, lr, r11, lsl #8
+        add     r11, r0, #0x00000001
+        pkhtb   hlmp, hlmp, r11
+        bl      in
+        bic     arvpref, #0xff000000
+        orr     arvpref, r0, lsl #24
+        pop     {r0-r3}
+        PREFIX0
+
 djnz:   sub     bcfb, #0x01000000
         tst     bcfb, #0xff000000
         beq     djnz2
@@ -1682,11 +1746,11 @@ callp:  tst     pcff, #0x00000080
 callm:  tst     pcff, #0x00000080
         CALLCI
 
-ret11:  TIME    11
-        RET
+ret11:  RET     11
+        PREFIX0
 
-ret10:  TIME    10
-        RET
+ret10:  RET     10
+        PREFIX0
 
 retz:   movs    lr, defr, lsl #16
         RETC
@@ -2585,6 +2649,11 @@ ldxxl:  movs    lr, arvpref, lsl #24
 ldiyl:  LDPRI   iyi, hlmp, 0
 ldhll:  LDPR    hlmp, hlmp, 0
 
+halt:   TIME    4
+        orr     arvpref, #0x00000800
+        sub     pcff, #0x00010000
+        PREFIX0
+
 ldxxa:  movs    lr, arvpref, lsl #24
         beq     ldhla
         bmi     ldiya
@@ -2893,69 +2962,69 @@ cb34:   .word   0xcb34cb34
         .word   nop8          @ 3d NOP8
         .word   nop8          @ 3e NOP8
         .word   nop8          @ 3f NOP8
-        .word   nop8          @ 40 IN B,(C)
-        .word   nop8          @ 41 OUT (C),B
+        .word   inbc          @ 40 IN B,(C)
+        .word   outcb         @ 41 OUT (C),B
         .word   sbchlbc       @ 42 SBC HL,BC
         .word   ldpnnbc       @ 43 LD (NN),BC
         .word   neg           @ 44 NEG
-        .word   nop8          @ 45 RETN
-        .word   nop8          @ 46 IM 0
-        .word   nop8          @ 47 LD I,A
-        .word   nop8          @ 48 IN C,(C)
-        .word   nop8          @ 49 OUT (C),C
+        .word   ret14         @ 45 RETN
+        .word   im0           @ 46 IM 0
+        .word   ldia          @ 47 LD I,A
+        .word   in_cc         @ 48 IN C,(C)
+        .word   outcc         @ 49 OUT (C),C
         .word   adchlbc       @ 4a ADC HL,BC
         .word   ldbcpnn       @ 4b LD BC,(NN)
         .word   neg           @ 4c NEG
-        .word   nop8          @ 4d RETI
-        .word   nop8          @ 4e IM 0
-        .word   nop8          @ 4f LD R,A
-        .word   nop8          @ 50 IN D,(C)
-        .word   nop8          @ 51 OUT (C),D
+        .word   ret14         @ 4d RETI
+        .word   im0           @ 4e IM 0
+        .word   ldra          @ 4f LD R,A
+        .word   indc          @ 50 IN D,(C)
+        .word   outcd         @ 51 OUT (C),D
         .word   sbchlde       @ 52 SBC HL,DE
         .word   ldpnnde       @ 53 LD (NN),DE
         .word   neg           @ 54 NEG
-        .word   nop8          @ 55 RETN
-        .word   nop8          @ 56 IM 1
-        .word   nop8          @ 57 LD A,I
-        .word   nop8          @ 58 IN E,(C)
-        .word   nop8          @ 59 OUT (C),E
+        .word   ret14         @ 55 RETN
+        .word   im1           @ 56 IM 1
+        .word   ldai          @ 57 LD A,I
+        .word   inec          @ 58 IN E,(C)
+        .word   outce         @ 59 OUT (C),E
         .word   adchlde       @ 5a ADC HL,DE
         .word   lddepnn       @ 5b LD DE,(NN)
         .word   neg           @ 5c NEG
-        .word   nop8          @ 5d RETI
-        .word   nop8          @ 5e IM 2
-        .word   nop8          @ 5f LD A,R
-        .word   nop8          @ 60 IN H,(C)
-        .word   nop8          @ 61 OUT (C),H
+        .word   ret14         @ 5d RETI
+        .word   im2           @ 5e IM 2
+        .word   ldar          @ 5f LD A,R
+        .word   inhc          @ 60 IN H,(C)
+        .word   outch         @ 61 OUT (C),H
         .word   sbchlhl       @ 62 SBC HL,HL
         .word   ldpnnxe       @ 63 LD (NN),HL
         .word   neg           @ 64 NEG
-        .word   nop8          @ 65 RETN
-        .word   nop8          @ 66 IM 0
+        .word   ret14         @ 65 RETN
+        .word   im0           @ 66 IM 0
         .word   rrd           @ 67 RRD
-        .word   nop8          @ 68 IN L,(C)
-        .word   nop8          @ 69 OUT (C),L
+        .word   inlc          @ 68 IN L,(C)
+        .word   outcl         @ 69 OUT (C),L
         .word   adchlhl       @ 6a ADC HL,HL
         .word   ldxepnn       @ 6b LD HL,(NN)
         .word   neg           @ 6c NEG
-        .word   nop8          @ 6d RETI
-        .word   nop8          @ 6e IM 0
+        .word   ret14         @ 6d RETI
+        .word   im0           @ 6e IM 0
         .word   rld           @ 6f RLD
-        .word   nop8          @ 70 IN X,(C)
-        .word   nop8          @ 71 OUT (C),X
+        .word   inxc          @ 70 IN X,(C)
+        .word   outcx         @ 71 OUT (C),X
         .word   sbchlsp       @ 72 SBC HL,SP
         .word   ldpnnsp       @ 73 LD (NN),SP
         .word   neg           @ 74 NEG
-        .word   nop8          @ 75 RETN
-        .word   nop8          @ 76 IM 1
+        .word   ret14         @ 75 RETN
+        .word   im1           @ 76 IM 1
         .word   nop8          @ 77 NOP
-        .word   nop8          @ 78 IN A,(C)
-        .word   nop8          @ 79 OUT (C),A
+        .word   inac          @ 78 IN A,(C)
+        .word   outca         @ 79 OUT (C),A
         .word   adchlsp       @ 7a ADC HL,SP
         .word   ldsppnn       @ 7b LD SP,(NN)
         .word   neg           @ 7c NEG
-        .word   nop8          @ 7d RETI
-        .word   nop8          @ 7e IM 2
+        .word   ret14         @ 7d RETI
+        .word   im2           @ 7e IM 2
         .word   nop8          @ 7f NOP8
         .word   nop8          @ 80 NOP8
         .word   nop8          @ 81 NOP8
@@ -2991,32 +3060,32 @@ cb34:   .word   0xcb34cb34
         .word   nop8          @ 9f NOP8
         .word   ldi           @ a0 LDI
         .word   cpi           @ a1 CPI
-        .word   nop8          @ a2 INI
-        .word   nop8          @ a3 OUTI
+        .word   ini           @ a2 INI
+        .word   outi          @ a3 OUTI
         .word   nop8          @ a4 NOP8
         .word   nop8          @ a5 NOP8
         .word   nop8          @ a6 NOP8
         .word   nop8          @ a7 NOP8
         .word   ldd           @ a8 LDD
         .word   cpd           @ a9 CPD
-        .word   nop8          @ aa IND
-        .word   nop8          @ ab OUTD
+        .word   ind           @ aa IND
+        .word   outd          @ ab OUTD
         .word   nop8          @ ac NOP8
         .word   nop8          @ ad NOP8
         .word   nop8          @ ae NOP8
         .word   nop8          @ af NOP8
         .word   ldir          @ b0 LDIR
         .word   cpir          @ b1 CPIR
-        .word   nop8          @ b2 INIR
-        .word   nop8          @ b3 OTIR
+        .word   inir          @ b2 INIR
+        .word   otir          @ b3 OTIR
         .word   nop8          @ b4 NOP8
         .word   nop8          @ b5 NOP8
         .word   nop8          @ b6 NOP8
         .word   nop8          @ b7 NOP8
         .word   lddr          @ b8 LDDR
         .word   cpdr          @ b9 CPDR
-        .word   nop8          @ ba INDR
-        .word   nop8          @ bb OTDR
+        .word   indr          @ ba INDR
+        .word   otdr          @ bb OTDR
         .word   nop8          @ bc NOP8
         .word   nop8          @ bd NOP8
         .word   nop8          @ be NOP8
@@ -3304,7 +3373,7 @@ ldir:   TIME    16
         eor     pcff, lr
         pkhtb   spfa, spfa, lr, asr #8
         movs    lr, bcfb, lsr #16
-        beq     lddr2
+        beq     ldir2
         eor     spfa, #0x00000080
         sub     pcff, #0x00010000
         pkhtb   hlmp, hlmp, pcff, asr #16
@@ -3339,6 +3408,298 @@ lddr:   TIME    16
 lddr2:  pkhbt   bcfb, spfa, lr, lsl #16
         b       salida
 
+ini:    TIME    16
+        push    {r0-r3}
+        mov     r0, bcfb, lsr #16
+        add     r1, r0, #0x00000001
+        pkhtb   hlmp, hlmp, r1
+        bl      in
+        strb    r0, [mem, hlmp, lsr #16]
+        add     hlmp, #0x00010000
+        add     r1, bcfb, #0x00010000
+        uxtab   r1, r0, r1, ror #24
+        sub     bcfb, #0x01000000
+        and     r11, r1, #0x00000007
+        mov     r3, bcfb, lsr #24
+        eor     r2, r11, r3
+        and     r1, #0x00000100
+        orr     r11, r1, r3
+        pkhtb   defr, defr, r3
+        eor     r3, defr, #0x00000080
+        pkhtb   spfa, spfa, r3
+        ldr     lr, cb34
+        eor     r3, r2, r2, lsr #4
+        eor     r3, bcfb, lsr #24
+        tst     lr, lr, ror r3
+        orrmi   r1, #0x00000800
+        and     r0, #0x00000080
+        mov     r0, r0, lsl #6
+        orr     r0, r1
+        pkhtb   bcfb, bcfb, r0, asr #4
+        pop     {r0-r3}
+        pkhtb   pcff, pcff, r11
+        b       salida
+
+ind:    TIME    16
+        push    {r0-r3}
+        mov     r0, bcfb, lsr #16
+        sub     r1, r0, #0x00000001
+        pkhtb   hlmp, hlmp, r1
+        bl      in
+        strb    r0, [mem, hlmp, lsr #16]
+        sub     hlmp, #0x00010000
+        sub     r1, bcfb, #0x00010000
+        uxtab   r1, r0, r1, ror #24
+        sub     bcfb, #0x01000000
+        and     r11, r1, #0x00000007
+        mov     r3, bcfb, lsr #24
+        eor     r2, r11, r3
+        and     r1, #0x00000100
+        orr     r11, r1, r3
+        pkhtb   defr, defr, r3
+        eor     r3, defr, #0x00000080
+        pkhtb   spfa, spfa, r3
+        ldr     lr, cb34
+        eor     r3, r2, r2, lsr #4
+        eor     r3, bcfb, lsr #24
+        tst     lr, lr, ror r3
+        orrmi   r1, #0x00000800
+        and     r0, #0x00000080
+        mov     r0, r0, lsl #6
+        orr     r0, r1
+        pkhtb   bcfb, bcfb, r0, asr #4
+        pop     {r0-r3}
+        pkhtb   pcff, pcff, r11
+        b       salida
+
+inir:   TIME    16
+        mov     r10, stlo
+        push    {r0-r3}
+        mov     r0, bcfb, lsr #16
+        add     r1, r0, #0x00000001
+        pkhtb   hlmp, hlmp, r1
+        bl      in
+        strb    r0, [mem, hlmp, lsr #16]
+        add     hlmp, #0x00010000
+        add     r1, bcfb, #0x00010000
+        uxtab   r1, r0, r1, ror #24
+        sub     bcfb, #0x01000000
+        tst     bcfb, #0xff000000
+        beq     inir2
+        sub     pcff, #0x00010000
+        pkhtb   hlmp, hlmp, pcff, asr #16
+        sub     pcff, #0x00010000
+        adds    r10, #0x00000005
+        blcs    insth
+inir2:  and     r11, r1, #0x00000007
+        mov     r3, bcfb, lsr #24
+        eor     r2, r11, r3
+        and     r1, #0x00000100
+        orr     r11, r1, r3
+        pkhtb   defr, defr, r3
+        eor     r3, defr, #0x00000080
+        pkhtb   spfa, spfa, r3
+        ldr     lr, cb34
+        eor     r3, r2, r2, lsr #4
+        eor     r3, bcfb, lsr #24
+        tst     lr, lr, ror r3
+        orrmi   r1, #0x00000800
+        and     r0, #0x00000080
+        mov     r0, r0, lsl #6
+        orr     r0, r1
+        pkhtb   bcfb, bcfb, r0, asr #4
+        pop     {r0-r3}
+        pkhtb   pcff, pcff, r11
+        mov     stlo, r10
+        b       salida
+
+indr:   TIME    16
+        mov     r10, stlo
+        push    {r0-r3}
+        mov     r0, bcfb, lsr #16
+        sub     r1, r0, #0x00000001
+        pkhtb   hlmp, hlmp, r1
+        bl      in
+        strb    r0, [mem, hlmp, lsr #16]
+        sub     hlmp, #0x00010000
+        sub     r1, bcfb, #0x00010000
+        uxtab   r1, r0, r1, ror #24
+        sub     bcfb, #0x01000000
+        tst     bcfb, #0xff000000
+        beq     indr2
+        sub     pcff, #0x00010000
+        pkhtb   hlmp, hlmp, pcff, asr #16
+        sub     pcff, #0x00010000
+        adds    r10, #0x00000005
+        blcs    insth
+indr2:  and     r11, r1, #0x00000007
+        mov     r3, bcfb, lsr #24
+        eor     r2, r11, r3
+        and     r1, #0x00000100
+        orr     r11, r1, r3
+        pkhtb   defr, defr, r3
+        eor     r3, defr, #0x00000080
+        pkhtb   spfa, spfa, r3
+        ldr     lr, cb34
+        eor     r3, r2, r2, lsr #4
+        eor     r3, bcfb, lsr #24
+        tst     lr, lr, ror r3
+        orrmi   r1, #0x00000800
+        and     r0, #0x00000080
+        mov     r0, r0, lsl #6
+        orr     r0, r1
+        pkhtb   bcfb, bcfb, r0, asr #4
+        pop     {r0-r3}
+        pkhtb   pcff, pcff, r11
+        mov     stlo, r10
+        b       salida
+
+outi:   TIME    16
+        push    {r0-r3}
+        sub     bcfb, #0x01000000
+        mov     r0, bcfb, lsr #16
+        add     r1, r0, #0x00000001
+        pkhtb   hlmp, hlmp, r1
+        ldrb    r1, [mem, hlmp, lsr #16]
+        bl      out
+        add     hlmp, #0x00010000
+        and     r2, hlmp, #0x00ff0000
+        add     r0, r1, r2, lsr #16
+        and     r11, r0, #0x00000007
+        mov     r3, bcfb, lsr #24
+        eor     r2, r11, r3
+        and     r0, #0x00000100
+        orr     r11, r0, r3
+        pkhtb   defr, defr, r3
+        eor     r3, defr, #0x00000080
+        pkhtb   spfa, spfa, r3
+        ldr     lr, cb34
+        eor     r3, r2, r2, lsr #4
+        eor     r3, bcfb, lsr #24
+        tst     lr, lr, ror r3
+        orrmi   r0, #0x00000800
+        and     r1, #0x00000080
+        mov     r1, r1, lsl #6
+        orr     r1, r0
+        pkhtb   bcfb, bcfb, r1, asr #4
+        pop     {r0-r3}
+        pkhtb   pcff, pcff, r11
+        b       salida
+
+outd:   TIME    16
+        push    {r0-r3}
+        sub     bcfb, #0x01000000
+        mov     r0, bcfb, lsr #16
+        sub     r1, r0, #0x00000001
+        pkhtb   hlmp, hlmp, r1
+        ldrb    r1, [mem, hlmp, lsr #16]
+        bl      out
+        sub     hlmp, #0x00010000
+        and     r2, hlmp, #0x00ff0000
+        add     r0, r1, r2, lsr #16
+        and     r11, r0, #0x00000007
+        mov     r3, bcfb, lsr #24
+        eor     r2, r11, r3
+        and     r0, #0x00000100
+        orr     r11, r0, r3
+        pkhtb   defr, defr, r3
+        eor     r3, defr, #0x00000080
+        pkhtb   spfa, spfa, r3
+        ldr     lr, cb34
+        eor     r3, r2, r2, lsr #4
+        eor     r3, bcfb, lsr #24
+        tst     lr, lr, ror r3
+        orrmi   r0, #0x00000800
+        and     r1, #0x00000080
+        mov     r1, r1, lsl #6
+        orr     r1, r0
+        pkhtb   bcfb, bcfb, r1, asr #4
+        pop     {r0-r3}
+        pkhtb   pcff, pcff, r11
+        b       salida
+
+otir:   TIME    16
+        mov     r10, stlo
+        push    {r0-r3}
+        sub     bcfb, #0x01000000
+        mov     r0, bcfb, lsr #16
+        add     r1, r0, #0x00000001
+        pkhtb   hlmp, hlmp, r1
+        ldrb    r1, [mem, hlmp, lsr #16]
+        bl      out
+        add     hlmp, #0x00010000
+        and     r2, hlmp, #0x00ff0000
+        add     r0, r1, r2, lsr #16
+        tst     bcfb, #0xff000000
+        beq     otir2
+        sub     pcff, #0x00010000
+        pkhtb   hlmp, hlmp, pcff, asr #16
+        sub     pcff, #0x00010000
+        adds    r10, #0x00000005
+        blcs    insth
+otir2:  and     r11, r0, #0x00000007
+        mov     r3, bcfb, lsr #24
+        eor     r2, r11, r3
+        and     r0, #0x00000100
+        orr     r11, r0, r3
+        pkhtb   defr, defr, r3
+        eor     r3, defr, #0x00000080
+        pkhtb   spfa, spfa, r3
+        ldr     lr, cb34
+        eor     r3, r2, r2, lsr #4
+        eor     r3, bcfb, lsr #24
+        tst     lr, lr, ror r3
+        orrmi   r0, #0x00000800
+        and     r1, #0x00000080
+        mov     r1, r1, lsl #6
+        orr     r1, r0
+        pkhtb   bcfb, bcfb, r1, asr #4
+        pop     {r0-r3}
+        pkhtb   pcff, pcff, r11
+        mov     stlo, r10
+        b       salida
+
+otdr:   TIME    16
+        mov     r10, stlo
+        push    {r0-r3}
+        sub     bcfb, #0x01000000
+        mov     r0, bcfb, lsr #16
+        sub     r1, r0, #0x00000001
+        pkhtb   hlmp, hlmp, r1
+        ldrb    r1, [mem, hlmp, lsr #16]
+        bl      out
+        sub     hlmp, #0x00010000
+        and     r2, hlmp, #0x00ff0000
+        add     r0, r1, r2, lsr #16
+        and     r11, r0, #0x00000007
+        mov     r3, bcfb, lsr #24
+        eor     r2, r11, r3
+        and     r0, #0x00000100
+        tst     bcfb, #0xff000000
+        beq     otdr2
+        sub     pcff, #0x00010000
+        pkhtb   hlmp, hlmp, pcff, asr #16
+        sub     pcff, #0x00010000
+        adds    r10, #0x00000005
+        blcs    insth
+otdr2:  orr     r11, r0, r3
+        pkhtb   defr, defr, r3
+        eor     r3, defr, #0x00000080
+        pkhtb   spfa, spfa, r3
+        ldr     lr, cb34
+        eor     r3, r2, r2, lsr #4
+        eor     r3, bcfb, lsr #24
+        tst     lr, lr, ror r3
+        orrmi   r0, #0x00000800
+        and     r1, #0x00000080
+        mov     r1, r1, lsl #6
+        orr     r1, r0
+        pkhtb   bcfb, bcfb, r1, asr #4
+        pop     {r0-r3}
+        pkhtb   pcff, pcff, r11
+        mov     stlo, r10
+        b       salida
+
 neg:    TIME    8
         mvn     lr, arvpref, lsr #24
         pkhtb   bcfb, bcfb, lr
@@ -3349,6 +3710,82 @@ neg:    TIME    8
         uxtb    lr, lr
         pkhtb   defr, defr, lr
         pkhtb   spfa, spfa, lr, asr #16
+        b       salida
+
+inbc:   INR     bcfb, 8
+in_cc:  INR     bcfb, 0
+indc:   INR     defr, 8
+inec:   INR     defr, 0
+inhc:   INR     hlmp, 8
+inlc:   INR     hlmp, 0
+inxc:   INR     arvpref, 0
+inac:   INR     arvpref, 8
+
+outcb:  OUTR    bcfb, 8
+outcc:  OUTR    bcfb, 0
+outcd:  OUTR    defr, 8
+outce:  OUTR    defr, 0
+outch:  OUTR    hlmp, 8
+outcl:  OUTR    hlmp, 0
+outcx:  OUTR    arvpref, 0
+outca:  OUTR    arvpref, 8
+
+ret14:  RET     14
+        b       salida
+
+im0:    TIME    8
+        bic     arvpref, #0x00000300
+        b       salida
+
+im1:    TIME    8
+        bic     arvpref, #0x00000200
+        orr     arvpref, #0x00000100
+        b       salida
+
+im2:    TIME    8
+        orr     arvpref, #0x00000300
+        b       salida
+
+ldai:   TIME    9
+        bic     arvpref, #0xff000000
+        ands    lr, iyi, #0x0000ff00
+        orr     arvpref, lr, ror #16
+        bic     pcff, #0x000000ff
+        orr     pcff, lr, lsr #8
+        orrne   lr, #0x00010000
+        pkhtb   defr, defr, lr, asr #16
+        and     lr, arvpref, #0x00000400
+        pkhtb   spfa, spfa, lr, asr #3
+        pkhtb   bcfb, bcfb, lr, asr #3
+        b       salida
+
+ldia:   TIME    9
+        bic     iyi, #0x0000ff00
+        and     lr, arvpref, #0xff000000
+        orr     iyi, lr, ror #16
+        b       salida
+
+ldar:   TIME    9
+        bic     arvpref, #0xff000000
+        and     lr, arvpref, #0x007f0000
+        and     r11, arvpref, #0x00008000
+        orrs    lr, r11, lsl #8
+        orr     arvpref, lr, ror #24
+        bic     pcff, #0x000000ff
+        orr     pcff, lr, lsr #16
+        orrne   lr, #0x01000000
+        pkhtb   defr, defr, lr, asr #24
+        and     lr, arvpref, #0x00000400
+        pkhtb   spfa, spfa, lr, asr #3
+        pkhtb   bcfb, bcfb, lr, asr #3
+        b       salida
+
+ldra:   TIME    9
+        bic     arvpref, #0x00ff0000
+        bic     arvpref, #0x00008000
+        ands    lr, arvpref, #0xff000000
+        orr     arvpref, lr, ror #8
+        orrmi   arvpref, #0x00008000
         b       salida
 
 rrd:    TIME    18
@@ -4511,7 +4948,6 @@ exec11:
 
         and     arvpref, #0xffff80ff
         str     arvpref, [punt, #oprefix] @ ar | r7 halted_3 iff_2 im: prefix
-        
 
         pop     {r4-r12, lr}
         bx      lr
