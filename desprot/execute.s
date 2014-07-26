@@ -5,26 +5,41 @@
 .global xl, xh, yl, yh, i, r, rs, prefix, iff, im, w, halted
 
         .align
-st:     .quad   0
+st:     .word   0
+sthi:   .word   0
 sttap:  .quad   0
 stint:  .quad   0
 counter:.quad   100000000
-mem:    .word   0
 v:      .word   0
 intr:   .word   0
 tap:    .word   0
+mem:    .word   0
 ff:     .short  0
 pc:     .short  0
-start:  .short  0
-xl:     .byte   0
-xh:     .byte   0
+fa:     .short  0
+sp:     .short  0
+fb:     .short  0
+c:      .byte   0
+b:      .byte   0
+fr:     .short  0
+e:      .byte   0
+d:      .byte   0
 mp:     .short  0
 l:      .byte   0
 h:      .byte   0
+prefix: .byte   0
+rs:     .byte   0
+r:      .byte   0
+a:      .byte   0
+start:  .short  0
+xl:     .byte   0
+xh:     .byte   0
+dummy2: .byte   0
+i:      .byte   0
+yl:     .byte   0
+yh:     .byte   0
 t:      .short  0
 u:      .short  0
-fa:     .short  0
-sp:     .short  0
 fa_:    .short  0
 fb_:    .short  0
 ff_:    .short  0
@@ -37,47 +52,48 @@ dummy1: .short  0
 l_:     .byte   0
 h_:     .byte   0
 endd:   .short  0
-fb:     .short  0
-c:      .byte   0
-b:      .byte   0
-fr:     .short  0
-e:      .byte   0
-d:      .byte   0
-prefix: .byte   0
-rs:     .byte   0
-r:      .byte   0
-a:      .byte   0
 a_:     .byte   0
-dummy2: .byte   0
-i:      .byte   0
-yl:     .byte   0
-yh:     .byte   0
 im:     .byte   0
 iff:    .byte   0
 halted: .byte   0
 w:      .byte   0
 
-        .equ    ost,      0
-        .equ    osttap,   8+ost
+        .equ    ost,      -44
+        .equ    osthi,    4+ost
+        .equ    osttap,   4+osthi
         .equ    ostint,   8+osttap
         .equ    ocounter, 8+ostint
-        .equ    omem,     8+ocounter
-        .equ    ov,       4+omem
+        .equ    ov,       8+ocounter
         .equ    ointr,    4+ov
         .equ    otap,     4+ointr
-        .equ    off,      4+otap
+        .equ    omem,     4+otap
+        .equ    off,      4+omem
         .equ    opc,      2+off
-        .equ    ostart,   2+opc
-        .equ    oxl,      2+ostart
-        .equ    oxh,      1+oxl
-        .equ    omp,      1+oxh
+        .equ    ofa,      2+opc
+        .equ    osp,      2+ofa
+        .equ    ofb,      2+osp
+        .equ    oc,       2+ofb
+        .equ    ob,       1+oc
+        .equ    ofr,      1+ob
+        .equ    oe,       2+ofr
+        .equ    od,       1+oe
+        .equ    omp,      1+od
         .equ    ol,       2+omp
         .equ    oh,       1+ol
-        .equ    ot,       1+oh
+        .equ    oprefix,  1+oh
+        .equ    ors,      1+oprefix
+        .equ    or,       1+ors
+        .equ    oa,       1+or
+        .equ    ostart,   1+oa
+        .equ    oxl,      2+ostart
+        .equ    oxh,      1+oxl
+        .equ    odummy2,  1+oxh
+        .equ    oi,       1+odummy2
+        .equ    oyl,      1+oi
+        .equ    oyh,      1+oyl
+        .equ    ot,       1+oyh
         .equ    ou,       2+ot
-        .equ    ofa,      2+ou
-        .equ    osp,      2+ofa
-        .equ    ofa_,     2+osp
+        .equ    ofa_,     2+ou
         .equ    ofb_,     2+ofa_
         .equ    off_,     2+ofb_
         .equ    ofr_,     2+off_
@@ -89,22 +105,8 @@ w:      .byte   0
         .equ    ol_,      2+odummy1
         .equ    oh_,      1+ol_
         .equ    oendd,    1+oh_
-        .equ    ofb,      2+oendd
-        .equ    oc,       2+ofb
-        .equ    ob,       1+oc
-        .equ    ofr,      1+ob
-        .equ    oe,       2+ofr
-        .equ    od,       1+oe
-        .equ    oprefix,  1+od
-        .equ    ors,      1+oprefix
-        .equ    or,       1+ors
-        .equ    oa,       1+or
-        .equ    oa_,      1+oa
-        .equ    odummy2,  1+oa_
-        .equ    oi,       1+odummy2
-        .equ    oyl,      1+oi
-        .equ    oyh,      1+oyl
-        .equ    oim,      1+oyh
+        .equ    oa_,      2+oendd
+        .equ    oim,      1+oa_
         .equ    oiff,     1+im
         .equ    ohalted,  1+oiff
         .equ    ow,       1+ohalted
@@ -633,8 +635,12 @@ w:      .byte   0
 
       .macro    RRC     regis, ofs
         TIME    8
-        uxtb    lr, \regis, ror #16+\ofs
+      .if \ofs==0
+        uxtb    lr, \regis, ror #16
         movs    lr, lr, lsr #1
+      .else
+        movs    lr, \regis, lsr #25
+      .endif
         orrcs   lr, #0x00000180
         pkhtb   pcff, pcff, lr
         uxtb    lr, lr
@@ -1099,7 +1105,7 @@ w:      .byte   0
         r5      bc | fb
         r6      de | fr
         r7      hl | mp
-        r8      ar | r7 iff im halted : prefix
+        r8      ar | r7 halted_3 iff_2 im : prefix
         r9      ix | start
         r12     iy | i : intr tap
 */
@@ -1107,36 +1113,90 @@ w:      .byte   0
 .text
 .global execute
 execute:push    {r4-r12, lr}
-
-        ldr     punt, _st
-        @ cambiar todo esto por un ldm
-        ldr     mem, [punt, #omem]
+        ldr     punt, _mem
         ldr     stlo, [punt, #ost]
-        ldr     pcff, [punt, #off]    @ pc | ff
-        ldr     spfa, [punt, #ofa]    @ sp | fa
-        ldr     bcfb, [punt, #ofb]    @ bc | fb
-        ldr     defr, [punt, #ofr]    @ de | fr
-        ldr     hlmp, [punt, #omp]    @ hl | mp
-        ldr     arvpref, [punt, #oprefix] @ ar | r7 halted_3 iff_2 im: prefix
-        ldr     ixstart, [punt, #ostart]  @ ix | start
-        ldr     iyi, [punt, #oi-1]    @ iy | i: intr tap
+        ldm     punt, {mem, pcff, spfa, bcfb, defr, hlmp, arvpref, ixstart, iyi}
+        ldr     lr, [punt, #ointr]
+        tst     lr, lr
+        orrne   iyi, #0x00000002
+        ldr     lr, [punt, #otap]
+        tst     lr, lr
+        orrne   iyi, #0x00000001
         ldr     lr, [punt, #oim]      @ halted | iff im    0000000h i0000000 000000mm
         add     lr, lr, lsr #13
         uxtb    lr, lr
         orr     arvpref, lr, lsl #8
-
-exec1:  ldrh    lr, [punt, #ostart]
-        cmp     lr, pcff, lsr #16
-        bne     exec2
-exec2:
-
-        mov     lr, #0x00010000
+exec1:  ldrh    lr, [punt, #ostart]     @if( pc==start )
+        cmp     lr, pcff, lsr #16       @  st= 0,
+        bne     exec2                   @  stint= intr,
+        mov     r11, #0x00000000        @  sttap= tap;
+        str     r11, [punt, #osthi]
+        ldr     r10, [punt, #ointr]
+        strd    r10, [punt, #ostint]
+        ldr     r10, [punt, #otap]
+        strd    r10, [punt, #osttap]
+exec2:  movs    lr, iyi, lsl #30
+        beq     exec6
+        bpl     exec5     
+        ldrd    r10, [punt, #ostint]    @if( intr && st>stint && !prefix )
+        ldr     lr, [punt, #osthi]
+        cmp     r10, stlo
+        sbcs    r11, lr
+        bcs     exec5
+        tst     arvpref, #0x000000ff
+        bne     exec5
+        ldr     r10, [punt, #ointr]      @stint= st+intr
+        adds    r10, stlo
+        adc     r11, lr, #0x00000000
+        strd    r10, [punt, #ostint]
+        tst     arvpref, #0x00000400
+        beq     exec5
+        bic     arvpref, #0x00000400
+        tst     arvpref, #0x00000800
+        bicne   arvpref, #0x00000800
+        addne   pcff, #0x00010000
+        mov     r11, pcff, lsr #16
+        sub     spfa, #0x00020000
+        mov     r10, spfa, lsr #16
+        strh    r11, [mem, r10]
+        mov     r11, #0x00010000
+        uadd8   arvpref, arvpref, r11
+        movs    r11, arvpref, lsl #22
+        beq     exec3
+        bmi     exec4
+        adds    stlo, #0x00000001
+        blcs    insth
+exec3:  mov     r11, #0x00380000
+        pkhbt   pcff, pcff, r11
+        adds    stlo, #0x0000000c
+        blcs    insth
+        b       exec5
+exec4:  and     r11, iyi, #0x0000ff00
+        orr     r11, #0x000000ff
+        ldrh    r10, [mem, r11]
+        pkhbt   pcff, pcff, r10, lsl #16
+        adds    stlo, #0x00000013
+        blcs    insth
+exec5:  tst     iyi, #0x00000001
+        beq     exec6
+        ldrd    r10, [punt, #osttap]    @if( tap && st>sttap )
+        ldr     lr, [punt, #osthi]
+        cmp     r10, stlo
+        sbcs    r11, lr
+        bcs     exec6
+        push    {r0-r3}                 @sttap= st+( tap= tapcycles() )
+        mov     r1, lr
+        bl      tapcycles
+        adds    r0, stlo
+        adc     r1, #0x00000000
+        strd    r0, [punt, #osttap]
+        pop     {r0-r3}
+exec6:  mov     lr, #0x00010000
         uadd8   arvpref, arvpref, lr
-
         ldrb    lr, [mem, pcff, lsr #16]
         add     pcff, #0x00010000
         ldr     pc, [pc, lr, lsl #2]
-_st:    .word   st
+_mem:   .word   mem
         .word   nop           @ 00 NOP
         .word   ldbcnn        @ 01 LD BC,nn
         .word   ldbca         @ 02 LD (BC),A
@@ -1475,18 +1535,7 @@ rlca:   TIME    4
         PREFIX0
 
 rrca:   TIME    4
-        uxtb    lr, arvpref, ror #24
-        movs    lr, lr, lsr #1
-        orrcs   lr, #0x00000180
-        pkhtb   pcff, pcff, lr
-        uxtb    lr, lr
-        bic     arvpref, #0xff000000
-        orr     arvpref, lr, lsl #24
-        pkhtb   defr, defr, lr
-        orr     lr, #0x00000100
-        pkhtb   spfa, spfa, lr
-        pkhtb   bcfb, bcfb, lr, asr #16
-/*        movs    lr, arvpref, lsr #25
+        movs    lr, arvpref, lsr #25
         orrcs   lr, #0x00000180
         bic     arvpref, #0xff000000
         orr     arvpref, lr, lsl #24
@@ -1497,7 +1546,7 @@ rrca:   TIME    4
         and     lr, #0x00000010
         and     r11, bcfb, #0x00000080
         orr     lr, r11
-        pkhtb   bcfb, bcfb, lr*/
+        pkhtb   bcfb, bcfb, lr
         PREFIX0
 
 rla:    TIME    4
@@ -4922,7 +4971,7 @@ salida: ldrh    lr, [punt, #oendd]
         beq     exec11
 
         ldrd    r10, [punt, #ocounter]
-        ldr     lr, [punt, #ost+4]
+        ldr     lr, [punt, #osthi]
         cmp     stlo, r10
         sbcs    lr, lr, r11
         bcc     exec1
@@ -4932,11 +4981,13 @@ exec11:
         bne     exec1
 
         str     stlo, [punt, #ost]
-        str     pcff, [punt, #off]    @ pc | ff
-        str     spfa, [punt, #ofa]    @ sp | fa
-        str     bcfb, [punt, #ofb]    @ bc | fb
-        str     defr, [punt, #ofr]    @ de | fr
-        str     hlmp, [punt, #omp]    @ hl | mp
+        stm     punt, {mem, pcff, spfa, bcfb, defr, hlmp} @, arvpref, ixstart, iyi}
+
+@        str     pcff, [punt, #off]    @ pc | ff
+@        str     spfa, [punt, #ofa]    @ sp | fa
+@        str     bcfb, [punt, #ofb]    @ bc | fb
+@        str     defr, [punt, #ofr]    @ de | fr
+@        str     hlmp, [punt, #omp]    @ hl | mp
         str     ixstart, [punt, #ostart]  @ ix | start
         str     iyi, [punt, #oi-1]    @ iy | i : intr tap
 
@@ -4952,7 +5003,7 @@ exec11:
         pop     {r4-r12, lr}
         bx      lr
 
-insth:  ldr     r11, [punt, #ost+4]
+insth:  ldr     r11, [punt, #osthi]
         add     r11, r11, #1
-        str     r11, [punt, #ost+4]
+        str     r11, [punt, #osthi]
         bx      lr
