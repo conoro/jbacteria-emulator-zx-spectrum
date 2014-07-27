@@ -1062,7 +1062,7 @@ w:      .byte   0
 
       .macro    INR     regis, ofs
         TIME    12
-        push    {r0-r3}
+        push    {r0-r3, r12}
         mov     r0, bcfb, lsr #16
         add     r11, r0, #0x00000001
         pkhtb   hlmp, hlmp, r11
@@ -1077,13 +1077,13 @@ w:      .byte   0
         orr     r0, #0x00000100
         pkhtb   spfa, spfa, r0
         pkhtb   bcfb, bcfb, r0, asr #16
-        pop     {r0-r3}
+        pop     {r0-r3, r12}
         b       salida
       .endm
 
       .macro    OUTR    regis, ofs
         TIME    12
-        push    {r0-r3}
+        push    {r0-r3, r12}
         mov     r0, bcfb, lsr #16
         add     r11, r0, #0x00000001
         pkhtb   hlmp, hlmp, r11
@@ -1093,7 +1093,7 @@ w:      .byte   0
         mov     r1, #0x00000000
       .endif
         bl      out
-        pop     {r0-r3}
+        pop     {r0-r3, r12}
         b       salida
       .endm
 
@@ -1184,13 +1184,14 @@ exec5:  tst     iyi, #0x00000001
         cmp     r10, stlo
         sbcs    r11, lr
         bcs     exec6
-        push    {r0-r3}                 @sttap= st+( tap= tapcycles() )
-        mov     r1, lr
+        push    {r0-r3, r12}            @sttap= st+( tap= tapcycles() )
+        mov     r11, lr
         bl      tapcycles
-        adds    r0, stlo
-        adc     r1, #0x00000000
-        strd    r0, [punt, #osttap]
-        pop     {r0-r3}
+        mov     r10, r0
+        pop     {r0-r3, r12}
+        adds    r10, stlo
+        adc     r11, #0x00000000
+        strd    r10, [punt, #osttap]
 exec6:  mov     lr, #0x00010000
         uadd8   arvpref, arvpref, lr
         ldrb    lr, [mem, pcff, lsr #16]
@@ -1577,19 +1578,7 @@ rla:    TIME    4
         PREFIX0
 
 rra:    TIME    4
-        uxtb    lr, arvpref, ror #24
-        add     lr, lr, lr, lsl #9
-        and     r10, pcff, #0x00000100
-        orr     lr, r10
-        pkhtb   pcff, pcff, lr, asr #1
-        uxtb    lr, pcff
-        bic     arvpref, #0xff000000
-        orr     arvpref, lr, lsl #24
-        pkhtb   defr, defr, lr
-        add     lr, #0x00000100
-        pkhtb   spfa, spfa, lr
-        pkhtb   bcfb, bcfb, lr, asr #16
-/*        mov     lr, arvpref, lsr #24
+        mov     lr, arvpref, lsr #24
         add     lr, lr, lr, lsl #9
         and     r11, pcff, #0x00000100
         orr     lr, r11
@@ -1604,34 +1593,34 @@ rra:    TIME    4
         and     lr, #0x00000010
         and     r11, bcfb, #0x00000080
         orr     lr, r11
-        pkhtb   bcfb, bcfb, lr*/
+        pkhtb   bcfb, bcfb, lr
         PREFIX0
 
 outna:  TIME    11
         ldrb    lr, [mem, pcff, lsr #16]
         add     pcff, #0x00010000
-        push    {r0-r3}
+        push    {r0-r3, r12}
         mov     r1, arvpref, lsr #24
         orr     r0, lr, r1, lsl #8
         mov     r11, #0x00000001
         uadd8   r11, r11, r0
         pkhtb   hlmp, hlmp, r11
         bl      out
-        pop     {r0-r3}
+        pop     {r0-r3, r12}
         PREFIX0
 
 inan:   TIME    11
         ldrb    lr, [mem, pcff, lsr #16]
         add     pcff, #0x00010000
         mov     r11, arvpref, lsr #24
-        push    {r0-r3}
+        push    {r0-r3, r12}
         orr     r0, lr, r11, lsl #8
         add     r11, r0, #0x00000001
         pkhtb   hlmp, hlmp, r11
         bl      in
         bic     arvpref, #0xff000000
         orr     arvpref, r0, lsl #24
-        pop     {r0-r3}
+        pop     {r0-r3, r12}
         PREFIX0
 
 djnz:   sub     bcfb, #0x01000000
@@ -3458,7 +3447,7 @@ lddr2:  pkhbt   bcfb, spfa, lr, lsl #16
         b       salida
 
 ini:    TIME    16
-        push    {r0-r3}
+        push    {r0-r3, r12}
         mov     r0, bcfb, lsr #16
         add     r1, r0, #0x00000001
         pkhtb   hlmp, hlmp, r1
@@ -3485,12 +3474,12 @@ ini:    TIME    16
         mov     r0, r0, lsl #6
         orr     r0, r1
         pkhtb   bcfb, bcfb, r0, asr #4
-        pop     {r0-r3}
+        pop     {r0-r3, r12}
         pkhtb   pcff, pcff, r11
         b       salida
 
 ind:    TIME    16
-        push    {r0-r3}
+        push    {r0-r3, r12}
         mov     r0, bcfb, lsr #16
         sub     r1, r0, #0x00000001
         pkhtb   hlmp, hlmp, r1
@@ -3517,13 +3506,13 @@ ind:    TIME    16
         mov     r0, r0, lsl #6
         orr     r0, r1
         pkhtb   bcfb, bcfb, r0, asr #4
-        pop     {r0-r3}
+        pop     {r0-r3, r12}
         pkhtb   pcff, pcff, r11
         b       salida
 
 inir:   TIME    16
         mov     r10, stlo
-        push    {r0-r3}
+        push    {r0-r3, r12}
         mov     r0, bcfb, lsr #16
         add     r1, r0, #0x00000001
         pkhtb   hlmp, hlmp, r1
@@ -3557,14 +3546,14 @@ inir2:  and     r11, r1, #0x00000007
         mov     r0, r0, lsl #6
         orr     r0, r1
         pkhtb   bcfb, bcfb, r0, asr #4
-        pop     {r0-r3}
+        pop     {r0-r3, r12}
         pkhtb   pcff, pcff, r11
         mov     stlo, r10
         b       salida
 
 indr:   TIME    16
         mov     r10, stlo
-        push    {r0-r3}
+        push    {r0-r3, r12}
         mov     r0, bcfb, lsr #16
         sub     r1, r0, #0x00000001
         pkhtb   hlmp, hlmp, r1
@@ -3598,13 +3587,13 @@ indr2:  and     r11, r1, #0x00000007
         mov     r0, r0, lsl #6
         orr     r0, r1
         pkhtb   bcfb, bcfb, r0, asr #4
-        pop     {r0-r3}
+        pop     {r0-r3, r12}
         pkhtb   pcff, pcff, r11
         mov     stlo, r10
         b       salida
 
 outi:   TIME    16
-        push    {r0-r3}
+        push    {r0-r3, r12}
         sub     bcfb, #0x01000000
         mov     r0, bcfb, lsr #16
         add     r1, r0, #0x00000001
@@ -3631,12 +3620,12 @@ outi:   TIME    16
         mov     r1, r1, lsl #6
         orr     r1, r0
         pkhtb   bcfb, bcfb, r1, asr #4
-        pop     {r0-r3}
+        pop     {r0-r3, r12}
         pkhtb   pcff, pcff, r11
         b       salida
 
 outd:   TIME    16
-        push    {r0-r3}
+        push    {r0-r3, r12}
         sub     bcfb, #0x01000000
         mov     r0, bcfb, lsr #16
         sub     r1, r0, #0x00000001
@@ -3663,13 +3652,13 @@ outd:   TIME    16
         mov     r1, r1, lsl #6
         orr     r1, r0
         pkhtb   bcfb, bcfb, r1, asr #4
-        pop     {r0-r3}
+        pop     {r0-r3, r12}
         pkhtb   pcff, pcff, r11
         b       salida
 
 otir:   TIME    16
         mov     r10, stlo
-        push    {r0-r3}
+        push    {r0-r3, r12}
         sub     bcfb, #0x01000000
         mov     r0, bcfb, lsr #16
         add     r1, r0, #0x00000001
@@ -3703,14 +3692,14 @@ otir2:  and     r11, r0, #0x00000007
         mov     r1, r1, lsl #6
         orr     r1, r0
         pkhtb   bcfb, bcfb, r1, asr #4
-        pop     {r0-r3}
+        pop     {r0-r3, r12}
         pkhtb   pcff, pcff, r11
         mov     stlo, r10
         b       salida
 
 otdr:   TIME    16
         mov     r10, stlo
-        push    {r0-r3}
+        push    {r0-r3, r12}
         sub     bcfb, #0x01000000
         mov     r0, bcfb, lsr #16
         sub     r1, r0, #0x00000001
@@ -3744,7 +3733,7 @@ otdr2:  orr     r11, r0, r3
         mov     r1, r1, lsl #6
         orr     r1, r0
         pkhtb   bcfb, bcfb, r1, asr #4
-        pop     {r0-r3}
+        pop     {r0-r3, r12}
         pkhtb   pcff, pcff, r11
         mov     stlo, r10
         b       salida
@@ -3792,7 +3781,8 @@ im1:    TIME    8
         b       salida
 
 im2:    TIME    8
-        orr     arvpref, #0x00000300
+        bic     arvpref, #0x00000100
+        orr     arvpref, #0x00000200
         b       salida
 
 ldai:   TIME    9
@@ -4969,37 +4959,21 @@ c18003: .word   0x00018003
 salida: ldrh    lr, [punt, #oendd]
         cmp     lr, pcff, lsr #16
         beq     exec11
-
         ldrd    r10, [punt, #ocounter]
         ldr     lr, [punt, #osthi]
         cmp     stlo, r10
         sbcs    lr, lr, r11
         bcc     exec1
-
-exec11:
-        movs    lr, arvpref, lsl #24
+exec11: movs    lr, arvpref, lsl #24
         bne     exec1
-
         str     stlo, [punt, #ost]
-        stm     punt, {mem, pcff, spfa, bcfb, defr, hlmp} @, arvpref, ixstart, iyi}
-
-@        str     pcff, [punt, #off]    @ pc | ff
-@        str     spfa, [punt, #ofa]    @ sp | fa
-@        str     bcfb, [punt, #ofb]    @ bc | fb
-@        str     defr, [punt, #ofr]    @ de | fr
-@        str     hlmp, [punt, #omp]    @ hl | mp
-        str     ixstart, [punt, #ostart]  @ ix | start
-        str     iyi, [punt, #oi-1]    @ iy | i : intr tap
-
         uxtb    lr, arvpref, ror #8
         add     lr, lr, lsl #13
         ldr     r11, c18003
         and     lr, r11
         str     lr, [punt, #oim]
-
         and     arvpref, #0xffff80ff
-        str     arvpref, [punt, #oprefix] @ ar | r7 halted_3 iff_2 im: prefix
-
+        stm     punt, {mem, pcff, spfa, bcfb, defr, hlmp, arvpref, ixstart, iyi}
         pop     {r4-r12, lr}
         bx      lr
 
