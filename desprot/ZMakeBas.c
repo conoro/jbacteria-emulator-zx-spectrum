@@ -1071,7 +1071,8 @@ int main( int argc, char *argv[] ){
          */
         fprintf( stderr, "program too big!\n" ),
         exit(1);
-
+      if( zx81mode && startline==linenum )
+        startline= fileptr-filebuf-zx81mode++;
       *fileptr++= (linenum>>8);
       *fileptr++= (linenum&255);
       *fileptr++= (linelen&255);
@@ -1138,7 +1139,9 @@ int main( int argc, char *argv[] ){
       headerbuf[28]= -1;                        // LAST_K
       *(short*)(headerbuf+29)= -1;
       headerbuf[31]= 55;                        // MARGIN
-      *(short*)(headerbuf+32)= siz+0x407d;      // NXTLIN
+      *(short*)(headerbuf+32)= zx81mode-2       // NXTLIN
+                          ? siz+0x407d
+                          : startline+0x407e;
       //*(short*)(headerbuf+34)= 0;             // OLDPPC
       //headerbuf[36]= 0;                       // FLAGX
       //*(short*)(headerbuf+37)= 0;             // STRLEN
