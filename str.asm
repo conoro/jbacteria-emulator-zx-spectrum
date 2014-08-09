@@ -102,10 +102,10 @@ pint    push    de              ; Guardo DE, HL y BC en pila
 pin1    ld      b, 4            ; El bucle interior es de 4 y el exterior es de C, por tanto se repite 4xC veces, siendo C siempre mayor que 4. Como HL no puede tener más de 16 bits sólo se pinta/borra/comprueba colisión en una retícula de 4x4
 pin2    add     hl, hl          ; Siguiente bit dentro de la retícula 4x4 a comparar
 copc    call    c, opc1         ; Si está a 1 realizo una subfunción (pintar/borra o comprobar si hay colisión). La subfunción está apuntada por el registro IX. Como $007c en ROM es una instrucción JP (IX), esta instrucción equivaldría a CALL C, (IX)
-        dec     de              ; Voy pintando hacia atrás y de abajo hacia arriba (decrementando DE)
+        dec     e               ; Voy pintando hacia atrás y de abajo hacia arriba (decrementando DE)
         djnz    pin2            ; Cierro bucle interior
         ld      b, 11-4         ; Como ya he completado 4 bytes de la línea, necesito 7 más para posicionarme en la siguiente línea (en este caso la de arriba)
-re28    dec     de              ; Hago la resta vía bucle con djnz, que equivaldría a SUB DE, 7
+re28    dec     e               ; Hago la resta vía bucle con djnz, que equivaldría a SUB DE, 7
         djnz    re28
         dec     c               ; Cierro bucle exterior
         jr      nz, pin1
@@ -138,51 +138,50 @@ tli1    ex      de, hl          ; Almaceno posición en DE
         cpir                    ; lo detecto activando el flag Z tras la instrucción CPIR
         pop     hl              ; Recupero HL, ya que CPIR modifica su valor
         jr      z, tli1         ; Bucle que voy repitiendo (probando con líneas que están por encima) hasta detectar una falsa línea completa en la ROM (debajo de $4000)
-        ld      a, l
-        sub     screen & 255
-        ld      c, a
-        ld      a, h
-        sbc     a, screen >> 8
-        jr      c, newp         ; Si me salgo de la zona de atributos es que ya he llegado a la primera línea y por tanto salgo del bucle (a generar una nueva pieza)
-        lddr                    ; Hago el corrimiento de líneas
-;        rrc     (iy-$3e)        ; Esto me permite aumentar el nivel de velocidad cada 8 líneas completadas
-;        jr      nc, tlin
-;        dec     (iy+velo+1-opc1); Decremento retardo de caída de piezas (aumento por tanto la velocidad)
-        jr      tlin            ; Cierro bucle
-
-
-newp    push    de
-        ld      l, $ef
-        xor     a
+;        ld      a, l
+;        sub     screen & 255
+;        ld      c, a
+        ld      c, l
+        bit     0, h
+;        ld      a, h
+;        sbc     a, screen >> 8
+        jr      nz, nnwp         ; Si me salgo de la zona de atributos es que ya he llegado a la primera línea y por tanto salgo del bucle (a generar una nueva pieza)
+        ;ld hl,  $ffff
+       sbc     hl, hl
         ld      de, dfile+4*11-1
         call    pint
 rand    ld      a, (FRAMES)
         and     7
         jr      z, rand
         call    leep
-        ld      e, dfile+3*11-1 & 255
         call    pint
-        pop     de
         sub     156
         ld      l, a
         ld      a, (VERSN)
         ld      (VERSN), hl
         ld      hl, kaka
         push    hl
+        ld      de, screen+1+2*11+6 ;& 255 ; La primera pieza parte de la coordenada (x, y)= (6, 2), en el registro DE guardo la posición
 leep    add     a, tabla-1&255
         ld      l, a            ; Paso dicho valor al registro L para leer pieza de la tabla
         add     a, 156-tabla+1&255
         ld      (mico+1), a     ; Guardo color generado en A'
-        ld      de, screen+1+2*11+6 ; La primera pieza parte de la coordenada (x, y)= (6, 2), en el registro DE guardo la posición
-        ld      h, $40          ; Posición alta de la tabla de piezas
+        ld      h, tabla>>8     ; Posición alta de la tabla de piezas
+       ld      c, h         ; Pongo C a un valor mayor de 4 con los bits 1 y 2 a cero (que indican que entro en el bucle principal desde nueva pieza)
         ld      l, (hl)         ; Leo byte de la tabla de piezas
         ld      h, b            ; Pongo H a cero, con lo que inicialmente la pieza (almacenada en HL) contiene algo así 00000000XXXXXXXX
         add     hl, hl
         add     hl, hl
         add     hl, hl
         add     hl, hl
-        ld      c, 8            ; Pongo C a un valor mayor de 4 con los bits 1 y 2 a cero (que indican que entro en el bucle principal desde nueva pieza)
+;        ld      c, 8         ; Pongo C a un valor mayor de 4 con los bits 1 y 2 a cero (que indican que entro en el bucle principal desde nueva pieza)
         ret
+nnwp    lddr                    ; Hago el corrimiento de líneas
+;        rrc     (iy-$3e)        ; Esto me permite aumentar el nivel de velocidad cada 8 líneas completadas
+;        jr      nc, tlin
+;        dec     (iy+velo+1-opc1); Decremento retardo de caída de piezas (aumento por tanto la velocidad)
+        jr      tlin            ; Cierro bucle
+
 
 ; Bucle principal del juego
 
@@ -233,9 +232,8 @@ nder    sub     $fd
         add     a, $fd
 tloo    ld      bc, $0b04       ; Inicializo B a 11 (bajo posición una fila completa) y C a 4 indicando que entro al bucle principal vía pieza no acelerada
         jr      c, loop         ; Si la pieza cae por su peso (ninguna tecla pulsada), cierro bucle principal
-
         inc     c               ; Si se ha pulsado 'a' o equivalente, señalizo pieza acelerada en registro C
-su32    inc     de              ; Avanza la posición en una fila (32 caracteres)
+su32    inc     e               ; Avanza la posición en una fila (32 caracteres)
         djnz    su32
 kaka    ld      a, (FRAMES)     ; Leo contador de frames
         ld      (time+1), a     ; Pongo FRAMES1 (antes guardada en A) como referencia en time (variable incrustada en código)
@@ -260,6 +258,9 @@ rot1    add     hl, hl          ; Desplazo 4 veces HL a la izquierda
         ld      h, a            ; Finalmente la pieza rotada queda en (A, C), que la muevo a HL
         ld      l, c
         jr      tloo            ; Salto al bucle principal (con indicador de pieza no acelerada)
+
+
+        block   $4300-44-$, $fe
 
 dfile   defb    _NL
         defb    _L,_E,_V,_E,_L,_SP,_SP,_SP,_SP,_SP
@@ -309,7 +310,7 @@ screen  defb    _NL
     .10 defb    8
         defb    _NL
     .10 defb    8
-     .5 defb    _NL
+        defb    _NL
 
         display /D, $-$4000
         block   $43fc-$, $fe
