@@ -1,72 +1,80 @@
         output  str.p
-_SPC    equ     $00
-_0      equ     $1c
-_1      equ     $1d
-_2      equ     $1e
-_3      equ     $1f
-_4      equ     $20
-_5      equ     $21
-_6      equ     $22
-_7      equ     $23
-_8      equ     $24
-_9      equ     $25
-_A      equ     $26
-_B      equ     $27
-_C      equ     $28
-_D      equ     $29
-_E      equ     $2a
-_F      equ     $2b
-_G      equ     $2c
-_H      equ     $2d
-_I      equ     $2e
-_J      equ     $2f
-_K      equ     $30
-_L      equ     $31
-_M      equ     $32
-_N      equ     $33
-_O      equ     $34
-_P      equ     $35
-_Q      equ     $36
-_R      equ     $37
-_S      equ     $38
-_T      equ     $39
-_U      equ     $3a
-_V      equ     $3b
-_W      equ     $3c
-_X      equ     $3d
-_Y      equ     $3e
-_Z      equ     $3f
-_NL     equ     $76
+        define  _SP     $00
+        define  _0      $1c
+        define  _1      $1d
+        define  _2      $1e
+        define  _3      $1f
+        define  _4      $20
+        define  _5      $21
+        define  _6      $22
+        define  _7      $23
+        define  _8      $24
+        define  _9      $25
+        define  _A      $26
+        define  _B      $27
+        define  _C      $28
+        define  _D      $29
+        define  _E      $2a
+        define  _F      $2b
+        define  _G      $2c
+        define  _H      $2d
+        define  _I      $2e
+        define  _J      $2f
+        define  _K      $30
+        define  _L      $31
+        define  _M      $32
+        define  _N      $33
+        define  _O      $34
+        define  _P      $35
+        define  _Q      $36
+        define  _R      $37
+        define  _S      $38
+        define  _T      $39
+        define  _U      $3a
+        define  _V      $3b
+        define  _W      $3c
+        define  _X      $3d
+        define  _Y      $3e
+        define  _Z      $3f
+        define  _NL     $76
 
-                org     $4009
+        org     $4009
 
-VERSN:          defb    1, 0
-                defb    $12
-D_FILE:         defw    dfile
-DF_CC:          defw    $1234
-VARS:           defw    $1234
+VERSN   defb    1, 0
+        defb    $12
+D_FILE  defw    dfile
 
-DEST:           defw    $1234
-E_LINE:         defw    eline
-CH_ADD:         defw    $1234
-X_PTR:          defw    $1234
-STKBOT:         defw    $1234
-STKEND:         defw    $1234
-BERG:           defb    $12
-MEM:            defw    $1234
-SPARE1:         defb    $12
-DF_SZ:          defb    $12
-S_TOP:          defw    $1234
-LAST_K:         defw    $ffff
-DB_ST:          defb    0
-MARGIN:         defb    55
-NXTLIN:         defw    $1234           ; Memory address of next program line to be executed.
-OLDPPC:         defw    $1234
-FLAGX:          defb    $12
-STRLEN:         defw    $1234
-T_ADDR:         defw    $1234
-SEED:           defw    $1234
-FRAMES:         defw    0               ; Updated once for every TV frame displayed.
+inic    ld      a, (LAST_K+1)
+        inc     a
+        jr      z, inic
+
+E_LINE  defw    eline
+
+        ld      hl, screen+1
+        ld      c, 20
+ini1    ld      b, 10
+ini2    ld      (hl), 8
+        inc     hl
+        djnz    ini2
+        inc     hl
+        jr      inca
+
+LAST_K  defw    $ffff
+DB_ST   defb    0
+MARGIN  defb    55
+
+inca    dec     c
+        jr      nz, ini1
+
+; Rutina que se ejecuta cada vez
+; que una pieza toca el suelo y
+; antes de generar una pieza nueva
+tutin   ld      a, (LAST_K+1)
+        inc     a
+        jr      nz, tutin
+        jr      tlin
+
+FRAMES  defw    0               ; Updated once for every TV frame displayed.
 ; Tabla de piezas
 tabla
         db      %01100110       ;-oo-
@@ -89,7 +97,7 @@ tabla
 ; La segunda pinta la pieza. La tercera, en caso de no tocar suelo, borra la pieza.
 
 pint    push    de              ; Guardo DE, HL y BC en pila
-MEMBOT: push    hl
+        push    hl
         push    bc
 pin1    ld      b, 4            ; El bucle interior es de 4 y el exterior es de C, por tanto se repite 4xC veces, siendo C siempre mayor que 4. Como HL no puede tener más de 16 bits sólo se pinta/borra/comprueba colisión en una retícula de 4x4
 pin2    add     hl, hl          ; Siguiente bit dentro de la retícula 4x4 a comparar
@@ -120,26 +128,6 @@ opc2    ld      a, (de)         ; Leo el color (en A) de la posición actual (de
         pop     de              ; Si no es negro, hay colisión, lo indico con carry Z desactivo y salgo de la subfunción y de la función pint
         jr      pin4
 
-inic:   ld      a, (LAST_K+1)
-        inc     a
-        jr      z, inic
-        ld      hl, screen+1
-        ld      c, 20
-isylp:  ld      b, 10
-isxlp:  ld      (hl), 8
-        inc     hl
-        djnz    isxlp
-        inc     hl
-        dec     c
-        jr      nz, isylp
-
-; Rutina que se ejecuta cada vez
-; que una pieza toca el suelo y
-; antes de generar una pieza nueva
-tutin   ld      a, (LAST_K+1)
-        inc     a
-        jr      nz, tutin
-
 tlin    ld      hl, screen+20*11  ; Parto desde una coordenada (31, 21) que es la parte inferior derecha de la pantalla
 tli1    ex      de, hl          ; Almaceno posición en DE
         ld      a, 8            ; Pongo A a cero (lo usaré en la instrucción CPIR)
@@ -163,22 +151,18 @@ tli1    ex      de, hl          ; Almaceno posición en DE
         jr      tlin            ; Cierro bucle
 
 
-newp    
-        push    de
-        ld      hl, $0ef0
+newp    push    de
+        ld      h, $ef
         xor     a
-        ld      de, dfile+3*11-1
+        ld      de, dfile+2*11-1
         call    pint
-
 rand    ld      a, (FRAMES)
         and     7
         jr      z, rand
-
         call    leep
         ld      e, dfile+3*11-1 & 255
         call    pint
         pop     de
-
         sub     156
         ld      l, a
         ld      a, (VERSN)
@@ -278,13 +262,13 @@ rot1    add     hl, hl          ; Desplazo 4 veces HL a la izquierda
         jr      tloo            ; Salto al bucle principal (con indicador de pieza no acelerada)
 
 dfile   defb    _NL
-        defb    _L,_E,_V,_E,_L,_SPC,_SPC,_SPC,_SPC,_SPC
+        defb    _L,_E,_V,_E,_L,_SP,_SP,_SP,_SP,_SP
         defb    _NL
-        defb    _SPC,_SPC,_SPC,_SPC,_1,_SPC,_SPC,_SPC,_SPC,_SPC
+        defb    _SP,_SP,_SP,_SP,_1,_SP,_SP,_SP,_SP,_SP
         defb    _NL
-        defb    _S,_C,_O,_R,_E,_SPC,_SPC,_SPC,_SPC,_SPC
+        defb    _S,_C,_O,_R,_E,_SP,_SP,_SP,_SP,_SP
         defb    _NL
-        defb    _SPC,_SPC,_SPC,_SPC,_0,_SPC,_SPC,_SPC,_SPC,_SPC
+        defb    _SP,_SP,_SP,_SP,_0,_SP,_SP,_SP,_SP,_SP
 screen  defb    _NL
     .10 defb    8
         defb    _NL
@@ -332,9 +316,9 @@ screen  defb    _NL
         defw    inic
 
 ; Start of the variables area used by BASIC.
-
+        nop
         defb    $80
-eline:
+eline
 
 
 ; 1234567890
