@@ -18,9 +18,11 @@ ini2    ld      a, 249          ; Código ASCII para RANDOMIZE, lo uso porque es
 ; anterior haya hecho contacto con el suelo.
 
 newp    ld      a, r            ; Leo un número pseudoaleatorio del registro R
-mod7    sub     $f9             ; Estas dos líneas equivalen a un MOD 7
-        jr      c, mod7         ; o resto de dividir el byte entre 7, ya que necesito elegir una pieza al azar de entre las 7
-        inc     a               ; Le sumo 1 para pasar de rangos 0..6 a 1..7 y así evitar el color negro (que es el fondo)
+;mod7    sub     $f9             ; Estas dos líneas equivalen a un MOD 7
+;        jr      c, mod7         ; o resto de dividir el byte entre 7, ya que necesito elegir una pieza al azar de entre las 7
+;        inc     a               ; Le sumo 1 para pasar de rangos 0..6 a 1..7 y así evitar el color negro (que es el fondo)
+       and     7
+       jr      z, newp
         ld      l, a            ; Paso dicho valor al registro L para leer pieza de la tabla
         add     a, a            ; Multiplico por 9 (para usar el color tanto en tinta como en fondo, de lo contrario se verían los caracteres del RANDOMIZE)
         add     a, a
@@ -32,7 +34,8 @@ mod7    sub     $f9             ; Estas dos líneas equivalen a un MOD 7
         ld      l, (hl)         ; Leo byte de la tabla de piezas
         ld      h, b            ; Pongo H a cero, con lo que inicialmente la pieza (almacenada en HL) contiene algo así 00000000XXXXXXXX
         call    $0e94           ; Multiplico por 16 o desplazo 4 bits para tener la pieza centrada y que no resulten extrañas las rotaciones
-        jr      cont            ; Salto la tabla de piezas para no ejecutar datos aleatorios
+        ld      c, d            ; Pongo C a un valor mayor de 4 con los bits 1 y 2 a cero (que indican que entro en el bucle principal desde nueva pieza)
+        jr      loop            ; Salto la tabla de piezas para no ejecutar datos aleatorios
 
 ; Tabla de piezas
 
@@ -81,27 +84,24 @@ tli1    ex      de, hl          ; Almaceno posición en DE
         dec     (ix+velo+1-opc1); Decremento retardo de caída de piezas (aumento por tanto la velocidad)
         jr      tlin            ; Cierro bucle
 
-; Continúo tras haber saltado la tabla
-
-cont    ld      c, d            ; Pongo C a un valor mayor de 4 con los bits 1 y 2 a cero (que indican que entro en el bucle principal desde nueva pieza)
-
 ; Bucle principal del juego
 
 loop    ld      ixl, opc2-1&255 ; IX apunta a la subfunción a llamar (dentro de la función pint), en este caso es la que comprueba si hay colisión antes de pintar la pieza
         call    pint            ; Llamo a la función pint para testear la pieza (con -1 ahorro un byte porque PUSH DE coincide con el último byte de la instrucción anterior)
         jr      z, ncol         ; Si no hay colisión, salto a ncol
-        pop     hl              ; Si hay colisión, recupero los valores de posición
         pop     de              ; y pieza anteriores a la colisión
-        ld      sp, $ff40       ; Equilibro la pila, ya que la estaba desequilibrando con muchos PUSH HL,DE y un sólo POP HL,DE
+        pop     hl              ; Si hay colisión, recupero los valores de posición
         bit     2, c            ; Compruebo si en punto de entrada del bucle es haber
         jr      z, inic         ; generado la pieza, en tal caso (con una colisión nada más generar la pieza) reinicio el juego
         inc     c               ; Señalizo la colisión poniendo a 1 el bit 1 del registro C
-ncol    ld      ixl, opc1 & 255 ; IX apunta a la subfunción pintar/borrar
+ncol    ld      sp, $ff40       ; Equilibro la pila, ya que la estaba desequilibrando con muchos PUSH HL,DE y un sólo POP HL,DE
+        ld      ixl, opc1 & 255 ; IX apunta a la subfunción pintar/borrar
         ex      af, af          ; recupero el color de A'
         call    pint            ; pinto la pieza
         ex      af, af          ; vuelvo a guardar el color en A'
         bit     1, c            ; Compruebo si ha habido colisión (del tipo colisión contra el suelo, no vale contra paredes ni tras rotar)
         jr      nz, tlin        ; Salto a tlin en caso de ese tipo de colisión
+        push    hl              ; Guardo pieza en pila
         push    de              ; Guardo posición en pila
 rkey    ld      a, ($5c78)      ; Leo contador de frames
         ld      b, a            ; Lo guardo temporalmente en B
@@ -111,12 +111,11 @@ velo    sub     0               ; Aplico un retardo (número de frames que tarda
         bit     5, (iy+1)       ; Mientras tanto voy leyendo si se ha pulsado una tecla
         jr      z, rkey         ; En tal caso, rompo el bucle de tiempo
         ld      a, ($5c08)      ; Con el registro A conteniendo el código ASCII de la tecla pulsada
-salt    push    hl              ; Guardo pieza en pila
         call    $1f4f           ; res   5, (iy+1). Señalizo tecla leída. En este punto si A vale cero es que no se ha pulsado nada y la pieza cae por sí sola
-        push    af              ; Guardo tecla pulsada
+salt    push    af              ; Guardo tecla pulsada
         xor     a               ; Borrar es pintar con color 0 (negro)
         call    pint            ; Borra pieza
-        pop     af              ; Hecupero tecla pulsada
+        pop     af              ; Recupero tecla pulsada
         sub     'o'             ; He pulsado izquierda?
         jr      nz, nizq        ; No, pues salto y no hago nada
         dec     e               ; Sí, pues decremento posición
@@ -184,4 +183,5 @@ opc2    ;ld      a, (de)         ; Leo el color (en A) de la posición actual (d
         ret     z               ; Si es negro, retorno de subfunción con carry Z activado (indica no que hay colisión)
         pop     de              ; Si no es negro, hay colisión, lo indico con carry Z desactivo y salgo de la subfunción y de la función pint
         jr      pin4
-fin
+; sjasmplus tetris.asm
+; gentape tetris.tap basic 1601005341b1b45249b3 0 tetris.bin
