@@ -152,9 +152,9 @@ tli1    ex      de, hl          ; Almaceno posición en DE
 
 
 newp    push    de
-        ld      h, $ef
+        ld      l, $ef
         xor     a
-        ld      de, dfile+2*11-1
+        ld      de, dfile+4*11-1
         call    pint
 rand    ld      a, (FRAMES)
         and     7
