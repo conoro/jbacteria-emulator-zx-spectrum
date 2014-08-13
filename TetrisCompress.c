@@ -156,9 +156,6 @@ unsigned char *compress(Optimal *optimal, unsigned char *input_data,
   int mask;
   int i;
   size_t input_index= input_size-1;
-  if( !output_data )
-    fprintf(stderr, "Error: Insufficient memory\n"),
-    exit(1);
   optimal[input_index].bits= 0;
   while (input_index > 0)
     input_prev= input_index - (optimal[input_index].len > 0 ? optimal[input_index].len : 1),
@@ -190,17 +187,15 @@ unsigned char *compress(Optimal *optimal, unsigned char *input_data,
         write_bit(0),
         write_bit(1),
         write_bit(0);
-      else{
+      else
         offset1+= 11,
         write_bit(offset1&16),
         write_bit(offset1&8),
         write_bit(offset1&4),
         write_bit(offset1&2),
         write_bit(offset1&1);
-      }
       write_elias_gamma(optimal[input_index].len-1);
     }
-  return output_data;
 }
 
 int empty(unsigned char *input_data){
@@ -263,24 +258,16 @@ void main(void){
   fclose(fi);
   output_data= (unsigned char *) malloc (10000);
   fo= fopen("maptetris.bin", "wb+");
-/*  for ( i= 99; i>0; i-- ){
-    input_data= out+i*220;
-    if( i!=99 && empty(input_data) )
-      output_size= 0;
-    else
-      output_data= compress(optimize(input_data, 220), input_data, 220, &output_size);
-    tmpchar= output_size;
-    fwrite(&tmpchar, 1, 1, fo);
-  }*/
   output_index= 0;
   bit_mask= 0;
 
   for ( i= 99; i; i-- ){
     input_data= out+i*220;
-    if( i==99 || !empty(input_data= out+i*220) ){
-      output_data= compress(optimize(input_data, 220), input_data, 220);
+    if( i==99 || !empty(input_data= out+i*220) )
+      compress(optimize(input_data, 220), input_data, 220),
+      write_bit(0),
+      write_bit(0),
   printf("end %d\n\n", output_index);
-    }
   }
 
   for ( k= 0; k<output_index>>1; k++ )

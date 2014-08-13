@@ -44,35 +44,31 @@ VERSN   defb    1, 0
         defb    $12
 D_FILE  defw    dfile
 
-inic    ld      a, (LAST_K+1)
-        inc     a
+inic    call    $02bb
+        inc     l
+;        ld      a, (LAST_K+1)
+;        inc     a
         jr      z, inic
 
 E_LINE  defw    eline
 
-        ld      hl, screen+1
-        ld      c, 20
-ini1    ld      b, 10
-ini2    ld      (hl), 8
-        inc     hl
-        djnz    ini2
-        inc     hl
+        ld      (iy+2), c
+        ld      hl, $1d1c
+        ld      (level-1), hl
+        ld      (iy+desc1+2-$4000), $80
         jr      inca
 
 LAST_K  defw    $ffff
 DB_ST   defb    0
 MARGIN  defb    55
 
-inca    dec     c
-        jr      nz, ini1
-
-; Rutina que se ejecuta cada vez
-; que una pieza toca el suelo y
-; antes de generar una pieza nueva
-tutin   ld      a, (LAST_K+1)
-        inc     a
-        jr      nz, tutin
-        jr      tlin
+gbit2   ld      b, (hl)         ; load another group of 8 bits
+        dec     hl
+gbitd   call    nc, gbit
+gbit    rl      b               ; get next bit
+        jr      z, gbit2        ; no more bits left?
+        adc     a, a            ; put bit in a
+        ret
 
 FRAMES  defw    0               ; Updated once for every TV frame displayed.
 ; Tabla de piezas
@@ -128,6 +124,86 @@ opc2    ld      a, (de)         ; Leo el color (en A) de la posición actual (de
         pop     de              ; Si no es negro, hay colisión, lo indico con carry Z desactivo y salgo de la subfunción y de la función pint
         jr      pin4
 
+inca    dec     h
+        ld      (score-1), hl
+        ld      (score-3), hl
+;        ld      (iy+desc+1-$4000), map-1 & 255
+        ld      hl, map-1
+        ld      (desc+1), hl
+        ld      hl, velo+1
+        ld      (hl), 13
+
+nxtl    ld      de, screen+11*20-1
+desc      ld      hl, map-1 ;& 255
+desc1   ld      bc, $8000       ; marker bit
+desc2   xor     a
+desc3   call    gbit            ; load bitsym bits (literal)
+        ld      a, $08
+        jr      z, desc4
+        dec a;ld      a, $9b
+desc4   ld      (de), a         ; write literal
+desc5   dec     e               ; test end of file (map is always 150 bytes)
+        jr      z, tutia
+        call    gbit            ; read one bit
+        rra
+        jr      nc, desc2       ; test if literal or sequence
+        xor     a
+        call    gbitd           ; get two bits
+        jr      z, desc9        ; 00 = 1
+        dec     a
+        call    gbit
+        jr      z, desc8        ; 010 = -11
+        call    gbitd           ; [011, 100, 101, 110, 111] xx
+        sub     13
+        jr      z, desc5
+desc8   add     a, 10
+desc9   inc     a
+        push    de
+        ld      d, c
+        ld      e, a
+        xor     a
+        inc     a
+        defb    $da
+desc6   call    gbit            ; (Elias gamma coding)
+        call    gbit
+        rra
+        jr      nc, desc6       ; check end marker
+        inc     a               ; adjust length
+        ld      c, a            ; save lenth to c
+        ld      a, b            ; save b (byte reading) on a
+        ld      b, d            ; b= 0 because lddr moves bc bytes
+        ex      (sp), hl        ; store source, restore destination
+        ex      de, hl          ; HL = destination + offset + 1
+        add     hl, de          ; DE = destination
+        lddr
+        pop     hl              ; restore source address (compressed data)
+        ld      b, a            ; restore b register
+        inc     e               ; prepare test of end of file
+        jr      desc5           ; jump to main loop
+
+tutia  xor     a
+        call    gbitd
+        ld      (iy+desc1+2-$4000), b
+        ld      (desc+1), hl
+        ld      b, 2
+       ld      hl, velo+1 ;&255
+ripi    rrca
+        jr      nc, ndvel
+        dec     (hl)
+ndvel   ld      c, (hl)
+    ; dec     h
+      ld  h, $40
+        ld      l, b
+        djnz    ripi
+        ld      (hl), c
+
+; Rutina que se ejecuta cada vez
+; que una pieza toca el suelo y
+; antes de generar una pieza nueva
+tutin   ld      a, (LAST_K+1)
+        inc     a
+        jr      nz, tutin
+
 tlin    ld      hl, screen+20*11  ; Parto desde una coordenada (31, 21) que es la parte inferior derecha de la pantalla
 tli1    ex      de, hl          ; Almaceno posición en DE
         ld      a, 8            ; Pongo A a cero (lo usaré en la instrucción CPIR)
@@ -177,11 +253,23 @@ leep    add     a, tabla-1&255
 ;        ld      c, 8         ; Pongo C a un valor mayor de 4 con los bits 1 y 2 a cero (que indican que entro en el bucle principal desde nueva pieza)
         ret
 nnwp    lddr                    ; Hago el corrimiento de líneas
-;        rrc     (iy-$3e)        ; Esto me permite aumentar el nivel de velocidad cada 8 líneas completadas
-;        jr      nc, tlin
-;        dec     (iy+velo+1-opc1); Decremento retardo de caída de piezas (aumento por tanto la velocidad)
-        jr      tlin            ; Cierro bucle
-
+        ld      hl, score
+        ld      a, 6
+        call    incr
+        inc     (iy+1)
+        jr      nz, tlin
+        ld      l, level+1 & 255
+        ld      de, nxtl
+        push    de
+incrr   dec     l
+inc1    ld      a, 1
+incr    add     a, (hl)
+        cp      28+10
+        ld      (hl), a
+        ret     c
+        sub     10
+        ld      (hl), a
+        jr      incrr
 
 ; Bucle principal del juego
 
@@ -259,17 +347,21 @@ rot1    add     hl, hl          ; Desplazo 4 veces HL a la izquierda
         ld      l, c
         jr      tloo            ; Salto al bucle principal (con indicador de pieza no acelerada)
 
+        incbin  maptetris.bin
+map
 
         block   $4300-44-$, $fe
 
 dfile   defb    _NL
         defb    _L,_E,_V,_E,_L,_SP,_SP,_SP,_SP,_SP
         defb    _NL
-        defb    _SP,_SP,_SP,_SP,_1,_SP,_SP,_SP,_SP,_SP
+        defb    _SP,_SP,_SP,_SP,_0
+level   defb    _1,_SP,_SP,_SP,_SP
         defb    _NL
         defb    _S,_C,_O,_R,_E,_SP,_SP,_SP,_SP,_SP
         defb    _NL
-        defb    _SP,_SP,_SP,_SP,_0,_SP,_SP,_SP,_SP,_SP
+        defb    _SP,_0,_0,_0,_0
+score   defb    _0,_SP,_SP,_SP,_SP
 screen  defb    _NL
     .10 defb    8
         defb    _NL
