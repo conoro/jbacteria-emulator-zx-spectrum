@@ -122,7 +122,7 @@ Optimal* optimize(unsigned char *input_data, size_t input_size){
     matches[match_index].next= &match_slots[i];
   }
   free(match_slots);
- printf("size %d\n", optimal[input_size-1].bits);
+ printf("size %d bits (%.3f bytes)\n", optimal[input_size-1].bits, (float)optimal[input_size-1].bits/8 );
   return optimal;
 }
 
@@ -161,7 +161,7 @@ unsigned char *compress(Optimal *optimal, unsigned char *input_data,
     input_prev= input_index - (optimal[input_index].len > 0 ? optimal[input_index].len : 1),
     optimal[input_prev].bits= input_index,
     input_index= input_prev;
-  write_bit(input_data[++input_index]);
+  write_bit(input_data[++input_index]^1);
   while ( (input_index = optimal[input_index].bits) > 0 )
     if( optimal[input_index].len == 0 ){
  printf("lit %d\n", input_data[input_index]);
@@ -174,7 +174,7 @@ unsigned char *compress(Optimal *optimal, unsigned char *input_data,
         write_bit(1);
       else
         write_bit(0),
-        write_bit(input_data[input_index]);
+        write_bit(input_data[input_index]^1);
     }
     else{
       write_bit(1);
@@ -224,33 +224,27 @@ void main(void){
     fgets(tmpstr, 1000, fi);
   }
   fgets(tmpstr, 1000, fi);
-  token= (char *) strtok(tmpstr, ",");
-  while ( token != NULL ){
-    if( tmpi= atoi(token) )
-      mem[size++]= tmpi-1;
-    token= (char *) strtok(NULL, ",");
-  }
-  fgets(tmpstr, 1000, fi);
   while ( !strstr(tmpstr, "/layer") ){
     token= (char *) strtok(tmpstr, ",");
     while ( token != NULL ){
       tmpi= atoi(token);
-      if( tmpi && tmpi<4 )
+      if( tmpi )
         mem[size++]= tmpi-1;
       token= (char *) strtok(NULL, ",");
     }
     fgets(tmpstr, 1000, fi);
   }
-  out= (unsigned char *) malloc (22000);
+  out= (unsigned char *) malloc (size);
   for ( tmpi= i= 0; i<10; i++ )
     for ( j= 0; j<10; j++ )
       for ( k= 0; k<20; k++ )
         for ( l= 0; l<11; l++ )
-          out[tmpi++]= mem[i*2200+j*11+k*110+l];
-  for ( i= 0; i<size>>1; i++ )
+          out[tmpi++]= mem[i*2240+j*11+k*110+l];
+
+  for ( i= 0; i<tmpi>>1; i++ )
     tmpchar= out[i],
-    out[i]= out[size-1-i],
-    out[size-1-i]= tmpchar;
+    out[i]= out[tmpi-1-i],
+    out[tmpi-1-i]= tmpchar;
   free(mem);
   fgets(tmpstr, 1000, fi);
   while ( !feof(fi) )
@@ -260,16 +254,14 @@ void main(void){
   fo= fopen("maptetris.bin", "wb+");
   output_index= 0;
   bit_mask= 0;
-
   for ( i= 99; i; i-- ){
     input_data= out+i*220;
     if( i==99 || !empty(input_data= out+i*220) )
+  printf("\nlevel %02d, ", 100-i ),
       compress(optimize(input_data, 220), input_data, 220),
-      write_bit(1),
-      write_bit(1),
-  printf("end %d\n\n", output_index);
+      write_bit(mem[((99-i)/10)*2240+((99-i)%10)*4+2202]-3),
+      write_bit(mem[((99-i)/10)*2240+((99-i)%10)*4+2203]-3);
   }
-
   for ( k= 0; k<output_index>>1; k++ )
     tmpchar= output_data[k],
     output_data[k]= output_data[output_index-1-k],

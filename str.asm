@@ -1,41 +1,41 @@
         output  str.p
         define  _SP     $00
         define  _0      $1c
-        define  _1      $1d
-        define  _2      $1e
-        define  _3      $1f
-        define  _4      $20
-        define  _5      $21
-        define  _6      $22
-        define  _7      $23
-        define  _8      $24
-        define  _9      $25
-        define  _A      $26
-        define  _B      $27
-        define  _C      $28
-        define  _D      $29
-        define  _E      $2a
-        define  _F      $2b
-        define  _G      $2c
-        define  _H      $2d
-        define  _I      $2e
-        define  _J      $2f
-        define  _K      $30
-        define  _L      $31
-        define  _M      $32
-        define  _N      $33
-        define  _O      $34
-        define  _P      $35
-        define  _Q      $36
-        define  _R      $37
-        define  _S      $38
-        define  _T      $39
-        define  _U      $3a
-        define  _V      $3b
-        define  _W      $3c
-        define  _X      $3d
-        define  _Y      $3e
-        define  _Z      $3f
+        define  _1      _0+1
+        define  _2      _1+1
+        define  _3      _2+1
+        define  _4      _3+1
+        define  _5      _4+1
+        define  _6      _5+1
+        define  _7      _6+1
+        define  _8      _7+1
+        define  _9      _8+1
+        define  _A      _9+1
+        define  _B      _A+1
+        define  _C      _B+1
+        define  _D      _C+1
+        define  _E      _D+1
+        define  _F      _E+1
+        define  _G      _F+1
+        define  _H      _G+1
+        define  _I      _H+1
+        define  _J      _I+1
+        define  _K      _J+1
+        define  _L      _K+1
+        define  _M      _L+1
+        define  _N      _M+1
+        define  _O      _N+1
+        define  _P      _O+1
+        define  _Q      _P+1
+        define  _R      _Q+1
+        define  _S      _R+1
+        define  _T      _S+1
+        define  _U      _T+1
+        define  _V      _U+1
+        define  _W      _V+1
+        define  _X      _W+1
+        define  _Y      _X+1
+        define  _Z      _Y+1
         define  _NL     $76
 
         org     $4009
@@ -46,8 +46,6 @@ D_FILE  defw    dfile
 
 inic    call    $02bb
         inc     l
-;        ld      a, (LAST_K+1)
-;        inc     a
         jr      z, inic
 
 E_LINE  defw    eline
@@ -83,7 +81,7 @@ tabla
                                       ;ooo-
         db      %01101100       ;-oo-
                                 ;oo--
-        db      %10001110             ;o---
+CDFLAG  db      %10001110             ;o---
                                       ;ooo-
         db      %11000110       ;oo--
                                 ;-oo-
@@ -125,22 +123,19 @@ opc2    ld      a, (de)         ; Leo el color (en A) de la posición actual (de
         jr      pin4
 
 inca    dec     h
-        ld      (score-1), hl
-        ld      (score-3), hl
-;        ld      (iy+desc+1-$4000), map-1 & 255
+        ld      (score-2), hl
+        ld      (score-4), hl
         ld      hl, map-1
         ld      (desc+1), hl
         ld      hl, velo+1
         ld      (hl), 13
 
 nxtl    ld      de, screen+11*20-1
-desc      ld      hl, map-1 ;& 255
+desc    ld      hl, map-1
 desc1   ld      bc, $8000       ; marker bit
 desc2   xor     a
 desc3   call    gbit            ; load bitsym bits (literal)
-        ld      a, $08
-        jr      z, desc4
-        dec a;ld      a, $9b
+        add     a, 7
 desc4   ld      (de), a         ; write literal
 desc5   dec     e               ; test end of file (map is always 150 bytes)
         jr      z, tutia
@@ -181,18 +176,17 @@ desc6   call    gbit            ; (Elias gamma coding)
         inc     e               ; prepare test of end of file
         jr      desc5           ; jump to main loop
 
-tutia  xor     a
+tutia   xor     a
         call    gbitd
         ld      (iy+desc1+2-$4000), b
         ld      (desc+1), hl
         ld      b, 2
-       ld      hl, velo+1 ;&255
+        ld      hl, velo+1
 ripi    rrca
         jr      nc, ndvel
         dec     (hl)
 ndvel   ld      c, (hl)
-    ; dec     h
-      ld  h, $40
+        ld      h, $40
         ld      l, b
         djnz    ripi
         ld      (hl), c
@@ -218,8 +212,9 @@ tli1    ex      de, hl          ; Almaceno posición en DE
         ld      c, l
         bit     0, h
         jr      nz, nnwp         ; Si me salgo de la zona de atributos es que ya he llegado a la primera línea y por tanto salgo del bucle (a generar una nueva pieza)
+        ld      d, h
         sbc     hl, hl
-        ld      de, dfile+4*11-1
+        ld      e, h
         call    pint
 rand    ld      a, (FRAMES)
         and     7
@@ -238,33 +233,23 @@ leep    add     a, tabla-1&255
         add     a, 156-tabla+1&255
         ld      (mico+1), a     ; Guardo color generado en A'
         ld      h, tabla>>8     ; Posición alta de la tabla de piezas
-        ld      c, h         ; Pongo C a un valor mayor de 4 con los bits 1 y 2 a cero (que indican que entro en el bucle principal desde nueva pieza)
+        ld      c, h            ; Pongo C a un valor mayor de 4 con los bits 1 y 2 a cero (que indican que entro en el bucle principal desde nueva pieza)
         ld      l, (hl)         ; Leo byte de la tabla de piezas
-        ld      h, b            ; Pongo H a cero, con lo que inicialmente la pieza (almacenada en HL) contiene algo así 00000000XXXXXXXX
         add     hl, hl
         add     hl, hl
         add     hl, hl
         add     hl, hl
         ret
-nnwp    ld      a, l
-        ld      (punt+1), a
-        lddr                    ; Hago el corrimiento de líneas
-        ld      hl, score
-        ld      a, (iy)
-        sla     (iy)
+nnwp    lddr                    ; Hago el corrimiento de líneas
+        ld      h, $40
+        ld      a, (hl)
+        sla     (hl)
+        ld      hl, score-1
         call    incr
         inc     (iy+1)
         jr      nz, tlin
         ld      de, nxtl
         push    de
-punt    ld      a, 0
-calc    sub     21
-        inc     b
-        jr      nc, calc
-        ld      a, b
-        ld      l, score & 255
-        call    incr
-
         ld      l, level+1 & 255
 incrr   dec     l
 inc1    ld      a, 1
@@ -283,7 +268,7 @@ loop    set     1, (iy+copc+1-$4000)
         res     1, (iy+copc+1-$4000)
         jr      z, ncol         ; Si no hay colisión, salto a ncol
         bit     2, c            ; Compruebo si en punto de entrada del bucle es haber
-       jp      z, inic         ; generado la pieza, en tal caso (con una colisión nada más generar la pieza) reinicio el juego
+        jp      z, inic         ; generado la pieza, en tal caso (con una colisión nada más generar la pieza) reinicio el juego
         pop     hl              ; Si hay colisión, recupero los valores de posición
         pop     de              ; y pieza anteriores a la colisión
         inc     c               ; Señalizo la colisión poniendo a 1 el bit 1 del registro C
@@ -291,7 +276,7 @@ ncol    ld      sp, $43fe       ; Equilibro la pila, ya que la estaba desequilib
 mico    ld      a, 0
         call    pint            ; pinto la pieza
         bit     1, c            ; Compruebo si ha habido colisión (del tipo colisión contra el suelo, no vale contra paredes ni tras rotar)
-       jp      nz, tutin       ; Salto a tlin en caso de ese tipo de colisión
+        jp      nz, tutin       ; Salto a tlin en caso de ese tipo de colisión
         push    de              ; Guardo posición en pila
         push    hl              ; Guardo pieza en pila
 rkey    ld      a, (FRAMES)     ; Leo contador de frames
@@ -409,18 +394,10 @@ screen  defb    _NL
         defb    _V,_I,_L,_L,_E,_N,_A,_SP,_1,_4
         defb    _NL
 
-        display /D, $-$4000
-        block   $43fc-$, $fe
+        block   $43fc-$
         defw    inic
 
 ; Start of the variables area used by BASIC.
         nop
         defb    $80
 eline
-
-
-; 1234567890
-; level oooo
-;       oooo
-; score oooo
-;       oooo
