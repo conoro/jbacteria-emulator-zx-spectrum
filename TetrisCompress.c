@@ -265,8 +265,8 @@ void main(void){
     input_data= out+i*220;
     if( i==99 || !empty(input_data= out+i*220) )
       compress(optimize(input_data, 220), input_data, 220),
-      write_bit(0),
-      write_bit(0),
+      write_bit(1),
+      write_bit(1),
   printf("end %d\n\n", output_index);
   }
 

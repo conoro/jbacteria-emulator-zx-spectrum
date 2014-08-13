@@ -203,6 +203,7 @@ ndvel   ld      c, (hl)
 tutin   ld      a, (LAST_K+1)
         inc     a
         jr      nz, tutin
+        ld      (iy), 1
 
 tlin    ld      hl, screen+20*11  ; Parto desde una coordenada (31, 21) que es la parte inferior derecha de la pantalla
 tli1    ex      de, hl          ; Almaceno posición en DE
@@ -214,16 +215,10 @@ tli1    ex      de, hl          ; Almaceno posición en DE
         cpir                    ; lo detecto activando el flag Z tras la instrucción CPIR
         pop     hl              ; Recupero HL, ya que CPIR modifica su valor
         jr      z, tli1         ; Bucle que voy repitiendo (probando con líneas que están por encima) hasta detectar una falsa línea completa en la ROM (debajo de $4000)
-;        ld      a, l
-;        sub     screen & 255
-;        ld      c, a
         ld      c, l
         bit     0, h
-;        ld      a, h
-;        sbc     a, screen >> 8
         jr      nz, nnwp         ; Si me salgo de la zona de atributos es que ya he llegado a la primera línea y por tanto salgo del bucle (a generar una nueva pieza)
-        ;ld hl,  $ffff
-       sbc     hl, hl
+        sbc     hl, hl
         ld      de, dfile+4*11-1
         call    pint
 rand    ld      a, (FRAMES)
@@ -243,24 +238,34 @@ leep    add     a, tabla-1&255
         add     a, 156-tabla+1&255
         ld      (mico+1), a     ; Guardo color generado en A'
         ld      h, tabla>>8     ; Posición alta de la tabla de piezas
-       ld      c, h         ; Pongo C a un valor mayor de 4 con los bits 1 y 2 a cero (que indican que entro en el bucle principal desde nueva pieza)
+        ld      c, h         ; Pongo C a un valor mayor de 4 con los bits 1 y 2 a cero (que indican que entro en el bucle principal desde nueva pieza)
         ld      l, (hl)         ; Leo byte de la tabla de piezas
         ld      h, b            ; Pongo H a cero, con lo que inicialmente la pieza (almacenada en HL) contiene algo así 00000000XXXXXXXX
         add     hl, hl
         add     hl, hl
         add     hl, hl
         add     hl, hl
-;        ld      c, 8         ; Pongo C a un valor mayor de 4 con los bits 1 y 2 a cero (que indican que entro en el bucle principal desde nueva pieza)
         ret
-nnwp    lddr                    ; Hago el corrimiento de líneas
+nnwp    ld      a, l
+        ld      (punt+1), a
+        lddr                    ; Hago el corrimiento de líneas
         ld      hl, score
-        ld      a, 6
+        ld      a, (iy)
+        sla     (iy)
         call    incr
         inc     (iy+1)
         jr      nz, tlin
-        ld      l, level+1 & 255
         ld      de, nxtl
         push    de
+punt    ld      a, 0
+calc    sub     21
+        inc     b
+        jr      nc, calc
+        ld      a, b
+        ld      l, score & 255
+        call    incr
+
+        ld      l, level+1 & 255
 incrr   dec     l
 inc1    ld      a, 1
 incr    add     a, (hl)
@@ -277,10 +282,10 @@ loop    set     1, (iy+copc+1-$4000)
         call    pint            ; Llamo a la función pint para testear la pieza (con -1 ahorro un byte porque PUSH DE coincide con el último byte de la instrucción anterior)
         res     1, (iy+copc+1-$4000)
         jr      z, ncol         ; Si no hay colisión, salto a ncol
-        pop     hl              ; Si hay colisión, recupero los valores de posición
-        pop     de              ; y pieza anteriores a la colisión
         bit     2, c            ; Compruebo si en punto de entrada del bucle es haber
        jp      z, inic         ; generado la pieza, en tal caso (con una colisión nada más generar la pieza) reinicio el juego
+        pop     hl              ; Si hay colisión, recupero los valores de posición
+        pop     de              ; y pieza anteriores a la colisión
         inc     c               ; Señalizo la colisión poniendo a 1 el bit 1 del registro C
 ncol    ld      sp, $43fe       ; Equilibro la pila, ya que la estaba desequilibrando con muchos PUSH HL,DE y un sólo POP HL,DE
 mico    ld      a, 0
@@ -363,45 +368,45 @@ level   defb    _1,_SP,_SP,_SP,_SP
         defb    _SP,_0,_0,_0,_0
 score   defb    _0,_SP,_SP,_SP,_SP
 screen  defb    _NL
-    .10 defb    8
+        defb    8,8,8,8,8,8,8,8,8,8
+        defb    _NL
+        defb    8,$08,$80,$84,$03,$07,$80,$84,$80,8
+        defb    _NL
+        defb    8,$08,$80,$86,$00,$06,$82,$05,$80,8
+        defb    _NL
+        defb    8,$80,$07,$05,$83,$85,$03,$07,$84,8
+        defb    _NL
+        defb    8,$80,$00,$80,$00,$80,$87,$82,$81,8
+        defb    _NL
+        defb    8,$80,$04,$06,$03,$86,$85,$05,$80,8
+        defb    _NL
+        defb    8,$80,$80,$01,$00,$02,$80,$05,$80,8
+        defb    _NL
+        defb    8,$08,$80,$83,$04,$00,$80,$05,$80,8
+        defb    _NL
+        defb    8,$08,$80,$83,$80,$03,$80,$82,$80,8
         defb    _NL
     .10 defb    8
         defb    _NL
-    .10 defb    8
+        defb    8,$08,$08,$00,$83,$83,$04,$08,$08,8
+        defb    _NL
+        defb    8,$08,$00,$81,$81,$81,$80,$04,$08,8
+        defb    _NL
+        defb    8,$08,$00,$07,$04,$06,$80,$05,$08,8
+        defb    _NL
+        defb    8,$08,$00,$82,$83,$83,$80,$80,$04,8
+        defb    _NL
+        defb    8,$00,$06,$84,$83,$81,$80,$80,$05,8
+        defb    _NL
+        defb    8,$02,$00,$85,$07,$03,$80,$05,$05,8
+        defb    _NL
+        defb    8,$08,$00,$03,$03,$02,$03,$01,$01,8
         defb    _NL
     .10 defb    8
         defb    _NL
-    .10 defb    8
+        defb    _B,_Y,_SP,_A,_N,_T,_O,_N,_I,_O
         defb    _NL
-    .10 defb    8
-        defb    _NL
-    .10 defb    8
-        defb    _NL
-    .10 defb    8
-        defb    _NL
-    .10 defb    8
-        defb    _NL
-    .10 defb    8
-        defb    _NL
-    .10 defb    8
-        defb    _NL
-    .10 defb    8
-        defb    _NL
-    .10 defb    8
-        defb    _NL
-    .10 defb    8
-        defb    _NL
-    .10 defb    8
-        defb    _NL
-    .10 defb    8
-        defb    _NL
-    .10 defb    8
-        defb    _NL
-    .10 defb    8
-        defb    _NL
-    .10 defb    8
-        defb    _NL
-    .10 defb    8
+        defb    _V,_I,_L,_L,_E,_N,_A,_SP,_1,_4
         defb    _NL
 
         display /D, $-$4000
