@@ -28,7 +28,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define MAX_OFFSET   21
+#define MAX_OFFSET   22
 #define MAX_LEN   65536
 
 unsigned char *output_data;
@@ -93,7 +93,7 @@ Optimal* optimize(unsigned char *input_data, size_t input_size){
         ; match->next != NULL && best_len < MAX_LEN
         ; match= match->next){
       offset= i - match->next->index;
-      if( offset > MAX_OFFSET ){
+      if( offset > MAX_OFFSET || offset==12 ){
         match->next = NULL;
         break;
       }
@@ -188,7 +188,7 @@ unsigned char *compress(Optimal *optimal, unsigned char *input_data,
         write_bit(1),
         write_bit(0);
       else
-        offset1+= 11,
+        offset1+= 11+(offset1<10?0:1),
         write_bit(offset1&16),
         write_bit(offset1&8),
         write_bit(offset1&4),
