@@ -1,4 +1,4 @@
-        output  str.p
+        output  unkatris.p
         define  _SP     $00
         define  _0      $1c
         define  _1      _0+1
@@ -127,8 +127,7 @@ inca    dec     h
         ld      (score+6-4), hl
         ld      hl, map-1
         ld      (desc+1), hl
-        ld      hl, velo+1
-        ld      (hl), 13
+        ld      (iy+3), 13
 
 nxtl    ld      de, screen+11*20-1
 desc    ld      hl, map-1
@@ -181,15 +180,14 @@ tutia   xor     a
         call    gbitd
         ld      (iy+desc1+2-$4000), b
         ld      (desc+1), hl
-        ld      b, 2
-        ld      hl, velo+1
-ripi    rrca
+        ld      b, 3
+        ld      h, $40
+ripi    ld      c, (hl)
+        ld      l, b
+        rrca
         jr      nc, ndvel
         dec     (hl)
-ndvel   ld      c, (hl)
-        ld      h, $40
-        ld      l, b
-        djnz    ripi
+ndvel   djnz    ripi
         ld      (hl), c
 
 ; Rutina que se ejecuta cada vez
@@ -282,7 +280,7 @@ mico    ld      a, 0
         push    hl              ; Guardo pieza en pila
 rkey    ld      a, (FRAMES)     ; Leo contador de frames
 time    sub     0               ; Comparo con referencia (valor de frames que tenía la pieza antes de descender)
-velo    add     a, 13           ; Aplico un retardo (número de frames que tarda la pieza en descender)
+velo    add     a, (iy+3)       ; Aplico un retardo (número de frames que tarda la pieza en descender)
         jr      z, salt         ; Si se agota el tiempo, la pieza cae por gravedad, salto a "salt"
         ld      a, (LAST_K+1)
         inc     a
@@ -338,7 +336,7 @@ rot1    add     hl, hl          ; Desplazo 4 veces HL a la izquierda
         ld      l, c
         jr      tloo            ; Salto al bucle principal (con indicador de pieza no acelerada)
 
-        incbin  maptetris.bin
+        incbin  unkatris.bin
 map
 
         block   $4300-44-$, $fe

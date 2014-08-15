@@ -188,7 +188,7 @@ unsigned char *compress(Optimal *optimal, unsigned char *input_data,
         write_bit(1),
         write_bit(0);
       else
-        offset1+= 11+(offset1<10?0:1),
+        offset1+= 11-(offset1<10?0:1),
         write_bit(offset1&16),
         write_bit(offset1&8),
         write_bit(offset1&4),
@@ -218,8 +218,8 @@ void main(void){
   char *fou, *token, tmpstr[1000];
   FILE *fi, *fo;
   mem= (unsigned char *) malloc (0x10000);
-  printf( "\nTetrisCompress v1.12b, by Antonio Villena, 11 Aug 2014\n\n");
-  fi= fopen("tetris.tmx", "r");
+  printf( "\nUnkatrisCompress v1.12b, by Antonio Villena, 15 Aug 2014\n\n");
+  fi= fopen("unkatris.tmx", "r");
   while ( !feof(fi) && !strstr(tmpstr, "data e") ){
     fgets(tmpstr, 1000, fi);
   }
@@ -251,7 +251,7 @@ void main(void){
     fgets(tmpstr, 1000, fi);
   fclose(fi);
   output_data= (unsigned char *) malloc (10000);
-  fo= fopen("maptetris.bin", "wb+");
+  fo= fopen("unkatris.bin", "wb+");
   output_index= 0;
   bit_mask= 0;
   for ( i= 99; i; i-- ){
