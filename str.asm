@@ -52,7 +52,7 @@ E_LINE  defw    eline
 
         ld      (iy+2), c
         ld      hl, $1d1c
-        ld      (level-1), hl
+        ld      (level+6-1), hl
         ld      (iy+desc1+2-$4000), $80
         jr      inca
 
@@ -123,8 +123,8 @@ opc2    ld      a, (de)         ; Leo el color (en A) de la posición actual (de
         jr      pin4
 
 inca    dec     h
-        ld      (score-2), hl
-        ld      (score-4), hl
+        ld      (score+6-2), hl
+        ld      (score+6-4), hl
         ld      hl, map-1
         ld      (desc+1), hl
         ld      hl, velo+1
@@ -134,9 +134,9 @@ nxtl    ld      de, screen+11*20-1
 desc    ld      hl, map-1
 desc1   ld      bc, $8000       ; marker bit
 desc2   xor     a
-desc3   call    gbit            ; load bitsym bits (literal)
+        call    gbit            ; load bitsym bits (literal)
         add     a, 7
-desc4   ld      (de), a         ; write literal
+        ld      (de), a         ; write literal
 desc5   dec     e               ; test end of file (map is always 150 bytes)
         jr      z, tutia
         call    gbit            ; read one bit
@@ -151,7 +151,8 @@ desc5   dec     e               ; test end of file (map is always 150 bytes)
         call    gbitd           ; [011, 100, 101, 110, 111] xx
         sub     13
         jr      z, desc5
-desc8   add     a, 10
+        ccf
+desc8   adc     a, 10
 desc9   inc     a
         push    de
         ld      d, c
@@ -244,13 +245,13 @@ nnwp    lddr                    ; Hago el corrimiento de líneas
         ld      h, $40
         ld      a, (hl)
         sla     (hl)
-        ld      hl, score-1
+        ld      hl, score+6-1
         call    incr
         inc     (iy+1)
         jr      nz, tlin
         ld      de, nxtl
         push    de
-        ld      l, level+1 & 255
+        ld      l, level+6+1 & 255
 incrr   dec     l
 inc1    ld      a, 1
 incr    add     a, (hl)
@@ -342,56 +343,30 @@ map
 
         block   $4300-44-$, $fe
 
-dfile   defb    _NL
-        defb    _L,_E,_V,_E,_L,_SP,_SP,_SP,_SP,_SP
-        defb    _NL
-        defb    _SP,_SP,_SP,_SP,_0
-level   defb    _1,_SP,_SP,_SP,_SP
-        defb    _NL
-        defb    _S,_C,_O,_R,_E,_SP,_SP,_SP,_SP,_SP
-        defb    _NL
-        defb    _SP,_0,_0,_0,_0
-score   defb    _0,_SP,_SP,_SP,_SP
-screen  defb    _NL
-        defb    8,8,8,8,8,8,8,8,8,8
-        defb    _NL
-        defb    8,$08,$80,$84,$03,$07,$80,$84,$80,8
-        defb    _NL
-        defb    8,$08,$80,$86,$00,$06,$82,$05,$80,8
-        defb    _NL
-        defb    8,$80,$07,$05,$83,$85,$03,$07,$84,8
-        defb    _NL
-        defb    8,$80,$00,$80,$00,$80,$87,$82,$81,8
-        defb    _NL
-        defb    8,$80,$04,$06,$03,$86,$85,$05,$80,8
-        defb    _NL
-        defb    8,$80,$80,$01,$00,$02,$80,$05,$80,8
-        defb    _NL
-        defb    8,$08,$80,$83,$04,$00,$80,$05,$80,8
-        defb    _NL
-        defb    8,$08,$80,$83,$80,$03,$80,$82,$80,8
-        defb    _NL
-    .10 defb    8
-        defb    _NL
-        defb    8,$08,$08,$00,$83,$83,$04,$08,$08,8
-        defb    _NL
-        defb    8,$08,$00,$81,$81,$81,$80,$04,$08,8
-        defb    _NL
-        defb    8,$08,$00,$07,$04,$06,$80,$05,$08,8
-        defb    _NL
-        defb    8,$08,$00,$82,$83,$83,$80,$80,$04,8
-        defb    _NL
-        defb    8,$00,$06,$84,$83,$81,$80,$80,$05,8
-        defb    _NL
-        defb    8,$02,$00,$85,$07,$03,$80,$05,$05,8
-        defb    _NL
-        defb    8,$08,$00,$03,$03,$02,$03,$01,$01,8
-        defb    _NL
-    .10 defb    8
-        defb    _NL
-        defb    _B,_Y,_SP,_A,_N,_T,_O,_N,_I,_O
-        defb    _NL
-        defb    _V,_I,_L,_L,_E,_N,_A,_SP,_1,_4
+dfile   defb    _NL,49,42,59,42,49,0,135,131,131,4
+level   defb    _NL,0,0,0,0,0,0,133,30,28,5
+        defb    _NL,56,40,52,55,42,0,133,29,32,5
+score   defb    _NL,0,0,0,0,0,28,2,3,3,1
+screen  defb    _NL,132,4,0,27,0,5,0,0,132,1
+        defb    _NL,131,0,0,0,0,5,27,0,135,129
+        defb    _NL,5,0,27,0,0,5,0,27,0,131
+        defb    _NL,4,0,0,27,133,132,27,0,0,3
+        defb    _NL,132,27,0,0,129,133,131,131,0,133
+        defb    _NL,0,0,135,0,5,0,0,133,0,133
+        defb    _NL,27,0,133,0,5,133,0,129,4,27
+        defb    _NL,0,0,133,3,1,129,4,5,5,0
+        defb    _NL,0,0,7,5,0,5,5,1,132,0
+        defb    _NL,0,7,5,5,0,5,5,0,133,0
+        defb    _NL,133,1,1,1,0,0,0,0,2,5
+        defb    _NL,2,137,137,137,137,137,137,137,137,1
+        defb    _NL,0,4,4,4,135,135,135,135,131,0
+        defb    _NL,0,5,5,7,129,133,6,133,129,0
+        defb    _NL,0,130,5,5,133,133,133,133,133,0
+        defb    _NL,0,135,131,0,131,135,135,131,0,0
+        defb    _NL,136,0,5,2,129,133,133,131,0,136
+        defb    _NL,136,0,5,133,133,133,135,129,0,136
+        defb    _NL,39,62,0,38,51,57,52,51,46,52
+        defb    _NL,22,22,0,59,46,49,49,42,51,38
         defb    _NL
 
         block   $43fc-$
