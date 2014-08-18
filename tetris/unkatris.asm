@@ -1,19 +1,25 @@
-        output  unkatris.p
-        org     $4009
+        output  unkatris.bin
+        org     $4000
 
-VERSN   defb    1, 0, 0
-D_FILE  defw    dfile
+multi   defb    0       ; temporal para multiplicar por 2 los puntos en multilíneas
+lncnt   defb    $80     ; temporal que lleva la cuenta de líneas que faltan
+lnini   defb    0       ; variable que lleva la cuenta inicial de líneas que faltan
+speed   defb    0       ; variable que lleva la velocidad de caída de la pieza
 
 inic    call    $02bb
+        ld      (iy+2), c       ; lnini
         inc     l
+        defb    $21
+D_FILE  defw    dfile
         jr      z, inic
+        ld      (iy+3), 13      ; speed
 
-E_LINE  defw    eline
-
-        ld      (iy+2), c
+E_LINE  defw    $4401           ; ld bc, $8044
+        defb    $80
+        ld      (iy+desc1+2-$4000), b
+        ld      hl, map-1
+        ld      (desc+1), hl
         ld      hl, $1d1c
-        ld      (level+6-1), hl
-        ld      (iy+desc1+2-$4000), $80
         jr      inca
 
 LAST_K  defw    $ffff
@@ -82,12 +88,10 @@ opc2    ld      a, (de)         ; Leo el color (en A) de la posición actual (de
         pop     de              ; Si no es negro, hay colisión, lo indico con carry Z desactivo y salgo de la subfunción y de la función pint
         jr      pin4
 
-inca    dec     h
+inca    ld      (level+6-1), hl
+        dec     h
         ld      (score+6-2), hl
         ld      (score+6-4), hl
-        ld      hl, dfile-1
-        ld      (desc+1), hl
-        ld      (iy+3), 13
 
 nxtl    ld      de, screen+11*20-1
 desc    ld      hl, 0
@@ -108,7 +112,7 @@ desc5   dec     e               ; test end of file (map is always 150 bytes)
         call    gbit
         jr      z, desc8        ; 010 = -11
         call    gbitd           ; [011, 100, 101, 110, 111] xx
-        sub     0
+        sub     13
         jr      z, desc5
         ccf
 desc8   adc     a, 10
@@ -146,9 +150,9 @@ ripi    ld      c, (hl)
         ld      l, b
         rrca
         jr      nc, ndvel
-        dec     (hl)
+        dec     (hl)            ; lnini, speed
 ndvel   djnz    ripi
-        ld      (hl), c
+        ld      (hl), c         ; lncnt
 
 ; Rutina que se ejecuta cada vez
 ; que una pieza toca el suelo y
@@ -156,7 +160,7 @@ ndvel   djnz    ripi
 tutin   ld      a, (LAST_K+1)
         inc     a
         jr      nz, tutin
-        ld      (iy), 1
+        ld      (iy), 1         ; multi
 
 tlin    ld      hl, screen+20*11  ; Parto desde una coordenada (31, 21) que es la parte inferior derecha de la pantalla
 tli1    ex      de, hl          ; Almaceno posición en DE
@@ -182,8 +186,8 @@ rand    ld      a, (FRAMES)
         call    pint
         sub     156
         ld      l, a
-        ld      a, (VERSN)
-        ld      (VERSN), hl
+        ld      a, (lastp)
+        ld      (lastp), hl
         ld      hl, kaka
         push    hl
         ld      de, screen+1+2*11+6 ; La primera pieza parte de la coordenada (x, y)= (6, 2), en el registro DE guardo la posición
@@ -201,11 +205,11 @@ leep    add     a, tabla-1&255
         ret
 nnwp    lddr                    ; Hago el corrimiento de líneas
         ld      h, $40
-        ld      a, (hl)
+        ld      a, (hl)         ; multi
         sla     (hl)
         ld      hl, score+6-1
         call    incr
-        inc     (iy+1)
+        inc     (iy+1)          ; lncnt
         jr      nz, tlin
         ld      de, nxtl
         push    de
@@ -240,7 +244,7 @@ mico    ld      a, 0
         push    hl              ; Guardo pieza en pila
 rkey    ld      a, (FRAMES)     ; Leo contador de frames
 time    sub     0               ; Comparo con referencia (valor de frames que tenía la pieza antes de descender)
-velo    add     a, (iy+3)       ; Aplico un retardo (número de frames que tarda la pieza en descender)
+velo    add     a, (iy+3)       ; speed Aplico un retardo (número de frames que tarda la pieza en descender)
         jr      z, salt         ; Si se agota el tiempo, la pieza cae por gravedad, salto a "salt"
         ld      a, (LAST_K+1)
         inc     a
@@ -296,7 +300,7 @@ rot1    add     hl, hl          ; Desplazo 4 veces HL a la izquierda
         ld      l, c
         jr      tloo            ; Salto al bucle principal (con indicador de pieza no acelerada)
 
-        incbin  unkatris.bin
+        incbin  unkatris.map
 map
         block   $4300-44-$, $fe
 
@@ -326,8 +330,8 @@ screen  defb    $76,132,4,0,27,0,5,0,0,132,1
         defb    $76,22,22,0,59,46,49,49,42,51,38
         defb    $76
 
-        block   $43fc-$
+lastp   defw    1
+
+        block   $43fe-$
         defw    inic
-        nop
-        defb    $80
-eline
+

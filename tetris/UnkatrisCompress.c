@@ -35,7 +35,7 @@
 
 unsigned char *output_data;
 size_t output_index;
-int bit_mask;
+int bit_mask, total= 0;
 
 typedef struct match_t {
   size_t index;
@@ -125,6 +125,7 @@ Optimal* optimize(unsigned char *input_data, size_t input_size){
   }
   free(match_slots);
  printf("size %d bits (%.3f bytes)\n", optimal[input_size-1].bits, (float)optimal[input_size-1].bits/8 );
+ total+= optimal[input_size-1].bits;
   return optimal;
 }
 
@@ -166,7 +167,7 @@ unsigned char *compress(Optimal *optimal, unsigned char *input_data,
   write_bit(input_data[++input_index]^1);
   while ( (input_index = optimal[input_index].bits) > 0 )
     if( optimal[input_index].len == 0 ){
- printf("lit %d\n", input_data[input_index]);
+      printf("lit %d\n", input_data[input_index]);
       if( input_data[input_index]==2 )
         write_bit(1),
         write_bit(1),
@@ -181,7 +182,7 @@ unsigned char *compress(Optimal *optimal, unsigned char *input_data,
     else{
       write_bit(1);
       offset1= optimal[input_index].offset-1;
- printf("pat %d, %d\n", offset1, optimal[input_index].len);
+      printf("pat %d, %d\n", offset1, optimal[input_index].len);
       if( offset1 == 0)
         write_bit(0),
         write_bit(0);
@@ -253,20 +254,24 @@ void main(void){
     fgets(tmpstr, 1000, fi);
   fclose(fi);
   output_data= (unsigned char *) malloc (10000);
-  fo= fopen("unkatris.bin", "wb+");
+  fo= fopen("unkatris.map", "wb+");
   output_index= 0;
   bit_mask= 0;
   for ( i= 99; i; i-- ){
     input_data= out+i*220;
-    if( i==99 || !empty(input_data= out+i*220) )
-  printf("\nlevel %02d, ", 100-i ),
-      compress(optimize(input_data, 220), input_data, 220),
-      write_bit(mem[((99-i)/10)*2240+((99-i)%10)*4+2202]-3),
-      write_bit(mem[((99-i)/10)*2240+((99-i)%10)*4+2203]-3);
+    if( i==99 || i==100-25 || !empty(input_data= out+i*220) ){
+      printf("\nlevel %02d, ", 100-i );
+      compress(optimize(input_data, 220), input_data, 220);
+      if( i!=100-26 )
+        total+= 2,
+        write_bit(mem[((99-i)/10)*2240+((99-i)%10)*4+2202]-3),
+        write_bit(mem[((99-i)/10)*2240+((99-i)%10)*4+2203]-3);
+    }
   }
   for ( k= 0; k<output_index>>1; k++ )
     tmpchar= output_data[k],
     output_data[k]= output_data[output_index-1-k],
     output_data[output_index-1-k]= tmpchar;
   fwrite(output_data, 1, output_index, fo);
+  printf("\ntotal %d, %.3f\n", total, (float)total/8);
 }
