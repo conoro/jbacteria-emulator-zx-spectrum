@@ -41,16 +41,16 @@ tabla
                                 ;-oo-
         db      %00001111             ;----
                                       ;oooo
-        db      %00101110       ;--o-
+        db      %01001110       ;-o--
                                 ;ooo-
-        db      %01001110             ;-o--
-                                      ;ooo-
+        db      %11000110             ;oo--
+                                      ;-oo-
         db      %01101100       ;-oo-
                                 ;oo--
 CDFLAG  db      %10001110             ;o---
                                       ;ooo-
-        db      %11000110       ;oo--
-                                ;-oo-
+        db      %00101110       ;--o-
+                                ;ooo-
 
 ; Función polivalente. Se llama tres veces dentro del bucle principal.
 ; La primera para comprobar si hay algo que obstruya la pieza (suelo, pared, otra pieza).
@@ -184,7 +184,7 @@ rand    ld      a, (FRAMES)
         jr      z, rand
         call    leep
         call    pint
-        sub     156
+        sub     $8c
         ld      l, a
         ld      a, (lastp)
         ld      (lastp), hl
@@ -193,7 +193,7 @@ rand    ld      a, (FRAMES)
         ld      de, screen+1+2*11+6 ; La primera pieza parte de la coordenada (x, y)= (6, 2), en el registro DE guardo la posición
 leep    add     a, tabla-1&255
         ld      l, a            ; Paso dicho valor al registro L para leer pieza de la tabla
-        add     a, 156-tabla+1&255
+        add     a, $8c-tabla+1&255
         ld      (mico+1), a     ; Guardo color generado en A'
         ld      h, tabla>>8     ; Posición alta de la tabla de piezas
         ld      c, h            ; Pongo C a un valor mayor de 4 con los bits 1 y 2 a cero (que indican que entro en el bucle principal desde nueva pieza)
@@ -304,34 +304,33 @@ rot1    add     hl, hl          ; Desplazo 4 veces HL a la izquierda
 map
         block   $4300-44-$, $fe
 
-dfile   defb    $76,49,42,59,42,49,0,135,131,131,4
-level   defb    $76,0,0,0,0,0,0,133,30,28,5
-        defb    $76,56,40,52,55,42,0,133,29,32,5
-score   defb    $76,0,0,0,0,0,28,2,3,3,1
-screen  defb    $76,132,4,0,27,0,5,0,0,132,1
-        defb    $76,131,0,0,0,0,5,27,0,135,129
-        defb    $76,5,0,27,0,0,5,0,27,0,131
-        defb    $76,4,0,0,27,133,132,27,0,0,3
-        defb    $76,132,27,0,0,129,133,131,131,0,133
-        defb    $76,0,0,135,0,5,0,0,133,0,133
-        defb    $76,27,0,133,0,5,133,0,129,4,27
-        defb    $76,0,0,133,3,1,129,4,5,5,0
-        defb    $76,0,0,7,5,0,5,5,1,132,0
-        defb    $76,0,7,5,5,0,5,5,0,133,0
-        defb    $76,133,1,1,1,0,0,0,0,2,5
-        defb    $76,2,137,137,137,137,137,137,137,137,1
-        defb    $76,0,4,4,4,135,135,135,135,131,0
-        defb    $76,0,5,5,7,129,133,6,133,129,0
-        defb    $76,0,130,5,5,133,133,133,133,133,0
-        defb    $76,0,135,131,0,131,135,135,131,0,0
-        defb    $76,136,0,5,2,129,133,133,131,0,136
-        defb    $76,136,0,5,133,133,133,135,129,0,136
-        defb    $76,39,62,0,38,51,57,52,51,46,52
-        defb    $76,22,22,0,59,46,49,49,42,51,38
+dfile   defb    $76,49,42,59,42,49,0,135,137,137,132
+level   defb    $76,0,0,0,0,30,33,133,136,136,133
+        defb    $76,56,40,52,55,42,0,0,3,3,132
+score   defb    $76,0,0,135,131,4,28,0,0,135,129
+screen  defb    $76,128,5,133,128,5,133,128,5,133,128
+        defb    $76,128,5,133,128,5,133,128,5,133,128
+        defb    $76,128,128,128,128,128,128,128,128,128,128
+        defb    $76,130,4,131,131,4,131,131,4,131,129
+        defb    $76,128,5,128,128,5,128,128,5,128,128
+        defb    $76,130,131,131,135,131,131,135,131,131,129
+        defb    $76,128,128,128,133,128,128,133,128,128,128
+        defb    $76,130,131,131,131,131,131,131,131,131,129
+        defb    $76,128,186,179,176,166,185,183,174,184,128
+        defb    $76,130,131,131,135,131,131,135,131,131,129
+        defb    $76,128,128,128,133,128,128,133,128,128,128
+        defb    $76,130,4,131,131,4,131,131,4,131,129
+        defb    $76,128,5,128,128,5,128,128,5,128,128
+        defb    $76,130,131,131,131,131,131,131,131,131,129
+        defb    $76,138,128,138,128,1,2,128,128,138,128
+        defb    $76,128,138,128,7,0,0,132,138,128,138
+        defb    $76,138,128,138,5,27,27,133,128,138,128
+        defb    $76,128,138,128,5,0,0,133,138,128,138
+        defb    $76,0,0,38,51,57,52,51,46,52,0
+        defb    $76,0,0,59,46,49,49,42,51,38,0
         defb    $76
 
 lastp   defw    1
 
         block   $43fe-$
         defw    inic
-
