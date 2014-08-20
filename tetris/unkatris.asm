@@ -140,6 +140,27 @@ desc6   call    gbit            ; (Elias gamma coding)
         inc     e               ; prepare test of end of file
         jr      desc5           ; jump to main loop
 
+nnwp    lddr                    ; Hago el corrimiento de líneas
+        ld      h, $40
+        ld      a, (hl)         ; multi
+        sla     (hl)
+        ld      hl, score+6-1
+        call    incr
+        inc     (iy+1)          ; lncnt
+        jr      nz, tlin
+        ld      de, nxtl
+        push    de
+        ld      l, level+6+1 & 255
+incrr   dec     l
+inc1    ld      a, b
+incr    adc     a, (hl)
+        cp      28+10
+        ld      (hl), a
+        ret     c
+        add     a, -10
+        ld      (hl), a
+        jr      incrr
+
 tutia   xor     a
         call    gbitd
         ld      (iy+desc1+2-$4000), b
@@ -203,26 +224,6 @@ leep    add     a, tabla-1&255
         add     hl, hl
         add     hl, hl
         ret
-nnwp    lddr                    ; Hago el corrimiento de líneas
-        ld      h, $40
-        ld      a, (hl)         ; multi
-        sla     (hl)
-        ld      hl, score+6-1
-        call    incr
-        inc     (iy+1)          ; lncnt
-        jr      nz, tlin
-        ld      de, nxtl
-        push    de
-        ld      l, level+6+1 & 255
-incrr   dec     l
-inc1    ld      a, 1
-incr    add     a, (hl)
-        cp      28+10
-        ld      (hl), a
-        ret     c
-        sub     10
-        ld      (hl), a
-        jr      incrr
 
 ; Bucle principal del juego
 
@@ -239,7 +240,7 @@ ncol    ld      sp, $43fe       ; Equilibro la pila, ya que la estaba desequilib
 mico    ld      a, 0
         call    pint            ; pinto la pieza
         bit     1, c            ; Compruebo si ha habido colisión (del tipo colisión contra el suelo, no vale contra paredes ni tras rotar)
-        jp      nz, tutin       ; Salto a tlin en caso de ese tipo de colisión
+        jr      nz, tutin       ; Salto a tlin en caso de ese tipo de colisión
         push    de              ; Guardo posición en pila
         push    hl              ; Guardo pieza en pila
 rkey    ld      a, (FRAMES)     ; Leo contador de frames
