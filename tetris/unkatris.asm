@@ -100,21 +100,20 @@ desc2   xor     a
         call    gbit            ; load bitsym bits (literal)
         add     a, 7
         ld      (de), a         ; write literal
-desc5   dec     e               ; test end of file (map is always 150 bytes)
+desc5   xor     a
+        dec     e               ; test end of file (map is always 150 bytes)
         jr      z, tutia
         call    gbit            ; read one bit
         rra
-        jr      nc, desc2       ; test if literal or sequence
-        xor     a
+        jr      c, desc2        ; test if literal or sequence
         call    gbitd           ; get two bits
         jr      z, desc9        ; 00 = 1
         dec     a
         call    gbit
         jr      z, desc8        ; 010 = -11
         call    gbitd           ; [011, 100, 101, 110, 111] xx
-        sub     13
+        add     -13
         jr      z, desc5
-        ccf
 desc8   adc     a, 10
 desc9   inc     a
         push    de
@@ -161,8 +160,7 @@ incr    adc     a, (hl)
         ld      (hl), a
         jr      incrr
 
-tutia   xor     a
-        call    gbitd
+tutia   call    gbitd
         ld      (iy+desc1+2-$4000), b
         ld      (desc+1), hl
         ld      b, 3

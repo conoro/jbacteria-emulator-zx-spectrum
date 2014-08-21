@@ -169,18 +169,18 @@ unsigned char *compress(Optimal *optimal, unsigned char *input_data,
     if( optimal[input_index].len == 0 ){
       printf("lit %d\n", input_data[input_index]);
       if( input_data[input_index]==2 )
-        write_bit(1),
+        write_bit(0),
         write_bit(1),
         write_bit(0),
         write_bit(1),
         write_bit(0),
         write_bit(1);
       else
-        write_bit(0),
+        write_bit(1),
         write_bit(input_data[input_index]^1);
     }
     else{
-      write_bit(1);
+      write_bit(0);
       offset1= optimal[input_index].offset-1;
       printf("pat %d, %d\n", offset1, optimal[input_index].len);
       if( offset1 == 0)
