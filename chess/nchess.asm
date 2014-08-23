@@ -1,55 +1,36 @@
         output  nchess.bin
         org     $4000
 
-        define  PPC     $4007
-        define  POINTS  PRBUFF
-        define  BEST    PRBUFF+5
         define  MOVCNT  PRBUFF+10
-        define  PIECE   DRIVER-2
 
-        defb    0, $80, 0, 0, 0, 0, 0, 0, 0
-VERSN   defb    11              ; movimientos del peón blanco
-E_PPC   defb    10, 12
+        defb    0, $80
+
+POINTS  defs    5
+BEST    defs    5
+
 D_FILE  defw    _dfile
-DF_CC   defw    0
-VARS    defw    0
+PIECE   defw    0
+PPC     defw    0
+
 DEST    defw    0
 E_LINE  defw    $4401
-CH_ADD  defw    0
-X_PTR   defw    0
-STKBOT  defw    0
-STKEND  defw    0
-BERG    defb    0
-MEM     defw    0
-SPARE1  defb    0
-DF_SZ   defb    0
-S_TOP   defw    0
+
+        defs    15
+
 LAST_K  defw    $ffff
 DB_ST   defb    0
 MARGIN  defb    55
-NXTLIN  defw    0
-OLDPPC  defw    0
-FLAGX   defb    0
-STRLEN  defw    0
-T_ADDR  defw    0
-SEED    defw    0
+
+TKING   defb    1, 11, -1, -11, -10, -12, 12, 10
+TPAWN   defb    11, 10, 12
 FRAMES  defw    0
-COORDS  defw    0
-PR_CC   defb    0
-S_POSN  defw    0
-CDFLAG  defb    $80
-PRBUFF  defs    32
-        defb    $76
+TKNGHT  defb    13, -13, 21, -21, 23, -23, -9, 9
 
-TABLES  defb    13, -13, 21, -21, 23, -23, -9, 9
-        defb    1, 11, -1, -11, -10, -12, 12, 10
+PRBUFF  defs    28
 
-        defs    10
+MOVBUF  defs    28
 
-INIT    ld      hl, TABLES      ; Mueve tablas a zona de variables
-        ld      de, DF_CC       ; dejando libre TABLES y esta rutina
-        ld      bc, INIT-TABLES
-        ldir
+; 66 bytes
 DRIVER  ld      b, 5            ; borra el último movimiento
         ld      a, 8            ; introducido por teclado
         ld      hl, ultlin
@@ -81,6 +62,7 @@ DRIVER2 call    TL              ; Comprueba si hay más movimientos en la lista 
         call    MPSCAN          ; juega la máquina
         jr      DRIVER          ; repito bucle (ahora le toca al jugador)
 
+; 30 bytes
 TKP     push    hl              ; rutina que lee tecla
 TKP1    push    bc
 TKP2    call    $02bb           ; leo filas y columnas en HL
@@ -104,6 +86,7 @@ TKP4    pop     bc
         ld      (hl), a         ; la almaceno en (HL) y salgo
         ret
 
+; 75 bytes
 KYBD    ld      bc, $081d       ; margen de tecla leída entre '1' y '8'
         call    TKP             ; leo el número
         dec     hl              ; apunto hacia abajo para guardar la letra
@@ -120,7 +103,6 @@ KYBD1   add     a, c            ; añado 11 "fila" veces, por lo que obtengo
         add     a, $2d-11+seglin+3 & 255 ;añado offset necesario para apuntar
         dec     hl              ; a la pieza, apunto a la letra
         sub     (hl)            ; resto letra (están numeradas en orden inverso)
-
 STR     ld      b, 2            ; valor de retorno por defecto 2 (coordenada o pieza inválida)
         cp      seglin+3 & 255
         jr      c, STR3
@@ -150,6 +132,7 @@ STR3    ld      a, b            ; devuelvo el error en A
         ld      l, c            ; y la posición de la pieza en L
         ret
 
+; 79+64
 MOVE    xor     a               ; vacío la lista de movimientos
         ld      (MOVCNT), a
         ld      a, (hl)         ; leo pieza
@@ -158,10 +141,10 @@ MOVE    xor     a               ; vacío la lista de movimientos
         jr      z, PAWN
         ld      c, 1            ; número de desplazamientos inicialmente a 1
         ld      b, 8            ; cargo a 8 el número de movimientos legales
-        ld      hl, DF_CC       ; apunto al contenido de TABLES (movido a DF_CC)
+        ld      hl, TKNGHT      ; apunto al movimiento del caballo
         cp      $33             ; 'N', si es un caballo
-        jr      z, MOVE1        ; salto a MOVE1 (el comiezo de TABLES es movimiento caballo)
-        ld      l, DF_CC+8 & 255; Apunto tabla a movimiento de rey
+        jr      z, MOVE1        ; salto a MOVE1
+        ld      l, TKING & 255  ; Apunto tabla a movimiento de rey
         cp      $30             ; 'K'
         jr      z, MOVE1        ; salto a MOVE1 si rey
         ld      c, b            ; resto de piezas pueden hacer hasta 8 desplazamientos
@@ -170,7 +153,7 @@ MOVE    xor     a               ; vacío la lista de movimientos
         ld      b, 4            ; limitamos a 4 el número de movimientos
         cp      $37             ; 'R'
         jr      z, MOVE1        ; los 4 primeros corresponden a la torre
-        ld      l, DF_CC+12 & 255; apunto a los 4 últimos, movimientos en diagonal
+        ld      l, TKING+4 & 255; apunto a los 4 últimos, movimientos en diagonal
 MOVE1   ld      a, e            ; lo que queda por descarte es un alfil
 MOVE2   add     a, (hl)         ; añado posición de pieza a valor tabla
         push    af              ; guardo posición nuevo movimiento
@@ -200,9 +183,9 @@ MOVE4   pop     af              ; y vamos al siguiente movimiento de la tabla
 
 PAWN    ld      a, (hl)         ; leo el color de pieza
         and     $80
-        ld      hl, DF_CC+13    ; si es blanca los movimientos posibles son 11, 10, 12
+        ld      hl, TKING+5     ; si es blanca los movimientos posibles son 11, 10, 12
         jr      nz, PAWN1
-        ld      l, DF_CC-3 & 255; si es negra, -11, -10, -12
+        ld      l, TPAWN+2 & 255; si es negra, -11, -10, -12
 PAWN1   ld      d, 3            ; número movimientos posibles del peón
 PAWN2   ld      a, e            ; muevo peón
 PAWN3   add     a, (hl)         ; calculando en A la nueva posición
@@ -237,6 +220,7 @@ PAWN6   pop     af              ; esto produce el avance doble del peón
         ld      e, a            ; actualizada en E
         jr      PAWN3
 
+; 62 bytes
 CHK     ld      a, (prilin)     ; leo turno ($00 ó $80)
         add     a, $30          ; convierto pieza en rey (el del color del turno)
         ld      hl, seglin+2    ; voy al comienzo del tablero
@@ -244,7 +228,6 @@ CHK     ld      a, (prilin)     ; leo turno ($00 ó $80)
         cpir                    ; busco el rey (del color del turno) en el tablero
         dec     hl              ; en HL localizo su posición
         ld      (PIECE), hl     ; guardo en PIECE dicha posición
-
 SQAT    ld      b, 8*11-2       ; número de posiciones del tablero (sobran 3 posiciones por fila)
         ld      hl, seglin+2    ; dirección inicial del tablero
 SQAT1   inc     hl              ; incremento posición
@@ -273,12 +256,14 @@ SQAT3   pop     bc
         and     a               ; no hay jaque y salgo con Carry desactivo
         ret
 
+; 8 bytes
 CHGMV   ld      hl, prilin      ; invierte turno
 CHG     ld      a, (hl)
         add     a, $80
         ld      (hl), a
         ret
 
+; 92 bytes
 SCORE   push    hl              ; guardo posición inicial
         push    bc              ; guardo piezas inicial y final
         push    de              ; guardo posición final
@@ -338,6 +323,7 @@ SCORE4  call    CHG             ; restauro el color de la pieza
         ld      bc, 5           ; si mi movimiento es mejor, lo copio como mejor movimiento
         jr      SHIFT1
 
+; 9 bytes
 ALIST   ld      hl, MOVCNT      ; apunto al comienzo de la lista
         inc     (hl)            ; incremento longitud de lista en uno
         ld      a, (hl)         ; leo longitud de lista en A
@@ -346,7 +332,8 @@ ALIST   ld      hl, MOVCNT      ; apunto al comienzo de la lista
         ld      (hl), c         ; escribo el nuevo elemento
         ret
 
-SHIFT   ld      hl, TABLES+6    ; muevo la lista de movimientos posibles
+; 15 bytes
+SHIFT   ld      hl, MOVBUF      ; muevo la lista de movimientos posibles
         ld      de, MOVCNT      ; a un buffer donde antes estaba la tabla y código 
         ld      bc, 28          ; de inicialización
         jr      c, SHIFT2       ; si está desactivo flag C hacer movimiento inverso
@@ -354,6 +341,7 @@ SHIFT1  ex      de, hl
 SHIFT2  ldir
         ret
 
+; 14 bytes
 PSC     and     $7f             ; quita color
         ld      hl, TABPIE      ; tabla de puntuaciones según pieza
         ld      b, 5            ; 5 tipos de piezas puntuables
@@ -364,6 +352,7 @@ PSC1    cp      (hl)            ; si mi pieza coincide
         ld      a, b            ; si mi pieza no puntúa devuelvo A a cero y flag Z desactivo
         ret
 
+; 11 bytes
 INC     ld      a, l            ; leo posición inicial
         exx
         ld      (PIECE), a      ; guardo en PIECE dicha posición
@@ -372,6 +361,7 @@ INC     ld      a, l            ; leo posición inicial
         ld      a, c            ; Carry activo y devuelvo en A puntuación acumulada
         ret
 
+; 59 bytes
 MPSCAN  xor     a               ; inicializo a cero la puntuación del mejor movimiento
         ld      (BEST), a
         ld      b, 8*11-2       ; número de posiciones del tablero
@@ -402,6 +392,7 @@ CHGSQ   call    DOMOVE          ; realizar el movimiento en el tablero
         call    CHGMV           ; cambiar el turno del jugador
         ret
 
+; 11 bytes
 TL      ld      hl, MOVCNT      ; apunto a la lista de movimientos
         dec     (hl)            ; decremento el número de elementos de la lista
         ld      a, (hl)         ; leo el número de elementos de la lista
@@ -412,6 +403,7 @@ TL      ld      hl, MOVCNT      ; apunto a la lista de movimientos
         ld      a, (hl)         ; devuelvo el valor del último elemento
         ret
 
+; 32 bytes
 PMOVE   ld      hl, (PPC)       ; leo en HL posición inicial pieza
         ld      a, (de)         ; leo el contenido de la posición final de la pieza
         ld      c, a            ; en registro C
@@ -433,6 +425,7 @@ PMOVE1  scf                     ; recuperar la lista de movimientos anteriorment
         call    SHIFT           ; guardada en el buffer
         ret
 
+; 41 bytes
 DOMOVE  ld      hl, BEST+4      ; apunto a pieza inicial en mejor movimiento
         ld      a, (hl)         ; leo pieza inicial
         dec     hl
@@ -461,7 +454,7 @@ DOMOVE2 bit     0, l            ; pongo cuadro vacío en posición inicial
         ld      (hl), $80
 DOMOVE3 ret
 
-
+; 5 bytes
 TABPIE  defb    $36, $37, $27, $33, $35 ; QRBNP
 
         block   $4351-$, $fe
@@ -481,4 +474,4 @@ ultlin  defb    $76,$08,$08,$08,$08,$08
 _dfcc   defb    $76,$76,$76,$76,$76,$76,$76,$76,$76,$76
 
         block   $43fe-$, $fe
-        defw    INIT
+        defw    DRIVER
