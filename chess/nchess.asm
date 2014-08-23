@@ -1,19 +1,25 @@
         output  nchess.bin
         org     $4000
 
-PPC     defb    0, $80
-POINTS  defs    5
-BEST    defs    5
+        define  PPC     PMOVE+1
+
+; 12 bytes
+PAWN5   dec     a               ; sólo me puedo comer la pieza
+        add     a, d
+        call    nz, ALIST       ; si es vertical, no se ejecuta el CALL
+PAWN4   pop     af              ; probar el siguiente movimiento posible del peón
+        pop     hl              ; y decrementar puntero a tabla
+        dec     hl
+        dec     d
+        jr      nz, PAWN2       ; si he acabado de probarlos todos salgo de la función
+        ret
 
 D_FILE  defw    _dfile
 
-SQAT3   pop     bc
-        pop     hl
-        djnz    SQAT1           ; si he comprobado todo el tablero es que
-        and     a               ; no hay jaque y salgo con Carry desactivo
-        ret
-
-PIECE   defw    $4401
+POINTS  defs    5
+BEST    defs    1
+        defw    $4401           ; E_LINE
+        defs    2
 
 ; 13 bytes
 PSC     and     $7f             ; quita color
@@ -25,55 +31,47 @@ PSC1    cp      (hl)            ; si mi pieza coincide
         djnz    PSC1
         ret
 
-        defb    0, 0 ; 2 bytes libres
-
 LAST_K  defw    $ffff
 DB_ST   defb    0
 MARGIN  defb    55
-
-TKING   defb    1, 11, -1, -11, -10, -12, 12, 10
+TKNGHT  defb    13, -13, 21, -21, 23, -23, -9, 9
 TPAWN   defb    11, 10, 12
 FRAMES  defw    0
-TKNGHT  defb    13, -13, 21, -21, 23, -23, -9, 9
-
 TABPIE  defb    $36, $37, $27, $33, $35 ; QRBNP
 
-; 62 bytes
-CHK     ld      a, (prilin)     ; leo turno ($00 ó $80)
-        add     a, $30          ; convierto pieza en rey (el del color del turno)
-        ld      hl, seglin+2    ; voy al comienzo del tablero
-        ld      b, a            ; pongo BC a $30xx para asegurarme que es mayor que 8*11
-        cpir                    ; busco el rey (del color del turno) en el tablero
-        dec     hl              ; en HL localizo su posición
-        ld      (PIECE), hl     ; guardo en PIECE dicha posición
-SQAT    ld      b, 8*11-2       ; número de posiciones del tablero (sobran 3 posiciones por fila)
-        ld      hl, seglin+2    ; dirección inicial del tablero
-SQAT1   inc     hl              ; incremento posición
-        push    hl              ; guardo posición y BC
-        push    bc
-        ld      e, l            ; guardo posición en E
-        call    STR2            ; testeo si el cuadro tiene pieza de color opuesto
-        jr      nz, SQAT3
-        call    CHGMV           ; invierte turno 
-        ld      l, e            ; recupero posición guardada
-        call    MOVE            ; calcular los posibles movimientos de la pieza de color opuesto
-        call    CHGMV           ; invierte turno (recupero el anterior)
-SQAT2   call    TL              ; veo si en la lista de posibles
-        jr      z, SQAT3        ; movimientos de dicha pieza
-        ld      hl, (PIECE)     ; está el rey de mi color
-        cp      l
-        jr      nz, SQAT2
-        pop     bc              ; si hay jaque salgo con Carry activo
-        pop     hl              ; el jaque es si entro por CHK, en otro caso (SQAT)
-        scf                     ; veo si le hacen "jaque" a otra pieza
-        ret
+; 42 bytes
+PAWN    add     a, (hl)         ; leo el color de pieza
+        ld      hl, TKING+5     ; si es blanca los movimientos posibles son 11, 10, 12
+        jp      m, PAWN1
+        ld      l, TPAWN+2 & 255; si es negra, -11, -10, -12
+PAWN1   ld      d, 3            ; número movimientos posibles del peón
+PAWN2   ld      a, e            ; muevo peón
+PAWN3   add     a, (hl)         ; calculando en A la nueva posición
+        push    hl
+        push    af
+        call    STR             ; leo estado de la casilla
+        jr      z, PAWN5
+        djnz    PAWN4
+        cp      d               ; movimiento en vertical (avance del peón)
+        jr      nz, PAWN4       ; si el movimiento es diagonal salto a PAWN4 (descarto)
+        call    ALIST           ; añado movimiento a la lista (avance del peón)
+        ld      a, e            ; si estoy en fila 2 o en fila 7 
+        cp      seglin+11*2 & 255 ; añadir también el doble avance saltando a PAWN6
+        jr      c, PAWN6
+        cp      seglin+11*6 & 255
+        jr      c, PAWN4
+PAWN6   pop     af              ; esto produce el avance doble del peón
+        pop     hl              ; repitiendo movimiento con la posición
+        ld      e, a            ; actualizada en E
+        jr      PAWN3
 
-; 66 bytes
+TKING   defb    1, 11, -1, -11, -10, -12, 12, 10
+
+; 65 bytes
 DRIVER  ld      b, 5            ; borra el último movimiento
-        ld      a, 8            ; introducido por teclado
         ld      hl, ultlin
 DRIVER1 inc     hl
-        ld      (hl), a
+        ld      (hl), 8
         djnz    DRIVER1
         call    KYBD            ; lee coordenada inicio
         cp      3               ; si color pieza inválido
@@ -99,6 +97,88 @@ DRIVER2 call    TL              ; Comprueba si hay más movimientos en la lista 
         call    CHGSQ           ; realizar movimiento y cambiar turno
         call    MPSCAN          ; juega la máquina
         jr      DRIVER          ; repito bucle (ahora le toca al jugador)
+
+; 63+7 bytes
+MOVE    xor     a               ; vacío la lista de movimientos
+        ld      (MOVCNT), a
+        ld      a, (hl)         ; leo pieza
+        and     $7f             ; quito color
+        sub     $35             ; 'P', si es un peón salto a PAWN
+        jr      z, PAWN
+        ld      bc, $0801       ; cargo a 8 el número de movimientos legales
+        ld      hl, TKNGHT      ; apunto al movimiento del caballo
+        adc     a, c            ; 'N', si es un caballo
+        jr      z, MOVE1        ; salto a MOVE1
+        ld      l, TKING & 255  ; Apunto tabla a movimiento de rey
+        cp      $30-$33         ; 'K'
+        jr      z, MOVE1        ; salto a MOVE1 si rey
+        sbc     a, c            ; 'Q'
+        ld      c, b            ; resto de piezas pueden hacer hasta 8 desplazamientos
+        jr      z, MOVE1        ; la reina puede hacer hasta 8 movimientos de rey
+        ld      b, 4            ; limitamos a 4 el número de movimientos
+        dec     a               ; 'R'
+        jr      z, MOVE1        ; los 4 primeros corresponden a la torre
+        ld      l, TKING+4 & 255; apunto a los 4 últimos, movimientos en diagonal
+MOVE1   ld      a, e            ; lo que queda por descarte es un alfil
+MOVE2   add     a, (hl)         ; añado posición de pieza a valor tabla
+        push    af              ; guardo posición nuevo movimiento
+        push    hl              ; guardo posición de tabla
+        push    bc              ; guardo número de movimiento y desplazamientos a probar
+        call    STR             ; veo contenido nueva posición
+        cp      2               ; si posición inválida o pieza negra (de mi color)
+        jr      nc, MOVE3       ; salto a MOVE3
+        call    ALIST
+        djnz    MOVE3           ; porque no podemos atravesarla
+        pop     bc              ; en caso contrario (cuadro vacío) seguir por aquí
+        pop     hl              ; pasamos al siguiente desplazamiento
+        ld      a, c
+        dec     a               ; si es pieza de un único desplazamiento saltamos a MOVE4
+        jr      z, MOVE4
+        pop     af              ; si no probamos otro desplazamiento (en realidad
+        jr      MOVE2           ; no se repite 8 veces sino hasta que no haya cuadros vacíos
+
+MOVE3   pop     bc              ; descartamos el resto de desplazamientos
+        pop     hl              ; de la pieza
+MOVE4   pop     af              ; y vamos al siguiente movimiento de la tabla
+        inc     hl              ; incremento puntero en la tabla
+        djnz    MOVE1           ; decremento hasta probar con todos los movimientos
+        ret
+
+; 54+6 bytes
+CHK     ld      a, (prilin)     ; leo turno ($00 ó $80)
+        add     a, $30          ; convierto pieza en rey (el del color del turno)
+        ld      hl, seglin+2    ; voy al comienzo del tablero
+        ld      b, a            ; pongo BC a $30xx para asegurarme que es mayor que 8*11
+        cpir                    ; busco el rey (del color del turno) en el tablero
+        dec     hl              ; en HL localizo su posición
+        ld      (PIECE+1), hl   ; guardo en PIECE dicha posición
+SQAT    ld      b, 8*11-2       ; número de posiciones del tablero (sobran 3 posiciones por fila)
+        ld      hl, seglin+2    ; dirección inicial del tablero
+SQAT1   inc     hl              ; incremento posición
+        push    hl              ; guardo posición y BC
+        push    bc
+        ld      e, l            ; guardo posición en E
+        call    STR2            ; testeo si el cuadro tiene pieza de color opuesto
+        jr      nz, SQAT3
+        call    CHGMV           ; invierte turno 
+        ld      l, e            ; recupero posición guardada
+        call    MOVE            ; calcular los posibles movimientos de la pieza de color opuesto
+        call    CHGMV           ; invierte turno (recupero el anterior)
+SQAT2   call    TL              ; veo si en la lista de posibles
+        jr      z, SQAT3        ; movimientos de dicha pieza
+PIECE   ld      hl, 0           ; está el rey de mi color
+        cp      l
+        jr      nz, SQAT2
+        pop     bc              ; si hay jaque salgo con Carry activo
+        pop     hl              ; el jaque es si entro por CHK, en otro caso (SQAT)
+        scf                     ; veo si le hacen "jaque" a otra pieza
+        ret
+
+SQAT3   pop     bc
+        pop     hl
+        djnz    SQAT1           ; si he comprobado todo el tablero es que
+        and     a               ; no hay jaque y salgo con Carry desactivo
+        ret
 
 ; 11 bytes
 TL      ld      hl, MOVCNT      ; apunto a la lista de movimientos
@@ -138,7 +218,7 @@ TKP4    pop     bc
         ld      (hl), a         ; la almaceno en (HL) y salgo
         ret
 
-; 75 bytes
+; 68 bytes
 KYBD    ld      bc, $081d       ; margen de tecla leída entre '1' y '8'
         call    TKP             ; leo el número
         dec     hl              ; apunto hacia abajo para guardar la letra
@@ -179,85 +259,6 @@ STR3    ld      a, b            ; devuelvo el error en A
         and     a
         ret
 
-; 79+62
-MOVE    xor     a               ; vacío la lista de movimientos
-        ld      (MOVCNT), a
-        ld      a, (hl)         ; leo pieza
-        and     $7f             ; quito color
-        sub     $35             ; 'P', si es un peón salto a PAWN
-        jr      z, PAWN
-        ld      bc, $0801       ; cargo a 8 el número de movimientos legales
-        ld      hl, TKNGHT      ; apunto al movimiento del caballo
-        adc     a, c            ; 'N', si es un caballo
-        jr      z, MOVE1        ; salto a MOVE1
-        ld      l, TKING & 255  ; Apunto tabla a movimiento de rey
-        cp      $30-$33         ; 'K'
-        jr      z, MOVE1        ; salto a MOVE1 si rey
-        sbc     a, c            ; 'Q'
-        ld      c, b            ; resto de piezas pueden hacer hasta 8 desplazamientos
-        jr      z, MOVE1        ; la reina puede hacer hasta 8 movimientos de rey
-        ld      b, 4            ; limitamos a 4 el número de movimientos
-        dec     a               ; 'R'
-        jr      z, MOVE1        ; los 4 primeros corresponden a la torre
-        ld      l, TKING+4 & 255; apunto a los 4 últimos, movimientos en diagonal
-MOVE1   ld      a, e            ; lo que queda por descarte es un alfil
-MOVE2   add     a, (hl)         ; añado posición de pieza a valor tabla
-        push    af              ; guardo posición nuevo movimiento
-        push    hl              ; guardo posición de tabla
-        push    bc              ; guardo número de movimiento y desplazamientos a probar
-        call    STR             ; veo contenido nueva posición
-        cp      2               ; si posición inválida o pieza negra (de mi color)
-        jr      nc, MOVE3       ; salto a MOVE3
-        call    ALIST
-        djnz    MOVE3           ; porque no podemos atravesarla
-        pop     bc              ; en caso contrario (cuadro vacío) seguir por aquí
-        pop     hl              ; pasamos al siguiente desplazamiento
-        ld      a, c
-        dec     a               ; si es pieza de un único desplazamiento saltamos a MOVE4
-        jr      z, MOVE4
-        pop     af              ; si no probamos otro desplazamiento (en realidad
-        jr      MOVE2           ; no se repite 8 veces sino hasta que no haya cuadros vacíos
-MOVE3   pop     bc              ; descartamos el resto de desplazamientos
-        pop     hl              ; de la pieza
-MOVE4   pop     af              ; y vamos al siguiente movimiento de la tabla
-        inc     hl              ; incremento puntero en la tabla
-        djnz    MOVE1           ; decremento hasta probar con todos los movimientos
-        ret
-
-PAWN    add     a, (hl)         ; leo el color de pieza
-        ld      hl, TKING+5     ; si es blanca los movimientos posibles son 11, 10, 12
-        jp      m, PAWN1
-        ld      l, TPAWN+2 & 255; si es negra, -11, -10, -12
-PAWN1   ld      d, 3            ; número movimientos posibles del peón
-PAWN2   ld      a, e            ; muevo peón
-PAWN3   add     a, (hl)         ; calculando en A la nueva posición
-        push    hl
-        push    af
-        call    STR             ; leo estado de la casilla
-        jr      z, PAWN5
-        djnz    PAWN4
-        cp      d               ; movimiento en vertical (avance del peón)
-        jr      nz, PAWN4       ; si el movimiento es diagonal salto a PAWN4 (descarto)
-        call    ALIST           ; añado movimiento a la lista (avance del peón)
-        ld      a, e            ; si estoy en fila 2 o en fila 7 
-        cp      seglin+11*2 & 255 ; añadir también el doble avance saltando a PAWN6
-        jr      c, PAWN6
-        cp      seglin+11*6 & 255
-        jr      c, PAWN4
-PAWN6   pop     af              ; esto produce el avance doble del peón
-        pop     hl              ; repitiendo movimiento con la posición
-        ld      e, a            ; actualizada en E
-        jr      PAWN3
-PAWN5   ld      a, d            ; sólo me puedo comer la pieza
-        dec     a               ; si el movimiento es diagonal
-        call    nz, ALIST       ; si es vertical, no se ejecuta el CALL
-PAWN4   pop     af              ; probar el siguiente movimiento posible del peón
-        pop     hl              ; y decrementar puntero a tabla
-        dec     hl
-        dec     d
-        jr      nz, PAWN2       ; si he acabado de probarlos todos salgo de la función
-        ret
-
 ; 9 bytes
 ALIST   ld      hl, MOVCNT      ; apunto al comienzo de la lista
         inc     (hl)            ; incremento longitud de lista en uno
@@ -270,13 +271,13 @@ ALIST   ld      hl, MOVCNT      ; apunto al comienzo de la lista
 ; 11 bytes
 INC     ld      a, l            ; leo posición inicial
         exx
-        ld      (PIECE), a      ; guardo en PIECE dicha posición
+        ld      (PIECE+1), a    ; guardo en PIECE dicha posición
         call    SQAT            ; si está siendo atacada
         exx                     ; dicha posición, devolver
         ld      a, c            ; Carry activo y devuelvo en A puntuación acumulada
         ret
 
-; 59 bytes
+; 94 bytes
 MPSCAN  xor     a               ; inicializo a cero la puntuación del mejor movimiento
         ld      (BEST), a
         ld      b, 8*11-2       ; número de posiciones del tablero
@@ -302,7 +303,7 @@ MPSCAN3 pop     bc
         djnz    MPSCAN1         ; hasta acabar de recorrer el tablero
         ld      a, (BEST)       ; leo puntuación del mejor movimiento
         and     a
-MPSCAN4 jp      z, MPSCAN4      ; si le hago jaque mate a la máquina hacer bucle infinito
+MPSCAN4 jr      z, MPSCAN4      ; si le hago jaque mate a la máquina hacer bucle infinito
 CHGSQ   ld      hl, BEST+4      ; apunto a pieza inicial en mejor movimiento
         ld      a, (hl)         ; leo pieza inicial
         dec     hl
@@ -335,7 +336,7 @@ CHG     ld      a, (hl)
         ld      (hl), a
         ret
 
-; 92 bytes
+; 91 bytes
 SCORE   push    hl              ; guardo posición inicial
         push    bc              ; guardo piezas inicial y final
         push    de              ; guardo posición final
@@ -386,17 +387,16 @@ SCORE4  call    CHG             ; restauro el color de la pieza
         ld      a, (FRAMES)     ; leo bit bajo de variable FRAMES 
         and     1               ; y se lo añado a la puntuación
         add     a, c
-        ld      hl, POINTS      ; guardo puntuación calculada en POINTS
-        ld      (hl), a
-        ex      de, hl
+        ld      de, POINTS      ; guardo puntuación calculada en POINTS
+        ld      (de), a
         ld      hl, BEST        ; comparo con la puntuación que hay en BEST
         cp      (hl)            ; que sería el mejor movimiento
         ret     c
         ld      bc, 5           ; si mi movimiento es mejor, lo copio como mejor movimiento
         jr      SHIFT1
 
-; 32 bytes
-PMOVE   ld      hl, (PPC)       ; leo en HL posición inicial pieza
+; 40 bytes
+PMOVE   ld      hl, 0           ; leo en HL posición inicial pieza
         ld      a, (de)         ; leo el contenido de la posición final de la pieza
         ld      c, a            ; en registro C
         ld      a, (hl)         ; leo en A el contenido de la posición inicial
@@ -420,7 +420,7 @@ SHIFT1  ex      de, hl
 SHIFT2  ldir
         ret
 
-        block   $4351-$, $fe
+        block   $4353-$, $fe
 
 _dfile  defb    $76, $76, $76, $76, $76
 prilin  defb    $80, $08, $a9, $b7, $ad  ; DRH (iniciales de David Richard Horne)
