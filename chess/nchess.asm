@@ -1,21 +1,33 @@
         output  nchess.bin
         org     $4000
 
-        define  MOVCNT  PRBUFF+10
-
         defb    0, $80
 
 POINTS  defs    5
 BEST    defs    5
 
 D_FILE  defw    _dfile
-PIECE   defw    0
-PPC     defw    0
 
-DEST    defw    0
-E_LINE  defw    $4401
+SQAT3   pop     bc
+        pop     hl
+        djnz    SQAT1           ; si he comprobado todo el tablero es que
+        and     a               ; no hay jaque y salgo con Carry desactivo
+        ret
 
-        defs    15
+PIECE   defw    $4401
+
+; 14 bytes
+PSC     and     $7f             ; quita color
+        ld      hl, TABPIE      ; tabla de puntuaciones según pieza
+        ld      b, 5            ; 5 tipos de piezas puntuables
+PSC1    cp      (hl)            ; si mi pieza coincide
+        ret     z               ; salgo de subrutina teniendo en B la puntuación
+        inc     hl
+        djnz    PSC1
+        ld      a, b            ; si mi pieza no puntúa devuelvo A a cero y flag Z desactivo
+        ret
+
+        defb    0 ; 1 byte libre
 
 LAST_K  defw    $ffff
 DB_ST   defb    0
@@ -26,9 +38,40 @@ TPAWN   defb    11, 10, 12
 FRAMES  defw    0
 TKNGHT  defb    13, -13, 21, -21, 23, -23, -9, 9
 
-PRBUFF  defs    28
+TABPIE  defb    $36, $37, $27, $33, $35 ; QRBNP
 
-MOVBUF  defs    28
+PPC     defw    0
+
+; 62 bytes
+CHK     ld      a, (prilin)     ; leo turno ($00 ó $80)
+        add     a, $30          ; convierto pieza en rey (el del color del turno)
+        ld      hl, seglin+2    ; voy al comienzo del tablero
+        ld      b, a            ; pongo BC a $30xx para asegurarme que es mayor que 8*11
+        cpir                    ; busco el rey (del color del turno) en el tablero
+        dec     hl              ; en HL localizo su posición
+        ld      (PIECE), hl     ; guardo en PIECE dicha posición
+SQAT    ld      b, 8*11-2       ; número de posiciones del tablero (sobran 3 posiciones por fila)
+        ld      hl, seglin+2    ; dirección inicial del tablero
+SQAT1   inc     hl              ; incremento posición
+        push    hl              ; guardo posición y BC
+        push    bc
+        ld      e, l            ; guardo posición en E
+        call    STR2            ; testeo si el cuadro tiene pieza de color opuesto
+        cp      0               ; si no lo tiene está salto a SQAT3 (ir a siguiente posición)
+        jr      nz, SQAT3
+        call    CHGMV           ; invierte turno 
+        ld      l, e            ; recupero posición guardada
+        call    MOVE            ; calcular los posibles movimientos de la pieza de color opuesto
+        call    CHGMV           ; invierte turno (recupero el anterior)
+SQAT2   call    TL              ; veo si en la lista de posibles
+        jr      z, SQAT3        ; movimientos de dicha pieza
+        ld      hl, (PIECE)     ; está el rey de mi color
+        cp      l
+        jr      nz, SQAT2
+        pop     bc              ; si hay jaque salgo con Carry activo
+        pop     hl              ; el jaque es si entro por CHK, en otro caso (SQAT)
+        scf                     ; veo si le hacen "jaque" a otra pieza
+        ret
 
 ; 66 bytes
 DRIVER  ld      b, 5            ; borra el último movimiento
@@ -61,6 +104,17 @@ DRIVER2 call    TL              ; Comprueba si hay más movimientos en la lista 
         call    CHGSQ           ; realizar movimiento y cambiar turno
         call    MPSCAN          ; juega la máquina
         jr      DRIVER          ; repito bucle (ahora le toca al jugador)
+
+; 11 bytes
+TL      ld      hl, MOVCNT      ; apunto a la lista de movimientos
+        dec     (hl)            ; decremento el número de elementos de la lista
+        ld      a, (hl)         ; leo el número de elementos de la lista
+        inc     a               ; si esta vacía A vale $ff (hemos predecrementado)
+        ret     z               ; y salgo con flag Z activado
+        add     a, l            ; apunto al último elemento
+        ld      l, a
+        ld      a, (hl)         ; devuelvo el valor del último elemento
+        ret
 
 ; 30 bytes
 TKP     push    hl              ; rutina que lee tecla
@@ -132,7 +186,7 @@ STR3    ld      a, b            ; devuelvo el error en A
         ld      l, c            ; y la posición de la pieza en L
         ret
 
-; 79+64
+; 79+62
 MOVE    xor     a               ; vacío la lista de movimientos
         ld      (MOVCNT), a
         ld      a, (hl)         ; leo pieza
@@ -204,56 +258,19 @@ PAWN3   add     a, (hl)         ; calculando en A la nueva posición
         cp      seglin+11*2 & 255 ; añadir también el doble avance saltando a PAWN6
         jr      c, PAWN6
         cp      seglin+11*6 & 255
-        jr      nc, PAWN6
+        jr      c, PAWN4
+PAWN6   pop     af              ; esto produce el avance doble del peón
+        pop     hl              ; repitiendo movimiento con la posición
+        ld      e, a            ; actualizada en E
+        jr      PAWN3
+PAWN5   ld      a, d            ; sólo me puedo comer la pieza
+        cp      1               ; si el movimiento es diagonal
+        call    nz, ALIST       ; si es vertical, no se ejecuta el CALL
 PAWN4   pop     af              ; probar el siguiente movimiento posible del peón
         pop     hl              ; y decrementar puntero a tabla
         dec     hl
         dec     d
         jr      nz, PAWN2       ; si he acabado de probarlos todos salgo de la función
-        ret
-PAWN5   ld      a, d            ; sólo me puedo comer la pieza
-        cp      1               ; si el movimiento es diagonal
-        call    nz, ALIST       ; si es vertical, no se ejecuta el CALL
-        jr      PAWN4           ; voy al siguiente movimiento
-PAWN6   pop     af              ; esto produce el avance doble del peón
-        pop     hl              ; repitiendo movimiento con la posición
-        ld      e, a            ; actualizada en E
-        jr      PAWN3
-
-; 62 bytes
-CHK     ld      a, (prilin)     ; leo turno ($00 ó $80)
-        add     a, $30          ; convierto pieza en rey (el del color del turno)
-        ld      hl, seglin+2    ; voy al comienzo del tablero
-        ld      b, a            ; pongo BC a $30xx para asegurarme que es mayor que 8*11
-        cpir                    ; busco el rey (del color del turno) en el tablero
-        dec     hl              ; en HL localizo su posición
-        ld      (PIECE), hl     ; guardo en PIECE dicha posición
-SQAT    ld      b, 8*11-2       ; número de posiciones del tablero (sobran 3 posiciones por fila)
-        ld      hl, seglin+2    ; dirección inicial del tablero
-SQAT1   inc     hl              ; incremento posición
-        push    hl              ; guardo posición y BC
-        push    bc
-        ld      e, l            ; guardo posición en E
-        call    STR2            ; testeo si el cuadro tiene pieza de color opuesto
-        cp      0               ; si no lo tiene está salto a SQAT3 (ir a siguiente posición)
-        jr      nz, SQAT3
-        call    CHGMV           ; invierte turno 
-        ld      l, e            ; recupero posición guardada
-        call    MOVE            ; calcular los posibles movimientos de la pieza de color opuesto
-        call    CHGMV           ; invierte turno (recupero el anterior)
-SQAT2   call    TL              ; veo si en la lista de posibles
-        jr      z, SQAT3        ; movimientos de dicha pieza
-        ld      hl, (PIECE)     ; está el rey de mi color
-        cp      l
-        jr      nz, SQAT2
-        pop     bc              ; si hay jaque salgo con Carry activo
-        pop     hl              ; el jaque es si entro por CHK, en otro caso (SQAT)
-        scf                     ; veo si le hacen "jaque" a otra pieza
-        ret
-SQAT3   pop     bc
-        pop     hl
-        djnz    SQAT1           ; si he comprobado todo el tablero es que
-        and     a               ; no hay jaque y salgo con Carry desactivo
         ret
 
 ; 8 bytes
@@ -332,26 +349,6 @@ ALIST   ld      hl, MOVCNT      ; apunto al comienzo de la lista
         ld      (hl), c         ; escribo el nuevo elemento
         ret
 
-; 15 bytes
-SHIFT   ld      hl, MOVBUF      ; muevo la lista de movimientos posibles
-        ld      de, MOVCNT      ; a un buffer donde antes estaba la tabla y código 
-        ld      bc, 28          ; de inicialización
-        jr      c, SHIFT2       ; si está desactivo flag C hacer movimiento inverso
-SHIFT1  ex      de, hl
-SHIFT2  ldir
-        ret
-
-; 14 bytes
-PSC     and     $7f             ; quita color
-        ld      hl, TABPIE      ; tabla de puntuaciones según pieza
-        ld      b, 5            ; 5 tipos de piezas puntuables
-PSC1    cp      (hl)            ; si mi pieza coincide
-        ret     z               ; salgo de subrutina teniendo en B la puntuación
-        inc     hl
-        djnz    PSC1
-        ld      a, b            ; si mi pieza no puntúa devuelvo A a cero y flag Z desactivo
-        ret
-
 ; 11 bytes
 INC     ld      a, l            ; leo posición inicial
         exx
@@ -392,17 +389,6 @@ CHGSQ   call    DOMOVE          ; realizar el movimiento en el tablero
         call    CHGMV           ; cambiar el turno del jugador
         ret
 
-; 11 bytes
-TL      ld      hl, MOVCNT      ; apunto a la lista de movimientos
-        dec     (hl)            ; decremento el número de elementos de la lista
-        ld      a, (hl)         ; leo el número de elementos de la lista
-        inc     a               ; si esta vacía A vale $ff (hemos predecrementado)
-        ret     z               ; y salgo con flag Z activado
-        add     a, l            ; apunto al último elemento
-        ld      l, a
-        ld      a, (hl)         ; devuelvo el valor del último elemento
-        ret
-
 ; 32 bytes
 PMOVE   ld      hl, (PPC)       ; leo en HL posición inicial pieza
         ld      a, (de)         ; leo el contenido de la posición final de la pieza
@@ -422,7 +408,12 @@ PMOVE   ld      hl, (PPC)       ; leo en HL posición inicial pieza
         jr      c, PMOVE1       ; si hay jaque al rey saltar llamada a SCORE
         call    SCORE
 PMOVE1  scf                     ; recuperar la lista de movimientos anteriormente
-        call    SHIFT           ; guardada en el buffer
+SHIFT   ld      hl, MOVBUF      ; muevo la lista de movimientos posibles
+        ld      de, MOVCNT      ; a un buffer donde antes estaba la tabla y código 
+        ld      bc, 28          ; de inicialización
+        jr      c, SHIFT2       ; si está desactivo flag C hacer movimiento inverso
+SHIFT1  ex      de, hl
+SHIFT2  ldir
         ret
 
 ; 41 bytes
@@ -454,8 +445,8 @@ DOMOVE2 bit     0, l            ; pongo cuadro vacío en posición inicial
         ld      (hl), $80
 DOMOVE3 ret
 
-; 5 bytes
-TABPIE  defb    $36, $37, $27, $33, $35 ; QRBNP
+MOVCNT  defs    28
+MOVBUF  defs    28
 
         block   $4351-$, $fe
 
