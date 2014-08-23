@@ -235,10 +235,8 @@ PAWN3   add     a, (hl)         ; calculando en A la nueva posición
         push    af
         call    STR             ; leo estado de la casilla
         jr      z, PAWN5
-        cp      1               ; si no es cuadro vacío saltar a PAWN4 (descarto)
-        jr      nz, PAWN4
-        ld      a, d            ; si es cuadro vacío compruebo si voy por
-        cp      1               ; movimiento en vertical (avance del peón)
+        djnz    PAWN4
+        cp      d               ; movimiento en vertical (avance del peón)
         jr      nz, PAWN4       ; si el movimiento es diagonal salto a PAWN4 (descarto)
         call    ALIST           ; añado movimiento a la lista (avance del peón)
         ld      a, e            ; si estoy en fila 2 o en fila 7 
@@ -251,13 +249,90 @@ PAWN6   pop     af              ; esto produce el avance doble del peón
         ld      e, a            ; actualizada en E
         jr      PAWN3
 PAWN5   ld      a, d            ; sólo me puedo comer la pieza
-        cp      1               ; si el movimiento es diagonal
+        dec     a               ; si el movimiento es diagonal
         call    nz, ALIST       ; si es vertical, no se ejecuta el CALL
 PAWN4   pop     af              ; probar el siguiente movimiento posible del peón
         pop     hl              ; y decrementar puntero a tabla
         dec     hl
         dec     d
         jr      nz, PAWN2       ; si he acabado de probarlos todos salgo de la función
+        ret
+
+; 9 bytes
+ALIST   ld      hl, MOVCNT      ; apunto al comienzo de la lista
+        inc     (hl)            ; incremento longitud de lista en uno
+        ld      a, (hl)         ; leo longitud de lista en A
+        add     a, l            ; añado longitud a posición comienzo
+        ld      l, a            ; apunto al nuevo elemento (después del último elemento)
+        ld      (hl), c         ; escribo el nuevo elemento
+        ret
+
+; 11 bytes
+INC     ld      a, l            ; leo posición inicial
+        exx
+        ld      (PIECE), a      ; guardo en PIECE dicha posición
+        call    SQAT            ; si está siendo atacada
+        exx                     ; dicha posición, devolver
+        ld      a, c            ; Carry activo y devuelvo en A puntuación acumulada
+        ret
+
+; 59 bytes
+MPSCAN  xor     a               ; inicializo a cero la puntuación del mejor movimiento
+        ld      (BEST), a
+        ld      b, 8*11-2       ; número de posiciones del tablero
+        ld      hl, seglin+2    ; apunto 1 byte antes de la primera posición del tablero
+MPSCAN1 inc     hl              ; incremento posición
+        push    hl
+        push    bc
+        ld      e, l            ; guardo posición en E
+        call    STR2            ; leo estado de la casilla
+        cp      3
+        jr      nz, MPSCAN3     ; si la pieza no es del ordenador (blanca) salir a MPSCAN3
+        ld      l, e            ; recupero posición en HL
+        ld      (PPC), hl       ; guardo en PPC (para ser utilizada por PMOVE)
+        call    MOVE            ; relleno lista de movimientos posibles
+        cp      a
+MPSCAN2 call    nz, PMOVE           ; pruebo todos los movimientos de todas las piezas
+        call    TL              ; extraigo movimientos de la lista
+        ld      e, a            ; pongo en posición final el movimiento a probar
+        ld      d, seglin>>8
+        jr      nz, MPSCAN2     ; si he acabado con todos los movimientos salgo a MPSCAN3
+MPSCAN3 pop     bc
+        pop     hl
+        djnz    MPSCAN1         ; hasta acabar de recorrer el tablero
+        ld      a, (BEST)       ; leo puntuación del mejor movimiento
+        and     a
+MPSCAN4 jp      z, MPSCAN4      ; si le hago jaque mate a la máquina hacer bucle infinito
+CHGSQ   ld      hl, BEST+4      ; apunto a pieza inicial en mejor movimiento
+        ld      a, (hl)         ; leo pieza inicial
+        dec     hl
+        dec     hl              ; apunto a posición inicial en mejor movimiento
+        ld      e, (hl)         ; leo posición inicial
+        ld      d, seglin>>8
+        ld      (de), a         ; escribo pieza inicial en posición inicial
+        dec     hl
+        ld      l, (hl)         ; leo posición final en HL
+        ld      h, d
+        ld      c, a            ; guardo en C pieza inicial
+        and     $7f             ; quito color
+        cp      $35             ; 'P'
+        jr      nz, CHGSQ2
+        ld      a, e            ; si es un peón leo posición inicial
+        cp      seglin+3+8 & 255
+        jr      c, CHGSQ1       ; si el peón está en la primera o la
+        cp      seglin+2+7*11 & 255 ; última fila, promocionarlo
+        jr      c, CHGSQ2       
+CHGSQ1  ld      a, c            ; promociono peón a reina
+        inc     a
+        ld      (de), a
+CHGSQ2  ld      a, l
+        rrca
+        and     $80
+        ld      (hl), a         ; del color que corresponda según si la
+CHGMV   ld      hl, prilin      ; invierte turno
+CHG     ld      a, (hl)
+        add     a, $80
+        ld      (hl), a
         ret
 
 ; 92 bytes
@@ -320,58 +395,6 @@ SCORE4  call    CHG             ; restauro el color de la pieza
         ld      bc, 5           ; si mi movimiento es mejor, lo copio como mejor movimiento
         jr      SHIFT1
 
-; 9 bytes
-ALIST   ld      hl, MOVCNT      ; apunto al comienzo de la lista
-        inc     (hl)            ; incremento longitud de lista en uno
-        ld      a, (hl)         ; leo longitud de lista en A
-        add     a, l            ; añado longitud a posición comienzo
-        ld      l, a            ; apunto al nuevo elemento (después del último elemento)
-        ld      (hl), c         ; escribo el nuevo elemento
-        ret
-
-; 11 bytes
-INC     ld      a, l            ; leo posición inicial
-        exx
-        ld      (PIECE), a      ; guardo en PIECE dicha posición
-        call    SQAT            ; si está siendo atacada
-        exx                     ; dicha posición, devolver
-        ld      a, c            ; Carry activo y devuelvo en A puntuación acumulada
-        ret
-
-; 59 bytes
-MPSCAN  xor     a               ; inicializo a cero la puntuación del mejor movimiento
-        ld      (BEST), a
-        ld      b, 8*11-2       ; número de posiciones del tablero
-        ld      hl, seglin+2    ; apunto 1 byte antes de la primera posición del tablero
-MPSCAN1 inc     hl              ; incremento posición
-        push    hl
-        push    bc
-        ld      e, l            ; guardo posición en E
-        call    STR2            ; leo estado de la casilla
-        cp      3
-        jr      nz, MPSCAN3     ; si la pieza no es del ordenador (blanca) salir a MPSCAN3
-        ld      l, e            ; recupero posición en HL
-        ld      (PPC), hl       ; guardo en PPC (para ser utilizada por PMOVE)
-        call    MOVE            ; relleno lista de movimientos posibles
-MPSCAN2 call    TL              ; extraigo movimientos de la lista
-        jr      z, MPSCAN3      ; si he acabado con todos los movimientos salgo a MPSCAN3
-        ld      e, a            ; pongo en posición final el movimiento a probar
-        ld      d, seglin>>8
-        call    PMOVE           ; pruebo todos los movimientos de todas las piezas
-        jr      MPSCAN2         ; y calculo el que tenga mejor puntuación
-MPSCAN3 pop     bc
-        pop     hl
-        djnz    MPSCAN1         ; hasta acabar de recorrer el tablero
-        ld      a, (BEST)       ; leo puntuación del mejor movimiento
-        cp      0
-MPSCAN4 jp      z, MPSCAN4      ; si le hago jaque mate a la máquina hacer bucle infinito
-CHGSQ   call    DOMOVE          ; realizar el movimiento en el tablero
-CHGMV   ld      hl, prilin      ; invierte turno
-CHG     ld      a, (hl)
-        add     a, $80
-        ld      (hl), a
-        ret
-
 ; 32 bytes
 PMOVE   ld      hl, (PPC)       ; leo en HL posición inicial pieza
         ld      a, (de)         ; leo el contenido de la posición final de la pieza
@@ -381,16 +404,14 @@ PMOVE   ld      hl, (PPC)       ; leo en HL posición inicial pieza
         ld      (de), a         ; pongo el contenido de la posición inicial en posición final
         ld      b, a            ; guardo en B dicha pieza
         exx                     ; esto mantiene HL, DE y BC en lugar seguro
-        and     a               ; desactivo Carry para guardar lista de movimientos en buffer
         call    SHIFT           ; guardo lista
         call    CHK
         exx                     ; recupera HL, DE y BC
         ld      (hl), b         ; devuelvo pieza a posición inicial
         ld      a, c            ; y a posición final
         ld      (de), a
-        jr      c, PMOVE1       ; si hay jaque al rey saltar llamada a SCORE
-        call    SCORE
-PMOVE1  scf                     ; recuperar la lista de movimientos anteriormente
+        call    nc, SCORE
+        scf                     ; recuperar la lista de movimientos anteriormente
 SHIFT   ld      hl, MOVBUF      ; muevo la lista de movimientos posibles
         ld      de, MOVCNT      ; a un buffer donde antes estaba la tabla y código 
         ld      bc, 28          ; de inicialización
@@ -398,35 +419,6 @@ SHIFT   ld      hl, MOVBUF      ; muevo la lista de movimientos posibles
 SHIFT1  ex      de, hl
 SHIFT2  ldir
         ret
-
-; 41 bytes
-DOMOVE  ld      hl, BEST+4      ; apunto a pieza inicial en mejor movimiento
-        ld      a, (hl)         ; leo pieza inicial
-        dec     hl
-        dec     hl              ; apunto a posición inicial en mejor movimiento
-        ld      e, (hl)         ; leo posición inicial
-        ld      d, seglin>>8
-        ld      (de), a         ; escribo pieza inicial en posición inicial
-        dec     hl
-        ld      l, (hl)         ; leo posición final en HL
-        ld      h, d
-        ld      c, a            ; guardo en C pieza inicial
-        and     $7f             ; quito color
-        cp      $35             ; 'P'
-        jr      nz, DOMOVE2
-        ld      a, e            ; si es un peón leo posición inicial
-        cp      seglin+3+8 & 255
-        jr      c, DOMOVE1      ; si el peón está en la primera o la
-        cp      seglin+2+7*11 & 255 ; última fila, promocionarlo
-        jr      c, DOMOVE2       
-DOMOVE1 ld      a, c            ; promociono peón a reina
-        inc     a
-        ld      (de), a
-DOMOVE2 bit     0, l            ; pongo cuadro vacío en posición inicial
-        ld      (hl), 0         ; del color que corresponda según si la
-        jr      nz, DOMOVE3     ; posición es par
-        ld      (hl), $80
-DOMOVE3 ret
 
         block   $4351-$, $fe
 
