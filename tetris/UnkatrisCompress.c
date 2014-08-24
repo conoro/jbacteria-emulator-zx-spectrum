@@ -164,6 +164,7 @@ unsigned char *compress(Optimal *optimal, unsigned char *input_data,
     input_prev= input_index - (optimal[input_index].len > 0 ? optimal[input_index].len : 1),
     optimal[input_prev].bits= input_index,
     input_index= input_prev;
+  printf("lit %d\n", input_data[input_index+1]);
   write_bit(input_data[++input_index]^1);
   while ( (input_index = optimal[input_index].bits) > 0 )
     if( optimal[input_index].len == 0 ){
@@ -262,7 +263,7 @@ void main(void){
     if( i==99 || i==100-26 || !empty(input_data= out+i*220) ){
       printf("\nlevel %02d, ", 100-i );
       compress(optimize(input_data, 220), input_data, 220);
-      if( i!=100-26 )
+      if( i!=100-27 )
         total+= 2,
         write_bit(mem[((99-i)/10)*2240+((99-i)%10)*4+2202]-3),
         write_bit(mem[((99-i)/10)*2240+((99-i)%10)*4+2203]-3);
