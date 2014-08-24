@@ -259,7 +259,7 @@ void main(void){
   bit_mask= 0;
   for ( i= 99; i; i-- ){
     input_data= out+i*220;
-    if( i==99 || i==100-25 || !empty(input_data= out+i*220) ){
+    if( i==99 || i==100-26 || !empty(input_data= out+i*220) ){
       printf("\nlevel %02d, ", 100-i );
       compress(optimize(input_data, 220), input_data, 220);
       if( i!=100-26 )
