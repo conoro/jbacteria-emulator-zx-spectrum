@@ -6,20 +6,23 @@ lncnt   defb    $80     ; temporal que lleva la cuenta de líneas que faltan
 lnini   defb    0       ; variable que lleva la cuenta inicial de líneas que faltan
 speed   defb    0       ; variable que lleva la velocidad de caída de la pieza
 
-inic    call    $02bb
-        ld      (iy+2), c       ; lnini
-        inc     l
-        defb    $21
-D_FILE  defw    dfile
+inic    ld      a, (LAST_K+1)
+        inc     a
         jr      z, inic
-        ld      (iy+3), 13      ; speed
+        defb    $21, $fe
+D_FILE  defw    dfile
+        ld      (iy+desc1+2-$4000), $85
+        sub     h
+        ld      h, a
 
-E_LINE  defw    $4401           ; ld bc, $8044
-        defb    $80
-        ld      (iy+desc1+2-$4000), b
-        ld      hl, map-1
-        ld      (desc+1), hl
-        ld      hl, $1d1c
+E_LINE  defw    $4401           ; ld bc, $1c44
+        defb    $1c
+        ld      (lnini), hl     ; speed
+        ld      h, b
+        ld      l, b
+        ld      (score+6-2), hl
+        ld      (score+6-4), hl
+        inc     h
         jr      inca
 
 LAST_K  defw    $ffff
@@ -89,9 +92,8 @@ opc2    ld      a, (de)         ; Leo el color (en A) de la posición actual (de
         jr      pin4
 
 inca    ld      (level+6-1), hl
-        dec     h
-        ld      (score+6-2), hl
-        ld      (score+6-4), hl
+        ld      hl, map-1
+        ld      (desc+1), hl
 
 nxtl    ld      de, screen+11*20-1
 desc    ld      hl, 0
@@ -207,25 +209,14 @@ rand    ld      a, (FRAMES)
         ld      l, a
         ld      a, (lastp)
         ld      (lastp), hl
-        ld      hl, kaka
-        push    hl
         ld      de, screen+1+2*11+6 ; La primera pieza parte de la coordenada (x, y)= (6, 2), en el registro DE guardo la posición
-leep    add     a, tabla-1&255
-        ld      l, a            ; Paso dicho valor al registro L para leer pieza de la tabla
-        add     a, $8c-tabla+1&255
-        ld      (mico+1), a     ; Guardo color generado en A'
-        ld      h, tabla>>8     ; Posición alta de la tabla de piezas
-        ld      c, h            ; Pongo C a un valor mayor de 4 con los bits 1 y 2 a cero (que indican que entro en el bucle principal desde nueva pieza)
-        ld      l, (hl)         ; Leo byte de la tabla de piezas
-        add     hl, hl
-        add     hl, hl
-        add     hl, hl
-        add     hl, hl
-        ret
+        call    leep
 
 ; Bucle principal del juego
 
-loop    set     1, (iy+copc+1-$4000)
+loop    ld      a, (FRAMES)     ; Leo contador de frames
+        ld      (time+1), a     ; Pongo FRAMES1 (antes guardada en A) como referencia en time (variable incrustada en código)
+salop   set     1, (iy+copc+1-$4000)
         call    pint            ; Llamo a la función pint para testear la pieza (con -1 ahorro un byte porque PUSH DE coincide con el último byte de la instrucción anterior)
         res     1, (iy+copc+1-$4000)
         jr      z, ncol         ; Si no hay colisión, salto a ncol
@@ -271,13 +262,24 @@ nder    sub     $fd
         jr      z, rota         ; Sí, pues salto a rota (con A y C inicializadas)
         add     a, $fd
 tloo    ld      bc, $0b04       ; Inicializo B a 11 (bajo posición una fila completa) y C a 4 indicando que entro al bucle principal vía pieza no acelerada
-        jr      c, loop         ; Si la pieza cae por su peso (ninguna tecla pulsada), cierro bucle principal
+        jr      c, salop        ; Si la pieza cae por su peso (ninguna tecla pulsada), cierro bucle principal
         inc     c               ; Si se ha pulsado 'a' o equivalente, señalizo pieza acelerada en registro C
 su32    inc     e               ; Avanza la posición en una fila (32 caracteres)
         djnz    su32
-kaka    ld      a, (FRAMES)     ; Leo contador de frames
-        ld      (time+1), a     ; Pongo FRAMES1 (antes guardada en A) como referencia en time (variable incrustada en código)
         jr      loop            ; Cierro bucle principal
+
+leep    add     a, tabla-1&255
+        ld      l, a            ; Paso dicho valor al registro L para leer pieza de la tabla
+        add     a, $8c-tabla+1&255
+        ld      (mico+1), a     ; Guardo color generado en A'
+        ld      h, tabla>>8     ; Posición alta de la tabla de piezas
+        ld      c, h            ; Pongo C a un valor mayor de 4 con los bits 1 y 2 a cero (que indican que entro en el bucle principal desde nueva pieza)
+        ld      l, (hl)         ; Leo byte de la tabla de piezas
+        add     hl, hl
+        add     hl, hl
+        add     hl, hl
+        add     hl, hl
+        ret
 
 ; Función rotar pieza, el punto de entrada es la etiqueta rota
 
@@ -303,7 +305,7 @@ rot1    add     hl, hl          ; Desplazo 4 veces HL a la izquierda
 map
         block   $4300-44-$, $fe
 
-dfile   defb    $76,49,42,59,42,49,0,135,137,137,132
+dfile   defb    $76,49,42,59,42,49,0,135,137,137,132,       
 level   defb    $76,0,0,0,0,30,34,133,136,136,133
         defb    $76,56,40,52,55,42,0,0,3,3,132
 score   defb    $76,0,0,135,131,4,28,0,0,135,129
@@ -315,11 +317,11 @@ screen  defb    $76,128,5,133,128,5,133,128,5,133,128
         defb    $76,130,131,131,135,131,131,135,131,131,129
         defb    $76,128,128,128,133,128,128,133,128,128,128
         defb    $76,130,4,131,131,4,131,131,4,131,129
-        defb    $76,128,5,128,128,5,128,128,5,128,128
+        defb    $76,128,5,184,181,170,170,169,5,128,128
         defb    $76,130,131,131,135,131,131,135,131,131,129
-        defb    $76,128,128,128,133,128,128,133,128,128,128
+        defb    $76,128,157,128,133,158,128,133,128,159,128
         defb    $76,130,4,131,131,4,131,131,4,131,129
-        defb    $76,128,5,128,128,5,128,128,5,128,128
+        defb    $76,128,5,128,160,5,128,161,5,128,128
         defb    $76,130,131,131,131,131,131,131,131,131,129
         defb    $76,138,128,138,128,1,2,128,128,138,128
         defb    $76,128,138,128,7,0,0,132,138,128,138

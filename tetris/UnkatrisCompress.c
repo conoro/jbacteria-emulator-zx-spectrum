@@ -35,7 +35,7 @@
 
 unsigned char *output_data;
 size_t output_index;
-int bit_mask, total= 0;
+int bit_mask, total= -7;
 
 typedef struct match_t {
   size_t index;
@@ -258,6 +258,7 @@ void main(void){
   fo= fopen("unkatris.map", "wb+");
   output_index= 0;
   bit_mask= 0;
+  write_bit(0);
   for ( i= 99; i; i-- ){
     input_data= out+i*220;
     if( i==99 || i==100-26 || !empty(input_data= out+i*220) ){
@@ -273,6 +274,6 @@ void main(void){
     tmpchar= output_data[k],
     output_data[k]= output_data[output_index-1-k],
     output_data[output_index-1-k]= tmpchar;
-  fwrite(output_data, 1, output_index, fo);
+  fwrite(output_data, 1, output_index-1, fo);
   printf("\ntotal %d, %.3f\n", total, (float)total/8);
 }
