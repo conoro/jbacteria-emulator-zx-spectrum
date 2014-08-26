@@ -93,10 +93,9 @@ opc2    ld      a, (de)         ; Leo el color (en A) de la posición actual (de
 inca    inc     h
         ld      (level+6-1), hl
         ld      hl, map-1
-        ld      (desc+1), hl
-
-nxtl    ld      de, screen+11*20-1
-desc    ld      hl, 0
+        defb    1
+nxtl    ld      hl, 0
+        ld      de, screen+11*20-1
 desc1   ld      bc, 0           ; marker bit
 desc2   xor     a
         call    gbit            ; load bitsym bits (literal)
@@ -164,7 +163,7 @@ incr    adc     a, (hl)
 
 tutia   call    gbitd
         ld      (iy+desc1+2-$4000), b
-        ld      (desc+1), hl
+        ld      (nxtl+1), hl
         ld      b, 3
         ld      h, $40
 ripi    ld      c, (hl)
