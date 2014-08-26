@@ -9,20 +9,19 @@ speed   defb    0       ; variable que lleva la velocidad de caída de la pieza
 inic    ld      a, (LAST_K+1)
         inc     a
         jr      z, inic
-        defb    $21, $fe
+        defb    $21, $02
 D_FILE  defw    dfile
         ld      (iy+desc1+2-$4000), $85
-        sub     h
-        ld      h, a
+        sub     10
 
 E_LINE  defw    $4401           ; ld bc, $1c44
         defb    $1c
+        ld      h, a
         ld      (lnini), hl     ; speed
         ld      h, b
         ld      l, b
         ld      (score+6-2), hl
         ld      (score+6-4), hl
-        inc     h
         jr      inca
 
 LAST_K  defw    $ffff
@@ -91,7 +90,8 @@ opc2    ld      a, (de)         ; Leo el color (en A) de la posición actual (de
         pop     de              ; Si no es negro, hay colisión, lo indico con carry Z desactivo y salgo de la subfunción y de la función pint
         jr      pin4
 
-inca    ld      (level+6-1), hl
+inca    inc     h
+        ld      (level+6-1), hl
         ld      hl, map-1
         ld      (desc+1), hl
 
@@ -147,7 +147,7 @@ nnwp    lddr                    ; Hago el corrimiento de líneas
         sla     (hl)
         ld      hl, score+6-1
         call    incr
-        inc     (iy+1)          ; lncnt
+        dec     (iy+1)          ; lncnt
         jr      nz, tlin
         ld      de, nxtl
         push    de
@@ -171,7 +171,7 @@ ripi    ld      c, (hl)
         ld      l, b
         rrca
         jr      nc, ndvel
-        dec     (hl)            ; lnini, speed
+        inc     (hl)            ; lnini, speed
 ndvel   djnz    ripi
         ld      (hl), c         ; lncnt
 
@@ -234,7 +234,7 @@ mico    ld      a, 0
         push    hl              ; Guardo pieza en pila
 rkey    ld      a, (FRAMES)     ; Leo contador de frames
 time    sub     0               ; Comparo con referencia (valor de frames que tenía la pieza antes de descender)
-velo    add     a, (iy+3)       ; speed Aplico un retardo (número de frames que tarda la pieza en descender)
+velo    sub     (iy+3)          ; speed Aplico un retardo (número de frames que tarda la pieza en descender)
         jr      z, salt         ; Si se agota el tiempo, la pieza cae por gravedad, salto a "salt"
         ld      a, (LAST_K+1)
         inc     a
@@ -317,11 +317,11 @@ screen  defb    $76,128,5,133,128,5,133,128,5,133,128
         defb    $76,130,131,131,135,131,131,135,131,131,129
         defb    $76,128,128,128,133,128,128,133,128,128,128
         defb    $76,130,4,131,131,4,131,131,4,131,129
-        defb    $76,128,5,184,181,170,170,169,5,128,128
+        defb    $76,128,5,128,173,166,183,169,5,157,128
         defb    $76,130,131,131,135,131,131,135,131,131,129
-        defb    $76,128,157,128,133,158,128,133,128,159,128
+        defb    $76,128,158,128,133,159,128,133,128,160,128
         defb    $76,130,4,131,131,4,131,131,4,131,129
-        defb    $76,128,5,128,160,5,128,161,5,128,128
+        defb    $76,128,5,128,170,166,184,190,5,161,128
         defb    $76,130,131,131,131,131,131,131,131,131,129
         defb    $76,138,128,138,128,1,2,128,128,138,128
         defb    $76,128,138,128,7,0,0,132,138,128,138
