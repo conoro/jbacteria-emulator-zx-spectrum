@@ -12,7 +12,7 @@ inic    ld      a, (LAST_K+1)
         defb    $21, $02
 D_FILE  defw    dfile
         ld      (iy+desc1+2-$4000), $85
-        sub     10
+        sub     11
 
 E_LINE  defw    $4401           ; ld bc, $1c44
         defb    $1c
