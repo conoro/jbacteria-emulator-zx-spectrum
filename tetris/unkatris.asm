@@ -11,17 +11,18 @@ inic    ld      a, (LAST_K+1)
         jr      z, inic
         defb    $21, $02
 D_FILE  defw    dfile
-        ld      (iy+desc1+2-$4000), $85
         sub     11
+        ld      h, a
+        ld      (lnini), hl     ; speed
 
 E_LINE  defw    $4401           ; ld bc, $1c44
         defb    $1c
-        ld      h, a
-        ld      (lnini), hl     ; speed
         ld      h, b
         ld      l, b
         ld      (score+6-2), hl
         ld      (score+6-4), hl
+        inc     h
+        ld      (level+6-1), hl
         jr      inca
 
 LAST_K  defw    $ffff
@@ -90,43 +91,41 @@ opc2    ld      a, (de)         ; Leo el color (en A) de la posición actual (de
         pop     de              ; Si no es negro, hay colisión, lo indico con carry Z desactivo y salgo de la subfunción y de la función pint
         jr      pin4
 
-inca    inc     h
-        ld      (level+6-1), hl
-        ld      hl, map-1
-        defb    1
+inca    ld      hl, map-1
+        ld      b, $85
+        jr      desc2
 nxtl    ld      hl, 0
-        ld      de, screen+11*20-1
-desc1   ld      bc, 0           ; marker bit
-desc2   xor     a
+desc1   ld      b, 0
+desc2   ld      de, screen+11*20-1
+desc3   xor     a
         call    gbit            ; load bitsym bits (literal)
         add     a, 7
         ld      (de), a         ; write literal
-desc5   xor     a
+desc4   xor     a
         dec     e               ; test end of file (map is always 150 bytes)
         jr      z, tutia
         call    gbit            ; read one bit
         rra
-        jr      c, desc2        ; test if literal or sequence
+        jr      c, desc3        ; test if literal or sequence
         call    gbitd           ; get two bits
-        jr      z, desc9        ; 00 = 1
+        jr      z, desc6        ; 00 = 1
         dec     a
         call    gbit
-        jr      z, desc8        ; 010 = -11
+        jr      z, desc5        ; 010 = -11
         call    gbitd           ; [011, 100, 101, 110, 111] xx
         add     -13
-        jr      z, desc5
-desc8   adc     a, 10
-desc9   inc     a
+        jr      z, desc4
+desc5   adc     a, 10
+desc6   inc     a
         push    de
-        ld      d, c
         ld      e, a
         xor     a
-        inc     a
-        defb    $da
-desc6   call    gbit            ; (Elias gamma coding)
+        ld      d, a
+        ld      a, 1
+desc7   call    nz, gbit        ; (Elias gamma coding)
         call    gbit
         rra
-        jr      nc, desc6       ; check end marker
+        jr      nc, desc7       ; check end marker
         inc     a               ; adjust length
         ld      c, a            ; save lenth to c
         ld      a, b            ; save b (byte reading) on a
@@ -138,18 +137,18 @@ desc6   call    gbit            ; (Elias gamma coding)
         pop     hl              ; restore source address (compressed data)
         ld      b, a            ; restore b register
         inc     e               ; prepare test of end of file
-        jr      desc5           ; jump to main loop
+        jr      desc4           ; jump to main loop
 
 nnwp    lddr                    ; Hago el corrimiento de líneas
         ld      h, $40
         ld      a, (hl)         ; multi
         sla     (hl)
+        ld      l, nxtl & 255
+        push    hl
         ld      hl, score+6-1
         call    incr
         dec     (iy+1)          ; lncnt
         jr      nz, tlin
-        ld      de, nxtl
-        push    de
         ld      l, level+6+1 & 255
 incrr   dec     l
 inc1    ld      a, b
@@ -162,10 +161,10 @@ incr    adc     a, (hl)
         jr      incrr
 
 tutia   call    gbitd
-        ld      (iy+desc1+2-$4000), b
         ld      (nxtl+1), hl
+        ld      hl, desc1+1
+        ld      (hl), b
         ld      b, 3
-        ld      h, $40
 ripi    ld      c, (hl)
         ld      l, b
         rrca
@@ -305,7 +304,7 @@ map
         block   $4300-44-$, $fe
 
 dfile   defb    $76,49,42,59,42,49,0,135,137,137,132
-level   defb    $76,0,0,0,0,30,34,133,136,136,133
+level   defb    $76,0,0,0,0,30,35,133,136,136,133
         defb    $76,56,40,52,55,42,0,0,3,3,132
 score   defb    $76,0,0,135,131,4,28,0,0,135,129
 screen  defb    $76,128,5,133,128,5,133,128,5,133,128
@@ -329,7 +328,6 @@ screen  defb    $76,128,5,133,128,5,133,128,5,133,128
         defb    $76,0,0,38,51,57,52,51,46,52,0
         defb    $76,0,0,59,46,49,49,42,51,38,0
         defb    $76
-
 
 lastp   defw    1
 
