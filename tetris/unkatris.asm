@@ -15,13 +15,11 @@ D_FILE  defw    dfile
         ld      h, a
         ld      (lnini), hl     ; speed
 
-E_LINE  defw    $4401           ; ld bc, $1c44
-        defb    $1c
-        ld      h, b
-        ld      l, b
+E_LINE  defw    $4401           ; ld bc, $8544
+        defb    $85
+        ld      hl, $1c1c
         ld      (score+6-2), hl
         ld      (score+6-4), hl
-        inc     h
         ld      (level+6-1), hl
         jr      inca
 
@@ -91,11 +89,10 @@ opc2    ld      a, (de)         ; Leo el color (en A) de la posición actual (de
         pop     de              ; Si no es negro, hay colisión, lo indico con carry Z desactivo y salgo de la subfunción y de la función pint
         jr      pin4
 
-inca    ld      hl, map-1
-        ld      b, $85
-        jr      desc2
 nxtl    ld      hl, 0
-desc1   ld      b, 0
+desc1   ld      d, 0
+        defb    $d2
+inca    ld      hl, map-1
 desc2   ld      de, screen+11*20-1
 desc3   xor     a
         call    gbit            ; load bitsym bits (literal)

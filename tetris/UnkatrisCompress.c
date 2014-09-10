@@ -32,6 +32,7 @@
 
 #define MAX_OFFSET   22
 #define MAX_LEN   65536
+#define FILAS         3
 
 unsigned char *output_data;
 size_t output_index;
@@ -239,7 +240,7 @@ void main(void){
     fgets(tmpstr, 1000, fi);
   }
   out= (unsigned char *) malloc (size);
-  for ( tmpi= i= 0; i<10; i++ )
+  for ( tmpi= i= 0; i<FILAS; i++ )
     for ( j= 0; j<10; j++ )
       for ( k= 0; k<20; k++ )
         for ( l= 0; l<11; l++ )
@@ -259,21 +260,21 @@ void main(void){
   output_index= 0;
   bit_mask= 0;
   write_bit(0);
-  for ( i= 99; i; i-- ){
+  for ( i= FILAS*10-1; i; i-- ){
     input_data= out+i*220;
-    if( i==99 || i==100-27 || !empty(input_data= out+i*220) ){
-      printf("\nlevel %02d, ", 100-i );
+    if( i==FILAS*10-1 || !empty(input_data= out+i*220) ){
+      printf("\nlevel %02d, ", FILAS*10-1-i );
       compress(optimize(input_data, 220), input_data, 220);
-      if( i!=100-28 )
+      if( i!=FILAS*10-28 )
         total+= 2,
-        write_bit(mem[((99-i)/10)*2240+((99-i)%10)*4+2202]-3),
-        write_bit(mem[((99-i)/10)*2240+((99-i)%10)*4+2203]-3);
+        write_bit(mem[((FILAS*10-1-i)/10)*2240+((FILAS*10-1-i)%10)*4+2202]-3),
+        write_bit(mem[((FILAS*10-1-i)/10)*2240+((FILAS*10-1-i)%10)*4+2203]-3);
     }
   }
   for ( k= 0; k<output_index>>1; k++ )
     tmpchar= output_data[k],
     output_data[k]= output_data[output_index-1-k],
     output_data[output_index-1-k]= tmpchar;
-  fwrite(output_data, 1, output_index-1, fo);
+  fwrite(output_data+1, 1, output_index-2, fo);
   printf("\ntotal %d, %.3f\n", total, (float)total/8);
 }
