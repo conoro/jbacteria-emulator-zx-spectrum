@@ -6,34 +6,31 @@
         define  lnini   $4002   ; variable que lleva la cuenta inicial de líneas que faltan
         define  speed   $4003   ; variable que lleva la velocidad de caída de la pieza
 
-inic    ld      l, 2
-        defb    $11
+VERSN   defb    0
+E_PPC   defb    0, 0
 D_FILE  defw    dfile
-repet   ld      a, (LAST_K+1)
-        inc     a
-        jr      z, repet
-
+DF_CC   defw    0
+VARS    defw    0
+DEST    defw    0
 E_LINE  defw    eline
-        inc     d
-        sub     11
-        ld      h, a
-        ld      (lnini), hl     ; speed
-        ld      hl, $1c1c
-        ld      (score+6-2), hl
-        jr      inca
-
+CH_ADD  defw    0
+X_PTR   defw    0
+STKBOT  defw    0
+STKEND  defw    0
+BERG    defb    0
+MEM     defw    0
+SPARE1  defb    0
+DF_SZ   defb    0
+S_TOP   defw    0
 LAST_K  defw    $ffff
 DB_ST   defb    0
 MARGIN  defb    55
-
-gbit2   ld      b, (hl)         ; load another group of 8 bits
-        dec     hl
-gbitd   call    nc, gbit
-gbit    rl      b               ; get next bit
-        jr      z, gbit2        ; no more bits left?
-        adc     a, a            ; put bit in a
-        ret
-
+NXTLIN  defw    line01
+OLDPPC  defw    0
+FLAGX   defb    0
+STRLEN  defw    0
+T_ADDR  defw    0
+SEED    defw    0
 FRAMES  defw    0               ; Updated once for every TV frame displayed.
 ; Tabla de piezas
 tabla
@@ -88,14 +85,23 @@ opc2    ld      a, (de)         ; Leo el color (en A) de la posición actual (de
         pop     de              ; Si no es negro, hay colisión, lo indico con carry Z desactivo y salgo de la subfunción y de la función pint
         jr      pin4
 
-nxtl    ld      hl, 0
-desc1   ld      b, 0
-        jr      desc2
-inca    ld      b, $85
+inic    ld      l, 2
+repet   ld      a, (LAST_K+1)
+        inc     a
+        jr      z, repet
+        sub     11
+        ld      h, a
+        ld      (lnini), hl     ; speed
+        ld      b, $85
+        ld      hl, $1c1c
+        ld      (score+6-2), hl
         ld      (score+6-4), hl
         ld      (level+6-1), hl
         ld      hl, map-1
-desc2   ld      e, screen+11*20-1 & 255
+        jr      desc2
+nxtl    ld      hl, 0
+desc1   ld      b, 0
+desc2   ld      de, screen+11*20-1
 desc3   xor     a
         call    gbit            ; load bitsym bits (literal)
         add     a, 7
@@ -192,7 +198,7 @@ tli1    ex      de, hl          ; Almaceno posición en DE
         jr      z, tli1         ; Bucle que voy repitiendo (probando con líneas que están por encima) hasta detectar una falsa línea completa en la ROM (debajo de $4000)
         ld      c, l
         bit     0, h
-        jr      nz, nnwp        ; Si me salgo de la zona de atributos es que ya he llegado a la primera línea y por tanto salgo del bucle (a generar una nueva pieza)
+        jr      z, nnwp         ; Si me salgo de la zona de atributos es que ya he llegado a la primera línea y por tanto salgo del bucle (a generar una nueva pieza)
         ld      d, h
         sbc     hl, hl
         ld      e, h
@@ -222,7 +228,7 @@ salop   set     1, (iy+copc+1-$4000)
         pop     hl              ; Si hay colisión, recupero los valores de posición
         pop     de              ; y pieza anteriores a la colisión
         inc     c               ; Señalizo la colisión poniendo a 1 el bit 1 del registro C
-ncol    ld      sp, $43fe       ; Equilibro la pila, ya que la estaba desequilibrando con muchos PUSH HL,DE y un sólo POP HL,DE
+ncol    ld      sp, stack       ; Equilibro la pila, ya que la estaba desequilibrando con muchos PUSH HL,DE y un sólo POP HL,DE
 mico    ld      a, 0
         call    pint            ; pinto la pieza
         bit     1, c            ; Compruebo si ha habido colisión (del tipo colisión contra el suelo, no vale contra paredes ni tras rotar)
@@ -298,12 +304,24 @@ rot1    add     hl, hl          ; Desplazo 4 veces HL a la izquierda
         ld      l, c
         jr      tloo            ; Salto al bucle principal (con indicador de pieza no acelerada)
 
+line01  defb    0, 1
+        defw    gbit2-line01-4
+        defb    $f9, $d4, $25, $7e, $8f, $00, $bc   ; RAND USR $405e
+
+gbit2   ld      b, (hl)         ; load another group of 8 bits
+        dec     hl
+gbitd   call    nc, gbit
+gbit    rl      b               ; get next bit
+        jr      z, gbit2        ; no more bits left?
+        adc     a, a            ; put bit in a
+        ret
+
         incbin  unkatris.map
 map
-        block   $4300-44-$, $fe
+        block   $4400-44-$, $fe
 
 dfile   defb    $76,49,42,59,42,49,0,135,137,137,132
-level   defb    $76,0,0,0,0,30,35,133,136,136,133
+level   defb    $76,0,0,0,0,31,37,133,136,136,133
         defb    $76,56,40,52,55,42,0,0,3,3,132
 score   defb    $76,0,0,135,131,4,28,0,0,135,129
 screen  defb    $76,128,5,133,128,5,133,128,5,133,128
@@ -330,8 +348,7 @@ screen  defb    $76,128,5,133,128,5,133,128,5,133,128
 
 lastp   defw    1
 
-        block   $43fc-$
-        defw    inic
-        nop
-        defb    $80
+        block   $44fc-$
+
+stack   defb    $80
 eline
