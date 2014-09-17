@@ -1,18 +1,30 @@
+#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#ifdef __DMC__
-  #define strcasecmp stricmp
-#endif
 
 FILE *fi, *fo, *ft;
 unsigned char in[0x10000], mem[0x20000];
 int i, j, k, tlength;
 unsigned short length, param, frequency= 44100;
 char tzx= 0, wav= 0, channel_type= 1, velo= 3, offset= 0, command[0x100], *ext;
+
+int strcasecmp(const char *a, const char *b){
+  int ca, cb;
+  do{
+    ca= *a++ & 0xff;
+    cb= *b++ & 0xff;
+    if (ca >= 'A' && ca <= 'Z')
+      ca+= 'a' - 'A';
+    if (cb >= 'A' && cb <= 'Z')
+      cb+= 'a' - 'A';
+  } while ( ca == cb && ca != '\0' );
+  return ca - cb;
+}
+
 int main(int argc, char* argv[]){
   if( argc==1 )
     printf("\n"
-    "CgLeches v0.99, an ultra load block generator by Antonio Villena, 8 Apr 2014\n\n"
+    "CgLeches v1.00, an ultra load block generator by Antonio Villena, 17 Sep 2014\n\n"
     "  CgLeches <ifile> <ofile> [speed] [channel_type] [srate] [offset]\n\n"
     "  <ifile>        TAP input file, mandatory\n"
     "  <ofile>        Output file, between TZX or WAV file, mandatory\n"
@@ -89,12 +101,21 @@ int main(int argc, char* argv[]){
     ft= fopen("_tmp.tap", "wb+");
     fwrite(in+1, 1, length-2, ft);
     fclose(ft);
+#ifdef __linux__ 
+    sprintf(command, "./leches %d %s tmp.%s %02x %d %d 100 %d _tmp.tap > nul\n", frequency,
+            channel_type-1 ? (channel_type-2?"stereoinv":"stereo") : "mono",
+            ext, in[0], velo, offset, in[0] ? 2000 : 200);
+    if( system(command) )
+      printf("\nError: leches not found \n"),
+      exit(-1);
+#else
     sprintf(command, "leches %d %s tmp.%s %02x %d %d 100 %d _tmp.tap > nul\n", frequency,
             channel_type-1 ? (channel_type-2?"stereoinv":"stereo") : "mono",
             ext, in[0], velo, offset, in[0] ? 2000 : 200);
     if( system(command) )
       printf("\nError: leches.exe not found \n"),
       exit(-1);
+#endif
     else{
       sprintf(command, "tmp.%s", ext);
       ft= fopen(command, "rb");

@@ -1,9 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#ifdef __DMC__
-  #define strcasecmp stricmp
-#endif
 
 unsigned char table1[][4]=
   { {1, 2, 2, 3}, {2, 2, 3, 3}, {2, 3, 3, 4}, {3, 3, 4, 4},
@@ -22,6 +19,19 @@ unsigned char inibit= 0, tzx= 0, channel_type= 1, checksum, mlow, velo, refconf;
 FILE *fi, *fo;
 int i, j, k, flag, ind= 0;
 unsigned short length, outbyte= 1, frequency, pilotts, pilotpulses;
+
+int strcasecmp(const char *a, const char *b){
+  int ca, cb;
+  do{
+    ca= *a++ & 0xff;
+    cb= *b++ & 0xff;
+    if (ca >= 'A' && ca <= 'Z')
+      ca+= 'a' - 'A';
+    if (cb >= 'A' && cb <= 'Z')
+      cb+= 'a' - 'A';
+  } while ( ca == cb && ca != '\0' );
+  return ca - cb;
+}
 
 void outbits( short val ){
   if( tzx )
@@ -74,14 +84,14 @@ int main(int argc, char* argv[]){
   mem= (unsigned char *) malloc (0x20000);
   if( argc==1 )
     printf("\n"
-    "leches v0.02, an ultra load block generator by Antonio Villena, 18 Feb 2014\n\n"
+    "leches v0.03, an ultra load block generator by Antonio Villena, 17 Sep 2014\n\n"
     "  leches <srate> <channel_type> <ofile> <flag> <pilot_ms> <pause_ms> <ifile>\n\n"
     "  <srate>         Sample rate, 44100 or 48000. Default is 44100\n"
     "  <channel_type>  Possible values are: mono (default), stereo or stereoinv\n"
     "  <ofile>         Output file, between TZX or WAV file\n"
     "  <flag>          Flag byte, 00 for header, ff or another for data blocks\n"
-    "  <speed>         A number between 0 and 7. [0..3] for Safer and [4..7] for Reckless\n"
-    "  <offset>        -2,-1,0,1 or 2. Fine grain adjust for symbol offset. Change if you see loading errors\n"
+    "  <speed>         Between 0 and 7. [0..3] for Safer and [4..7] for Reckless\n"
+    "  <offset>        -2,-1,0,1 or 2. Fine grain adjust for symbol offset\n"
     "  <pilot_ms>      Duration of pilot in milliseconds\n"
     "  <pause_ms>      Duration of pause after block in milliseconds\n"
     "  <ifile>         Hexadecimal string or filename as data origin of that block\n\n"),
