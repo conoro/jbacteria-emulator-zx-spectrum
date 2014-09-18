@@ -228,7 +228,7 @@ salop   set     1, (iy+copc+1-$4000)
         pop     hl              ; Si hay colisión, recupero los valores de posición
         pop     de              ; y pieza anteriores a la colisión
         inc     c               ; Señalizo la colisión poniendo a 1 el bit 1 del registro C
-ncol    ld      sp, stack       ; Equilibro la pila, ya que la estaba desequilibrando con muchos PUSH HL,DE y un sólo POP HL,DE
+ncol    ld      sp, eline       ; Equilibro la pila, ya que la estaba desequilibrando con muchos PUSH HL,DE y un sólo POP HL,DE
 mico    ld      a, 0
         call    pint            ; pinto la pieza
         bit     1, c            ; Compruebo si ha habido colisión (del tipo colisión contra el suelo, no vale contra paredes ni tras rotar)
@@ -302,9 +302,8 @@ rot1    add     hl, hl          ; Desplazo 4 veces HL a la izquierda
         pop     hl              ; Salgo del bucle, pero necesito equilibrar pila (no me importa el valor)
         ld      h, a            ; Finalmente la pieza rotada queda en (A, C), que la muevo a HL
         ld      l, c
-        jr      tloo            ; Salto al bucle principal (con indicador de pieza no acelerada)
+line01  jr      tloo            ; Salto al bucle principal (con indicador de pieza no acelerada)
 
-line01  defb    0, 1
         defw    gbit2-line01-4
         defb    $f9, $d4, $25, $7e, $8f, $00, $bc   ; RAND USR $405e
 
@@ -348,7 +347,6 @@ screen  defb    $76,128,5,133,128,5,133,128,5,133,128
 
 lastp   defw    1
 
-        block   $44fc-$
-
-stack   defb    $80
+        block   $44fb-$
+        defb    $80
 eline

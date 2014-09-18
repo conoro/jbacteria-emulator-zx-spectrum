@@ -426,13 +426,10 @@ function kdown(ev) {
       break;
     case 121: // F10
       o= wm();
-      t= new ArrayBuffer(o.length);
-      u= new Uint8Array(t, 0);
+      u= new Uint8Array(o.length);
       for ( j=0; j<o.length; j++ )
         u[j]= o.charCodeAt(j);
-      j= new WebKitBlobBuilder(); 
-      j.append(t);
-      ir.src= webkitURL.createObjectURL(j.getBlob());
+      ir.src= URL.createObjectURL(new Blob([u.buffer], {type: 'application/octet-binary'}));
       alert('Snapshot saved.\nRename the file (without extension) to .Z80');
       self.focus();
       break;

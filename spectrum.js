@@ -238,11 +238,30 @@ function run() {
   z80interrupt();
 }
 
+function printcaad(){
+  if( frameCaad ){
+    if( a==13 )
+      frameCaad.body.innerHTML+= '<br/>';
+    else if( a==62 )
+      frameCaad.body.innerHTML+= '<br/>>';
+    else if( a>31 )
+      frameCaad.body.innerHTML+= String.fromCharCode(a);
+  }
+  od9();
+  oe5();
+}
+
 function init() {
   paintScreen= paintNormal;
   cv.setAttribute('style', 'image-rendering:'+( localStorage.ft & 1
                                                 ? 'optimizeSpeed'
                                                 : '' ));
+  frameCaad= parent.frames[2] ? parent.frames[2].document : 0;
+ 
+  if( frameCaad )
+    frameCaad.body.onclick= frameCaad.onclick= function(){
+      parent.frames[1].focus();
+    }
   onresize();
   scrl= scst= ula= sample= pbcs= pbc= cts= playp= vbp= bor= f1= f3= f4= st= time= flash= 0;
   if( localStorage.ft==undefined )
@@ -455,6 +474,10 @@ function kdown(ev) {
     else
       pushk( code );
   switch( ev.keyCode ){
+    case 9: // Tab
+      if( frameCaad )
+        frameCaad.body.innerHTML= '';
+      break;
     case 112: // F1
       if( f1= ~f1 ){
         if( trein==32000 )
@@ -582,13 +605,10 @@ function kdown(ev) {
       break;
     case 121: // F10
       o= wm();
-      t= new ArrayBuffer(o.length);
-      u= new Uint8Array(t, 0);
+      u= new Uint8Array(o.length);
       for ( j=0; j<o.length; j++ )
         u[j]= o.charCodeAt(j);
-      j= new WebKitBlobBuilder(); 
-      j.append(t);
-      ir.src= webkitURL.createObjectURL(j.getBlob());
+      ir.src= URL.createObjectURL(new Blob([u.buffer], {type: 'application/octet-binary'}));
       alert('Snapshot saved.\nRename the file (without extension) to .Z80.');
       self.focus();
       break;

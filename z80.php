@@ -996,7 +996,7 @@ a(pop('h', 'l'));                                           // e1 // POP HL
 b('oe2', jpc('fa&256?38505>>((fr^fr>>4)&15)&1:(fr^fa)&(fr^fb)&128'));//e2//JP PO
 a(exspi(''));                                               // e3 // EX (SP),HL
 b('oe4', callc('fa&256?38505>>((fr^fr>>4)&15)&1:(fr^fa)&(fr^fb)&128'));//e4//CALL PO
-a(push('h', 'l'));                                          // e5 // PUSH HL
+b('oe5', push('h', 'l'));                                   // e5 // PUSH HL
 b('oe6', anda($pag==1?'m[pc>>14&3][pc++&16383]':'m[pc++&65535]', $cpc?2:7));// AND A,n
 b('oe7', rst(32));                                          // e7 // RST 0x20
 b('oe8', retci('fa&256?38505>>((fr^fr>>4)&15)&1:(fr^fa)&(fr^fb)&128'));//e8//RET PE
@@ -2428,7 +2428,7 @@ c('p00');                                                   // f9 // NOP
 c('p00');                                                   // fa // NOP
 c('p00');                                                   // fb // NOP
 a('loadblock()');                                           // fc // tape loader trap
-c('p00');                                                   // fd // NOP
+a('printcaad()');                                           // fd // print to caad frame
 c('p00');                                                   // fe // NOP
 c('p00');                                                   // ff // NOP
 ?>

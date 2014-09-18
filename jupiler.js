@@ -288,8 +288,7 @@ function kdown(ev) {
       u= new Uint8Array(o.length);
       for ( j=0; j<o.length; j++ )
         u[j]= o.charCodeAt(j);
-      URL= window.URL || window.webkitURL;
-      ir.src= URL.createObjectURL(new Blob([u], {type: 'application/x.cantab.ace'}));
+      ir.src= URL.createObjectURL(new Blob([u.buffer], {type: 'application/octet-binary'}));
       alert('Snapshot saved.\nRename the file (without extension) to .ACE.');
       self.focus();
       break;
