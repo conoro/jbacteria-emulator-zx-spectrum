@@ -244,7 +244,7 @@ function printcaad(){
       frameCaad.body.innerHTML+= '<br/>';
     else if( a==62 )
       frameCaad.body.innerHTML+= '<br/>>';
-    else if( a>31 )
+    else if( a>31 && a<127 )
       frameCaad.body.innerHTML+= String.fromCharCode(a);
   }
   od9();
