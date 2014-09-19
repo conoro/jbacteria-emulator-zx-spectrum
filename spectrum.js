@@ -704,10 +704,10 @@ function wb(addr, val) {
 }
 
 function rm(o) {
-  if(o.charCodeAt(6)|o.charCodeAt(7) ||
+  if(//o.charCodeAt(6)|o.charCodeAt(7) ||
      o.charCodeAt(12)==255 ||
-     o.charCodeAt(30)!=55 ||
-     o.charCodeAt(34))
+     //o.charCodeAt(30)!=55 ||
+     o.charCodeAt(34)>1)
     return 1;
   j= 0;
   a= o.charCodeAt(j++);
@@ -742,7 +742,7 @@ function rm(o) {
   iff= o.charCodeAt(j++);
   im= o.charCodeAt(j+1)&3;
   u= o.charCodeAt(30);
-  if( u>23 ){
+  if( u>22 ){
     pc= o.charCodeAt(j+4) | o.charCodeAt(j+5)<<8;
     for (v= 0; v < 10; v++ )
       ks[v]= o.charCodeAt(v+75);
