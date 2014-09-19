@@ -1144,7 +1144,8 @@
 06664 1983 48     Adv     McKensie                                          Software Projects Ltd                mckensie McKensie.tap.zip
 06665 1984 48     Adv     Mechanic Harry                                    Questsoft                                     _
 21544 1996 48     Adv     Medieval History                                  Human Soft                                    _
-06667 1987 48     Adv     Mega-Corp                                         Dinamic Software                              Mega-Corp.tzx.zip
+06667 1987 48     Adv     Mega-Corp - Part 1                                Dinamic Software                     megacor1 Mega-Corp.tzx.zip
+06667 1987 48     Adv     Mega-Corp - Part 2                                Dinamic Software                     megacor2 Mega-Corp.tzx.zip
 09948 1985 48     Adv     Megalith Man                                      Goltek Publications                           _
 06669 1993 48     Adv     Meltdown                                          Zenobi Software                      meltdow1 Meltdown_2.tzx.zip
 06670 1990 48     Adv     Memorias de un Hobbit                             JSJ Soft Ltd                                  _
