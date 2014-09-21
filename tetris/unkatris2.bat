@@ -1,3 +1,2 @@
 UnkatrisCompress2
-sjasmplus unkatris.asm
-make1k unkatris.bin
+sjasmplus unkatris2.asm

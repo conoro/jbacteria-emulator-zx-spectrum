@@ -32,7 +32,7 @@
 
 #define MAX_OFFSET   22
 #define MAX_LEN   65536
-#define FILAS         3
+#define FILAS        10
 
 unsigned char *output_data;
 size_t output_index;
@@ -260,12 +260,12 @@ void main(void){
   output_index= 0;
   bit_mask= 0;
   write_bit(0);
-  for ( i= FILAS*10-1; i; i-- ){
+  for ( i= FILAS*10-1; i>-1; i-- ){
     input_data= out+i*220;
-    if( i==FILAS*10-1 || i==FILAS*10-2 || i==FILAS*10-15 || !empty(input_data= out+i*220) ){
+    if( i==FILAS*10-1 || !empty(input_data= out+i*220) ){
       printf("\nlevel %02d, ", FILAS*10-1-i );
       compress(optimize(input_data, 220), input_data, 220);
-      if( i!=FILAS*10-28 )
+      if( i!=FILAS*10-100 )
         total+= 2,
         write_bit(mem[((FILAS*10-1-i)/10)*2240+((FILAS*10-1-i)%10)*4+2202]-3),
         write_bit(mem[((FILAS*10-1-i)/10)*2240+((FILAS*10-1-i)%10)*4+2203]-3);
