@@ -9,7 +9,8 @@
 05900 0000 48     Adv     A To Snad Ne ?!                                                                                 _
 22795 0000 48     Adv     A.R.E.N.A.                                        Top Ten Software                              _
 17409 0000 48     Adv     Abington                                                                               abington Abington.tzx.zip
-05902 1988 48     Adv     Abracadabra                                       Proein Soft Line                              Abracadabra.tap.zip
+05902 1988 48     Adv     Abracadabra - Part 1                              Proein Soft Line                     abracad1 Abracadabra.tap.zip
+05902 1988 48     Adv     Abracadabra - Part 2                              Proein Soft Line                     abracad2 Abracadabra.tap.zip
 24893 0000 128    Adv     Absolution                                        Pegasus Software                              _
 05904 1983 48     Adv     Ace in the H.O.L.E.                               Kayde Software Ltd                   aceinthe AceInTheH.O.L.E.(Add-OnElectronicsLtd).tap.zip
 09457 1988 +3     Adv     Acheton                                           Topologika                                    _
@@ -31,6 +32,8 @@
 05911 1982 16     Adv     Adventure 200                                     Foilkade Ltd                         adventu6 Adventure200.tap.zip
 21554 0000 48     Adv     Adventure 2001                                    R. Tomlin                            advent19 Adventure2001.tzx.zip
 05913 1982 16     Adv     Adventure A: Planet of Death                      Artic Computing Ltd                  adventu7 AdventureA-PlanetOfDeath.tap.zip
+05913 2009 48     Adv     Aventura A: Planet of Death                       Mastodon                             planetde AdventureA-PlanetOfDeath.tap.zip
+05913 2009 48     Adv     Aventura A: Planet of Death - Libro pistas        Mastodon                             planetd1 AdventureA-PlanetOfDeath.tap.zip
 05914 1982 48     Adv     Adventure B: Inca Curse                           Artic Computing Ltd                  adventu8 AdventureB-IncaCurse.tap.zip
 05915 1982 48     Adv     Adventure C: Ship of Doom                         Artic Computing Ltd                  adventu9 AdventureC-ShipOfDoom.tap.zip
 05919 1982 48     Adv     Adventure D: Espionage Island                     Artic Computing Ltd                  advent10 AdventureD-EspionageIsland.tap.zip
@@ -82,7 +85,8 @@
 10723 0000 48     Adv     Andromeda 3                                                                            androme1 Andromeda3.tzx.zip
 09480 1984 48     Adv     Andromeda Trophy                                  Finsbury Software                             _
 15509 0000 48     Adv     Anhk Morpork                                                                           anhkmorp AnhkMorpork.tzx.zip
-14364 1990 48     Adv     Anillo, El                                        Juan Antonio Paz Salgado                      AnilloEl.tap.zip
+14364 1990 48     Adv     Anillo, El                                        Juan Antonio Paz Salgado             anillo1  AnilloEl.tap.zip
+14364 1990 48     Adv     Anillo, El                                        Juan Antonio Paz Salgado             anillo2  AnilloEl.tap.zip
 16221 1986 48     Adv     Anillos del Poder                                 MicroHobby                                    _
 05950 1986 48     Adv     Ankebergsaventyret                                Stefan Andersson                              _
 05951 1985 48     Adv     Antagonists, The                                  Addison-Wesley Productions           antagoni AntagonistsThe(AntagonistenDe)(Addison-WesleyNL).tap.zip
@@ -200,12 +204,16 @@
 11530 0000 48     Adv     Blood of Smeagol, The                             Compass Software                              _
 24892 2010 48     Adv     Bob Esponja -La Aventura-                         SPECTRAVENTURA                       bobespon BobEsponja-LaAventura-.tzx.zip
 06022 1990 48     Adv     Bog of Brit                                       Stormbringer Software                bogofbri BogOfBrit(ZenobiSoftware).tap.zip
-06023 1986 48     Adv     Boggit, The                                       CRL Group PLC                                 BoggitThe.tzx.zip
+06023 1986 48     Adv     Boggit, The - Part 1                              CRL Group PLC                        thebogg1 BoggitThe.tzx.zip
+06023 1986 48     Adv     Boggit, The - Part 2                              CRL Group PLC                        thebogg2 BoggitThe.tzx.zip
+06023 1986 48     Adv     Boggit, The - Part 3                              CRL Group PLC                        thebogg3 BoggitThe.tzx.zip
 09557 1984 48     Adv     Bond, The                                         R. Stobbe                                     _
 06033 1987 48     Adv     Book of the Dead                                  The Essential Myth                            BookOfTheDead.tzx.zip
 11540 1992 48     Adv     Booze Up                                                                               boozeup  BoozeUp.tzx.zip
 15123 1986 48     Adv     Border Harrier                                    Sole Solution Software               borderha BorderHarrier.tap.zip
-06036 1985 48     Adv     Bored of the Rings                                Delta 4 Software                              BoredOfTheRings.tap.zip
+06036 1985 48     Adv     Bored of the Rings - Part 1                       Delta 4 Software                     boredof1 BoredOfTheRings.tap.zip
+06036 1985 48     Adv     Bored of the Rings - Part 2                       Delta 4 Software                     boredof2 BoredOfTheRings.tap.zip
+06036 1985 48     Adv     Bored of the Rings - Part 3                       Delta 4 Software                     boredof3 BoredOfTheRings.tap.zip
 09558 1992 48     Adv     Borrowed Time                                                                                   _
 06042 1989 48     Adv     Bounty Hunter, The                                River Software                       bountyhu BountyHunterThe.tzx.zip
 06043 1990 48     Adv     Boyd File, The                                    Zenobi Software                      boydfile BoydFileThe.tzx.zip
@@ -277,7 +285,8 @@
 10738 1994 48     Adv     Chameleon Key, The                                Dream World Adventures               chameleo ChameleonKeyThe.tzx.zip
 10739 1984 48     Adv     Changeling, The                                   M.J. Gearing                         changeli ChangelingThe.tzx.zip
 11582 0000 48     Adv     Chicago                                           Activision Inc                                _
-06078 1992 48     Adv     Chichen Itza                                      Aventuras AD S.A.                             ChichenItza.tap.zip
+06078 1992 48     Adv     Chichen Itza - Part 1                             Aventuras AD S.A.                    chichen1 ChichenItza.tap.zip
+06078 1992 48     Adv     Chichen Itza - Part 2                             Aventuras AD S.A.                    chichen2 ChichenItza.tap.zip
 09602 1986 48     Adv     Chip, Der                                         Unicorn Soft                                  _
 15124 1989 48     Adv     Chips Are Forever                                 Futuresoft                           chipsare ChipsAreForever(different).tzx.zip
 19789 1983 48     Adv     Christmas Adventure, A                            Little Softie Ltd                             _
@@ -340,7 +349,9 @@
 06111 1989 48     Adv     Cracker                                           Studak Software                      cracke1  Cracker.tzx.zip
 15920 0000 48     Adv     Crash                                             The Guild                                     _
 15643 1986 48     Adv     Crash Landing                                     The Guild                            crashlan CrashLanding.tzx.zip
-14367 1990 48     Adv     Crawling Horror, The                              Year Zero Software                            CrawlingHorrorThe.tap.zip
+14367 1990 48     Adv     Crawling Horror, The - Part 1                     Year Zero Software                   crawhor1 CrawlingHorrorThe.tap.zip
+14367 1990 48     Adv     Crawling Horror, The - Part 2                     Year Zero Software                   crawhor2 CrawlingHorrorThe.tap.zip
+14367 1990 48     Adv     Crawling Horror, The - Part 3                     Year Zero Software                   crawhor3 CrawlingHorrorThe.tap.zip
 19340 1984 48     Adv     Craze                                             Odyssey Computing                             _
 19341 1984 48     Adv     Crazier                                           Odyssey Computing                             _
 19981 1983 48     Adv     Crazy Adventure 1                                 Andrew Storey                                 _
@@ -488,7 +499,9 @@
 06206 1984 48     Adv     Dr. Genius                                        Loriciels                            drgenius Dr.Genius.tap.zip
 06207 1988 48     Adv     Dr. Jekyll and Mr. Hyde                           The Essential Myth                   drjekyll Dr.JekyllAndMr.Hyde48.tap.zip
 15023 1989 48     Adv     Dr. Jekyll vs. Mr Hyde                            Morbosoft                                     _
-06211 1986 48     Adv     Dracula                                           CRL Group PLC                                 Dracula.tzx.zip
+06211 1986 48     Adv     Dracula - Part 1                                  CRL Group PLC                        draculc1 Dracula.tzx.zip
+06211 1986 48     Adv     Dracula - Part 2                                  CRL Group PLC                        draculc2 Dracula.tzx.zip
+06211 1986 48     Adv     Dracula - Part 3                                  CRL Group PLC                        draculc3 Dracula.tzx.zip
 17493 1984 48     Adv     Dracula's Castle                                  CP Software                          draculas DraculasCastle.tzx.zip
 17417 0000 48     Adv     Draculas Diamanten                                                                     dracula1 DraculasDiamanten.tzx.zip
 18393 1983 16     Adv     Draggold                                          Cascade Games Ltd                             _
@@ -597,14 +610,15 @@
 06276 1988 48     Adv     Expert                                            OKF                                  expert   Expert.tap.zip
 17420 1992 48     Adv     Exploits in a Wheelie-Bin                         Delbert the Hamster Software         exploits ExploitsInAWheelie-Bin.tzx.zip
 09720 1984 48     Adv     Explorer                                          Clockbyte                            explore1 Explorer.tzx.zip
-14370 2004 48     Adv     Extraordinarios Casos del Dr. Van Halen Caso 1: MiJosep Coletas Caubet                 extraord ExtraordinariosCasosDelDr.VanHalenCaso1-MisterioEnLaCatedralLosV2.0.tap.zip
-14654 2004 48     Adv     Extraordinarios Casos del Dr. Van Halen Caso 2: ElJosep Coletas Caubet                 extraor1 ExtraordinariosCasosDelDr.VanHalenCaso2-ElCuervoDeLaTormentaLosV1.0.tzx.zip
-15027 2005 48     Adv     Extraordinarios Casos del Dr. Van Halen Caso 3: CaJosep Coletas Caubet                 extraor2 ExtraordinariosCasosDelDr.VanHalenCaso3-CantosDeAnubisLosV1.0.tzx.zip
-15028 2005 48     Adv     Extraordinarios Casos del Dr. Van Halen Caso 4: TrJosep Coletas Caubet                 extraor3 ExtraordinariosCasosDelDr.VanHalenCaso4-TristesAlasDelDestinoLosV1.0.tzx.zip
-15029 2005 48     Adv     Extraordinarios Casos del Dr. Van Halen Caso 5: UlJosep Coletas Caubet                 extraor4 ExtraordinariosCasosDelDr.VanHalenCaso5-UltimoActoLosV1.0.tzx.zip
-23316 2009 48     Adv     Extraordinarios Casos del Dr. Van Halen Volumen 2 Josep Coletas Caubet                 extraor5 ExtraordinariosCasosDelDr.VanHalenVolumen2RelatoIII-ElHijoDelCrepusculoLos.tzx.zip
-19042 2008 48     Adv     Extraordinarios Casos del Dr. Van Halen Volumen 2 Josep Coletas Caubet                 extraor6 ExtraordinariosCasosDelDr.VanHalenVolumen2RelatoII-LasRuedasDeEzequielLos.tzx.zip
-18836 2008 48     Adv     Extraordinarios Casos del Dr. Van Halen Volumen 2 Josep Coletas Caubet                 extraor7 ExtraordinariosCasosDelDr.VanHalenVolumen2RelatoI-LasCallesDelMiedoLos.tzx.zip
+14370 2004 48     Adv     EECC Dr. Van Halen 1: Misterio en la Catedral     Josep Coletas Caubet                 extraord ExtraordinariosCasosDelDr.VanHalenCaso1-MisterioEnLaCatedralLosV2.0.tap.zip
+14654 2004 48     Adv     EECC Dr. Van Halen 2: El Cuervo de la Tormenta    Josep Coletas Caubet                 extraor1 ExtraordinariosCasosDelDr.VanHalenCaso2-ElCuervoDeLaTormentaLosV1.0.tzx.zip
+15027 2005 48     Adv     EECC Dr. Van Halen 3: Cantos de Anubis            Josep Coletas Caubet                 extraor2 ExtraordinariosCasosDelDr.VanHalenCaso3-CantosDeAnubisLosV1.0.tzx.zip
+15028 2005 48     Adv     EECC Dr. Van Halen 4: Tristes Alas del Destino    Josep Coletas Caubet                 extraor3 ExtraordinariosCasosDelDr.VanHalenCaso4-TristesAlasDelDestinoLosV1.0.tzx.zip
+15029 2005 48     Adv     EECC Dr. Van Halen 5: Último Acto                 Josep Coletas Caubet                 extraor4 ExtraordinariosCasosDelDr.VanHalenCaso5-UltimoActoLosV1.0.tzx.zip
+18836 2008 48     Adv     EECC Van Halen V2 R1: Las Calles del Miedo        Josep Coletas Caubet                 extraor5 ExtraordinariosCasosDelDr.VanHalenVolumen2RelatoI-LasCallesDelMiedoLos.tzx.zip
+19042 2008 48     Adv     EECC Van Halen V2 R2: Las Ruedas de Ezequiel      Josep Coletas Caubet                 extraor6 ExtraordinariosCasosDelDr.VanHalenVolumen2RelatoII-LasRuedasDeEzequielLos.tzx.zip
+23316 2009 48     Adv     EECC Van Halen V2 R3: El Hijo del Crepusculo      Josep Coletas Caubet                 extraor7 ExtraordinariosCasosDelDr.VanHalenVolumen2RelatoIII-ElHijoDelCrepusculoLos.tzx.zip
+26595 2011 48     Adv     EECC Van Halen V2 R4: Episodio Final              Josep Coletas Caubet                 extraor8 _
 06277 1986 48     Adv     Extricator, The                                   Precision Games                      extricat ExtricatorThe.tap.zip
 06279 1985 48     Adv     Eye of Vartan                                     Pocket Money Software                eyeofvar EyeOfVartan.tap.zip
 10790 1994 48     Adv     Fabled Black Rose, The                            Dream World Adventures               fabledbl FabledBlackRoseThe.tzx.zip
@@ -721,7 +735,9 @@
 10812 0000 48     Adv     Gladiator, The                                    Pegasus Software                     gladiat1 GladiatorThe.tzx.zip
 10813 1986 48     Adv     Glasgow Murder, A                                 J. Fanning                           glasgowm GlasgowMurderA.tzx.zip
 06356 0000 48     Adv     Globe, The                                        Zenobi Software                      globethe GlobeThe.tap.zip
-06357 1987 48/128 Adv     Gnome Ranger                                      Level 9 Computing Ltd                         GnomeRanger.tzx.zip
+06357 1987 128    Adv     Gnome Ranger - Part 1                             Level 9 Computing Ltd                gnom1281 GnomeRanger.tzx.zip
+06357 1987 128    Adv     Gnome Ranger - Part 2                             Level 9 Computing Ltd                gnom1282 GnomeRanger.tzx.zip
+06357 1987 128    Adv     Gnome Ranger - Part 3                             Level 9 Computing Ltd                gnom1283 GnomeRanger.tzx.zip
 21102 1994 48     Adv     Go Inspector                                      Black Eagle Company                           _
 15126 1984 48     Adv     Go West Young Man                                 Stocksoft                            gowestyo GoWestYoungMan.tzx.zip
 14537 0000 128    Adv     Gob                                               Simon Fitzpatrick/Malcolm Tyrrell             Gob.tap.zip
@@ -764,7 +780,7 @@
 06397 1988 48     Adv     Green Door, The                                   Tartan Software                      greendoo GreenDoorThe.tap.zip
 06398 1991 48     Adv     Green Sonja                                       Psychaedelic Hedgehog Software       greenson GreenSonja.tzx.zip
 15514 0000 48     Adv     Greg the Egg                                      unpublished                                   GregTheEgg.tzx.zip
-06399 1985 48     Adv     Gremlins                                          Adventure International                       Gremlins.tap.zip
+06399 1985 48     Adv     Gremlins                                          Adventure International              gremlins Gremlins.tap.zip
 02142 1989 48     Adv     Grey Island                                       CV Software                          greyisla GreyIsland.tap.zip
 15923 1989 128    Adv     Grimalkin 128K                                    Sword Software                                _
 10821 1995 48     Adv     Grimwold's Big Adventure                          The Adventure Workshop               grimwold GrimwoldsBigAdventure.tzx.zip
@@ -818,7 +834,8 @@
 23909 1984 48     Adv     High Mountains, The                               Personal Computer News               highmoun HighMountainsThe.tzx.zip
 15200 0000 48     Adv     High Odds                                         Crusader Computing                            _
 09827 1993 128    Adv     Hired to Kill                                     Tom Powell                           hiredtok HiredToKill128.tzx.zip
-06435 1987 48     Adv     Historias de Medialand                            JSJ Soft Ltd                                  HistoriasDeMedialand.tap.zip
+06435 1987 48     Adv     Historias de Medialand - Part 1                   JSJ Soft Ltd                         histmed1 HistoriasDeMedialand.tap.zip
+06435 1987 48     Adv     Historias de Medialand - Part 2                   JSJ Soft Ltd                         histmed2 HistoriasDeMedialand.tap.zip
 06437 1989 48     Adv     Hit                                               Zenobi Software                      hit      Hit.tzx.zip
 06438 1983 48     Adv     Hitch-Hikers Guide to the Galaxy, The             Estuary Software Products            hitchhik Hitch-HikersGuideToTheGalaxyThe.tap.zip
 06439 1987 48     Adv     Hledac - Cesta za Zlatem Mayu                     Kybso                                         _
@@ -901,7 +918,9 @@
 20779 1984 48     Adv     Jack and the Beanstalk                            Your Computer                        jackandt JackAndTheBeanstalk.tap.zip
 06495 1988 48     Adv     Jack and the Beanstalk                            River Software                                _
 06496 1985 48     Adv     Jack in Magicland                                 Turtle Software                      jackinma JackInMagicland.tzx.zip
-06497 1987 48     Adv     Jack the Ripper                                   CRL Group PLC                                 FONT><TD WIDTH="100%"><FONT FACE="Arial,Helvetica">JackTheRipper(different).tzx.zip
+06497 1987 48     Adv     Jack the Ripper - Part 1                          CRL Group PLC                        jackthr1 JackTheRipper.tzx.zip
+06497 1987 48     Adv     Jack the Ripper - Part 2                          CRL Group PLC                        jackthr2 JackTheRipper.tzx.zip
+06497 1987 48     Adv     Jack the Ripper - Part 3                          CRL Group PLC                        jackthr3 JackTheRipper.tzx.zip
 06500 1987 48     Adv     Jade Necklace, The                                River Software                       jadeneck JadeNecklaceTheV1(ZenobiSoftware).tap.zip
 06502 1987 48     Adv     Jade Stone, The                                   Marlin Games                                  JadeStoneTheV1.tzx.zip
 24827 0000 48     Adv     Jaime I El Conquistador                           Aventuras AD S.A.                             _
@@ -975,7 +994,9 @@
 15676 1984 48     Adv     Klartz & the Dark Forces                          Dragon Dungeon                                _
 10850 0000 48     Adv     Klingsor the Evil Magician                                                             klingsor KlingsorTheEvilMagician.tzx.zip
 06539 1995 128    Adv     Knight Life                                       Stephen Boyd                         knightli KnightLife.tzx.zip
-06540 1987 48/128 Adv     Knight Orc                                        Rainbird Software Ltd                         KnightOrc.tzx.zip
+06540 1987 128    Adv     Knight Orc - Part 1                               Rainbird Software Ltd                knighto1 KnightOrc.tzx.zip
+06540 1987 128    Adv     Knight Orc - Part 2                               Rainbird Software Ltd                knighto2 KnightOrc.tzx.zip
+06540 1987 128    Adv     Knight Orc - Part 3                               Rainbird Software Ltd                knighto3 KnightOrc.tzx.zip
 06543 1983 48     Adv     Knight's Quest, The                               Phipps Associates                    knightsq KnightsQuestThe.tap.zip
 06544 1991 48     Adv     Kobyashi Ag'Kwo                                   Zenobi Software                      kobyashi KobyashiAgKwo.tap.zip
 06545 1987 48     Adv     Kobyashi Naru                                     Mastertronic Ltd                     kobyash1 KobyashiNaru.tap.zip
@@ -991,7 +1012,9 @@
 20965 1984 48     Adv     Laberinto Magico, El                              Interface Publications Ltd                    _
 06550 1995 48     Adv     Labour Pains                                      Zenobi Software                               LabourPains.tzx.zip
 06552 1987 48     Adv     Labours of Hercules, The                          Terry Taylor                         labourso LaboursOfHerculesThe.tap.zip
-06553 1988 48/128 Adv     Lancelot                                          Mandarin Software                             Lancelot.tzx.zip
+06553 1988 128    Adv     Lancelot - Part 1                                 Mandarin Software                    lancelo1 Lancelot.tzx.zip
+06553 1988 128    Adv     Lancelot - Part 2                                 Mandarin Software                    lancelo2 Lancelot.tzx.zip
+06553 1988 128    Adv     Lancelot - Part 3                                 Mandarin Software                    lancelo3 Lancelot.tzx.zip
 17548 2006 48     Adv     Land Beyond Time, The                             Simon Allan Software                          LandBeyondTimeThe.tzx.zip
 21759 1999 48     Adv     Land of Dark, The                                 Digital Dreams                                _
 15197 0000 48     Adv     Land of No Return                                 Video Force                                   _
@@ -1334,7 +1357,8 @@
 10031 1985 48     Adv     Pains of a Window Cleaner, The                    Shulwater Ltd                                 _
 20957 1991 48     Adv     Pajarito y el Billete, El                         DRAGON Software                      pajarito PajaritoYElBilleteEl.tap.zip
 21020 0000 128    Adv     Pajaro de Fuego, El                               Seroco Soft                                   _
-06782 1988 48     Adv     Pajaros de Bangkok, Los                           Dinamic Software                              PajarosDeBangkokLos(SmallCase).tzx.zip
+06782 1988 48     Adv     Pajaros de Bangkok, Los - Part 1                  Dinamic Software                     pajaros1 PajarosDeBangkokLos(SmallCase).tzx.zip
+06782 1988 48     Adv     Pajaros de Bangkok, Los - Part 2                  Dinamic Software                     pajaros2 PajarosDeBangkokLos(SmallCase).tzx.zip
 06773 1989 48     Adv     Palace Hotel                                      Carlos Garcia de Paredes Ucero       palaceho PalaceHotel(3PSOFT)_2.tap.zip
 15032 1991 48     Adv     Papa Noel                                         Pepsi Soft                           papanoel PapaNoel.tzx.zip
 10035 1986 48     Adv     Paperound                                         E. Marchant                                   _
@@ -1581,7 +1605,9 @@
 06923 1988 128    Adv     Satochin                                          Sybilasoft                           satochin Satochin.tzx.zip
 06924 1987 48     Adv     Savage Island 1                                   Adventure International              savageis SavageIsland1.tap.zip
 06925 1987 48     Adv     Savage Island 2                                   Adventure International              savagei1 SavageIsland2.tap.zip
-06926 1989 48/128 Adv     Scapeghost                                        Level 9 Computing Ltd                         Scapeghost.tzx.zip
+06926 1989 128    Adv     Scapeghost - Part 1                               Level 9 Computing Ltd                scap1281 Scapeghost.tzx.zip
+06926 1989 128    Adv     Scapeghost - Part 2                               Level 9 Computing Ltd                scap1282 Scapeghost.tzx.zip
+06926 1989 128    Adv     Scapeghost - Part 3                               Level 9 Computing Ltd                scap1283 Scapeghost.tzx.zip
 06932 1987 48     Adv     Scary Mansion                                     Zodiac Software                               ScaryMansion.tzx.zip
 10162 1984 48     Adv     Schatz Des Minotaurus, Der                        T. Korber                                     _
 10163 1984 48     Adv     Schatzsuche Im Irrgarten                          Wicosoft                                      _
@@ -1630,7 +1656,7 @@
 06958 1989 48     Adv     Seven Parchments of Kandos, The                   Sinclair User                        sevenpar SevenParchmentsOfKandosThe.tap.zip
 23521 2000 128    Adv     SexiMatrix                                        Mistic JOE                           seximatr SexiMatrix.tap.zip
 06959 1989 48     Adv     Shadow on Glass, A                                Psychaedelic Hedgehog Software       shadowon ShadowOnGlassA.tzx.zip
-06960 1987 48/128 Adv     Shadows of Mordor                                 Melbourne House                      shadowso ShadowsOfMordor128.tap.zip
+06960 1987 128    Adv     Shadows of Mordor                                 Melbourne House                      shadowso ShadowsOfMordor128.tap.zip
 06160 1990 48     Adv     Shadows of the Past                               Compass Software                     shadows1 ShadowsOfThePast.tap.zip
 04447 1987 48     Adv     Shard of Inovar                                   Bulldog                              shardofi ShardOfInovar.tap.zip
 10184 1987 48     Adv     Sheerluck Holmes and Dr. Witsend                  Speccysoft                                    _
@@ -1790,7 +1816,8 @@
 07080 1984 48     Adv     Temple of Vran                                    Incentive Software Ltd               templeo1 TempleOfVran.tzx.zip
 07081 1985 48     Adv     Temple Terror                                     Atlantis Software Ltd                templete TempleTerror.tap.zip
 16847 2006 48     Adv     Templo de la Llama, El                            Jaime Tejedor Gomez                  templode TemploDeLaLlamaEl.tap.zip
-07082 1991 48     Adv     Templos Sagrados, Los                             Aventuras AD S.A.                             TemplosSagradosLos.tap.zip
+07082 1991 48     Adv     Templos Sagrados, Los - Part 1                    Aventuras AD S.A.                    templos1 TemplosSagradosLos.tap.zip
+07082 1991 48     Adv     Templos Sagrados, Los - Part 2                    Aventuras AD S.A.                    templos2 TemplosSagradosLos.tap.zip
 07083 1995 48/128 Adv     Ten Green Bottles                                 Zenobi Software                      tengreen TenGreenBottles.tzx.zip
 15665 1999 48     Adv     Ten Little Adventurers                            Adventure Probe Software             tenlittl TenLittleAdventurers.tzx.zip
 07085 1984 48     Adv     Ten Little Indians                                Digital Fantasia                     tenlitt1 TenLittleIndians.tzx.zip

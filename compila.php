@@ -25,8 +25,10 @@ function compg($out){
     exec('kzip -y temp.zip aa.rom');
     file_put_contents($out.'.html.deflate', substr(file_get_contents('temp.zip'), 36, -75));
   }
-  else
+  else{
     file_put_contents($out.'.html.deflate', gzdeflate(ob_get_contents()));
+    file_put_contents($out.'.html', ob_get_contents());
+  }
 }
   ob_start();
   $m=0;$p=2;$c=0;require 'z80.php';

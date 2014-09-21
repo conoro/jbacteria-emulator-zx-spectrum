@@ -474,7 +474,7 @@ function kdown(ev) {
     else
       pushk( code );
   switch( ev.keyCode ){
-    case 9: // Tab
+    case 46: // Supr
       if( frameCaad )
         frameCaad.body.innerHTML= '';
       break;
