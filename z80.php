@@ -2429,7 +2429,7 @@ c('p00');                                                   // fa // NOP
 c('p00');                                                   // fb // NOP
 a('loadblock()');                                           // fc // tape loader trap
 a('printcaad()');                                           // fd // print to caad frame
-c('p00');                                                   // fe // NOP
+a('printcaad2()');                                          // fe // print to caad frame
 c('p00');                                                   // ff // NOP
 ?>
 ];

@@ -147,12 +147,13 @@ function compg($out){
         file_get_contents('rom/48.mem').
         file_get_contents('48s.js'));
   unlink('48s.js');
-//
-/*
+///*
   yui('128');
   $rom= file_get_contents('rom/128.rom');
   $rom[0x456c]= chr(0xed);
   $rom[0x456d]= chr(0xfc);
+  $rom[0x55f2]= chr(0xed);
+  $rom[0x55f3]= chr(0xfd);
   comp( '128',
         file_get_contents('rom/todo-spectrum.pal').
         file_get_contents('rom/todo-spectrum.bin').
@@ -162,6 +163,8 @@ function compg($out){
   $rom= file_get_contents('rom/128i.rom');
   $rom[0x456c]= chr(0xed);
   $rom[0x456d]= chr(0xfc);
+  $rom[0x55f2]= chr(0xed);
+  $rom[0x55f3]= chr(0xfd);
   comp( '128i',
         file_get_contents('rom/todo-spectrum.pal').
         file_get_contents('rom/todo-spectrum.bin').
@@ -174,6 +177,8 @@ function compg($out){
   $rom= file_get_contents('rom/128.rom');
   $rom[0x456c]= chr(0xed);
   $rom[0x456d]= chr(0xfc);
+  $rom[0x55f2]= chr(0xed);
+  $rom[0x55f3]= chr(0xfd);
   comp( '128s',
         file_get_contents('rom/todo-spectrum.pal').
         file_get_contents('rom/todo-spectrum.bin').
@@ -183,6 +188,8 @@ function compg($out){
   $rom= file_get_contents('rom/128i.rom');
   $rom[0x456c]= chr(0xed);
   $rom[0x456d]= chr(0xfc);
+  $rom[0x55f2]= chr(0xed);
+  $rom[0x55f3]= chr(0xfd);
   comp( '128is',
         file_get_contents('rom/todo-spectrum.pal').
         file_get_contents('rom/todo-spectrum.bin').
@@ -202,7 +209,8 @@ function compg($out){
         file_get_contents('rom/16.mem').
         file_get_contents('16.js'));
   unlink('16.js');
-///*
+//
+/*
   yui('16s');
   $rom= file_get_contents('rom/16.rom');
   $rom[0x56c]= chr(0xed);

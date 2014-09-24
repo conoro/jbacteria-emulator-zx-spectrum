@@ -299,6 +299,10 @@ function kdown(ev) {
     else
       pushk( code );
   switch( ev.keyCode ){
+    case 46: // Supr
+      if( frameCaad )
+        frameCaad.body.innerHTML= '';
+      break;
     case 112: // F1
       if( f1= ~f1 ){
         if( trein==32000 )

@@ -239,6 +239,12 @@ function run() {
 }
 
 function printcaad(){
+  printcaad2();
+  od9();
+  oe5();
+}
+
+function printcaad2(){
   if( frameCaad ){
     if( a==13 )
       frameCaad.body.innerHTML+= '<br/>';
@@ -247,8 +253,6 @@ function printcaad(){
     else if( a>31 && a<127 )
       frameCaad.body.innerHTML+= String.fromCharCode(a);
   }
-  od9();
-  oe5();
 }
 
 function init() {
@@ -257,7 +261,6 @@ function init() {
                                                 ? 'optimizeSpeed'
                                                 : '' ));
   frameCaad= parent.frames[2] ? parent.frames[2].document : 0;
- 
   if( frameCaad )
     frameCaad.body.onclick= frameCaad.onclick= function(){
       parent.frames[1].focus();

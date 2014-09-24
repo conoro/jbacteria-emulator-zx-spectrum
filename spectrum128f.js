@@ -1,10 +1,32 @@
 rom= [bytes(16384), bytes(16384)];
 
+function printcaad(){
+  printcaad2();
+  od9();
+  oe5();
+}
+
+function printcaad2(){
+  if( frameCaad ){
+    if( a==13 )
+      frameCaad.body.innerHTML+= '<br/>';
+    else if( a==62 )
+      frameCaad.body.innerHTML+= '<br/>>';
+    else if( a>31 && a<127 )
+      frameCaad.body.innerHTML+= String.fromCharCode(a);
+  }
+}
+
 function init() {
   paintScreen= paintNormal;
   cv.setAttribute('style', 'image-rendering:'+( localStorage.ft & 1
                                                 ? 'optimizeSpeed'
                                                 : '' ));
+  frameCaad= parent.frames[2] ? parent.frames[2].document : 0;
+  if( frameCaad )
+    frameCaad.body.onclick= frameCaad.onclick= function(){
+      parent.frames[1].focus();
+    };
   onresize();
   scrl= ula= sample= pbcs= frcs= pbc= cts= playp= vbp= bor= f1= f3= f4= st= time= flash= lo= ay= envc= envx= ay13= noic= tons= 0;
   ayr= [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
