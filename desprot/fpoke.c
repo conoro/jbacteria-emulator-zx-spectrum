@@ -41,6 +41,8 @@ int main(int argc, char* argv[]){
   size= ftell(fi);
   while ( argc > 2 ){
     start= strtol(argv++[2], NULL, 16);
+    if( start<0 )
+      start+= size;
     if( strchr(argv[2], 'x') || strchr(argv[2], 'X') )
       rep= strtol(strtok(argv++[2], "xX"), NULL, 16),
       bytes= strtok(NULL, "xX");

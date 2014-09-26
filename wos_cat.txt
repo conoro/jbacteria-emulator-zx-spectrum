@@ -85,8 +85,8 @@
 10723 0000 48     Adv     Andromeda 3                                                                            androme1 Andromeda3.tzx.zip
 09480 1984 48     Adv     Andromeda Trophy                                  Finsbury Software                             _
 15509 0000 48     Adv     Anhk Morpork                                                                           anhkmorp AnhkMorpork.tzx.zip
-14364 1990 48     Adv     Anillo, El                                        Juan Antonio Paz Salgado             anillo1  AnilloEl.tap.zip
-14364 1990 48     Adv     Anillo, El                                        Juan Antonio Paz Salgado             anillo2  AnilloEl.tap.zip
+14364 1990 48     Adv     Anillo, El - Part 1                               Juan Antonio Paz Salgado             anillo1  AnilloEl.tap.zip
+14364 1990 48     Adv     Anillo, El - Part 2                               Juan Antonio Paz Salgado             anillo2  AnilloEl.tap.zip
 16221 1986 48     Adv     Anillos del Poder                                 MicroHobby                                    _
 05950 1986 48     Adv     Ankebergsaventyret                                Stefan Andersson                              _
 05951 1985 48     Adv     Antagonists, The                                  Addison-Wesley Productions           antagoni AntagonistsThe(AntagonistenDe)(Addison-WesleyNL).tap.zip
@@ -269,7 +269,7 @@
 06071 1983 48     Adv     Castle, The                                       Bug-Byte Software Ltd                castleth CastleThe.tap.zip
 13178 1984 48     Adv     Castlemaze Adventure                              Duckworth Educational Computing      castlem2 CastlemazeAdventure.tap.zip
 06073 1985 48     Adv     Cavern Chaos                                      5D Software                          cavernch CavernChaos.tap.zip
-06074 0000 48     Adv     Caverna del Dragon de Bronce, La                  DaniSoft                                      _
+06074 0000 48     Adv     Caverna del Dragon de Bronce, La                  DaniSoft                             caverna  _
 06075 1988 48     Adv     Caverna Infernal, La                              Digital Launch Corporation                    _
 20972 1989 128    Adv     Cavernas de Fafnir, Las                           Wazertown Works                      cavernas CavernasDeFafnirLas.tap.zip
 22046 1989 48     Adv     Caves of Mystery!                                 Outlet                                        _
@@ -344,7 +344,8 @@
 23209 0000 48     Adv     Countdown                                         Forward Software                     countdo4 Countdown_3.tzx.zip
 10750 1986 48     Adv     Countdown                                         Central Solutions                    countdo5 Countdown.tzx.zip
 09630 1988 +3     Adv     Countdown to Doom                                 Topologika                                    _
-06183 1990 48     Adv     Cozumel                                           Aventuras AD S.A.                    cozumel  CozumelPart1.tap.zip
+06183 1990 48     Adv     Cozumel - Part 1                                  Aventuras AD S.A.                    cozumel1 CozumelPart1.tap.zip
+06183 1990 48     Adv     Cozumel - Part 2                                  Aventuras AD S.A.                    cozumel2 CozumelPart1.tap.zip
 06989 1989 48     Adv     Crack City                                        Zenobi Software                      crackcit CrackCity.tzx.zip
 06111 1989 48     Adv     Cracker                                           Studak Software                      cracke1  Cracker.tzx.zip
 15920 0000 48     Adv     Crash                                             The Guild                                     _
@@ -914,13 +915,17 @@
 23604 1984 48     Adv     It's a Myth-tery                                  Mythsoft                                      _
 12877 1995 128    Adv     Ivan Tsarevich                                    G&M                                           _
 20286 1984 48     Adv     Ivor - Escape from the Asylum                     Rhiannon's Citidal                            _
-06493 1989 48     Adv     Jabato                                            Aventuras AD S.A.                             Jabato.tzx.zip
+06493 1989 48     Adv     Jabato - Parte 1                                  Aventuras AD S.A.                    jabato1  Jabato.tzx.zip
+06493 1989 48     Adv     Jabato - Parte 2                                  Aventuras AD S.A.                    jabato2  Jabato.tzx.zip
 20779 1984 48     Adv     Jack and the Beanstalk                            Your Computer                        jackandt JackAndTheBeanstalk.tap.zip
 06495 1988 48     Adv     Jack and the Beanstalk                            River Software                                _
 06496 1985 48     Adv     Jack in Magicland                                 Turtle Software                      jackinma JackInMagicland.tzx.zip
 06497 1987 48     Adv     Jack the Ripper - Part 1                          CRL Group PLC                        jackthr1 JackTheRipper.tzx.zip
 06497 1987 48     Adv     Jack the Ripper - Part 2                          CRL Group PLC                        jackthr2 JackTheRipper.tzx.zip
 06497 1987 48     Adv     Jack the Ripper - Part 3                          CRL Group PLC                        jackthr3 JackTheRipper.tzx.zip
+06497 1987 48     Adv     Jack the Ripper (ESP) - Part 1                    CRL Group PLC                        jack1    JackTheRipper.tzx.zip
+06497 1987 48     Adv     Jack the Ripper (ESP) - Part 2                    CRL Group PLC                        jack2    JackTheRipper.tzx.zip
+06497 1987 48     Adv     Jack the Ripper (ESP) - Part 3                    CRL Group PLC                        jack3    JackTheRipper.tzx.zip
 06500 1987 48     Adv     Jade Necklace, The                                River Software                       jadeneck JadeNecklaceTheV1(ZenobiSoftware).tap.zip
 06502 1987 48     Adv     Jade Stone, The                                   Marlin Games                                  JadeStoneTheV1.tzx.zip
 24827 0000 48     Adv     Jaime I El Conquistador                           Aventuras AD S.A.                             _
@@ -1171,7 +1176,9 @@
 06667 1987 48     Adv     Mega-Corp - Part 2                                Dinamic Software                     megacor2 Mega-Corp.tzx.zip
 09948 1985 48     Adv     Megalith Man                                      Goltek Publications                           _
 06669 1993 48     Adv     Meltdown                                          Zenobi Software                      meltdow1 Meltdown_2.tzx.zip
-06670 1990 48     Adv     Memorias de un Hobbit                             JSJ Soft Ltd                                  _
+06670 1990 48     Adv     Memorias de un Hobbit - Part 1                    JSJ Soft Ltd                         memoria1         _
+06670 1990 48     Adv     Memorias de un Hobbit - Part 2                    JSJ Soft Ltd                         memoria2         _
+06670 1990 48     Adv     Memorias de un Hobbit - Part 3                    JSJ Soft Ltd                         memoria3         _
 06673 1990 48     Adv     Menagerie, The                                    Stormbringer Software                menageri MenagerieThe.tap.zip
 12948 1994 128    Adv     Mentura                                           Phantom Ltd                                   _
 10865 1986 48     Adv     Merhownie's Light                                 K-Soft                               merhowni MerhowniesLight.tzx.zip
@@ -1308,7 +1315,9 @@
 13379 1985 48     Adv     Notlandung                                        Gerold Schneider                     notlandu Notlandung.tzx.zip
 23609 1988 48     Adv     Nova                                              Incentive Software Ltd                        _
 23799 0000 48     Adv     Novagen                                           unpublished                          novagen  Novagen.tzx.zip
-14382 1993 48     Adv     Nueve de Cada Diez Lapidas Estan Cambiadas        Sindicato del Software                        _
+14382 1993 48     Adv     Nueve de Cada Diez Lapidas - Part 1               Sindicato del Software               nueve1   _
+14382 1993 48     Adv     Nueve de Cada Diez Lapidas - Part 2               Sindicato del Software               nueve2   _
+14382 1993 48     Adv     Nueve de Cada Diez Lapidas - Part 3               Sindicato del Software               nueve3   _
 20765 1986 48     Adv     Number 6 In The Village                           PR Software                          number6i Number6InTheVillage.tzx.zip
 06750 1987 48     Adv     Number 6 in the Village                           Philip Richmond                      number61 Number6InTheVillage(GlobalGames).tzx.zip
 15432 1987 48     Adv     Number of the Beast, The                          Bluff Relay                                   _

@@ -248,10 +248,30 @@ function printcaad2(){
   if( frameCaad ){
     if( a==13 )
       frameCaad.body.innerHTML+= '<br/>';
-    else if( a==62 )
-      frameCaad.body.innerHTML+= '<br/>>';
-    else if( a>31 && a<127 )
-      frameCaad.body.innerHTML+= String.fromCharCode(a);
+    else{
+      if( caadm )
+        switch( a ){
+          case 64: frameCaad.body.innerHTML+= '&#225;'; break;
+          case 35: frameCaad.body.innerHTML+= '&#233;'; break;
+          case 36: frameCaad.body.innerHTML+= '&#237'; break;
+          case 37: frameCaad.body.innerHTML+= '&#243;'; break;
+          case 38: frameCaad.body.innerHTML+= '&#250'; break;
+          case 93: frameCaad.body.innerHTML+= '&#191'; break;
+          case 91: frameCaad.body.innerHTML+= '&#161'; break;
+          case 124: frameCaad.body.innerHTML+= '&#241'; break;
+          default: 
+            if( a>31 && a<127 )
+              frameCaad.body.innerHTML+= String.fromCharCode(a);
+            else
+              console.log(a.toString(16));
+        }
+      else{
+        if( a>31 && a<127 )
+          frameCaad.body.innerHTML+= String.fromCharCode(a);
+        else
+          console.log(a.toString(16));
+      }
+    }
   }
 }
 
@@ -266,7 +286,9 @@ function init() {
       parent.frames[1].focus();
     }
   onresize();
-  scrl= scst= ula= sample= pbcs= pbc= cts= playp= vbp= bor= f1= f3= f4= st= time= flash= 0;
+  caadm= scrl= scst= ula= sample= pbcs= pbc= cts= playp= vbp= bor= f1= f3= f4= st= time= flash= 0;
+  if( location.href.slice(-2,-1)=='#' )
+    caadm= parseInt(location.href.slice(-1));
   if( localStorage.ft==undefined )
     localStorage.ft= 4;
   if ( localStorage.ft & 2 )
