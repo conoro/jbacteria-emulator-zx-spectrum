@@ -249,21 +249,59 @@ function printcaad2(){
     if( a==13 )
       frameCaad.body.innerHTML+= '<br/>';
     else{
-      if( caadm )
+      if( caadm==1 )
         switch( a ){
           case 64: frameCaad.body.innerHTML+= '&#225;'; break;
           case 35: frameCaad.body.innerHTML+= '&#233;'; break;
           case 36: frameCaad.body.innerHTML+= '&#237'; break;
           case 37: frameCaad.body.innerHTML+= '&#243;'; break;
           case 38: frameCaad.body.innerHTML+= '&#250'; break;
+          case 124: frameCaad.body.innerHTML+= '&#241'; break;
+          case 92: frameCaad.body.innerHTML+= '&#209'; break;
           case 93: frameCaad.body.innerHTML+= '&#191'; break;
           case 91: frameCaad.body.innerHTML+= '&#161'; break;
-          case 124: frameCaad.body.innerHTML+= '&#241'; break;
-          default: 
-            if( a>31 && a<127 )
-              frameCaad.body.innerHTML+= String.fromCharCode(a);
-            else
-              console.log(a.toString(16));
+          case 122: frameCaad.body.innerHTML+= '&#252'; break;
+          default: if( a>31 && a<127 ) frameCaad.body.innerHTML+= String.fromCharCode(a);
+        }
+      else if( caadm==2 )
+        switch( a ){
+          case 64: frameCaad.body.innerHTML+= '&#225;'; break;
+          case 35: frameCaad.body.innerHTML+= '&#233;'; break;
+          case 36: frameCaad.body.innerHTML+= '&#237'; break;
+          case 37: frameCaad.body.innerHTML+= '&#243;'; break;
+          case 38: frameCaad.body.innerHTML+= '&#250'; break;
+          case 47: frameCaad.body.innerHTML+= '&#241'; break;
+          case 39: frameCaad.body.innerHTML+= '&#191'; break;
+          case 94: frameCaad.body.innerHTML+= '&#161'; break;
+          default: if( a>31 && a<127 ) frameCaad.body.innerHTML+= String.fromCharCode(a);
+        }
+      else if( caadm==3 )
+        switch( a ){
+          case 0:  frameCaad.body.innerHTML+= '&#225;'; break;
+          case 4:  frameCaad.body.innerHTML+= '&#233;'; break;
+          case 8:  frameCaad.body.innerHTML+= '&#237'; break;
+          case 20: frameCaad.body.innerHTML+= '&#243;'; break;
+          case 21: frameCaad.body.innerHTML+= '&#250'; break;
+          case 5:  frameCaad.body.innerHTML+= '&#241'; break;
+          case 6:  frameCaad.body.innerHTML+= '&#209'; break;
+          case 2:  frameCaad.body.innerHTML+= '&#191'; break;
+          case 3:  frameCaad.body.innerHTML+= '&#161'; break;
+          case 7:  frameCaad.body.innerHTML+= '&#252'; break;
+          default: if( a>31 && a<127 ) frameCaad.body.innerHTML+= String.fromCharCode(a);
+        }
+      else if( caadm==4 )
+        switch( a ){
+          case 0:  frameCaad.body.innerHTML+= '&#225;'; break;
+          case 1:  frameCaad.body.innerHTML+= '&#233;'; break;
+          case 2:  frameCaad.body.innerHTML+= '&#237'; break;
+          case 3:  frameCaad.body.innerHTML+= '&#243;'; break;
+          case 4:  frameCaad.body.innerHTML+= '&#250'; break;
+          case 124:frameCaad.body.innerHTML+= '&#241'; break;
+          case 92: frameCaad.body.innerHTML+= '&#209'; break;
+          case 93: frameCaad.body.innerHTML+= '&#191'; break;
+          case 91: frameCaad.body.innerHTML+= '&#161'; break;
+          case 5:  frameCaad.body.innerHTML+= '&#252'; break;
+          default: if( a>31 && a<127 ) frameCaad.body.innerHTML+= String.fromCharCode(a);
         }
       else{
         if( a>31 && a<127 )

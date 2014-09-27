@@ -1079,7 +1079,9 @@
 06599 1995 48     Adv     Loose Ends                                        Zenobi Software                      looseend LooseEnds.tzx.zip
 21053 0000 48     Adv     Lord                                              Boom Soft                                     _
 14820 2003 128    Adv     Lord of Darkness                                  Triumph Game Labs                             _
-06601 1986 48     Adv     Lord of the Rings                                 Melbourne House                      lordofth LordOfTheRingsIntro.tap.zip
+06601 1986 48     Adv     Lord of the Rings - Intro                         Melbourne House                      lordofth LordOfTheRingsIntro.tap.zip
+06601 1986 48     Adv     Lord of the Rings - Part 1                        Melbourne House                      lordoft1 LordOfTheRingsIntro.tap.zip
+06601 1986 48     Adv     Lord of the Rings - Part 2                        Melbourne House                      lordoft2 LordOfTheRingsIntro.tap.zip
 20259 1983 48     Adv     Lord of the Underworld                            VII Soft Computer Services                    _
 10855 1990 48     Adv     Lords of Magic                                    The Guild                            lordsof2 LordsOfMagic.tzx.zip
 06607 1983 48     Adv     Lords of Time                                     Level 9 Computing Ltd                lordsoft LordsOfTimeV2.tap.zip
