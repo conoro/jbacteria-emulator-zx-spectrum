@@ -194,26 +194,22 @@ TL      ld      hl, MOVCNT      ; apunto a la lista de movimientos
 MOVCNT  defs    28
 MOVBUF  defs    28
 
-; 30 bytes
+; 25 bytes
+TKP4    inc     c
+        djnz    TKP3
+        defb    1               ; y sigo escaneando teclas
 TKP     push    hl              ; rutina que lee tecla
 TKP1    push    bc
-TKP2    call    $02bb           ; leo filas y columnas en HL
-        ld      b, h            ; las paso a BC
-        ld      c, l
-        ld      d, l            ; comparo columna con $ff
+TKP2    ld      bc, (LAST_K)    ; leo filas y columnas en BC
+        ld      d, c            ; comparo columna con $ff
         inc     d               ; para ver si se hay una tecla pulsada
-        jr      z, TKP2         ; sino, salto a TKP2 y vuelvo a escanear teclado
-        call    $07bd           ; decodifica en (HL) la tecla leída
+        call    nz, $07bd       ; decodifica en (HL) la tecla leída
         ld      a, (hl)         ; leo tecla decodificada en A
         pop     bc              ; leo margen a aceptar
         push    bc
 TKP3    cp      c               ; si estoy dentro de margen (de 1 a 8 o de A a H)
-        jr      z, TKP4         ; salto a TKP4
-        inc     c
-        djnz    TKP3
-        pop     bc              ; si estoy fuera de margen recupero BC de pila
-        jr      TKP1            ; y sigo escaneando teclas
-TKP4    pop     bc
+        jr      nz, TKP4         ; salto a TKP4
+        pop     bc
         pop     hl              ; si la tecla es válida
         ld      (hl), a         ; la almaceno en (HL) y salgo
         ret
