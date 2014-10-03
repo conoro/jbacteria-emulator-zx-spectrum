@@ -214,21 +214,18 @@ TKP3    cp      c               ; si estoy dentro de margen (de 1 a 8 o de A a H
         ld      (hl), a         ; la almaceno en (HL) y salgo
         ret
 
-; 68 bytes
+; 62 bytes
 KYBD    ld      bc, $081d       ; margen de tecla leída entre '1' y '8'
         call    TKP             ; leo el número
         dec     hl              ; apunto hacia abajo para guardar la letra
         ld      c, $26          ; margen de tecla leída entre 'A' y 'H'
-        call    TKP             ; leo el número
+        call    TKP             ; leo la letra
+        cpl
         inc     hl              ; apunto hacia arriba donde está el número
-        ld      a, (hl)         ; leo el número
-        sub     $1c             ; hago que '1' se corresponda con 1 y sucesivamente
-        ld      b, a            ; guardo el número (fila) introducida en B
-        ld      a, $2d-11+seglin+3 & 255
+        ld      b, (hl)         ; leo el número
+        add     a, $ef+seglin+3 & 255
 KYBD1   add     a, 11           ; añado 11 "fila" veces, por lo que obtengo
         djnz    KYBD1           ; fila*11 en A
-        dec     hl              ; a la pieza, apunto a la letra
-        sub     (hl)            ; resto letra (están numeradas en orden inverso)
 STR     ld      b, 2            ; valor de retorno por defecto 2 (coordenada o pieza inválida)
         cp      seglin+3 & 255
         jr      c, STR3
@@ -249,8 +246,7 @@ STR2    ld      a, (hl)         ; leo contenido de pieza
         inc     b               ; valor de retorno 3 (color de pieza negra)
         ld      a, (prilin)
         add     a, (hl)         ; esto equivale a un XOR, turno XOR color pieza
-        jp      p, STR3         ; salto a STR3 con error 3
-        ld      b, 0            ; en cualquier otro caso retorno 0 (color pieza blanca)
+        call    m, $1a41        ; pongo B a cero
 STR3    ld      a, b            ; devuelvo el error en A
         and     a
         ret
