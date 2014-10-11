@@ -9,16 +9,22 @@ ini     ld      de, $8000-21
         ld      bc, fin-ini
         ldir
         jp      $8000
-
 roms    defb    0
 
         di
         ld      sp, $c000
+        ld      hl, $3d00
+        ld      de, $bd00
+        ld      b, 3
+        ldir
         ld      hl, $c000
         ld      de, $4000
         call    $07f4
         di
-        ld      hl, msg
+        ld      ix, msg
+        ld      de, $4800
+        call    print
+        inc     e
         call    print
 rdkey   in      a, ($fe)
         cpl
@@ -30,16 +36,17 @@ rdkey   in      a, ($fe)
         ld      b, $1f
         out     (c), a          ; pongo ROMh=0 (ROM=0)
         call    esector
-        ld      hl, erfail
+        ld      ix, erfail
         jr      z, errs
         ld      hl, $c000
         ld      de, $0000
         call    blwrite
-        ld      hl, wrfail
+        ld      ix, wrfail
         jr      c, errs
         ld      a, 4
         jr      binf
-errs    ld      a, 0x04         ; ld      a, %00000100
+errs    ld      de, $4840
+        ld      a, 0x04         ; ld      a, %00000100
         out     (c), a          ; pongo ROMh=1
         ld      a, 0x10         ; ld      a, %00010000
         ld      b, $7f
@@ -48,10 +55,6 @@ errs    ld      a, 0x04         ; ld      a, %00000100
         ld      a, 2
 binf    out     ($fe), a
         halt
-
-msg     defb    "Change jumper and press any key", 13, 0
-erfail  defb    "Erase failed", 0
-wrfail  defb    "Write failed", 0
 
 esector ld      hl, 0x555
         ld      a, l
@@ -94,10 +97,28 @@ wait3   ld      a, (de)
         scf
         ret
 
-print1  rst     $10
-        inc     hl
-print   ld      a, (hl)
+prchar  ld      l, a
+        add     hl, hl
+        ld      h, $2f
+        add     hl, hl
+        add     hl, hl
+        ld      b, 8
+prcha1  ld      a, (hl)
+        ld      (de), a
+        inc     d
+        inc     l
+        djnz    prcha1
+        ld      hl, $f801
+        add     hl, de
+        ex      de, hl
+print   ld      a, (ix)
+        inc     ix
         and     a
-        jr      nz, print1
+        jr      nz, prchar
         ret
+
+msg     defb    "Change jumper and press any key", 0
+        defb    "or press 0-7 if you have add on", 0
+erfail  defb    "Erase failed", 0
+wrfail  defb    "Write failed", 0
 fin

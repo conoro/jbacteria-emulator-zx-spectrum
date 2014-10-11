@@ -53,21 +53,27 @@ int main(int argc, char* argv[]){
     fclose(fi);
   }
   fi= fopen("SuperUpgrade.bin", "rb");
-  length= fread(in+0x10003, 1, 0x10000, fi);
-  in[0x10017]= roms;
-  *(short*)(in+0x10000)= length+2;
-  in[0x10002]= 0;
-  for ( checksum= 0, i= 0x10003; i<0x10003+length; i++ )
+  length= fread(in+0x10018, 1, 0x10000, fi);
+  in[0x10000]= 19;
+  strcpy((char *) (in+0x10004), "SuperUpgra");
+  *(short*)(in+0x1000e)= *(short*)(in+0x10012)= length;
+  for ( checksum= 0, i= 0x10004; i<0x10014; i++ )
     checksum^= in[i];
-  in[0x10003+length]= checksum;
-  fwrite(in+0x10000, 1, 4+length, fo);
+  in[0x10014]= checksum;
+  fwrite(in+0x10000, 1, 21, fo);
+  in[0x1002c]= roms;
+  *(short*)(in+0x10015)= length+2;
+  in[0x10017]= 255;
+  for ( checksum= 255, i= 0x10018; i<0x10018+length; i++ )
+    checksum^= in[i];
+  in[0x10018+length]= checksum;
+  fwrite(in+0x10015, 1, 4+length, fo);
   length= 0;
   k= 16384;
-  *(short*)(in+0x10000)= k+2;
-  in[0x10002]= 255;
+  *(short*)(in+0x10015)= k+2;
   for ( i= 1; i<0x10; i<<= 1 )
     if( roms&i ){
-      fwrite(in+0x10000, 1, 3, fo);
+      fwrite(in+0x10015, 1, 3, fo);
       fwrite(in+length, 1, k, fo);
       for ( checksum= 0xff, j= 0; j<k; j++ )
         checksum^= in[j+length];
