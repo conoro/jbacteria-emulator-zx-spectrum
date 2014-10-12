@@ -40,8 +40,10 @@ int main(int argc, char* argv[]){
     length+= ftell(fi);
     fclose(fi);
   }
-  if( length!= 16384 && length!= 32768 && length!= 49152 && length!= 65536 )
-    printf("\nInvalid length %d in input files\n", length),
+  for ( j= i= 0; i<4; i++ )
+    j+= roms&1<<i ? 16384 : 0;
+  if( length!= j )
+    printf("\nInvalid length %d in input files, must be %d\n", length, j),
     exit(-1);
   length= 0;
   for ( i= 3; i<argc; i++ ){
@@ -61,7 +63,7 @@ int main(int argc, char* argv[]){
     checksum^= in[i];
   in[0x10014]= checksum;
   fwrite(in+0x10000, 1, 21, fo);
-  in[0x1002c]= roms;
+  in[0x10058]= roms;
   *(short*)(in+0x10015)= length+2;
   in[0x10017]= 255;
   for ( checksum= 255, i= 0x10018; i<0x10018+length; i++ )
