@@ -9,8 +9,8 @@ ini     ld      de, $8000-20
         ldir
         jp      init
 
-ruti    ld      a, iyl
-        rrca
+page    ld      a, iyl
+page1   rrca
         rrca
         rrca
         ret     c
@@ -21,7 +21,6 @@ ruti    ld      a, iyl
         ccf
         adc     a, l
         and     %00010111
-        ld      (p7ffd+1), a
         ld      bc, $7ffd
         out     (c), a
         ld      a, l
@@ -34,8 +33,8 @@ ruti    ld      a, iyl
         inc     iyl
         ld      b, iyl
         ld      a, $80
-mult    rlca
-        djnz    mult
+page2   rlca
+        djnz    page2
         and     0
         ld      hl, $c000
         ld      de, $4000
@@ -48,111 +47,119 @@ init    di
         ld      b, 3
         ldir
         ld      iyl, c
-again   call    ruti
-        jr      c, acab
-        jr      z, copy
-p7ffd   ld      a, 0
-        or      $10
-        ld      b, $7f
-        out     (c), a
-        ld      a, %00000100
-        ld      b, $1f
-        out     (c), a
+init1   call    page
+        ld      h, $3d
+        ld      d, $bd
+init2   ld      a, (de)
+        cp      (hl)
+        jr      nz, init1
+        inc     l
+        inc     e
+        djnz    init2
+        ld      a, iyl
+        dec     a
+        ld      (init4+1), a
+        ld      iyl, b
+init3   call    page
+        jr      c, init6
+        jr      z, init5
+        dec     iyl
+init4   ld      a, 0
+        call    page1
         call    $07f4
         di
-        jr      again
-copy    ex      de, hl
+        jr      init3
+init5   ex      de, hl
         ld      b, h
         ld      c, a
         ld      h, a
         ldir
-        jr      again
-acab    ld      ix, msg
+        jr      init3
+init6   ld      ix, msg
         ld      de, $4800
         ld      iyl, e
         call    print
         inc     e
         call    print
-rdkey   in      a, ($fe)
+init7   in      a, ($fe)
         cpl
         and     $1f
-        jr      z, rdkey
+        jr      z, init7
         ld      a, $ef
         in      a, ($fe)
         rrca
-        jr      nc, salbe
+        jr      nc, init9
         ld      b, 7
         rrca
         rrca
         rrca
-        jr      nc, salbe
+        jr      nc, init9
         dec     b
         rrca
-        jr      nc, salbe
+        jr      nc, init9
         ld      a, $f7
         in      a, ($fe)
         add     a, a
         add     a, a
-rotat   add     a, a
-        jr      nc, salbe
-        djnz    rotat
-salbe   ld      a, b
+init8   add     a, a
+        jr      nc, init9
+        djnz    init8
+init9   ld      a, b
         add     a, a
         add     a, a
         ld      bc, $043b
         out     (c), a
-esector ld      hl, $5555
+        ld      hl, $0555
         ld      a, l
-        ld      de, $aaaa
+        ld      de, $02aa
         ld      (hl), e
         ld      (de), a
         ld      (hl), $80
         ld      (hl), e
         ld      (de), a
-        ld      h, $30
-        ld      (hl), h
-wait1   bit     7, (hl)
-        jr      nz, graba
+        ld      (hl), $30
+init10  bit     7, (hl)
+        jr      nz, init11
         bit     5, (hl)
-        jr      z, wait1
+        jr      z, init10
         bit     7, (hl)
         ld      ix, erfail
-        jr      z, errs
-graba   call    ruti
+        jr      z, error
+init11  call    page
         ld      a, 4
-        jr      c, binf
+        jr      c, exit
         ld      d, e
-        call    blwrite
-        jr      nc, graba
+        call    blwri
+        jr      nc, init11
         ld      ix, wrfail
-errs    ld      de, $4840
+error   ld      de, $4840
         call    print
         ld      a, 2
-binf    out     ($fe), a
+exit    out     ($fe), a
         halt
 
-nxbyte  inc     de
+blwri2  inc     de
         inc     l
-        jr      nz, blwrite
+        jr      nz, blwri
         inc     h
         ret     z
-blwrite ld      a, $aa
-        ld      ($5555), a
+blwri   ld      a, $aa
+        ld      ($0555), a
         cpl
-        ld      ($aaaa), a
+        ld      ($02aa), a
         ld      a, $a0
-        ld      ($5555), a
+        ld      ($0555), a
         ld      a, (hl)
         ld      (de), a
-wait3   ld      a, (de)
+blwri1  ld      a, (de)
         xor     (hl)
-        jp      p, nxbyte
+        jp      p, blwri2
         xor     (hl)
         bit     5, a
-        jr      z, wait3
+        jr      z, blwri1
         ld      a, (de)
         xor     (hl)
-        jp      p, nxbyte
+        jp      p, blwri2
         scf
         ret
 

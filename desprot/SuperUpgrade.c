@@ -63,7 +63,7 @@ int main(int argc, char* argv[]){
     checksum^= in[i];
   in[0x10014]= checksum;
   fwrite(in+0x10000, 1, 21, fo);
-  in[0x10058]= roms;
+  in[0x10055]= roms;
   *(short*)(in+0x10015)= length+2;
   in[0x10017]= 255;
   for ( checksum= 255, i= 0x10018; i<0x10018+length; i++ )
