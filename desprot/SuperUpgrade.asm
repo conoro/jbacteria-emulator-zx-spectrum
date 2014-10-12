@@ -58,7 +58,6 @@ p7ffd   ld      a, 0
         ld      a, %00000100
         ld      b, $1f
         out     (c), a
-
         call    $07f4
         di
         jr      again
@@ -102,15 +101,16 @@ salbe   ld      a, b
         add     a, a
         ld      bc, $043b
         out     (c), a
-esector ld      hl, $555
+esector ld      hl, $5555
         ld      a, l
-        ld      de, $2aa
+        ld      de, $aaaa
         ld      (hl), e
         ld      (de), a
         ld      (hl), $80
         ld      (hl), e
         ld      (de), a
-        ld      (hl), $30
+        ld      h, $30
+        ld      (hl), h
 wait1   bit     7, (hl)
         jr      nz, graba
         bit     5, (hl)
@@ -137,11 +137,11 @@ nxbyte  inc     de
         inc     h
         ret     z
 blwrite ld      a, $aa
-        ld      ($555), a
+        ld      ($5555), a
         cpl
-        ld      ($2aa), a
+        ld      ($aaaa), a
         ld      a, $a0
-        ld      ($555), a
+        ld      ($5555), a
         ld      a, (hl)
         ld      (de), a
 wait3   ld      a, (de)
