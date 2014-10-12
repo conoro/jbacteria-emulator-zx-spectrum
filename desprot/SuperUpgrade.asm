@@ -107,6 +107,7 @@ init8   add     a, a
 init9   ld      a, b
         add     a, a
         add     a, a
+        or      $80
         ld      bc, $043b
         out     (c), a
         ld      hl, $0555
