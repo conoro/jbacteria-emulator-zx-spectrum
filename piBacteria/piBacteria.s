@@ -16,20 +16,22 @@
         arvpref .req      r8
         ix      .req      r9
 
+        ldr     r1, memo
+
 @ Esto es para configurar el buffer de video a 352x264x4
-        ldr     r0, fbinf
-        add     r0, #0x40000001
-        ldr     r1, mboxb
-wait1:  ldr     r2, [r1, #MBOXSTATUS]
-        tst     r2, #0x80000000
+        add     r0, r1, #ofbinfo+1
+        orr     r0, #0x40000000
+        ldr     r2, mboxb
+wait1:  ldr     r3, [r2, #MBOXSTATUS]
+        tst     r3, #0x80000000
         bne     wait1
-        str     r0, [r1, #MBOXWRITE]
-wait2:  ldr     r2, [r1, #MBOXSTATUS]
-        tst     r2, #0x40000000
+        str     r0, [r2, #MBOXWRITE]
+wait2:  ldr     r3, [r2, #MBOXSTATUS]
+        tst     r3, #0x40000000
         bne     wait2
-        ldr     r2, [r1, #MBOXREAD]
-        and     r2, #0x0000000f
-        cmp     r2, #1
+        ldr     r3, [r2, #MBOXREAD]
+        and     r3, #0x0000000f
+        cmp     r3, #1
         bne     wait2
 
 @ Esto es para crear las tablas de pintado rápido
@@ -59,12 +61,13 @@ gent3:  tst     r4, #0x02
         subs    r0, #1
         bpl     gent1
 
-@ Esto renderiza la imagen
 
-        ldr     r4, c7777
-        ldr     r8, screen
-        ldr     r0, fbinf
-render: ldr     r1, [r0, #32]
+@ Esto renderiza la imagen
+        ldr     r1, memo
+
+        add     r8, r1, #0x4000
+        
+render: ldr     r0, [mem, #opoint]
         mov     r2, #0
 drawr:  mov     r3, #0
 drawp:  sub     r5, r3, #6
@@ -86,8 +89,8 @@ drawp:  sub     r5, r3, #6
         ldrb    r5, [r8, r5]
         add     r5, r5, r9, lsl #8
         ldr     r5, [r6, r5, lsl #2]
-        str     r5, [r1], #4
-aqui:   strcs   r4, [r1], #4
+aqui:   ldrcs   r5, [mem, #oborder]
+        str     r5, [r0], #4
         add     r3, #1
         cmp     r3, #44
         bne     drawp
@@ -95,31 +98,18 @@ aqui:   strcs   r4, [r1], #4
         cmp     r2, #264
         bne     drawr
 inf:    b       inf
+
 @ piscina de constantes
-fa_:    .short  0
-fb_:    .short  0
-ff_:    .short  0
-fr_:    .short  0
-c_:     .byte   0
-b_:     .byte   0
-e_:     .byte   0
-d_:     .byte   0
-dummy1: .short  0
-l_:     .byte   0
-h_:     .byte   0
-a_:     .word   0
-fbinf:  .word   FrameBufferInfo
-mboxb:  .word   MBOXBASE
 ltabl:  .word   LTABLE
-screen: .word   MEMORY+0x4000
+memo:   .word   MEMORY
 
 in:     bx      lr
 out:    bx      lr
 
         .include  "z80.s"
+
         .balign 16
-FrameBufferInfo:
-        .word   1024    @0 Width
+fbinfo: .word   1024    @0 Width
         .word   768     @4 Height
         .word   352     @8 vWidth
         .word   264     @12 vHeight
@@ -127,7 +117,7 @@ FrameBufferInfo:
         .word   4       @20 Bit Dpeth
         .word   0       @24 X
         .word   0       @28 Y
-        .word   0       @32 GPU - Pointer
+point:  .word   0       @32 GPU - Pointer
         .word   0       @36 GPU - Size
                  @rrrrrggggggbbbbb
         .hword  0b0000000000000000
@@ -146,6 +136,29 @@ FrameBufferInfo:
         .hword  0b0000011111111111
         .hword  0b1111111111100000
         .hword  0b1111111111111111
+
+border: .word   0x77777777
+        .byte   0, 0, 0
+a_:     .byte   0
+fa_:    .short  0
+fb_:    .short  0
+ff_:    .short  0
+fr_:    .short  0
+c_:     .byte   0
+b_:     .byte   0
+e_:     .byte   0
+d_:     .byte   0
+dummy1: .short  0
+l_:     .byte   0
+h_:     .byte   0
+
+        .equ    oc_,      -8
+        .equ    off_,     oc_-4
+        .equ    ofa_,     off_-4
+        .equ    oa_,      ofa_-1
+        .equ    oborder,  oa_-7
+        .equ    opoint,   oborder-40
+        .equ    ofbinfo,  opoint-32
 
 endf:   .incbin "48.rom"
         .incbin "gameover.scr"

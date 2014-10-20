@@ -991,42 +991,13 @@
         r9      ix
 */
 
-exx:    TIME    4
-        pkhtb   r10, defr, bcfb, asr #16
-        ldr     lr, c_
-        swp     r10, r10, [lr]
-        pkhtb   defr, r10, defr
-        pkhbt   bcfb, bcfb, r10, lsl #16
-        add     lr, #4
-        swp     r10, hlmp, [lr]
-        pkhbt   hlmp, hlmp, r10
-        PREFIX0
-
-exafaf: TIME    4
-        mov     lr, arvpref, lsr #24
-        ldr     r11, a_
-        swpb    lr, lr, [r11]
-        bic     arvpref, #0xff000000
-        orr     arvpref, lr, lsl #24
-        pkhbt   r11, spfa, bcfb, lsl #16
-        ldr     lr, fa_
-        swp     r11, r11, [lr]
-        pkhtb   spfa, spfa, r11
-        pkhtb   bcfb, bcfb, r11, asr #16
-        pkhbt   r11, pcff, defr, lsl #16
-        ldr     lr, ff_
-        swp     r11, r11, [lr]
-        pkhtb   pcff, pcff, r11
-        pkhtb   defr, defr, r11, asr #16
-        PREFIX0
-
 execute:push    {lr}
 exec1:  mov     lr, #0x00010000
         uadd8   arvpref, arvpref, lr
         ldrb    lr, [mem, pcff, lsr #16]
         add     pcff, #0x00010000
         ldr     pc, [pc, lr, lsl #2]
-c7777:  .word   0x77777777
+mboxb:  .word   MBOXBASE
       .if fast==0
         .word   nop           @ 00 NOP
         .word   ldbcnn        @ 01 LD BC,nn
@@ -3713,10 +3684,39 @@ exspiy: EXSPI   iyi
 exsphl: EXSPI   hlmp
         PREFIX0
 
+exafaf: TIME    4
+        mov     lr, arvpref, lsr #24
+        add     r11, mem, #oa_
+        swpb    lr, lr, [r11]
+        bic     arvpref, #0xff000000
+        orr     arvpref, lr, lsl #24
+        pkhbt   r11, spfa, bcfb, lsl #16
+        add     lr, mem, #ofa_
+        swp     r11, r11, [lr]
+        pkhtb   spfa, spfa, r11
+        pkhtb   bcfb, bcfb, r11, asr #16
+        pkhbt   r11, pcff, defr, lsl #16
+        add     lr, mem, #off_
+        swp     r11, r11, [lr]
+        pkhtb   pcff, pcff, r11
+        pkhtb   defr, defr, r11, asr #16
+        PREFIX0
+
 exdehl: TIME    4
         mov     lr, hlmp
         pkhbt   hlmp, hlmp, defr
         pkhbt   defr, defr, lr
+        PREFIX0
+
+exx:    TIME    4
+        pkhtb   r10, defr, bcfb, asr #16
+        add     lr, mem, #oc_
+        swp     r10, r10, [lr]
+        pkhtb   defr, r10, defr
+        pkhbt   bcfb, bcfb, r10, lsl #16
+        add     lr, #4
+        swp     r10, hlmp, [lr]
+        pkhbt   hlmp, hlmp, r10
         PREFIX0
 
 callpo: tst     spfa, #0x00000100
