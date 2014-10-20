@@ -5831,7 +5831,7 @@ c18003: .word   0x00018003
         .word   a_set7x       @ ff LD A,SET 7,(IX+d) // LD A,SET 7,(IY+d)
 
 salida: orrs    stlo, stlo
-        bmi     exec1
+        bpl     exec1
       .if fast==0
         movs    lr, arvpref, lsl #24
         bne     exec1

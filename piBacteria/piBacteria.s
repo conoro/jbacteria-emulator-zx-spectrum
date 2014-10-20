@@ -16,10 +16,10 @@
         arvpref .req      r8
         ix      .req      r9
 
-        ldr     r1, memo
+        ldr     mem, memo
 
 @ Esto es para configurar el buffer de video a 352x264x4
-        add     r0, r1, #ofbinfo+1
+        add     r0, mem, #ofbinfo+1
         orr     r0, #0x40000000
         ldr     r2, mboxb
 wait1:  ldr     r3, [r2, #MBOXSTATUS]
@@ -38,12 +38,12 @@ wait2:  ldr     r3, [r2, #MBOXSTATUS]
         ldr     r6, ltabl
         add     r6, #0x20000
         mov     r0, #127
-gent1:  mov     r1, #255
+gent1:  mov     r7, #255
 gent2:  and     r3, r0, #7
         tst     r0, #0b01000000
         orrne   r3, #8
         mov     r2, r0, lsr #3
-        add     r4, r1, #0x00008000
+        add     r4, r7, #0x00008000
 gent3:  tst     r4, #0x02
         mov     r5, r5, lsl #4
         addeq   r5, r2
@@ -56,54 +56,74 @@ gent3:  tst     r4, #0x02
         tst     r4, #0x0000ff00
         bne     gent3
         str     r5, [r6, #-4]!
-        subs    r1, #1
+        subs    r7, #1
         bpl     gent2
         subs    r0, #1
         bpl     gent1
-
+        str     r6, [mem, #opinrap]
 
 @ Esto renderiza la imagen
-        ldr     r1, memo
 
-        add     r8, r1, #0x4000
-        
-render: ldr     r0, [mem, #opoint]
-        mov     r2, #0
+        mov     pcff, #0
+        mov     stlo, #224
+
+render: mov     r2, #0
 drawr:  mov     r3, #0
-drawp:  sub     r5, r3, #6
-        cmp     r5, #32
+        ldr     r10, [mem, #opoint]
+        mov     r11, #176
+        smlabb  r10, r11, r2, r10
+drawp:  sub     r11, r3, #6
+        cmp     r11, #32
         bcs     aqui
-        sub     r7, r2, #36
-        cmp     r7, #192
+        sub     r12, r2, #36
+        cmp     r12, #192
         bcs     aqui
-        and     r9, r7, #0b11111000
-        orr     r9, r5, r9, lsl #2
-        add     r9, #6144
-        ldrb    r9, [r8, r9]
-        add     r5, r7, lsl #5
-        bic     r5, #0b0011111100000
-        and     r10, r7, #0b00111000
-        orr     r5, r10, lsl #2
-        and     r7, #0b00000111
-        orr     r5, r7, lsl #8
-        ldrb    r5, [r8, r5]
-        add     r5, r5, r9, lsl #8
-        ldr     r5, [r6, r5, lsl #2]
-aqui:   ldrcs   r5, [mem, #oborder]
-        str     r5, [r0], #4
+        and     lr, r12, #0b11111000
+        orr     lr, r11, lr, lsl #2
+        add     lr, #0x5800
+        ldrb    lr, [mem, lr]
+        add     r11, r12, lsl #5
+        eor     r11, r12, lsl #2
+        bic     r11, #0b0000011100000
+        eor     r11, r12, lsl #2
+        eor     r11, r12, lsl #8
+        bic     r11, #0b0011100000000
+        eor     r11, r12, lsl #8
+        add     r11, #0x4000
+        ldrb    r11, [mem, r11]
+        add     r11, r11, lr, lsl #8
+        ldr     r12, [mem, #opinrap]
+        ldr     r11, [r12, r11, lsl #2]
+aqui:   ldrcs   r11, [mem, #oborder]
+        str     r11, [r10], #4
         add     r3, #1
         cmp     r3, #44
         bne     drawp
+        add     lr, mem, #otmpr2
+        swp     r2, r2, [lr]
+        add     lr, #4
+        swp     r3, r3, [lr]
+
+        bl      execute
+        add     stlo, #224
+
+        add     lr, mem, #otmpr2
+        swp     r2, r2, [lr]
+        add     lr, #4
+        swp     r3, r3, [lr]
         add     r2, #1
         cmp     r2, #264
         bne     drawr
-inf:    b       inf
+
+        b       render
 
 @ piscina de constantes
 ltabl:  .word   LTABLE
 memo:   .word   MEMORY
 
-in:     bx      lr
+in:     mov     r0, #0xff
+        bx      lr
+
 out:    bx      lr
 
         .include  "z80.s"
@@ -137,6 +157,9 @@ point:  .word   0       @32 GPU - Pointer
         .hword  0b1111111111100000
         .hword  0b1111111111111111
 
+pinrap: .word   0
+tmpr2:  .word   0
+tmpr3:  .word   0
 border: .word   0x77777777
         .byte   0, 0, 0
 a_:     .byte   0
@@ -157,9 +180,12 @@ h_:     .byte   0
         .equ    ofa_,     off_-4
         .equ    oa_,      ofa_-1
         .equ    oborder,  oa_-7
-        .equ    opoint,   oborder-40
+        .equ    otmpr3,   oborder-4
+        .equ    otmpr2,   otmpr3-4
+        .equ    opinrap,  otmpr2-4
+        .equ    opoint,   opinrap-40
         .equ    ofbinfo,  opoint-32
 
 endf:   .incbin "48.rom"
-        .incbin "gameover.scr"
+@        .incbin "gameover.scr"
 
