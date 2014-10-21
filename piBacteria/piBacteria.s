@@ -16,6 +16,7 @@
         arvpref .req      r8
         ix      .req      r9
 
+        mov     sp, #0x8000
         ldr     mem, memo
 
 @ Esto es para configurar el buffer de video a 352x264x4
