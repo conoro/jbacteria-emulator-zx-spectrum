@@ -992,7 +992,19 @@
 */
 
 execute:push    {lr}
-exec1:  mov     lr, #0x00010000
+exec1:  
+
+        push    {r0}
+        mov     r0, pcff, lsr #16
+        sub     r0, #0x0077
+        cmp     r0, #0x0e00
+        bne     caca
+        bl      regs
+caca:
+        pop     {r0}
+
+
+        mov     lr, #0x00010000
         uadd8   arvpref, arvpref, lr
         ldrb    lr, [mem, pcff, lsr #16]
         add     pcff, #0x00010000
@@ -1730,7 +1742,7 @@ opdd:   TIME    4
         .word   retz          @ c8 RET Z
         .word   ret10         @ c9 RET
         .word   jpz           @ ca JP Z
-        .word   opcb          @ cb op cb
+        .word   opddcb        @ cb op cb
         .word   callz         @ cc CALL Z
         .word   callnn        @ cd CALL NN
         .word   adcan         @ ce ADC A,n
@@ -1998,7 +2010,7 @@ opfd:   TIME    4
         .word   retz          @ c8 RET Z
         .word   ret10         @ c9 RET
         .word   jpz           @ ca JP Z
-        .word   opcb          @ cb op cb
+        .word   opfdcb        @ cb op cb
         .word   callz         @ cc CALL Z
         .word   callnn        @ cd CALL NN
         .word   adcan         @ ce ADC A,n
@@ -5557,7 +5569,7 @@ set7x:  SETXD   0x80, arvpref, 0
 a_set7x:SETXD   0x80, arvpref, 8
 
 opxdcb: bmi     opfdcb
-        TIME    11
+opddcb: TIME    11
         ldr     lr, [mem, pcff, lsr #16]
         sxtb    r11, lr
         add     r11, ix, lsr #16

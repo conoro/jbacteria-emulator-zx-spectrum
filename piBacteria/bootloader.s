@@ -40,10 +40,11 @@ main:   add     r2, #1
 main1:  ldr     lr, =STCLO
         ldr     lr, [lr]
         cmp     lr, r11
-        addeq   r11, #0xa000
-        moveq   r1, #0x15
-        bleq    send
-        ldr     r3, [r0, #AMLSRREG]
+        bcc     salta
+        add     r11, lr, #0xa000
+        mov     r1, #0x15
+        bl      send
+salta:  ldr     r3, [r0, #AMLSRREG]
         tst     r3, #1
         beq     main1
         ldr     r1, [r0, #AMIOREG]

@@ -1941,7 +1941,7 @@ opdd:   TIME    4
         .word   retz          @ c8 RET Z
         .word   ret10         @ c9 RET
         .word   jpz           @ ca JP Z
-        .word   opcb          @ cb op cb
+        .word   opddcb        @ cb op cb
         .word   callz         @ cc CALL Z
         .word   callnn        @ cd CALL NN
         .word   adcan         @ ce ADC A,n
@@ -2209,7 +2209,7 @@ opfd:   TIME    4
         .word   retz          @ c8 RET Z
         .word   ret10         @ c9 RET
         .word   jpz           @ ca JP Z
-        .word   opcb          @ cb op cb
+        .word   opfdcb        @ cb op cb
         .word   callz         @ cc CALL Z
         .word   callnn        @ cd CALL NN
         .word   adcan         @ ce ADC A,n
@@ -5772,7 +5772,7 @@ set7x:  SETXD   0x80, arvpref, 0
 a_set7x:SETXD   0x80, arvpref, 8
 
 opxdcb: bmi     opfdcb
-        TIME    11
+opddcb: TIME    11
         ldr     lr, [mem, pcff, lsr #16]
         sxtb    r11, lr
         add     r11, ixstart, lsr #16

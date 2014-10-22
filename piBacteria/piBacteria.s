@@ -4,6 +4,18 @@
         .set    MBOXWRITE,  0x20
         .set    MEMORY,     endf
         .set    LTABLE,     endf+0x10000
+
+        .set    AUXBASE,    0x20215000
+        .set    AMENABLES,  0x04
+        .set    AMIOREG,    0x40
+        .set    AMIERREG,   0x44
+        .set    AMIIRREG,   0x48
+        .set    AMLCRREG,   0x4C
+        .set    AMMCRREG,   0x50
+        .set    AMLSRREG,   0x54
+        .set    AMCNTLREG,  0x60
+        .set    AMBAUDREG,  0x68
+
 .text
         iyi     .req      r0
         mem     .req      r1
@@ -18,6 +30,11 @@
 
         mov     sp, #0x8000
         ldr     mem, memo
+
+
+        mrc     p15, 0, r0, c1, c0, 0 @ read control register
+        orr     r0, r0, #(1 << 22)    @ set the U bit (bit 22)
+        mcr     p15, 0, r0, c1, c0, 0 @ write control register
 
 @ Esto es para configurar el buffer de video a 352x264x4
         add     r0, mem, #ofbinfo+1
@@ -63,6 +80,9 @@ gent3:  tst     r4, #0x02
         bpl     gent1
         str     r6, [mem, #opinrap]
 
+        ldr     r0, const
+        bl      hexs
+
 @ Esto renderiza la imagen
 
         mov     pcff, #0
@@ -105,6 +125,7 @@ aqui:   ldrcs   r11, [mem, #oborder]
         add     lr, #4
         swp     r3, r3, [lr]
 
+@  bl regs
         bl      execute
         add     stlo, #224
 
@@ -118,7 +139,85 @@ aqui:   ldrcs   r11, [mem, #oborder]
 
         b       render
 
+regs:   push    {r0, r12, lr}
+        mov     r0, #'P'
+        bl      send
+        mov     r0, #'C'
+        bl      send
+        mov     r0, #'='
+        bl      send
+        mov     r0, pcff, lsr #16
+        bl      hexh
+        mov     r0, #'B'
+        bl      send
+        mov     r0, #'C'
+        bl      send
+        mov     r0, #'='
+        bl      send
+        mov     r0, bcfb, lsr #16
+        bl      hexh
+        mov     r0, #'D'
+        bl      send
+        mov     r0, #'E'
+        bl      send
+        mov     r0, #'='
+        bl      send
+        mov     r0, defr, lsr #16
+        bl      hexh
+        mov     r0, #'H'
+        bl      send
+        mov     r0, #'L'
+        bl      send
+        mov     r0, #'='
+        bl      send
+        mov     r0, hlmp, lsr #16
+        bl      hexh
+        mov     r0, #13
+        bl      send
+        pop     {r0, r12, pc}
+
+hexs:   push    {r11, r12, lr}
+        mov     r11, r0
+        mov     r12, #8
+hexs1:  mov     r11, r11, ror #28
+        and     r0, r11, #0x0f
+        cmp     r0, #10
+        addcs   r0, #7
+        add     r0, #0x30
+        bl      send
+        subs    r12, #1
+        bne     hexs1
+        mov     r0, #0x20
+        bl      send
+        pop     {r11, r12, pc}
+
+hexh:   push    {r11, r12, lr}
+        mov     r11, r0, ror #16
+        mov     r12, #4
+hexh1:  mov     r11, r11, ror #28
+        and     r0, r11, #0x0f
+        cmp     r0, #10
+        addcs   r0, #7
+        add     r0, #0x30
+        bl      send
+        subs    r12, #1
+        bne     hexh1
+        mov     r0, #0x20
+        bl      send
+        pop     {r11, r12, pc}
+
+send:   push    {r12, lr}
+        ldr     lr, auxb
+send1:  ldr     r12, [lr, #AMLSRREG]
+        tst     r12, #0x20
+        beq     send1
+        str     r0, [lr, #AMIOREG]
+        pop     {r12, pc}
+
 @ piscina de constantes
+const:  .word   0x1234a6d8
+
+auxb:   .word   AUXBASE
 ltabl:  .word   LTABLE
 memo:   .word   MEMORY
 
