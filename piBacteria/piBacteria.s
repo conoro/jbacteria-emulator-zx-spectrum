@@ -1,5 +1,14 @@
         .set    debug,      0
 
+        .set    GPBASE,     0x20200000
+        .set    GPFSEL0,    0x00
+        .set    GPFSEL1,    0x04
+        .set    GPFSEL2,    0x08
+        .set    GPCLR0,     0x28
+        .set    GPLEV0,     0x34
+        .set    GPPUD,      0x94
+        .set    GPPUDCLK0,  0x98
+
         .set    MBOXBASE,   0x2000B880
         .set    MBOXREAD,   0x00
         .set    MBOXSTATUS, 0x18
@@ -53,6 +62,18 @@ wait2:  ldr     r3, [r2, #MBOXSTATUS]
         and     r3, #0x0000000f
         cmp     r3, #1
         bne     wait2
+
+@ Pongo a cero las filas y a pull up las columnas (y el puerto EAR)
+        ldr     r0, gpbas
+        mov     r2, #2
+        str     r2, [r0, #GPPUD]
+        bl      wait
+        ldr     r2, filt
+        str     r2, [r0, #GPPUDCLK0]
+        bl      wait
+        str     r2, [r0, #GPPUD]
+        ldr     r2, rows
+        str     r2, [r0, #GPCLR0]
 
 @ Esto es para crear las tablas de pintado rápido
         ldr     r6, ltabl
@@ -226,13 +247,140 @@ const:  .word   0x1234a6d8
   .endif
 
 auxb:   .word   AUXBASE
+gpbas:  .word   GPBASE
 ltabl:  .word   LTABLE
 memo:   .word   MEMORY
-
-in:     mov     r0, #0xff
+rows:   .word   0b00001000010000100000111000011000
+filt:   .word   0b00000011100000000000000110000100
+_table: .word   table
+table:  .word   0b000000000000000000000000000000
+        .word   0b001000000000000000000000000000
+        .word   0b000000000000000001000000000000
+        .word   0b001000000000000001000000000000
+        .word   0b000000000000000000001000000000
+        .word   0b001000000000000000001000000000
+        .word   0b000000000000000001001000000000
+        .word   0b001000000000000001001000000000
+        .word   0b000000000000010010000000000000
+        .word   0b000000000000010010000000001000
+        .word   0b000000000000010010000000000001
+        .word   0b000000000000010010000000001001
+        .word   0b000000001000010010000000000000
+        .word   0b000000001000010010000000001000
+        .word   0b000000001000010010000000000001
+        .word   0b000000001000010010000000001001
+        .word   0b000000000000000000000000000000
+        .word   0b000000001000000000000000000000
+        .word   0b000000000000000000000001000000
+        .word   0b000000001000000000000001000000
+        .byte   0b10100000
+        .byte   0b10110000
+        .byte   0b10101000
+        .byte   0b10111000
+        .byte   0b11100000
+        .byte   0b11110000
+        .byte   0b11101000
+        .byte   0b11111000
+        .byte   0b10100001
+        .byte   0b10110001
+        .byte   0b10101001
+        .byte   0b10111001
+        .byte   0b11100001
+        .byte   0b11110001
+        .byte   0b11101001
+        .byte   0b11111001
+        .byte   0b10100010
+        .byte   0b10110010
+        .byte   0b10101010
+        .byte   0b10111010
+        .byte   0b11100010
+        .byte   0b11110010
+        .byte   0b11101010
+        .byte   0b11111010
+        .byte   0b10100011
+        .byte   0b10110011
+        .byte   0b10101011
+        .byte   0b10111011
+        .byte   0b11100011
+        .byte   0b11110011
+        .byte   0b11101011
+        .byte   0b11111011
+        .byte   0b10100100
+        .byte   0b10110100
+        .byte   0b10101100
+        .byte   0b10111100
+        .byte   0b11100100
+        .byte   0b11110100
+        .byte   0b11101100
+        .byte   0b11111100
+        .byte   0b10100101
+        .byte   0b10110101
+        .byte   0b10101101
+        .byte   0b10111101
+        .byte   0b11100101
+        .byte   0b11110101
+        .byte   0b11101101
+        .byte   0b11111101
+        .byte   0b10100110
+        .byte   0b10110110
+        .byte   0b10101110
+        .byte   0b10111110
+        .byte   0b11100110
+        .byte   0b11110110
+        .byte   0b11101110
+        .byte   0b11111110
+        .byte   0b10100111
+        .byte   0b10110111
+        .byte   0b10101111
+        .byte   0b10111111
+        .byte   0b11100111
+        .byte   0b11110111
+        .byte   0b11101111
+        .byte   0b11111111
+in:     tst     r0, #1
+        movne   r0, #0xff
+        bxne    lr
+        ldr     r2, gpbas
+        ldr     r11, _table
+        and     r3, r0, #0b100110000000000
+        orr     r3, r3, lsr #5
+        and     r3, #0b111000000000
+        ldr     r3, [r11, r3, lsr #7]
+        str     r3, [r2, #GPFSEL0]
+        add     r11, #8
+        and     r3, r0, #0b1000001100000000
+        orr     r3, r3, lsr #8
+        and     r3, #0b1110000000
+        ldr     r3, [r11, r3, lsr #5]
+        str     r3, [r2, #GPFSEL1]
+        and     r3, r0, #0b11000000000000
+        add     r11, #8
+        ldr     r3, [r11, r3, lsr #10]
+        str     r3, [r2, #GPFSEL2]
+        ldr     r3, [r2, #GPLEV0]
+        ldr     r0, filt
+        and     r3, r0
+        orr     r3, r3, lsr #7
+        orr     r3, r3, lsr #13
+        and     r3, #0b111111
+        add     r11, r3
+        ldrb    r0, [r11, #4]
         bx      lr
 
-out:    bx      lr
+out:    tst     r0, #1
+        bxne    lr
+        and     r1, #0x7
+        ldr     r0, c1111
+        smulwb  r1, r0, r1
+        ldr     r0, memo
+        str     r1, [r0, #oborder]
+        bx      lr
+c1111:  .word   0x11111111
+
+wait:   mov     r2, #50
+wait1:  subs    r2, #1
+        bne     wait1
+        bx      lr
 
         .include  "z80.s"
 
@@ -295,8 +443,8 @@ h_:     .byte   0
         .equ    ofbinfo,  opoint-32
 
 endf:
-        .incbin "ManicMiner.rom"
-@        .incbin "48.rom"
+@        .incbin "ManicMiner.rom"
+        .incbin "48.rom"
 
 /*  GPIO23  D0
     GPIO24  D1
@@ -304,7 +452,7 @@ endf:
     GPIO8   D3
     GPIO7   D4
 
-    GPIO3   A11
+    GPIO3   A11       13 12       14 11 10    15 9 8
     GPIO4   A10
     GPIO17  A9
     GPIO27  A12
