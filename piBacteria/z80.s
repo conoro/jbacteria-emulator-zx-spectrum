@@ -993,16 +993,15 @@
 
 execute:push    {lr}
 exec1:  
-
-        push    {r0}
-        mov     r0, pcff, lsr #16
-        sub     r0, #0x0077
-        cmp     r0, #0x0e00
-        bne     caca
-        bl      regs
-caca:
-        pop     {r0}
-
+  .if debug==1
+    push    {r0}
+    mov     r0, pcff, lsr #16
+    sub     r0, #0x0077
+    cmp     r0, #0x0e00
+    bne     ca
+    bl      regs
+ca: pop     {r0}
+  .endif
 
         mov     lr, #0x00010000
         uadd8   arvpref, arvpref, lr

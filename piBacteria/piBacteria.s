@@ -1,3 +1,5 @@
+        .set    debug,      0
+
         .set    MBOXBASE,   0x2000B880
         .set    MBOXREAD,   0x00
         .set    MBOXSTATUS, 0x18
@@ -80,8 +82,10 @@ gent3:  tst     r4, #0x02
         bpl     gent1
         str     r6, [mem, #opinrap]
 
-        ldr     r0, const
-        bl      hexs
+  .if debug==1
+    ldr     r0, const
+    bl      hexs
+  .endif
 
 @ Esto renderiza la imagen
 
@@ -125,7 +129,6 @@ aqui:   ldrcs   r11, [mem, #oborder]
         add     lr, #4
         swp     r3, r3, [lr]
 
-@  bl regs
         bl      execute
         add     stlo, #224
 
@@ -139,6 +142,7 @@ aqui:   ldrcs   r11, [mem, #oborder]
 
         b       render
 
+  .if debug==1
 regs:   push    {r0, r12, lr}
         mov     r0, #'P'
         bl      send
@@ -213,9 +217,13 @@ send1:  ldr     r12, [lr, #AMLSRREG]
         beq     send1
         str     r0, [lr, #AMIOREG]
         pop     {r12, pc}
+  .endif
 
 @ piscina de constantes
+
+  .if debug==1
 const:  .word   0x1234a6d8
+  .endif
 
 auxb:   .word   AUXBASE
 ltabl:  .word   LTABLE
@@ -286,6 +294,23 @@ h_:     .byte   0
         .equ    opoint,   opinrap-40
         .equ    ofbinfo,  opoint-32
 
-endf:   .incbin "48.rom"
-@        .incbin "gameover.scr"
+endf:
+        .incbin "ManicMiner.rom"
+@        .incbin "48.rom"
 
+/*  GPIO23  D0
+    GPIO24  D1
+    GPIO25  D2
+    GPIO8   D3
+    GPIO7   D4
+
+    GPIO3   A11
+    GPIO4   A10
+    GPIO17  A9
+    GPIO27  A12
+    GPIO22  A13
+    GPIO10  A8
+    GPIO9   A14
+    GPIO11  A15
+
+    GPIO2   EAR */
