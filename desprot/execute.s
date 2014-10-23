@@ -1656,7 +1656,7 @@ _mem:   .word   mem
         .word   cp_d          @ ba CP D
         .word   cpe           @ bb CP E
         .word   cph           @ bc CP H
-        .word   cpl           @ bd CP L
+        .word   cp_l          @ bd CP L
         .word   cphl          @ be CP (HL)
         .word   cpa           @ bf CP A
         .word   retnz         @ c0 RET NZ
