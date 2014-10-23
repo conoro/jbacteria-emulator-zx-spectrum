@@ -994,13 +994,13 @@
 execute:push    {lr}
 exec1:  
   .if debug==1
-    push    {r0}
+/*    push    {r0}
     mov     r0, pcff, lsr #16
-    sub     r0, #0x0077
-    cmp     r0, #0x0e00
+    sub     r0, #0x00d5
+    cmp     r0, #0x0200
     bne     ca
     bl      regs
-ca: pop     {r0}
+ca: pop     {r0}*/
   .endif
 
         mov     lr, #0x00010000
@@ -1456,7 +1456,7 @@ mboxb:  .word   MBOXBASE
         .word   cp_d          @ ba CP D
         .word   cpe           @ bb CP E
         .word   cph           @ bc CP H
-        .word   cpl           @ bd CP L
+        .word   cp_l          @ bd CP L
         .word   cphl          @ be CP (HL)
         .word   cpa           @ bf CP A
         .word   retnz         @ c0 RET NZ

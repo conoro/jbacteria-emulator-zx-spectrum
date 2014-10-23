@@ -150,6 +150,8 @@ aqui:   ldrcs   r11, [mem, #oborder]
         add     lr, #4
         swp     r3, r3, [lr]
 
+@        bl      regs
+
         bl      execute
         add     stlo, #224
 
@@ -160,6 +162,43 @@ aqui:   ldrcs   r11, [mem, #oborder]
         add     r2, #1
         cmp     r2, #264
         bne     drawr
+
+
+        add     lr, mem, #otmpr2
+        swp     r2, r2, [lr]
+        add     lr, #4
+        swp     r3, r3, [lr]
+        tst     arvpref, #0x00000400
+        beq     exec5
+        bic     arvpref, #0x00000400
+        tst     arvpref, #0x00000800
+        bicne   arvpref, #0x00000800
+        addne   pcff, #0x00010000
+        mov     r11, pcff, lsr #16
+        sub     spfa, #0x00020000
+        mov     r10, spfa, lsr #16
+        strh    r11, [mem, r10]
+        mov     r11, #0x00010000
+        uadd8   arvpref, arvpref, r11
+        movs    r11, arvpref, lsl #22
+        beq     exec3
+        bmi     exec4
+        sub     stlo, #1
+exec3:  mov     r11, #0x00380000
+        pkhbt   pcff, pcff, r11
+        sub     stlo, #12
+        b       exec5
+exec4:  and     r11, iyi, #0x0000ff00
+        orr     r11, #0x000000ff
+        ldrh    r10, [mem, r11]
+        pkhbt   pcff, pcff, r10, lsl #16
+        sub     stlo, #19
+exec5:  
+        add     lr, mem, #otmpr2
+        swp     r2, r2, [lr]
+        add     lr, #4
+        swp     r3, r3, [lr]
+
 
         b       render
 
@@ -187,8 +226,8 @@ regs:   push    {r0, r12, lr}
         bl      send
         mov     r0, #'='
         bl      send
-        mov     r0, defr, lsr #16
-        bl      hexh
+        mov     r0, defr
+        bl      hexs
         mov     r0, #'H'
         bl      send
         mov     r0, #'L'
@@ -196,6 +235,12 @@ regs:   push    {r0, r12, lr}
         mov     r0, #'='
         bl      send
         mov     r0, hlmp, lsr #16
+        bl      hexh
+        mov     r0, #'A'
+        bl      send
+        mov     r0, #'='
+        bl      send
+        mov     r0, arvpref, lsr #16
         bl      hexh
         mov     r0, #13
         bl      send
@@ -253,26 +298,26 @@ memo:   .word   MEMORY
 rows:   .word   0b00001000010000100000111000011000
 filt:   .word   0b00000011100000000000000110000100
 _table: .word   table
-table:  .word   0b000000000000000000000000000000
-        .word   0b001000000000000000000000000000
-        .word   0b000000000000000001000000000000
-        .word   0b001000000000000001000000000000
-        .word   0b000000000000000000001000000000
+table:  .word   0b001000000000000001001000000000
         .word   0b001000000000000000001000000000
+        .word   0b001000000000000001000000000000
+        .word   0b001000000000000000000000000000
         .word   0b000000000000000001001000000000
-        .word   0b001000000000000001001000000000
-        .word   0b000000000000010010000000000000
-        .word   0b000000000000010010000000001000
-        .word   0b000000000000010010000000000001
-        .word   0b000000000000010010000000001001
-        .word   0b000000001000010010000000000000
-        .word   0b000000001000010010000000001000
-        .word   0b000000001000010010000000000001
-        .word   0b000000001000010010000000001001
+        .word   0b000000000000000000001000000000
+        .word   0b000000000000000001000000000000
         .word   0b000000000000000000000000000000
+        .word   0b000000001000010010000000001001
+        .word   0b000000001000010010000000000001
+        .word   0b000000000000010010000000001001
+        .word   0b000000000000010010000000000001
+        .word   0b000000001000010010000000001000
+        .word   0b000000001000010010000000000000
+        .word   0b000000000000010010000000001000
+        .word   0b000000000000010010000000000000
+        .word   0b000000001000000000000001000000
         .word   0b000000001000000000000000000000
         .word   0b000000000000000000000001000000
-        .word   0b000000001000000000000001000000
+        .word   0b000000000000000000000000000000
         .byte   0b10100000
         .byte   0b10110000
         .byte   0b10101000
@@ -342,44 +387,47 @@ in:     tst     r0, #1
         bxne    lr
         ldr     r2, gpbas
         ldr     r11, _table
-        and     r3, r0, #0b100110000000000
-        orr     r3, r3, lsr #5
-        and     r3, #0b111000000000
-        ldr     r3, [r11, r3, lsr #7]
+        and     r3, r0, #0b1100010000000000
+        orr     r3, r3, lsr #6
+        and     r3, #0b11100000000
+        ldr     r3, [r11, r3, lsr #6]
         str     r3, [r2, #GPFSEL0]
-        add     r11, #8
-        and     r3, r0, #0b1000001100000000
-        orr     r3, r3, lsr #8
+        add     r11, #32
+        and     r3, r0, #0b101100000000
+        orr     r3, r3, lsr #4
         and     r3, #0b1110000000
         ldr     r3, [r11, r3, lsr #5]
         str     r3, [r2, #GPFSEL1]
         and     r3, r0, #0b11000000000000
-        add     r11, #8
+        add     r11, #32
         ldr     r3, [r11, r3, lsr #10]
         str     r3, [r2, #GPFSEL2]
+        add     r11, #16
+        push    {r2, lr}
+        bl      wait
+        pop     {r2, lr}
         ldr     r3, [r2, #GPLEV0]
         ldr     r0, filt
         and     r3, r0
         orr     r3, r3, lsr #7
         orr     r3, r3, lsr #13
         and     r3, #0b111111
-        add     r11, r3
-        ldrb    r0, [r11, #4]
+        ldrb    r0, [r11, r3]
         bx      lr
 
 out:    tst     r0, #1
         bxne    lr
         and     r1, #0x7
         ldr     r0, c1111
-        smulwb  r1, r0, r1
+        mul     r1, r0, r1
         ldr     r0, memo
         str     r1, [r0, #oborder]
         bx      lr
 c1111:  .word   0x11111111
 
 wait:   mov     r2, #50
-wait1:  subs    r2, #1
-        bne     wait1
+waita:  subs    r2, #1
+        bne     waita
         bx      lr
 
         .include  "z80.s"
@@ -452,13 +500,13 @@ endf:
     GPIO8   D3
     GPIO7   D4
 
-    GPIO3   A11       13 12       14 11 10    15 9 8
-    GPIO4   A10
-    GPIO17  A9
-    GPIO27  A12
-    GPIO22  A13
-    GPIO10  A8
-    GPIO9   A14
-    GPIO11  A15
+    GPIO3   A15
+    GPIO4   A14
+    GPIO17  A8
+    GPIO27  A13
+    GPIO22  A12
+    GPIO10  A9
+    GPIO9   A10
+    GPIO11  A11
 
     GPIO2   EAR */
