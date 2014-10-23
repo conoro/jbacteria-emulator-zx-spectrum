@@ -62,6 +62,10 @@ salta:  ldr     r3, [r0, #AMLSRREG]
         bl      send
 main2:  subs    r7, #1
         bne     main2
+        mrc     p15, 0, r1, c1, c0, 0
+        bic     r1, r1, #1<<12
+        bic     r1, r1, #1<<2
+        mcr     p15, 0, r1, c1, c0, 0
         b       start+0x1000
 main3:  bne     main7
         cmp     r1, r8

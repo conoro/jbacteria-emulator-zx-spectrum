@@ -27,6 +27,8 @@
         .set    AMCNTLREG,  0x60
         .set    AMBAUDREG,  0x68
 
+        .set    STCLO,      0x20003004
+
 .text
         iyi     .req      r0
         mem     .req      r1
@@ -76,15 +78,17 @@ wait2:  ldr     r3, [r2, #MBOXSTATUS]
         str     r2, [r0, #GPCLR0]
 
 @ Esto es para crear las tablas de pintado rápido
-        ldr     r6, ltabl
-        add     r6, #0x20000
-        mov     r0, #127
+        ldr     r6, [mem, #opinrap]
+        add     r6, #0x40000
+        mov     r0, #255
 gent1:  mov     r7, #255
 gent2:  and     r3, r0, #7
         tst     r0, #0b01000000
         orrne   r3, #8
-        mov     r2, r0, lsr #3
+        movs    r2, r0, lsl #25
+        mov     r2, r2, lsr #28
         add     r4, r7, #0x00008000
+        eorcs   r4, #0xff     
 gent3:  tst     r4, #0x02
         mov     r5, r5, lsl #4
         addeq   r5, r2
@@ -113,6 +117,11 @@ gent3:  tst     r4, #0x02
         mov     pcff, #0
         mov     stlo, #224
 
+        ldr     lr, stclo
+        ldr     lr, [lr]
+        add     lr, #64
+        str     lr, [mem, #ocontad]
+
 render: mov     r2, #0
 drawr:  mov     r3, #0
         ldr     r10, [mem, #opoint]
@@ -137,7 +146,11 @@ drawp:  sub     r11, r3, #6
         eor     r11, r12, lsl #8
         add     r11, #0x4000
         ldrb    r11, [mem, r11]
+        tst     lr, #0x80
+        tstne   iyi, #0x80
+        eorne   lr, #0x80
         add     r11, r11, lr, lsl #8
+ 
         ldr     r12, [mem, #opinrap]
         ldr     r11, [r12, r11, lsl #2]
 aqui:   ldrcs   r11, [mem, #oborder]
@@ -155,6 +168,14 @@ aqui:   ldrcs   r11, [mem, #oborder]
         bl      execute
         add     stlo, #224
 
+        ldr     r11, [mem, #ocontad]
+        ldr     r10, stclo
+again:  ldr     lr, [r10]
+        cmp     lr, r11
+        bne     again
+        add     r11, #64
+        str     r11, [mem, #ocontad]
+
         add     lr, mem, #otmpr2
         swp     r2, r2, [lr]
         add     lr, #4
@@ -162,6 +183,8 @@ aqui:   ldrcs   r11, [mem, #oborder]
         add     r2, #1
         cmp     r2, #264
         bne     drawr
+        mov     r11, #4
+        uadd8   iyi, iyi, r11
 
 
         add     lr, mem, #otmpr2
@@ -293,7 +316,7 @@ const:  .word   0x1234a6d8
 
 auxb:   .word   AUXBASE
 gpbas:  .word   GPBASE
-ltabl:  .word   LTABLE
+stclo:  .word   STCLO
 memo:   .word   MEMORY
 rows:   .word   0b00001000010000100000111000011000
 filt:   .word   0b00000011100000000000000110000100
@@ -461,7 +484,8 @@ point:  .word   0       @32 GPU - Pointer
         .hword  0b1111111111100000
         .hword  0b1111111111111111
 
-pinrap: .word   0
+contad: .word   0
+pinrap: .word   LTABLE
 tmpr2:  .word   0
 tmpr3:  .word   0
 border: .word   0x77777777
@@ -487,7 +511,8 @@ h_:     .byte   0
         .equ    otmpr3,   oborder-4
         .equ    otmpr2,   otmpr3-4
         .equ    opinrap,  otmpr2-4
-        .equ    opoint,   opinrap-40
+        .equ    ocontad,  opinrap-4
+        .equ    opoint,   ocontad-40
         .equ    ofbinfo,  opoint-32
 
 endf:
