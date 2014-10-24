@@ -13,8 +13,6 @@
         .set    MBOXREAD,   0x00
         .set    MBOXSTATUS, 0x18
         .set    MBOXWRITE,  0x20
-        .set    MEMORY,     endf
-        .set    LTABLE,     endf+0x10000
 
         .set    AUXBASE,    0x20215000
         .set    AMENABLES,  0x04
@@ -27,7 +25,15 @@
         .set    AMCNTLREG,  0x60
         .set    AMBAUDREG,  0x68
 
-        .set    STCLO,      0x20003004
+        .set    STBASE,   0x20003000
+        .set    STCS,           0x00
+        .set    STCLO,          0x04
+        .set    STC1,           0x10
+        .set    INTBASE,  0x2000b000
+        .set    INTENIRQ1,     0x210
+
+        .set    MEMORY,     endf
+        .set    LTABLE,     endf+0x10000
 
 .text
         iyi     .req      r0
@@ -41,13 +47,11 @@
         arvpref .req      r8
         ix      .req      r9
 
-        mov     sp, #0x8000
-        ldr     mem, memo
-
-
+@ Permito lecturas/escrituras desalineadas y cargo puntero a memoria
         mrc     p15, 0, r0, c1, c0, 0 @ read control register
         orr     r0, r0, #(1 << 22)    @ set the U bit (bit 22)
         mcr     p15, 0, r0, c1, c0, 0 @ write control register
+        ldr     mem, memo
 
 @ Esto es para configurar el buffer de video a 352x264x4
         add     r0, mem, #ofbinfo+1
@@ -74,8 +78,27 @@ wait2:  ldr     r3, [r2, #MBOXSTATUS]
         str     r2, [r0, #GPPUDCLK0]
         bl      wait
         str     r2, [r0, #GPPUD]
-        ldr     r2, rows
-        str     r2, [r0, #GPCLR0]
+        ldr     r3, rows
+        str     r3, [r0, #GPCLR0]
+
+@ Configuro interrupciones y temporizador
+        ldr     r0, irqh        @IRQ vector
+        lsr     r0, #2
+        orr     r0, #0xea000000
+        str     r0, [r2, #0x18]
+        ldr     r0, stbas
+        ldr     r2, [r0, #STCLO]
+        add     r2, #0x100
+        str     r2, [r0, #STC1]
+        ldr     r0, intbas
+        mov     r2, #0b0010
+        str     r2, [r0, #INTENIRQ1]
+        mov     r0, #0xd2       @IRQ mode, FIQ&IRQ disable
+        msr     cpsr_c, r0
+        mov     sp, #0x4000
+        mov     r0, #0x53       @SVC mode, IRQ enable
+        msr     cpsr_c, r0
+        mov     sp, #0x8000
 
 @ Esto es para crear las tablas de pintado rápido
         ldr     r6, [mem, #opinrap]
@@ -117,11 +140,6 @@ gent3:  tst     r4, #0x02
         mov     pcff, #0
         mov     stlo, #224
 
-        ldr     lr, stclo
-        ldr     lr, [lr]
-        add     lr, #64
-        str     lr, [mem, #ocontad]
-
 render: mov     r2, #0
 drawr:  mov     r3, #0
         ldr     r10, [mem, #opoint]
@@ -150,7 +168,6 @@ drawp:  sub     r11, r3, #6
         tstne   iyi, #0x80
         eorne   lr, #0x80
         add     r11, r11, lr, lsl #8
- 
         ldr     r12, [mem, #opinrap]
         ldr     r11, [r12, r11, lsl #2]
 aqui:   ldrcs   r11, [mem, #oborder]
@@ -162,20 +179,13 @@ aqui:   ldrcs   r11, [mem, #oborder]
         swp     r2, r2, [lr]
         add     lr, #4
         swp     r3, r3, [lr]
-
 @        bl      regs
-
         bl      execute
         add     stlo, #224
-
-        ldr     r11, [mem, #ocontad]
-        ldr     r10, stclo
-again:  ldr     lr, [r10]
-        cmp     lr, r11
+again:  ldr     lr, flag
+        subs    lr, #2
         bne     again
-        add     r11, #64
-        str     r11, [mem, #ocontad]
-
+        str     lr, flag
         add     lr, mem, #otmpr2
         swp     r2, r2, [lr]
         add     lr, #4
@@ -185,8 +195,6 @@ again:  ldr     lr, [r10]
         bne     drawr
         mov     r11, #4
         uadd8   iyi, iyi, r11
-
-
         add     lr, mem, #otmpr2
         swp     r2, r2, [lr]
         add     lr, #4
@@ -216,14 +224,23 @@ exec4:  and     r11, iyi, #0x0000ff00
         ldrh    r10, [mem, r11]
         pkhbt   pcff, pcff, r10, lsl #16
         sub     stlo, #19
-exec5:  
-        add     lr, mem, #otmpr2
+exec5:  add     lr, mem, #otmpr2
         swp     r2, r2, [lr]
         add     lr, #4
         swp     r3, r3, [lr]
-
-
         b       render
+
+irqhnd: push    {r0, r1}
+        ldr     r0, stbas
+        mov     r1, #0b0010
+        str     r1, flag
+        str     r1, [r0, #STCS]
+        ldr     r1, [r0, #STCLO]
+        add     r1, #64
+        str     r1, [r0, #STC1]
+        pop     {r0, r1}
+        subs    pc, lr, #4
+
 
   .if debug==1
 regs:   push    {r0, r12, lr}
@@ -314,9 +331,12 @@ send1:  ldr     r12, [lr, #AMLSRREG]
 const:  .word   0x1234a6d8
   .endif
 
+flag:   .word   0
 auxb:   .word   AUXBASE
 gpbas:  .word   GPBASE
-stclo:  .word   STCLO
+stbas:  .word   STBASE
+intbas: .word   INTBASE
+irqh:   .word   irqhnd-0x20
 memo:   .word   MEMORY
 rows:   .word   0b00001000010000100000111000011000
 filt:   .word   0b00000011100000000000000110000100
@@ -484,7 +504,6 @@ point:  .word   0       @32 GPU - Pointer
         .hword  0b1111111111100000
         .hword  0b1111111111111111
 
-contad: .word   0
 pinrap: .word   LTABLE
 tmpr2:  .word   0
 tmpr3:  .word   0
@@ -511,13 +530,12 @@ h_:     .byte   0
         .equ    otmpr3,   oborder-4
         .equ    otmpr2,   otmpr3-4
         .equ    opinrap,  otmpr2-4
-        .equ    ocontad,  opinrap-4
-        .equ    opoint,   ocontad-40
+        .equ    opoint,   opinrap-40
         .equ    ofbinfo,  opoint-32
 
 endf:
-@        .incbin "ManicMiner.rom"
-        .incbin "48.rom"
+        .incbin "ManicMiner.rom"
+@        .incbin "48.rom"
 
 /*  GPIO23  D0
     GPIO24  D1
