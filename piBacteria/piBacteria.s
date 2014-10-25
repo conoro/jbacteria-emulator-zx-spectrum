@@ -141,7 +141,9 @@ gent3:  tst     r4, #0x02
         mov     stlo, #224
 
 render: mov     r2, #0
-drawr:  mov     r3, #0
+drawr:  cmp     r2, #264
+        bcs     alli
+        mov     r3, #0
         ldr     r10, [mem, #opoint]
         mov     r11, #176
         smlabb  r10, r11, r2, r10
@@ -175,7 +177,7 @@ aqui:   ldrcs   r11, [mem, #oborder]
         add     r3, #1
         cmp     r3, #44
         bne     drawp
-        add     lr, mem, #otmpr2
+alli:   add     lr, mem, #otmpr2
         swp     r2, r2, [lr]
         add     lr, #4
         swp     r3, r3, [lr]
