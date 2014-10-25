@@ -191,8 +191,9 @@ again:  ldr     lr, flag
         add     lr, #4
         swp     r3, r3, [lr]
         add     r2, #1
-        cmp     r2, #264
+        cmp     r2, #312
         bne     drawr
+
         mov     r11, #4
         uadd8   iyi, iyi, r11
         add     lr, mem, #otmpr2
@@ -534,8 +535,8 @@ h_:     .byte   0
         .equ    ofbinfo,  opoint-32
 
 endf:
-        .incbin "ManicMiner.rom"
-@        .incbin "48.rom"
+@        .incbin "ManicMiner.rom"
+        .incbin "48.rom"
 
 /*  GPIO23  D0
     GPIO24  D1
