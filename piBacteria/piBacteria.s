@@ -68,11 +68,8 @@
         stmia   r3!, {r4-r11}
         ldmia   r0!, {r4-r12}
         stmia   r3!, {r4-r12}
-        mov     r0, #0x23
-        strb    r0, parch1
-        strb    r0, parch2
-        mov     r0, #0x37
-        strb    r0, parch2+1
+        mov     r0, #0x20
+        strb    r0, parche
 nrev1:  mov     r4, #1
         add     r0, mem, #ofbinfo+1
         orr     r0, #0x40000000
@@ -436,6 +433,7 @@ filt:   .word   0b00000011100000000000000110000100
         .byte   0b11110111
         .byte   0b11101111
         .byte   0b11111111
+
         .word   0b00000011100000000000000110000001
         .byte   0b10100000
         .byte   0b11100000
@@ -528,9 +526,9 @@ in:     tst     r0, #1
         pop     {r2, lr}
         ldr     r3, [r2, #GPLEV0]
         ldr     r0, [r11], #4
-        and     r3, r0
-parch1: orr     r3, r3, lsr #7
-parch2: orr     r3, r3, lsr #13
+        and     r0, r3
+parche: orr     r3, r0, r0, lsr #7
+        orr     r3, r3, r0, lsr #20
         and     r3, #0b111111
         ldrb    r0, [r11, r3]
         bx      lr
