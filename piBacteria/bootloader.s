@@ -10,6 +10,7 @@
         .set    AMCNTLREG,  0x60
         .set    AMBAUDREG,  0x68
         .set    GPBASE,     0x20200000
+        .set    GPFSEL0,    0x00
         .set    GPFSEL1,    0x04
 .text
 start:  mov     r7, #0x9000
@@ -33,6 +34,8 @@ init:   ldr     r0, =AUXBASE
         str     r4, [r0, #AMIIRREG]
         add     r4, #0x48
         str     r4, [r0, #AMBAUDREG]
+        ldr     r4, =0b00000000000000000000001001001001
+        str     r4, [r1, #GPFSEL0]
         mov     r4, #0b00000000000000010010000000000000
         str     r4, [r1, #GPFSEL1]
         str     r3, [r0, #AMCNTLREG]
