@@ -1,5 +1,5 @@
 
-        define  consta  $6b
+        define  consta  $6c
 ultra   ld      ix, ramab1
         exx                     ; salvo de, en caso de volver al cargador estandar y para hacer luego el checksum
         ld      c, 0
@@ -19,13 +19,13 @@ ultra3  ld      b, 0
         dec     h
         jr      nz, ultra1      ; si detecto sincronismo sin 8 pulsos de tono guia retorno a bucle
         call    $05ed           ; leo pulso negativo de sincronismo
-        inc     h
+        ld      l, 1
 ultra4  ld      b, 0            ; 16 bytes
         call    $05ed           ; esta rutina lee 2 pulsos e inicializa el contador de pulsos
         call    $05ed
         ld      a, b
         cp      12
-        rl      h
+        adc     hl, hl
         jr      nc, ultra4
         ld      a, h
         exx
@@ -34,17 +34,16 @@ ultra4  ld      b, 0            ; 16 bytes
         exx
         pop     de              ; recupero en de la direccion de comienzo del bloque
         ld      h, table>>8
-        ld      a, table1 & 255
+        call    $05ed
         inc     c               ; pongo en flag z el signo del pulso
-        ld      c, $fe          ; este valor es el que necesita b para entrar en raudo
-        jr      z, ultra6
+        ld      bc, $effe       ; este valor es el que necesita b para entrar en raudo
+        jr      nz, ultra6
         ld      ixl, ramaa1 & 255
 ultra5  in      f, (c)
         jp      pe, ultra5
-
         jr      ramaa2          ; salto a raudo segun el signo del pulso en flag z
 
-        .38     defb    $00
+        .39     defb    $00
 
 ultra6  in      f, (c)
         jp      po, ultra6
@@ -58,9 +57,9 @@ ramaa   out     (c), b          ;12
         call    lee1            ;17       57
 ramaa1  ex      af, af'         ;4
         ld      a, r            ;9
-ramaa2  ld      l, a            ;4
+        ld      l, a            ;4
         ld      b, (hl)         ;7
-        ld      a, consta
+ramaa2  ld      a, consta
         ld      r, a            ;9
         call    lee2            ;17       63
         ex      af, af'         ;4
@@ -82,9 +81,9 @@ ramab   out     (c), b          ;12
         call    lee2            ;17       57
 ramab1  ex      af, af'         ;4
         ld      a, r            ;9
-ramab2  ld      l, a            ;4
+        ld      l, a            ;4
         ld      b, (hl)         ;7
-        ld      a, consta
+ramab2  ld      a, consta
         ld      r, a            ;9
         call    lee1            ;17       63
         ex      af, af'         ;4
