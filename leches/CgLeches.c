@@ -5,8 +5,8 @@
 FILE *fi, *fo, *ft;
 unsigned char in[0x10000], mem[0x20000];
 int i, j, k, tlength;
-unsigned short length, param, frequency= 44100;
-char tzx= 0, wav= 0, channel_type= 1, velo= 3, offset= 0, command[0x100], *ext;
+unsigned short length, param;
+char tzx= 0, wav= 0, channel_type= 1, command[0x100], *ext;
 
 int strcasecmp(const char *a, const char *b){
   int ca, cb;
@@ -24,16 +24,13 @@ int strcasecmp(const char *a, const char *b){
 int main(int argc, char* argv[]){
   if( argc==1 )
     printf("\n"
-    "CgLeches v1.00, an ultra load block generator by Antonio Villena, 17 Sep 2014\n\n"
-    "  CgLeches <ifile> <ofile> [speed] [channel_type] [srate] [offset]\n\n"
+    "CgLeches v1.01, an ultra load block generator by Antonio Villena, 9 Nov 2014\n\n"
+    "  CgLeches <ifile> <ofile> [channel_type]\n\n"
     "  <ifile>        TAP input file, mandatory\n"
     "  <ofile>        Output file, between TZX or WAV file, mandatory\n"
-    "  [speed]        A number between 0 and 7. Lower is faster. Default 3\n"
-    "  [channel_type] Possible values are: mono (default), stereo or stereoinv\n"
-    "  [srate]        Sample rate, 44100 (default) or 48000\n"
-    "  [offset]       -2,-1,0 (default),1 or 2. Fine grain adjust for symbol offset\n\n"),
+    "  [channel_type] Possible values are: mono (default), stereo or stereoinv\n\n"),
     exit(0);
-  if( argc<3 || argc>7 )
+  if( argc<3 || argc>4 )
     printf("\nInvalid number of parameters\n"),
     exit(-1);
   fi= fopen(argv[1], "rb");
@@ -50,29 +47,17 @@ int main(int argc, char* argv[]){
   if( !fo )
     printf("\nCannot create output file: %s\n", argv[2]),
     exit(-1);
-  argc>3 && (velo= atoi(argv[3]));
-  if( velo>7 )
-    printf("\nInvalid speed: %s\n", argv[3]),
-    exit(-1);
   if( argc>4 ){
-    if( !strcasecmp(argv[4], "mono") )
+    if( !strcasecmp(argv[3], "mono") )
       channel_type= 1;
-    else if( !strcasecmp(argv[4], "stereo") )
+    else if( !strcasecmp(argv[3], "stereo") )
       channel_type= 2;
-    else if( !strcasecmp(argv[4], "stereoinv") )
+    else if( !strcasecmp(argv[3], "stereoinv") )
       channel_type= 6;
     else
-      printf("\nInvalid argument name: %s\n", argv[4]),
+      printf("\nInvalid argument name: %s\n", argv[3]),
       exit(-1);
   }
-  argc>5 && (frequency= atoi(argv[5]));
-  if( frequency!=44100 && frequency!=48000 )
-    printf("\nInvalid sample rate: %s\n", argv[5]),
-    exit(-1);
-  argc>6 && (offset= atoi(argv[6]));
-  if( offset<-2 || offset>2 )
-    printf("\nInvalid offset: %s\n", argv[6]),
-    exit(-1);
   if( !strcasecmp((char *)strchr(argv[2], '.'), ".tzx" ) )
     fprintf( fo, "ZXTape!" ),
     *(int*)mem= 0xa011a,
@@ -85,8 +70,8 @@ int main(int argc, char* argv[]){
     *(char*)(mem+16)= 0x10;
     *(char*)(mem+20)= 0x01;
     *(char*)(mem+22)= *(char*)(mem+32)= channel_type&3;
-    *(short*)(mem+24)= frequency;
-    *(int*)(mem+28)= frequency*(channel_type&3);
+    *(short*)(mem+24)= 44100;
+    *(int*)(mem+28)= 44100*(channel_type&3);
     *(char*)(mem+34)= 8;
     *(int*)(mem+36)= 0x61746164;
     fwrite(mem, 1, 44, fo);
@@ -102,16 +87,16 @@ int main(int argc, char* argv[]){
     fwrite(in+1, 1, length-2, ft);
     fclose(ft);
 #ifdef __linux__ 
-    sprintf(command, "./leches %d %s tmp.%s %02x %d %d 100 %d _tmp.tap > nul\n", frequency,
+    sprintf(command, "./leches 44100 %s tmp.%s %02x 100 %d _tmp.tap > nul\n",
             channel_type-1 ? (channel_type-2?"stereoinv":"stereo") : "mono",
-            ext, in[0], velo, offset, in[0] ? 2000 : 200);
+            ext, in[0], in[0] ? 2000 : 200);
     if( system(command) )
       printf("\nError: leches not found \n"),
       exit(-1);
 #else
-    sprintf(command, "leches %d %s tmp.%s %02x %d %d 100 %d _tmp.tap > nul\n", frequency,
+    sprintf(command, "leches 44100 %s tmp.%s %02x 100 %d _tmp.tap > nul\n",
             channel_type-1 ? (channel_type-2?"stereoinv":"stereo") : "mono",
-            ext, in[0], velo, offset, in[0] ? 2000 : 200);
+            ext, in[0], in[0] ? 2000 : 200);
     if( system(command) )
       printf("\nError: leches.exe not found \n"),
       exit(-1);

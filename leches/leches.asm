@@ -19069,7 +19069,6 @@ L386C:  DEFB    $38             ;;end-calc              last value is 1 or 0.
 ;   - Albert Einstein, 1879-1955.
 
 ultra   push    ix              ; 133 bytes
-        ld      ix, ramab1
         pop     hl              ; pongo la direccion de comienzo en hl
         exx                     ; salvo de, en caso de volver al cargador estandar y para hacer luego el checksum
         ld      c, 0
@@ -19094,6 +19093,7 @@ ultr4   cp      16              ; si el contador esta entre 10 y 16 es el tono g
         inc     h
         inc     h
         jr      nz, ultr0       ; si detecto sincronismo sin 8 pulsos de tono guia retorno a bucle
+        ld      ix, ramab1
         call    L05ED           ; leo pulso negativo de sincronismo
         ld      l, 1  ;abcd intercambio h<->l y pruebo con inc l
 ultra5  ld      b, 0            ; 16 bytes
@@ -19116,10 +19116,10 @@ ultra5  ld      b, 0            ; 16 bytes
         ld      a, $d8          ; a' tiene que valer esto para entrar en raudo
         ex      af, af'
         ld      h, table>>8
-        ld      a, table1 & 255
+        call    $05ed
         inc     c               ; pongo en flag z el signo del pulso
-        ld      c, $fe          ; este valor es el que necesita b para entrar en raudo
-        jr      z, ultra7
+        ld      bc, $effe       ; este valor es el que necesita b para entrar en raudo
+        jr      nz, ultra7
         ld      ixl, ramaa1 & 255
 ultra6  in      f, (c)
         jp      pe, ultra6
@@ -19130,32 +19130,45 @@ ultra7  in      f, (c)
 
         block   $3901-$, $ff
 
-table   defb    $ec, $ec, 0, 0
-        defb    $ec, $ec, 0, 0
-        defb    $ec, $ec, 0, 0
-        defb    $ed, $ec, 0, 0
-        defb    $ed, $ec, 0, 0
-        defb    $ed, $ed, 0, 0
-        defb    $ee, $ed, 0, 0
-        defb    $ee, $ed, 0, 0
-        defb    $ee, $ee, 0, 0
-        defb    $ef, $ee, 0, 0
-        defb    $ef, $ee, 0, 0
-table1  defb    $ef, $ef, 0, 0
-        defb    $ef, $ef, 0, 0
-        defb    $ef, $ef, 0, 0
+table   defb    $ec
+        jp      0
+        defb    $ec
+        jp      0
+        defb    $ec
+        jp      0
+        defb    $ec
+        jp      0
+        defb    $ed
+        jp      0
+        defb    $ed
+        jp      0
+        defb    $ed
+        jp      0
+        defb    $ee
+        jp      0
+        defb    $ee
+        jp      0
+        defb    $ee
+        jp      0
+        defb    $ef
+        jp      0
+        defb    $ef
+        jp      0
+        defb    $ef
+        jp      0
+        defb    $ef
 
 ramaa   out     (c), b          ;12
-        inc     hl
+        dec     hl
         xor     b               ;4
         add     a, a            ;4
         add     a, a            ;4
         call    lee1            ;17       57
 ramaa1  ex      af, af'         ;4
         ld      a, r            ;9
-ramaa2  ld      l, a            ;4
+        ld      l, a            ;4
         ld      b, (hl)         ;7
-        ld      a, consta
+ramaa2  ld      a, consta
         ld      r, a            ;9
         call    lee2            ;17       63
         ex      af, af'         ;4
@@ -19170,16 +19183,16 @@ lee1    .9      defb    $6e, $ed, $70, $e0
         jr      ultra8
 
 ramab   out     (c), b          ;12
-        inc     hl
+        dec     hl
         xor     b               ;4
         add     a, a            ;4
         add     a, a            ;4
         call    lee2            ;17       57
 ramab1  ex      af, af'         ;4
         ld      a, r            ;9
-ramab2  ld      l, a            ;4
+        ld      l, a            ;4
         ld      b, (hl)         ;7
-        ld      a, consta
+ramab2  ld      a, consta
         ld      r, a            ;9
         call    lee1            ;17       63
         ex      af, af'         ;4
