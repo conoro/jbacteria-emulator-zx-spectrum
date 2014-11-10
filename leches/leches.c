@@ -169,6 +169,10 @@ int main(int argc, char* argv[]){
         outbits( k );
     outbits( 4 );
     outbits( 4 );
+    outbits( 5 );
+    outbits( 5 );
+    outbits( 6 );
+    outbits( 6 );
   }
   --mem;
   while( length-- )

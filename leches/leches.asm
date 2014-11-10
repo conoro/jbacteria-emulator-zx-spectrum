@@ -1,4 +1,4 @@
-        define  consta  $6c
+        define  consta  $69
         org     $0000
         output  leches.rom
 
@@ -19103,6 +19103,11 @@ ultra5  ld      b, 0            ; 16 bytes
         cp      12
         adc     hl, hl
         jr      nc, ultra5
+        call    $05ed
+        call    $05ed
+        call    $05ed
+        call    $05ed
+        call    $05ed
         pop     af              ; machaco la direccion de retorno de la carga estandar
         ex      af, af'         ; a es el byte flag que espero
         cp      l               ; lo comparo con el que me encuentro en la ultracarga
@@ -19113,12 +19118,13 @@ ultra5  ld      b, 0            ; 16 bytes
         push    hl              ; pongo direccion de comienzo en pila
         exx
         pop     de              ; recupero en de la direccion de comienzo del bloque
+        dec     de
         ld      a, $d8          ; a' tiene que valer esto para entrar en raudo
         ex      af, af'
         ld      h, table>>8
-        call    $05ed
+        ld      a, table1 & 255
         inc     c               ; pongo en flag z el signo del pulso
-        ld      bc, $effe       ; este valor es el que necesita b para entrar en raudo
+        ld      c, $fe          ; este valor es el que necesita b para entrar en raudo
         jr      nz, ultra7
         ld      ixl, ramaa1 & 255
 ultra6  in      f, (c)
@@ -19138,8 +19144,6 @@ table   defb    $ec
         jp      0
         defb    $ec
         jp      0
-        defb    $ec
-        jp      0
         defb    $ed
         jp      0
         defb    $ed
@@ -19152,7 +19156,9 @@ table   defb    $ec
         jp      0
         defb    $ee
         jp      0
-        defb    $ef
+        defb    $ee
+        jp      0
+table1  defb    $ef
         jp      0
         defb    $ef
         jp      0
@@ -19160,52 +19166,58 @@ table   defb    $ec
         jp      0
         defb    $ef
 
-ramaa   dec     hl
-        xor     b               ;4
+ramaa   nop                     ;4
         out     (c), b          ;12
+        dec     hl              ;6
+        xor     b               ;4
         add     a, a            ;4
         add     a, a            ;4
-        call    lee1            ;17       57
-ramaa1  ex      af, af'         ;4
+        call    lee1            ;17
+ramaa1  ex      af, af'         ;7+4      64
         ld      a, r            ;9
-        ld      l, a            ;4
+ramaa2  ld      l, a            ;4
         ld      b, (hl)         ;7
-ramaa2  ld      a, consta
+        ld      a, consta       ;7
         ld      r, a            ;9
-        call    lee2            ;17       63
-        ex      af, af'         ;4
-        jr      nc, ramaa       ;7/12
+        call    lee2            ;17
+        ex      af, af'         ;7+4      72/72
+        jp      nc, ramaa       ;10
         xor     b               ;4
         xor     $9c             ;7
-        ld      (de), a         ;7
         inc     de              ;6
-        ld      a, ($247)       ;13
+        ld      (de), a         ;7
+        ld      a, $dc          ;7
         push    ix              ;15
-lee1    .9      defb    $6e, $ed, $70, $e0
+        ret     c               ;5
+lee1    defb    $ed, $70, $e0
+        .9      defb    $6e, $ed, $70, $e0
         jr      ultra8
 
-ramab   dec     hl
-        xor     b               ;4
+ramab   nop                     ;4
         out     (c), b          ;12
+        dec     hl              ;6
+        xor     b               ;4
         add     a, a            ;4
         add     a, a            ;4
-        call    lee2            ;17       57
-ramab1  ex      af, af'         ;4
+        call    lee2            ;17
+ramab1  ex      af, af'         ;7+4      64
         ld      a, r            ;9
-        ld      l, a            ;4
+ramab2  ld      l, a            ;4
         ld      b, (hl)         ;7
-ramab2  ld      a, consta
+        ld      a, consta       ;7
         ld      r, a            ;9
-        call    lee1            ;17       63
-        ex      af, af'         ;4
-        jr      nc, ramab       ;7/12
+        call    lee1            ;17
+        ex      af, af'         ;7+4      72/72
+        jp      nc, ramab       ;10
         xor     b               ;4
         xor     $9c             ;7
-        ld      (de), a         ;7
         inc     de              ;6
-        ld      a, ($247)       ;13
+        ld      (de), a         ;7
+        ld      a, $dc          ;7
         push    ix              ;15
-lee2    .9      defb    $6e, $ed, $70, $e8
+        ret     c               ;5
+lee2    defb    $ed, $70, $e8
+        .9      defb    $6e, $ed, $70, $e8
 
 ultra8  pop     hl
         exx                     ; ya se ha acabado la ultracarga (raudo)
