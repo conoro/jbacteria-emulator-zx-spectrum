@@ -5869,7 +5869,7 @@ L1391:  DEFB    $80
 L1537:  DEFB    ',',' '+$80                             ; used in report line.
 ;; copyright
 L1539:  DEFB    $7F                                     ; copyright
-        DEFM    " 1982 Sinclair Research Lt"
+        DEFM    " 2014 Sinclair Research Lt"
         DEFB    'd'+$80
 
 
@@ -19138,6 +19138,8 @@ table   defb    $ec
         jp      0
         defb    $ec
         jp      0
+        defb    $ec
+        jp      0
         defb    $ed
         jp      0
         defb    $ed
@@ -19158,9 +19160,9 @@ table   defb    $ec
         jp      0
         defb    $ef
 
-ramaa   out     (c), b          ;12
-        dec     hl
+ramaa   dec     hl
         xor     b               ;4
+        out     (c), b          ;12
         add     a, a            ;4
         add     a, a            ;4
         call    lee1            ;17       57
@@ -19182,9 +19184,9 @@ ramaa2  ld      a, consta
 lee1    .9      defb    $6e, $ed, $70, $e0
         jr      ultra8
 
-ramab   out     (c), b          ;12
-        dec     hl
+ramab   dec     hl
         xor     b               ;4
+        out     (c), b          ;12
         add     a, a            ;4
         add     a, a            ;4
         call    lee2            ;17       57

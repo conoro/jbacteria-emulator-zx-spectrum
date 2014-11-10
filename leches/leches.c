@@ -167,7 +167,7 @@ int main(int argc, char* argv[]){
       else
         outbits( k= checksum&0x8000 ? 5 : 9 ),
         outbits( k );
-    outbits( 6 );
+    outbits( 4 );
     outbits( 4 );
   }
   --mem;

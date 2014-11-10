@@ -1,5 +1,5 @@
 
-        define  consta  $6c
+        define  consta  $69
 ultra   ld      ix, ramab1
         exx                     ; salvo de, en caso de volver al cargador estandar y para hacer luego el checksum
         ld      c, 0
@@ -27,13 +27,15 @@ ultra4  ld      b, 0            ; 16 bytes
         cp      12
         adc     hl, hl
         jr      nc, ultra4
-        ld      a, h
+        ld      a, l
+        xor     h
         exx
         ld      c, a            ; guardo checksum en c'
         push    hl              ; pongo direccion de comienzo en pila
         exx
         pop     de              ; recupero en de la direccion de comienzo del bloque
-        ld      h, table>>8
+        dec     de
+        ld      hl, table
         call    $05ed
         inc     c               ; pongo en flag z el signo del pulso
         ld      bc, $effe       ; este valor es el que necesita b para entrar en raudo
@@ -49,52 +51,54 @@ ultra6  in      f, (c)
         jp      po, ultra6
         jr      ramab2
 
-ramaa   out     (c), b          ;12
+ramaa   nop
+        out     (c), b          ;12
         inc     hl
         xor     b               ;4
         add     a, a            ;4
         add     a, a            ;4
-        call    lee1            ;17       57
+        call    lee1+1          ;17       57
 ramaa1  ex      af, af'         ;4
         ld      a, r            ;9
         ld      l, a            ;4
         ld      b, (hl)         ;7
 ramaa2  ld      a, consta
         ld      r, a            ;9
-        call    lee2            ;17       63
+        call    lee2+1          ;17       66/61
         ex      af, af'         ;4
-        jr      nc, ramaa       ;7/12
+        jp      nc, ramaa       ;10
         xor     b               ;4
         xor     $9c             ;7
-        ld      (de), a         ;7
         inc     de              ;6
+        ld      (de), a         ;7
         ld      a, ($247)       ;13
         push    ix              ;15
-lee1    .9      defb    $6e, $ed, $70, $e0
+lee1    .10     defb    $6e, $ed, $70, $e0
         jr      ultra9
 
-ramab   out     (c), b          ;12
+ramab   nop
+        out     (c), b          ;12
         inc     hl
         xor     b               ;4
         add     a, a            ;4
         add     a, a            ;4
-        call    lee2            ;17       57
+        call    lee2+1          ;17       57
 ramab1  ex      af, af'         ;4
         ld      a, r            ;9
         ld      l, a            ;4
         ld      b, (hl)         ;7
 ramab2  ld      a, consta
         ld      r, a            ;9
-        call    lee1            ;17       63
+        call    lee1+1          ;17       63
         ex      af, af'         ;4
-        jr      nc, ramab       ;7/12
+        jp      nc, ramab       ;10
         xor     b               ;4
         xor     $9c             ;7
-        ld      (de), a         ;7
         inc     de              ;6
+        ld      (de), a         ;7
         ld      a, ($247)       ;13
         push    ix              ;15
-lee2    .9      defb    $6e, $ed, $70, $e8
+lee2    .10     defb    $6e, $ed, $70, $e8
 
 ultra9  pop     hl
         exx                     ; ya se ha acabado la ultracarga (raudo)

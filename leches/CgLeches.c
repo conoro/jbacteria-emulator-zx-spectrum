@@ -47,17 +47,15 @@ int main(int argc, char* argv[]){
   if( !fo )
     printf("\nCannot create output file: %s\n", argv[2]),
     exit(-1);
-  if( argc>4 ){
-    if( !strcasecmp(argv[3], "mono") )
-      channel_type= 1;
-    else if( !strcasecmp(argv[3], "stereo") )
-      channel_type= 2;
-    else if( !strcasecmp(argv[3], "stereoinv") )
-      channel_type= 6;
-    else
-      printf("\nInvalid argument name: %s\n", argv[3]),
-      exit(-1);
-  }
+  if( !strcasecmp(argv[3], "mono") )
+    channel_type= 1;
+  else if( !strcasecmp(argv[3], "stereo") )
+    channel_type= 2;
+  else if( !strcasecmp(argv[3], "stereoinv") )
+    channel_type= 6;
+  else
+    printf("\nInvalid argument name: %s\n", argv[3]),
+    exit(-1);
   if( !strcasecmp((char *)strchr(argv[2], '.'), ".tzx" ) )
     fprintf( fo, "ZXTape!" ),
     *(int*)mem= 0xa011a,
@@ -96,7 +94,7 @@ int main(int argc, char* argv[]){
 #else
     sprintf(command, "leches 44100 %s tmp.%s %02x 100 %d _tmp.tap > nul\n",
             channel_type-1 ? (channel_type-2?"stereoinv":"stereo") : "mono",
-            ext, in[0], in[0] ? 2000 : 200);
+            ext, in[0], in[0] ? 1000 : 500);
     if( system(command) )
       printf("\nError: leches.exe not found \n"),
       exit(-1);
