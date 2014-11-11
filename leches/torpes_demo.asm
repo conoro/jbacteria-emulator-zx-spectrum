@@ -1,4 +1,4 @@
-        define  consta  $59
+        define  consta  $69
         define  tr $ffff &
 
 ; Bloque cabecera
@@ -39,13 +39,13 @@ tabla   defb    $ec, 0, 0, 0  ; 01
         defb    $ec, 0, 0, 0  ; 05*
         defb    $ec, 0, 0, 0  ; 09*
         defb    $ec, 0, 0, 0  ; 0d
-        defb    $ed, 0, 0, 0  ; 11*
+        defb    $ed, 0, 0, 0  ; 11
         defb    $ed, 0, 0, 0  ; 15*
-        defb    $ed, 0, 0, 0  ; 19
-        defb    $ee, 0, 0, 0  ; 1d*
+        defb    $ed, 0, 0, 0  ; 19*
+        defb    $ee, 0, 0, 0  ; 1d
         defb    $ee, 0, 0, 0  ; 21*
-        defb    $ee, 0, 0, 0  ; 25
-tabla1  defb    $ef, 0, 0, 0  ; 29
+        defb    $ee, 0, 0, 0  ; 25*
+        defb    $ef, 0, 0, 0  ; 29
         defb    $ef, 0, 0, 0  ; 2d*
         defb    $ef, 0, 0, 0  ; 31*
         defb    $ef, 0, 0, 0  ; 35
@@ -120,7 +120,7 @@ ramaa2  ld      a, consta       ;7
         push    ix              ;15
         ret     c               ;5
 lee1    defb    $ed, $70, $e0
-        .11     defb    $6e, $ed, $70, $e0
+        .9      defb    $6e, $ed, $70, $e0
         jr      ultra9
 
 ramab   nop                     ;4
@@ -147,7 +147,7 @@ ramab2  ld      a, consta       ;7
         push    ix              ;15
         ret     c               ;5
 lee2    defb    $ed, $70, $e8
-        .11     defb    $6e, $ed, $70, $e8
+        .9      defb    $6e, $ed, $70, $e8
 
 ultra9  pop     hl
         exx                     ; ya se ha acabado la ultracarga (raudo)

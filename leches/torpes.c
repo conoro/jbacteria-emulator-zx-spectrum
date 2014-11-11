@@ -6,7 +6,7 @@
 #endif
 
 unsigned char table[]=
-  {2, 2, 3, 3, 2, 3, 3, 4};
+  {1, 2, 2, 3, 2, 2, 3, 3};
 unsigned char *mem, *precalc;
 unsigned char inibit= 0, tzx= 0, channel_type= 1;
 FILE *fi, *fo;
