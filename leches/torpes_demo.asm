@@ -48,7 +48,7 @@ tabla   defb    $ec, 0, 0, 0  ; 01
         defb    $ef, 0, 0, 0  ; 29
         defb    $ef, 0, 0, 0  ; 2d*
         defb    $ef, 0, 0, 0  ; 31*
-        defb    $ef, 0, 0, 0  ; 35
+        defb    $ef, 0, 0, 0  ; 35 
 
 ultra   ld      ix, ramab1
         exx                     ; salvo de, en caso de volver al cargador estandar y para hacer luego el checksum
@@ -65,12 +65,12 @@ ultra3  ld      b, e
         jr      z, ultra1
         add     a, 6            ; son de tono guia h debe valer ff
         jr      c, ultra3
+        ld      l, h
         dec     h
         jr      nz, ultra1      ; si detecto sincronismo sin 8 pulsos de tono guia retorno a bucle
         ld      a, $d8          ; a' tiene que valer esto para entrar en raudo
         ex      af, af'
         call    $05ed           ; leo pulso negativo de sincronismo
-        ld      l, 1
 ultra4  ld      b, e            ; 16 bytes
         call    $05ed           ; esta rutina lee 2 pulsos e inicializa el contador de pulsos
         call    $05ed
@@ -92,7 +92,7 @@ ultra4  ld      b, e            ; 16 bytes
         ld      bc, $effe       ; este valor es el que necesita b para entrar en raudo
         call    nz, lee2
         jr      nz, ramab2
-        ld      ixl, ramaa1
+        ld      ixl, ramaa1 & 255
         call    lee1
         jr      ramaa2          ; salto a raudo segun el signo del pulso en flag z
 
@@ -120,7 +120,7 @@ ramaa2  ld      a, consta       ;7
         push    ix              ;15
         ret     c               ;5
 lee1    defb    $ed, $70, $e0
-        .9      defb    $6e, $ed, $70, $e0
+        .10     defb    $6e, $ed, $70, $e0
         jr      ultra9
 
 ramab   nop                     ;4
@@ -147,7 +147,7 @@ ramab2  ld      a, consta       ;7
         push    ix              ;15
         ret     c               ;5
 lee2    defb    $ed, $70, $e8
-        .9      defb    $6e, $ed, $70, $e8
+        .10     defb    $6e, $ed, $70, $e8
 
 ultra9  pop     hl
         exx                     ; ya se ha acabado la ultracarga (raudo)

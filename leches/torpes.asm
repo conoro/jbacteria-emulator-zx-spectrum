@@ -1,6 +1,6 @@
         define  consta  $69
         org     $0000
-        output  leches.rom
+        output  torpes.rom
 
 ;*****************************************
 ;** Part 1. RESTART ROUTINES AND TABLES **
@@ -17,8 +17,8 @@
 ;; START
 L0000:  DI                      ; Disable Interrupts.
         XOR     A               ; Signal coming from START.
-        LD      DE,$FFFF        ; Set pointer to top of possible physical RAM.
-        JP      L11CB           ; Jump forward to common code at START-NEW.
+        ld      hl, $ffff       ; Set pointer to top of possible physical RAM.
+        jp      L11C8           ; Jump forward to common code at START-NEW.
 
 ; -------------------
 ; THE 'ERROR' RESTART
@@ -5373,8 +5373,7 @@ L11A7:  LD      A,(HL)          ; fetch character
 ;; NEW
 L11B7:  DI                      ; Disable Interrupts - machine stack will be
                                 ; cleared.
-        LD      A,$FF           ; Flag coming from NEW.
-        LD      DE,($5CB2)      ; Fetch RAMTOP as top value.
+        LD      hl, ($5cb2)     ; Fetch RAMTOP as top value.
         EXX                     ; Switch in alternate set.
         LD      BC,($5CB4)      ; Fetch P-RAMT differs on 16K/48K machines.
         LD      DE,($5C38)      ; Fetch RASP/PIP.
@@ -5390,22 +5389,14 @@ L11B7:  DI                      ; Disable Interrupts - machine stack will be
 ;   if coming from START or NEW.
 
 ;; START-NEW
-L11CB:  LD      B,A             ; Save the flag to control later branching.
+L11C8:  ex      af, af'         ; Save the flag to control later branching.
 
-        LD      A,$07           ; Select a white border
+        ld      a, $3f          ; select a white border
         OUT     ($FE),A         ; and set it now by writing to a port.
 
-        LD      A,$3F           ; Load the accumulator with last page in ROM.
         LD      I,A             ; Set the I register - this remains constant
                                 ; and can't be in the range $40 - $7F as 'snow'
                                 ; appears on the screen.
-
-        NOP                     ; These seem unnecessary.
-        NOP                     ;
-        NOP                     ;
-        NOP                     ;
-        NOP                     ;
-        NOP                     ;
 
 ; -----------------------
 ; THE 'RAM CHECK' SECTION
@@ -5417,61 +5408,51 @@ L11CB:  LD      B,A             ; Save the flag to control later branching.
 ;   sometimes red stripes on black paper just visible.
 
 ;; ram-check
-L11DA:  LD      H,D             ; Transfer the top value to the HL register
-        LD      L,E             ; pair.
-
 ;; RAM-FILL
-L11DC:  LD      (HL),$02        ; Load memory with $02 - red ink on black paper.
+L11CF:  ld      (hl), $01       ; Load memory with $01 - blue ink on black paper.
         DEC     HL              ; Decrement memory address.
         CP      H               ; Have we reached ROM - $3F ?
-        JR      NZ,L11DC        ; Back to RAM-FILL if not.
+        JR      NZ,L11CF        ; Back to RAM-FILL if not.
 
 ;; RAM-READ
-L11E2:  AND     A               ; Clear carry - prepare to subtract.
-        SBC     HL,DE           ; subtract and add back setting
-        ADD     HL,DE           ; carry when back at start.
-        INC     HL              ; and increment for next iteration.
-        JR      NC,L11EF        ; forward to RAM-DONE if we've got back to
-                                ; starting point with no errors.
-
-        DEC     (HL)            ; decrement to 1.
-        JR      Z,L11EF         ; forward to RAM-DONE if faulty.
+L11D5:  INC     HL              ; and increment for next iteration.
 
         DEC     (HL)            ; decrement to zero.
-        JR      Z,L11E2         ; back to RAM-READ if zero flag was set.
+        JR      Z,L11D5         ; back to RAM-READ if zero flag was set.
 
 ;; RAM-DONE
-L11EF:  DEC     HL              ; step back to last valid location.
+        DEC     HL              ; step back to last valid location.
+        ld      b, (hl)         ; B=0
         EXX                     ; regardless of state, set up possibly
                                 ; stored system variables in case from NEW.
         LD      ($5CB4),BC      ; insert P-RAMT.
         LD      ($5C38),DE      ; insert RASP/PIP.
         LD      ($5C7B),HL      ; insert UDG.
         EXX                     ; switch in main set.
-        INC     B               ; now test if we arrived here from NEW.
-        JR      Z,L1219         ; forward to RAM-SET if we did.
+        ex      af, af'         ; now test if we arrived here from NEW.
+        LD      DE,$3EAF        ; address of last byte of 'U' bitmap in ROM.
+        JR      NZ,L1201        ; forward to RAM-SET if we did.
 
 ;   This section applies to START only.
 
         LD      ($5CB4),HL      ; set P-RAMT to the highest working RAM
                                 ; address.
-        LD      DE,$3EAF        ; address of last byte of 'U' bitmap in ROM.
-        LD      BC,$00A8        ; there are 21 user defined graphics.
+        ld      c, $a7          ; there are 21 user defined graphics.
         EX      DE,HL           ; switch pointers and make the UDGs a
         LDDR                    ; copy of the standard characters A - U.
         EX      DE,HL           ; switch the pointer to HL.
-        INC     HL              ; update to start of 'A' in RAM.
+
         LD      ($5C7B),HL      ; make UDG system variable address the first
                                 ; bitmap.
         DEC     HL              ; point at RAMTOP again.
 
-        LD      BC,$0040        ; set the values of
+        ld      c, $40          ; set the values of
         LD      ($5C38),BC      ; the PIP and RASP system variables.
 
 ;   The NEW command path rejoins here.
 
 ;; RAM-SET
-L1219:  LD      ($5CB2),HL      ; set system variable RAMTOP to HL.
+L1201:  LD      ($5CB2),HL      ; set system variable RAMTOP to HL.
 
 ;   
 ;   Note. this entry point is a disabled Warm Restart that was almost certainly
@@ -5480,13 +5461,7 @@ L1219:  LD      ($5CB2),HL      ; set system variable RAMTOP to HL.
 ;   below.
 
 ;; NMI_VECT
-L121C:
-        LD      HL,$3C00        ; a strange place to set the pointer to the 
-        LD      ($5C36),HL      ; character set, CHARS - as no printing yet.
-
-        LD      HL,($5CB2)      ; fetch RAMTOP to HL again as we've lost it.
-
-        LD      (HL),$3E        ; top of user ram holds GOSUB end marker
+        ld      (hl), d         ; top of user ram holds GOSUB end marker
                                 ; an impossible line number - see RETURN.
                                 ; no significance in the number $3E. It has
                                 ; been traditional since the ZX80.
@@ -5514,34 +5489,46 @@ L121C:
 ;   in a Warm Restart scenario, to produce a report code, leaving any program 
 ;   intact.
 
-        LD      HL,$5CB6        ; The address of the channels - initially
+        ld      (iy-3), $3c     ; The address of the channels - initially
+                                ; following system variables.
+        ld      hl, $5cb6        ; The address of the channels - initially
                                 ; following system variables.
         LD      ($5C4F),HL      ; Set the CHANS system variable.
 
         LD      DE,L15AF        ; Address: init-chan in ROM.
-        LD      BC,$0015        ; There are 21 bytes of initial data in ROM.
+        ld      c, d            ; There are 21 bytes of initial data in ROM.
         EX      DE,HL           ; swap the pointers.
         LDIR                    ; Copy the bytes to RAM.
 
-        EX      DE,HL           ; Swap pointers. HL points to program area.
-        DEC     HL              ; Decrement address.
-        LD      ($5C57),HL      ; Set DATADD to location before program area.
-        INC     HL              ; Increment again.
+        ld      e, $0e          ; set destination to system variable STRMS-FD
+        ld      c, $10          ; copy the 14 bytes of initial 7 streams data
+        ldir                    ; from ROM to RAM.
 
+        LD      HL,$0523        ; The keyboard repeat and delay values are 
+        ld      c, h
+        ld      (iy+$31), c     ; set DF_SZ the lower screen display size to
+
+        LD      ($5C09),HL      ; loaded to REPDEL and REPPER.
+
+        ld      hl, $5cca
+        LD      ($5C57),HL      ; Set DATADD to location before program area.
+        INC     L               ; Increment again.
         LD      ($5C53),HL      ; Set PROG the location where BASIC starts.
         LD      ($5C4B),HL      ; Set VARS to same location with a
-        LD      (HL),$80        ; variables end-marker.
-        INC     HL              ; Advance address.
+        LD      (HL),$80        ; put $80 marker at (HL)
+        INC     L               ; Increment again.
         LD      ($5C59),HL      ; Set E_LINE, where the edit line
                                 ; will be created.
                                 ; Note. it is not strictly necessary to
                                 ; execute the next fifteen bytes of code
                                 ; as this will be done by the call to SET-MIN.
                                 ; --
-        LD      (HL),$0D        ; initially just has a carriage return
-        INC     HL              ; followed by
-        LD      (HL),$80        ; an end-marker.
-        INC     HL              ; address the next location.
+
+        ld      de, L129D
+        ex      de, hl
+        ldir
+        ex      de, hl
+
         LD      ($5C61),HL      ; set WORKSP - empty workspace.
         LD      ($5C63),HL      ; set STKBOT - bottom of the empty stack.
         LD      ($5C65),HL      ; set STKEND to the end of the empty stack.
@@ -5549,40 +5536,33 @@ L121C:
         LD      A,$38           ; the colour system is set to white paper,
                                 ; black ink, no flash or bright.
         LD      ($5C8D),A       ; set ATTR_P permanent colour attributes.
-        LD      ($5C8F),A       ; set ATTR_T temporary colour attributes.
         LD      ($5C48),A       ; set BORDCR the border colour/lower screen
                                 ; attributes.
-
-        LD      HL,$0523        ; The keyboard repeat and delay values are 
-        LD      ($5C09),HL      ; loaded to REPDEL and REPPER.
 
         DEC     (IY-$3A)        ; set KSTATE-0 to $FF - keyboard map available.
         DEC     (IY-$36)        ; set KSTATE-4 to $FF - keyboard map available.
 
-        LD      HL,L15C6        ; set source to ROM Address: init-strm
-        LD      DE,$5C10        ; set destination to system variable STRMS-FD
-        LD      BC,$000E        ; copy the 14 bytes of initial 7 streams data
-        LDIR                    ; from ROM to RAM.
-
-        SET     1,(IY+$01)      ; update FLAGS  - signal printer in use.
-        CALL    L0EDF           ; call routine CLEAR-PRB to initialize system
+        call    L164D           ; update FLAGS  - signal printer in use.
+        call    L0EDF           ; call routine CLEAR-PRB to initialize system
                                 ; variables associated with printer.
                                 ; The buffer is clear.
+        ld      (iy+$01), $8c   ; update FLAGS again
 
-        LD      (IY+$31),$02    ; set DF_SZ the lower screen display size to
-                                ; two lines
         CALL    L0D6B           ; call routine CLS to set up system
                                 ; variables associated with screen and clear
                                 ; the screen and set attributes.
-        XOR     A               ; clear accumulator so that we can address
         LD      DE,L1539 - 1    ; the message table directly.
         CALL    L0C0A           ; routine PO-MSG puts
                                 ; ' ©  1982 Sinclair Research Ltd'
                                 ; at bottom of display.
-        SET     5,(IY+$02)      ; update TV_FLAG  - signal lower screen will
+        call    L0308+3         ; update TV_FLAG  - signal lower screen will
                                 ; require clearing.
 
-        JR      L12A9           ; forward to MAIN-1
+        JR      L1303-11        ; jump to one instruction before MAIN-4
+
+        DEFM    'Reset&Play, Antonio Villena 2012'; 32 bytes
+
+L129D:  DEFB    $EF, $22, $22, $0D, $80; LOAD "" + Enter + $80
 
 ; -------------------------
 ; THE 'MAIN EXECUTION LOOP'
@@ -5868,9 +5848,8 @@ L1391:  DEFB    $80
 ;; comma-sp   
 L1537:  DEFB    ',',' '+$80                             ; used in report line.
 ;; copyright
-L1539:  DEFB    $7F                                     ; copyright
-        DEFM    " 2014 Sinclair Research Lt"
-        DEFB    'd'+$80
+L1539:  DEFM    "Press PLAY or SPACE to brea"
+        DEFB    'k'+$80
 
 
 ; -------------
@@ -19071,10 +19050,11 @@ L386C:  DEFB    $38             ;;end-calc              last value is 1 or 0.
 ultra   push    ix              ; 133 bytes
         pop     hl              ; pongo la direccion de comienzo en hl
         exx                     ; salvo de, en caso de volver al cargador estandar y para hacer luego el checksum
-        ld      c, 0
+        ld      e, 0
+        ld      c, e
 ultr0   defb    $2a
 ultr1   jr      nz, ultr3       ; return if at any time space is pressed.
-ultr2   ld      b, 0
+ultr2   ld      b, e
         call    L05ED           ; leo la duracion de un pulso (positivo o negativo)
         jr      nc, ultr1       ; si el pulso es muy largo retorno a bucle
         ld      a, b
@@ -19086,28 +19066,22 @@ ultr2   ld      b, 0
 ultr3   exx
         ld      c, 2
         ret
-ultr4   cp      16              ; si el contador esta entre 10 y 16 es el tono guia
+ultr4   add     a, -16          ; si el contador esta entre 10 y 16 es el tono guia
         rr      h               ; de las ultracargas, si los ultimos 8 pulsos
-        cp      10              ; son de tono guia h debe valer ff
-        jr      nc, ultr2
-        inc     h
-        inc     h
+        add     a, 6            ; son de tono guia h debe valer ff
+        jr      c, ultr2
+        ld      l, h
+        dec     h
         jr      nz, ultr0       ; si detecto sincronismo sin 8 pulsos de tono guia retorno a bucle
         ld      ix, ramab1
         call    L05ED           ; leo pulso negativo de sincronismo
-        ld      l, 1  ;abcd intercambio h<->l y pruebo con inc l
-ultra5  ld      b, 0            ; 16 bytes
+ultra5  ld      b, e            ; 16 bytes
         call    L05ED           ; esta rutina lee 2 pulsos e inicializa el contador de pulsos
         call    L05ED
         ld      a, b
         cp      12
         adc     hl, hl
         jr      nc, ultra5
-        call    $05ed
-        call    $05ed
-        call    $05ed
-        call    $05ed
-        call    $05ed
         pop     af              ; machaco la direccion de retorno de la carga estandar
         ex      af, af'         ; a es el byte flag que espero
         cp      l               ; lo comparo con el que me encuentro en la ultracarga
@@ -19122,49 +19096,44 @@ ultra5  ld      b, 0            ; 16 bytes
         ld      a, $d8          ; a' tiene que valer esto para entrar en raudo
         ex      af, af'
         ld      h, table>>8
-        ld      a, table1 & 255
+        call    $05ed
         inc     c               ; pongo en flag z el signo del pulso
-        ld      c, $fe          ; este valor es el que necesita b para entrar en raudo
-        jr      nz, ultra7
+        ld      bc, $effe       ; este valor es el que necesita b para entrar en raudo
+        call    nz, lee2
+        jp      nz, ramab2
         ld      ixl, ramaa1 & 255
-ultra6  in      f, (c)
-        jp      pe, ultra6
-        jp      ramaa2          ; salto a raudo segun el signo del pulso en flag z
-ultra7  in      f, (c)
-        jp      po, ultra7
-        jp      ramab2
+        call    lee1
+        jr      ramaa2          ; salto a raudo segun el signo del pulso en flag z
 
         block   $3901-$, $ff
 
-table   defb    $ec
-        jp      0
-        defb    $ec
-        jp      0
-        defb    $ec
-        jp      0
-        defb    $ec
-        jp      0
-        defb    $ed
-        jp      0
-        defb    $ed
-        jp      0
-        defb    $ed
-        jp      0
-        defb    $ee
-        jp      0
-        defb    $ee
-        jp      0
-        defb    $ee
-        jp      0
-        defb    $ee
-        jp      0
-table1  defb    $ef
-        jp      0
-        defb    $ef
-        jp      0
-        defb    $ef
-        jp      0
-        defb    $ef
+table   defb    $ec     ; 01
+        jp      0       
+        defb    $ec     ; 05*
+        jp      0       
+        defb    $ec     ; 09*
+        jp      0       
+        defb    $ec     ; 0d
+        jp      0       
+        defb    $ed     ; 11
+        jp      0       
+        defb    $ed     ; 15*
+        jp      0       
+        defb    $ed     ; 19*
+        jp      0       
+        defb    $ee     ; 1d
+        jp      0       
+        defb    $ee     ; 21*
+        jp      0       
+        defb    $ee     ; 25*
+        jp      0       
+        defb    $ef     ; 29
+        jp      0       
+        defb    $ef     ; 2d*
+        jp      0       
+        defb    $ef     ; 31*
+        jp      0       
+        defb    $ef     ; 35 
 
 ramaa   nop                     ;4
         out     (c), b          ;12
@@ -19175,9 +19144,9 @@ ramaa   nop                     ;4
         call    lee1            ;17
 ramaa1  ex      af, af'         ;7+4      64
         ld      a, r            ;9
-ramaa2  ld      l, a            ;4
+        ld      l, a            ;4
         ld      b, (hl)         ;7
-        ld      a, consta       ;7
+ramaa2  ld      a, consta       ;7
         ld      r, a            ;9
         call    lee2            ;17
         ex      af, af'         ;7+4      72/72
@@ -19191,7 +19160,7 @@ ramaa2  ld      l, a            ;4
         ret     c               ;5
 lee1    defb    $ed, $70, $e0
         .9      defb    $6e, $ed, $70, $e0
-        jr      ultra8
+        jr      ultra6
 
 ramab   nop                     ;4
         out     (c), b          ;12
@@ -19202,9 +19171,9 @@ ramab   nop                     ;4
         call    lee2            ;17
 ramab1  ex      af, af'         ;7+4      64
         ld      a, r            ;9
-ramab2  ld      l, a            ;4
+        ld      l, a            ;4
         ld      b, (hl)         ;7
-        ld      a, consta       ;7
+ramab2  ld      a, consta       ;7
         ld      r, a            ;9
         call    lee1            ;17
         ex      af, af'         ;7+4      72/72
@@ -19219,17 +19188,16 @@ ramab2  ld      l, a            ;4
 lee2    defb    $ed, $70, $e8
         .9      defb    $6e, $ed, $70, $e8
 
-ultra8  pop     hl
+ultra6  pop     hl
         exx                     ; ya se ha acabado la ultracarga (raudo)
-        dec     de
         ld      b, e
-        inc     b
+        dec     de
         inc     d
-ultra9  xor     (hl)
+ultra7  xor     (hl)
         inc     hl
-        djnz    ultra9
+        djnz    ultra7
         dec     d
-        jr      nz, ultra9      ; con JP ahorro algunos ciclos
+        jr      nz, ultra7      ; con JP ahorro algunos ciclos
         push    hl              ; ha ido bien
         xor     c
         ld      h, b
