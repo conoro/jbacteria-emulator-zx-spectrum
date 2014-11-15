@@ -1,101 +1,76 @@
-        .set    STCLO,      0x20003004
         .set    AUXBASE,    0x20215000
         .set    AMENABLES,  0x04
         .set    AMIOREG,    0x40
-        .set    AMIERREG,   0x44
-        .set    AMIIRREG,   0x48
         .set    AMLCRREG,   0x4C
-        .set    AMMCRREG,   0x50
         .set    AMLSRREG,   0x54
-        .set    AMCNTLREG,  0x60
         .set    AMBAUDREG,  0x68
         .set    GPBASE,     0x20200000
-        .set    GPFSEL0,    0x00
         .set    GPFSEL1,    0x04
+        state   .req    r0
+        recv    .req    r1
+        send    .req    r1
+        gpbas   .req    r2
+        auxbas  .req    r2
+        block   .req    r3
+        addr    .req    r4
+        crc     .req    r5
 .text
-start:  mov     r7, #0x9000
-star1:  ldr     r3, [r7], #-4
-        str     r3, [r7, #-4092]
-        cmp     r7, #0x8000
+start:  mov     addr, #0x8100
+star1:  ldr     r1, [addr], #-4
+        str     r1, [addr, #-4092]
+        cmp     addr, #0x8000
         bne     star1
-        b       init-0x1000
-init:   ldr     r0, =AUXBASE
-        ldr     r1, =GPBASE
-        mov     r8, #1
-        str     r8, [r0, #AMENABLES]
-        mov     r2, #0
-        str     r2, [r0, #AMIERREG]
-        str     r2, [r0, #AMCNTLREG]
-        mov     r3, #3
-        str     r3, [r0, #AMLCRREG]
-        str     r2, [r0, #AMMCRREG]
-        str     r2, [r0, #AMIERREG]
-        mov     r4, #0xc6
-        str     r4, [r0, #AMIIRREG]
-        add     r4, #0x48
-        str     r4, [r0, #AMBAUDREG]
-        ldr     r4, =0b00000000000000000000001001001001
-        str     r4, [r1, #GPFSEL0]
-        mov     r4, #0b00000000000000010010000000000000
-        str     r4, [r1, #GPFSEL1]
-        str     r3, [r0, #AMCNTLREG]
-main:   add     r2, #1
-main1:  ldr     lr, =STCLO
-        ldr     lr, [lr]
-        cmp     lr, r11
-        bcc     salta
-        add     r11, lr, #0xa000
-        mov     r1, #0x15
-        bl      send
-salta:  ldr     r3, [r0, #AMLSRREG]
-        tst     r3, #1
-        beq     main1
-        ldr     r1, [r0, #AMIOREG]
-        ldr     r11, =STCLO
-        ldr     r11, [r11]
-        add     r11, #0xa000
-        cmp     r2, #1
-        bcs     main3
-        cmp     r1, #0x01
-        moveq   r9, #0
-        beq     main
-        cmp     r1, #0x04
-        bne     main5
-        mov     r1, #0x06
-        bl      send
-main2:  subs    r7, #1
-        bne     main2
-        mrc     p15, 0, r1, c1, c0, 0
-        bic     r1, r1, #1<<12
-        bic     r1, r1, #1<<2
-        mcr     p15, 0, r1, c1, c0, 0
+        b       star2-0x1000
+star2:  ldr     gpbas, =GPBASE
+        mov     r1, #0b00000000000000010010000000000000
+        str     r1, [gpbas, #GPFSEL1]
+        add     auxbas, #AUXBASE-GPBASE
+        mov     block, #1
+        str     block, [auxbas, #AMENABLES]
+        mov     r1, #0x23
+        str     r1, [auxbas, #AMLCRREG]
+        add     r1, #270-0x23
+        str     r1, [auxbas, #AMBAUDREG]
+star3:  ldr     r1, [auxbas, #AMLSRREG]
+        tst     r1, #1
+        beq     star3
+        ldr     recv, [auxbas, #AMIOREG]
+        cmp     state, #1
+        bcs     star5
+        cmp     recv, #0x01
+        moveq   crc, #0
+        beq     stard
+        cmp     recv, #0x04
+        bne     star7
+        mov     send, #0x06
+        str     send, [auxbas, #AMIOREG]
+star4:  subs    addr, #1
+        bne     star4
         b       start+0x1000
-main3:  bne     main7
-        cmp     r1, r8
-main4:  beq     main
-main5:  mov     r1, #0x15
-main6:  mov     r2, #0
-        bl      send
-        b       main1
-main7:  cmp     r2, #2
-        bne     main8
-        eor     lr, r8, #0xff
-        cmp     r1, lr
-        b       main4
-main8:  cmp     r2, #131
-        bne     main9
-        cmp     r1, r9
-        bne     main5
+star5:  bne     stara
+        cmp     recv, block
+star6:  beq     stard
+star7:  mov     send, #0x15
+star8:  mov     state, #0
+star9:  ldr     r6, [auxbas, #AMLSRREG]
+        tst     r6, #0x20
+        beq     star9
+        str     send, [auxbas, #AMIOREG]
+        b       star3
+stara:  cmp     state, #2
+        bne     starb
+        eor     lr, block, #0xff
+        cmp     recv, lr
+        b       star6
+starb:  cmp     state, #131
+        bne     starc
+        cmp     recv, crc
+        bne     star7
         mov     r1, #1
-        uadd8   r8, r8, r1
-        mov     r1, #6
-        b       main6
-main9:  uadd8   r9, r9, r1
-        strb    r1, [r7], #1
-        b       main
-
-send:   ldr     r12, [r0, #AMLSRREG]
-        tst     r12, #0x20
-        beq     send
-        str     r1, [r0, #AMIOREG]
-        bx      lr
+        uadd8   block, block, r1
+        mov     send, #0x06
+        b       star8
+starc:  uadd8   crc, crc, recv
+        strb    recv, [addr], #1
+stard:  add     state, #1
+        b       star3
