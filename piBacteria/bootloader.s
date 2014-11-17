@@ -52,7 +52,7 @@ star4:  ldr     cnt, [counter]
         bcs     star6
         cmp     recv, #0x01
         moveq   crc, #0
-        beq     stard
+        beq     starc
         cmp     recv, #0x04
         bne     star8
         mov     send, #0x06
@@ -61,26 +61,25 @@ star5:  subs    addr, #1
         bne     star5
         b       start+0x1000
 star6:  bne     stara
-        cmp     recv, block
-star7:  beq     stard
+        mov     cnt, block
+star7:  cmp     recv, cnt
+        beq     starc
 star8:  mov     send, #0x15
 star9:  mov     state, #0
         str     send, [auxbas, #AMIOREG]
         b       star4
 stara:  cmp     state, #2
+        eoreq   cnt, block, #0xff
+        beq     star7
+        cmp     state, #131
         bne     starb
-        eor     cnt, block, #0xff
-        cmp     recv, cnt
-        b       star7
-starb:  cmp     state, #131
-        bne     starc
         cmp     recv, crc
         bne     star8
         mov     r1, #1
         uadd8   block, block, r1
         mov     send, #0x06
         b       star9
-starc:  uadd8   crc, crc, recv
+starb:  uadd8   crc, crc, recv
         strb    recv, [addr], #1
-stard:  add     state, #1
+starc:  add     state, #1
         b       star4
