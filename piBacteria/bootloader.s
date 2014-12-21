@@ -6,7 +6,10 @@
         .set    AMLSRREG,   0x54
         .set    AMBAUDREG,  0x68
         .set    GPBASE,     0x20200000
+        .set    GPFSEL0,    0x00
         .set    GPFSEL1,    0x04
+        .set    GPSET0,     0x1c
+        .set    GPCLR0,     0x28
         state   .req    r0
         recv    .req    r3
         send    .req    r3
@@ -19,23 +22,33 @@
         cnt     .req    r9
         timeout .req    r10
 .text
-start:  mov     addr, #0x8100
+start:  mov     addr, #0x8200
 star1:  ldr     r3, [addr], #-4
-        str     r3, [addr, #4-0x100]
+        str     r3, [addr, #4-0x200]
         cmp     addr, #0x8000
         bne     star1
         ldr     gpbas, =GPBASE
         sub     cntadr, gpbas, #GPBASE-0x20004000
         mov     r3, #0b00000000000000010010000000000000
         str     r3, [gpbas, #GPFSEL1]
+        ldr     cnt, =0b10101010101010101010101010101010
+        mov     timeout, #0b0000000000010000
+beep:   strcc   timeout, [gpbas, #GPSET0]
+        strcs   timeout, [gpbas, #GPCLR0]
+        mov     crc, #0b00000000000000000001000000000000
+        str     crc, [gpbas, #GPFSEL0]
+beep1:  subs    crc, #1
+        bne     beep1
+        lsrs    cnt, #1
+        bne     beep
         add     auxbas, #AUXBASE-GPBASE
         mov     block, #1
         str     block, [auxbas, #AMENABLES]
-        mov     timeout, #0x23
+        mov     timeout, #3
         str     timeout, [auxbas, #AMLCRREG]
-        add     r3, timeout, #270-0x23
+        mov     r3, #15 @ 2Mbps
         str     r3, [auxbas, #AMBAUDREG]
-        b       star4-0x100
+        b       star4-0x200
 star2:  uadd8   crc, crc, recv
         strb    recv, [addr], #1
 star3:  add     state, #1
@@ -60,7 +73,7 @@ star4:  ldr     cnt, [cntadr, #STCLO-0x20004000]
         str     send, [auxbas, #AMIOREG]
 star5:  subs    addr, #1
         bne     star5
-        b       start+0x100
+        b       start+0x200
 star6:  bne     stara
         mov     cnt, block
 star7:  cmp     recv, cnt
