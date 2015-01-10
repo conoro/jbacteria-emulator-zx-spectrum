@@ -190,7 +190,7 @@ char *tokens81[]={
   "val$", "",
   "tab", "",
   "at", "",
-  "\"\"", "",
+  "`", "",
   "pi", "",
   "inkey$", "",
   "rnd", "",
@@ -266,7 +266,7 @@ void *memcpycnv(void *dst, void *src, size_t num){
       case 0x3b: *((char *)dst)++= 0x19; break; // ;
       case 0x3c: *((char *)dst)++= 0x13; break; // <
       case 0x3d: *((char *)dst)++= 0x14; break; // =
-      case 0x3e: *((char *)dst)++= 0x15; break; // >
+      case 0x3e: *((char *)dst)++= 0x12; break; // >
       case 0x3f: *((char *)dst)++= 0x0f; break; // ?
       case 0x7c: *((char *)dst)++= 0x41; break; // INKEY$
       case 0x7d: *((char *)dst)++= 0x40; break; // RND
