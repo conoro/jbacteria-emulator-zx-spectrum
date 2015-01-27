@@ -809,16 +809,14 @@ int main( int argc, char *argv[] ){
            */
           if( (*tarrptr)[0]=='<' || (*tarrptr)[1]=='=' ||
              (!isalpha(ptr[-1]) && !isalpha(ptr[toklen])) ){
-            /* RND, INKEY$, PI
-             */
-            if( zx81mode && toknum>0xbc && toknum<0xc0 )
-              toknum-= 0x40,
-              toknum==0x7e && (toknum= 0x7c);
             ptr2= linestart+(ptr-lcasebuf);
             /* the token text is overwritten in the lcase copy too, to
              * avoid problems with e.g. go to/to.
              */
-            *ptr2= *ptr= toknum;
+            if( zx81mode && toknum>0xbc && toknum<0xc0 )
+              *ptr2= *ptr= toknum==0xbe ? 0x7c : toknum-0x40; // RND, INKEY$, PI
+            else
+              *ptr2= *ptr= toknum;
             for ( f= 1; f<toklen; f++)
               ptr2[f]= ptr[f]= 1;
             /* absorb trailing spaces too */
