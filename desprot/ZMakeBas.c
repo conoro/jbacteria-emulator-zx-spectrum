@@ -2,7 +2,7 @@
  *            into an actual program file loadable on a speccy.
  *
  * Public domain by Russell Marks, 1998
- * Modified by Antonio Villena, 2014. v20140717
+ * Modified by Antonio Villena, 2014-2015. v20150320
  *
  * warning: this is probably the least structured program ever.
  * I guess that's what comes from hacking something into existence... :-/
@@ -23,6 +23,7 @@
 
 #define REM_TOKEN_NUM           234
 #define BIN_TOKEN_NUM           196
+#define DEFFN_TOKEN_NUM         206
 
 /* tokens are stored (and looked for) in reverse speccy-char-set order,
  * to avoid def fn/fn and go to/to screwups. There are two entries for
@@ -477,7 +478,6 @@ void usage_help(){
           "        -s      in labels mode, set starting line number (default 10).\n");
 }
 
-
 /* cmdline option parsing routine.
  */
 void parse_options( int argc,char *argv[] ){
@@ -612,7 +612,7 @@ int main( int argc, char *argv[] ){
   #else
   static unsigned char buf[2048], lcasebuf[2048], outbuf[4096];
   #endif
-  int f, toknum, toklen, linenum, linelen, in_quotes, in_rem, lastline;
+  int f, toknum, toklen, linenum, linelen, in_quotes, in_rem, in_deffn, lastline;
   char **tarrptr;
   unsigned char *ptr, *ptr2, *linestart, *outptr, *remptr, *fileptr, *asciiptr;
   double num;
@@ -892,7 +892,7 @@ int main( int argc, char *argv[] ){
       /* remove 0x01s, deal with backslash things, and add numbers */
       ptr= linestart;
       outptr= outbuf;
-      in_rem= in_quotes= 0;
+      in_rem= in_deffn= in_quotes= 0;
       
       while( *ptr ){
         if( outptr>outbuf+sizeof(outbuf)-10 )
@@ -901,17 +901,16 @@ int main( int argc, char *argv[] ){
 
         if( *ptr=='"' )
           in_quotes= !in_quotes;
-
         /* as well as 0x01 chars, we skip tabs. */
-        if( *ptr==1 || *ptr==9 || (!in_quotes && !in_rem && *ptr==' ') ){
+        else if( *ptr==1 || *ptr==9 || (!in_quotes && !in_rem && *ptr==' ') ){
           ptr++;
           continue;
         }
-
-        if( *ptr==REM_TOKEN_NUM )
-          in_rem=1;
-
-        if( *ptr=='\\' ){
+        else if( *ptr==DEFFN_TOKEN_NUM )
+          in_deffn= 1;
+        else if( *ptr==REM_TOKEN_NUM )
+          in_rem= 1;
+        else if( *ptr=='\\' ){
           if( isalpha(ptr[1]) && strchr("VWXYZvwxyz",ptr[1])==NULL )
             *outptr++= 144+tolower(ptr[1])-'a';
           else
@@ -1054,9 +1053,22 @@ int main( int argc, char *argv[] ){
           *outptr++= (num_mantissa&255);
           ptr= ptr2;
         }
-        else
+        else{
+          /* special def fn case */
+          if( in_deffn ){
+            if( *ptr=='=' )
+              in_deffn= 0;
+            else if( *ptr==',' || *ptr==')' )
+              *outptr++= 0x0e,
+              *outptr++= *outptr++= *outptr++= *outptr++= *outptr++= 0,
+              *outptr++= *ptr++;
+            if( *ptr!=' ' )
+              *outptr++= *ptr++;
+          }
           /* if not number, just output char */
-          *outptr++= *ptr++;
+          else
+            *outptr++= *ptr++;
+        }
       }
 
       *outptr++= 0x0d;    /* add terminating CR */
