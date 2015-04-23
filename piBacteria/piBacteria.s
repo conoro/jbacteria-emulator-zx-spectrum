@@ -62,15 +62,6 @@
         ldr     r3, [mem, #ogetrev+20]
         cmp     r3, #4
         bcs     nrev1
-@        ldr     r3, _table
-@        add     r3, #80
-@        add     r0, r3, #68
-@        ldmia   r0!, {r4-r11}
-@        stmia   r3!, {r4-r11}
-@        ldmia   r0!, {r4-r12}
-@        stmia   r3!, {r4-r12}
-@        mov     r0, #0x20
-@        strb    r0, parche
 nrev1:  mov     r4, #1
         add     r0, mem, #ofbinfo+1
         orr     r0, #0x40000000
@@ -150,7 +141,44 @@ gent3:  tst     r4, #0x02
 render: mov     r2, #0
 drawr:  cmp     r2, #264
         bcs     alli
-        mov     r3, #0
+        tst     r2, #0x1f
+        tsteq   r2, #0x100
+        bne     noscan
+        ldr     r11, _table
+        ldr     r12, gpbas
+        add     r10, r11, r2, lsr #5
+        ldr     r3, [r12, #GPLEV0]
+        and     lr, r3, #0b0011100000000000000000000000
+        tst     r3, #0b100000000
+        orrne   lr,     #0b0100000000000000000000000000
+        tst     r3, #0b010000000
+        orrne   lr,     #0b1000000000000000000000000000
+        lsr     lr, #23
+        strb    lr, [r10, #8]
+        ldrb    r10, [r11, #-1]     @ last row
+gf1:    add     r12, #4
+        subs    r10, #10
+        bcs     gf1
+        sub     r10, r10, lsl #2
+        add     r10, #2
+        mov     r3, #0b111
+        ldr     lr, [r12, #-4]
+        bic     lr, r3, ror r10
+        str     lr, [r12, #-4]
+        ldrb    r10, [r11, r2, lsr #5]
+        strb    r10, [r11, #-1]     @ last row
+        ldr     r12, gpbas
+gf2:    add     r12, #4
+        subs    r10, #10
+        bcs     gf2
+        sub     r10, r10, lsl #2
+        add     r10, #2
+        ldr     lr, [r12, #-4]
+        bic     lr, r3, ror r10
+        mov     r3, #0x001
+        orr     lr, r3, ror r10
+        str     lr, [r12, #-4]
+noscan: mov     r3, #0
         ldr     r10, [mem, #opoint]
         mov     r11, #176
         smlabb  r10, r11, r2, r10
@@ -200,6 +228,7 @@ again:  ldr     lr, flag
         add     lr, #4
         swp     r3, r3, [lr]
         add     r2, #1
+
         cmp     r2, #312
         bne     drawr
 
@@ -348,142 +377,30 @@ intbas: .word   INTBASE
 irqh:   .word   irqhnd-0x20
 memo:   .word   MEMORY
 _table: .word   table
+_keys:  .word   keys
 @                   7654321098765432109876543210
 rows:   .word   0b001000011001100000111000010101
-@                 999888777666555444333222111000
-table:  .word   0b001000000000000001000001000001
-        .word   0b001000000000000000000001000001
-        .word   0b000000000000000001000001000001
-        .word   0b000000000000000000000001000001
-@                 999888777666555444333222111000
-        .word   0b000001001000000000000000001001
-        .word   0b000001000000000000000000001001
-        .word   0b000001001000000000000000001000
-        .word   0b000001000000000000000000001000
-        .word   0b000000001000000000000000001001
-        .word   0b000000000000000000000000001001
-        .word   0b000000001000000000000000001000
-        .word   0b000000000000000000000000001000
-        .word   0b000001001000000000000000000001
-        .word   0b000001000000000000000000000001
-        .word   0b000001001000000000000000000000
-        .word   0b000001000000000000000000000000
-        .word   0b000000001000000000000000000001
-        .word   0b000000000000000000000000000001
-        .word   0b000000001000000000000000000000
-        .word   0b000000000000000000000000000000
-@                 999888777666555444333222111000
-        .word   0b000000001000000000000001001000
-        .word   0b000000001000000000000000001000
-        .word   0b000000000000000000000001000000
-        .word   0b000000000000000000000000000000
-@                   7654321098765432109876543210
-filt:   .word   0b000011100000000000000110001010
-        .byte   0b10100000
-        .byte   0b11100000
-        .byte   0b10100001
-        .byte   0b11100001
-        .byte   0b10100010
-        .byte   0b11100010
-        .byte   0b10100011
-        .byte   0b11100011
-        .byte   0b10100100
-        .byte   0b11100100
-        .byte   0b10100101
-        .byte   0b11100101
-        .byte   0b10100110
-        .byte   0b11100110
-        .byte   0b10100111
-        .byte   0b11100111
-        .byte   0b10110000
-        .byte   0b11110000
-        .byte   0b10110001
-        .byte   0b11110001
-        .byte   0b10110010
-        .byte   0b11110010
-        .byte   0b10110011
-        .byte   0b11110011
-        .byte   0b10110100
-        .byte   0b11110100
-        .byte   0b10110101
-        .byte   0b11110101
-        .byte   0b10110110
-        .byte   0b11110110
-        .byte   0b10110111
-        .byte   0b11110111
-        .byte   0b10101000
-        .byte   0b11101000
-        .byte   0b10101001
-        .byte   0b11101001
-        .byte   0b10101010
-        .byte   0b11101010
-        .byte   0b10101011
-        .byte   0b11101011
-        .byte   0b10101100
-        .byte   0b11101100
-        .byte   0b10101101
-        .byte   0b11101101
-        .byte   0b10101110
-        .byte   0b11101110
-        .byte   0b10101111
-        .byte   0b11101111
-        .byte   0b10111000
-        .byte   0b11111000
-        .byte   0b10111001
-        .byte   0b11111001
-        .byte   0b10111010
-        .byte   0b11111010
-        .byte   0b10111011
-        .byte   0b11111011
-        .byte   0b10111100
-        .byte   0b11111100
-        .byte   0b10111101
-        .byte   0b11111101
-        .byte   0b10111110
-        .byte   0b11111110
-        .byte   0b10111111
-        .byte   0b11111111
+lastrw: .byte   17
+table:  .byte   10, 9, 11, 22, 27, 4, 15, 17     @15->18
+keys:   .byte   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+filt:   .word   0b001011111001100000111110011101
 
 in:     tst     r0, #1
         movne   r0, #0xff
         bxne    lr
+        lsr     r3, r0, #8
+        mov     r0, #0x1f
+        ldr     r11, _keys
+        orr     r3, #0x100
+in1:    ldrb    r2, [r11], #1
+        lsrs    r3, #1
+        andcc   r0, r2
+        bne     in1
         ldr     r2, gpbas
-        ldr     r11, _table
-        and     r3, r0, #0b100010000000000
-@ 14  0  0  0 10  0  0  0  0  0  0  0  0  0  0
-@             10 14  0  0  0  0  0  0  0  0  0
-@                                  10 14  0  0
-        orr     r3, r3, lsr #5
-        and     r3, #0b11000000000
-        ldr     r3, [r11, r3, lsr #7]
-        str     r3, [r2, #GPFSEL0]
-        add     r11, #16
-@ 15  0  0  0 11  0  9  8  0  0  0  0  0  0  0  0
-@             11 15  9  8  0  0  0  0  0  0  0  0
-@                               11 15  9  8  0  0
-        and     r3, r0, #0b1000101100000000
-        orr     r3, r3, lsr #5
-        and     r3, #0b111100000000
-        ldr     r3, [r11, r3, lsr #6]
-        str     r3, [r2, #GPFSEL1]
-        add     r11, #64
-@ 13 12  0  0  0  0  0  0  0  0  0  0  0  0
-@                               13 12  0  0
-        and     r3, r0, #0b11000000000000
-        ldr     r3, [r11, r3, lsr #10]
-        str     r3, [r2, #GPFSEL2]
-        add     r11, #16
-        push    {r2, lr}
-        bl      wait
-        pop     {r2, lr}
         ldr     r3, [r2, #GPLEV0]
-        ldr     r0, [r11], #4
-        and     r0, r3
-@ 25 24 23  0  0  0  0  0  0  0  0  0  0  0  0  0  0  8  7  0  0  0  3  0  0  0
-        orr     r3, r0, r0, lsr #19
-@parche: nop                            @ orr     r3, r3, r0, lsl #2
-        and     r3, #0b111111000
-        ldrb    r0, [r11, r3, lsr #3]
+        orr     r3, #0b10100
+        and     r3, #0b11100
+        orr     r0, r3, lsl #3        
         bx      lr
 
 out:    tst     r0, #1
@@ -598,7 +515,7 @@ endf:
     GPIO8   D3
     GPIO7   D4
 
-    GPIO3   A15
+    GPIO18  A15
     GPIO4   A14
     GPIO17  A8
     GPIO27  A13
@@ -607,4 +524,5 @@ endf:
     GPIO9   A10
     GPIO11  A11
 
-    GPIO2   EAR */
+    GPIO3   EAR
+    GPIO2   SPEAKER */
