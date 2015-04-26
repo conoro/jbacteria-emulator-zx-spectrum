@@ -72,6 +72,8 @@ nrev1:  mov     r4, #1
 
 @ Pongo a cero las filas y a pull up las columnas (y el puerto EAR)
         ldr     r0, gpbas
+        mov     r2, #0b001000001        @ configuro altavoz salida
+        str     r2, [r0, #GPFSEL0]
         mov     r2, #2
         str     r2, [r0, #GPPUD]
         bl      wait
@@ -98,7 +100,9 @@ nrev1:  mov     r4, #1
         msr     cpsr_c, r0
         mov     sp, #0x4000
         mov     r0, #0x53       @SVC mode, IRQ enable
+    .if qemu==0
         msr     cpsr_c, r0
+    .endif
         mov     sp, #0x8000
 
 @ Esto es para crear las tablas de pintado rápido
@@ -255,7 +259,9 @@ alli:   add     lr, mem, #otmpr2
         add     stlo, #224
 again:  ldr     lr, flag
         subs    lr, #2
+    .if qemu==0
         bne     again
+    .endif
         str     lr, flag
         add     lr, mem, #otmpr2
         swp     r2, r2, [lr]
@@ -431,6 +437,7 @@ in:     tst     r0, #1
         bxne    lr
         lsr     r3, r0, #8
         mov     r0, #0x1f
+    .if qemu==0
         ldr     r11, _keys
         orr     r3, #0x100
 in1:    ldrb    r2, [r11], #1
@@ -440,6 +447,7 @@ in1:    ldrb    r2, [r11], #1
         ldr     r2, gpbas
         ldr     r3, [r2, #GPLEV0]
         orr     r3, #0b10100
+    .endif
         and     r3, #0b11100
         orr     r0, r3, lsl #3        
         bx      lr
@@ -447,8 +455,15 @@ in1:    ldrb    r2, [r11], #1
 out:    tst     r0, #1
         bxne    lr
         and     r3, r1, #0x7
+    .if qemu==0
         ldr     r2, c1111
         mul     r3, r2, r3
+    .else
+        ldr     r2, memo
+        add     r2, r3, lsl #1
+        ldrh    r3, [r2, #opaleta]
+        orr     r3, r3, lsl #16
+    .endif
         str     r3, border
         ldr     r2, gpbas
         mov     r3, #0b0101
@@ -456,8 +471,12 @@ out:    tst     r0, #1
         strne   r3, [r2, #GPSET0]
         streq   r3, [r2, #GPCLR0]
         bx      lr
+    .if qemu==0
 c1111:  .word   0x11111111
 border: .word   0x77777777
+    .else
+border: .word   0b10111101111101111011110111110111
+    .endif
 
 wait:   mov     r2, #100
 waita:  subs    r2, #1
@@ -550,7 +569,7 @@ h_:     .byte   0
 
 endf:
         .incbin "ManicMiner.rom"
-@        .incbin "48.rom"
+@        .incbin "ktest.rom"
 
 /*  GPIO23  D0
     GPIO24  D1
