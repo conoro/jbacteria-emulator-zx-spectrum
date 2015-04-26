@@ -1,4 +1,5 @@
-        .set    debug,      0
+        .set    qemu,       1
+        .set    debug,      1
 
         .set    GPBASE,     0x20200000
         .set    GPFSEL0,    0x00
@@ -32,6 +33,8 @@
         .set    STC1,           0x10
         .set    INTBASE,  0x2000b000
         .set    INTENIRQ1,     0x210
+
+        .set    UART0_DR, 0x20201000
 
         .set    MEMORY,     endf
         .set    LTABLE,     endf+0x10000
@@ -100,37 +103,52 @@ nrev1:  mov     r4, #1
 
 @ Esto es para crear las tablas de pintado rápido
         ldr     r6, [mem, #opinrap]
-        add     r6, #0x40000
+        add     r6, #0x40000+qemu*0xc0000
         mov     r0, #255
-gent1:  mov     r7, #255
-gent2:  and     r3, r0, #7
-        tst     r0, #0b01000000
-        orrne   r3, #8
-        movs    r2, r0, lsl #25
-        mov     r2, r2, lsr #28
-        add     r4, r7, #0x00008000
-        eorcs   r4, #0xff     
-gent3:  tst     r4, #0x02
-        mov     r5, r5, lsl #4
-        addeq   r5, r2
-        addne   r5, r3
-        tst     r4, #0x01
-        mov     r5, r5, lsl #4
-        addeq   r5, r2
-        addne   r5, r3
-        mov     r4, r4, lsr #2
-        tst     r4, #0x0000ff00
+gent1:  mov     r7, #255              @ 256x256 tabla look up byte atributo + byte bitmap
+gent2:  and     r3, r0, #7            @ r3= color tinta
+        tst     r0, #0b01000000       @ brillo activado?
+        orrne   r3, #8                @ traspaso brillo a r3
+        movs    r2, r0, lsl #25       @ carry=flash
+        mov     r2, r2, lsr #28       @ r2= color de fondo
+        add     r4, r7, #0x00008000   @ r4= byte bitmap con marker bit en bit15
+        eorcs   r4, #0xff             @ si hay flash invierto byte bitmap
+    .if qemu==0
+gent3:  tst     r4, #0x02             @ leo bit 1 del bitmap y lo pongo e flag zero
+        mov     r5, r5, lsl #4        @ desplazo nible
+        addeq   r5, r2                @ escribo color de fondo en nibble
+        addne   r5, r3                @ escribo color de tinta en nibble
+        tst     r4, #0x01             @ leo bit 0 del bitmap y lo pongo e flag zero
+        mov     r5, r5, lsl #4        @ desplazo nible
+        addeq   r5, r2                @ escribo color de fondo en nibble
+        addne   r5, r3                @ escribo color de tinta en nibble
+        mov     r4, r4, lsr #2        @ desplazo 2 bits a la derecha el byte de bitmap
+        tst     r4, #0x0000ff00       @ repito 4 veces comprobando el marker bit
         bne     gent3
-        str     r5, [r6, #-4]!
-        subs    r7, #1
+        str     r5, [r6, #-4]!        @ escribo los 32 bits (8 píxeles) calculados en tabla
+    .else
+        add     r5, mem, #opaleta
+        lsl     r2, #1
+        ldrh    r2, [r5, r2]
+        ldr     r3, [r5, r3, lsl #1]
+        orr     r2, r3, lsl #16
+gent3:  tst     r4, #0x01             @ leo bit 0 del bitmap y lo pongo e flag zero
+        moveq   r5, r2
+        movne   r5, r2, lsr #16
+        strh    r5, [r6, #-2]!        @ escribo pixel calculado en tabla
+        lsr     r4, #1                @ desplazo 1 bit a la derecha el byte de bitmap
+        tst     r4, #0x0000ff00       @ repito 8 veces comprobando el marker bit
+        bne     gent3
+    .endif
+        subs    r7, #1                @ cierro bucle 256x256 veces
         bpl     gent2
         subs    r0, #1
         bpl     gent1
-        str     r6, [mem, #opinrap]
+        str     r6, [mem, #opinrap]   @ guardo el puntero tabla (he ido hacia atrás) en opinrap
 
   .if debug==1
-    ldr     r0, const
-    bl      hexs
+@    ldr     r0, const
+@    bl      hexs
   .endif
 
 @ Esto renderiza la imagen
@@ -180,7 +198,7 @@ gf2:    add     r12, #4
         str     lr, [r12, #-4]
 noscan: mov     r3, #0
         ldr     r10, [mem, #opoint]
-        mov     r11, #176
+        mov     r11, #176+528*qemu
         smlabb  r10, r11, r2, r10
 drawp:  sub     r11, r3, #6
         cmp     r11, #32
@@ -206,9 +224,25 @@ drawp:  sub     r11, r3, #6
         eorne   lr, #0x80
         add     r11, r11, lr, lsl #8
         ldr     r12, [mem, #opinrap]
+    .if qemu==0
         ldr     r11, [r12, r11, lsl #2]
 aqui:   ldrcs   r11, border
+    .else
+        add     r12, r11, lsl #4
+        ldr     r11, [r12], #4
         str     r11, [r10], #4
+        ldr     r11, [r12], #4
+        str     r11, [r10], #4
+        ldr     r11, [r12], #4
+        str     r11, [r10], #4
+        ldr     r11, [r12], #4
+        b       faqui
+aqui:   ldr     r11, border
+        str     r11, [r10], #4
+        str     r11, [r10], #4
+        str     r11, [r10], #4
+    .endif
+faqui:  str     r11, [r10], #4
         add     r3, #1
         cmp     r3, #44
         bne     drawp
@@ -353,7 +387,7 @@ hexh1:  mov     r11, r11, ror #28
         mov     r0, #0x20
         bl      send
         pop     {r11, r12, pc}
-
+    .if qemu==0
 send:   push    {r12, lr}
         ldr     lr, auxb
 send1:  ldr     r12, [lr, #AMLSRREG]
@@ -361,6 +395,12 @@ send1:  ldr     r12, [lr, #AMLSRREG]
         beq     send1
         str     r0, [lr, #AMIOREG]
         pop     {r12, pc}
+    .else
+send:   push    {lr}
+        ldr     lr, uart
+        str     r0, [lr]
+        pop     {pc}
+    .endif
   .endif
 
 @ piscina de constantes
@@ -374,6 +414,7 @@ auxb:   .word   AUXBASE
 gpbas:  .word   GPBASE
 stbas:  .word   STBASE
 intbas: .word   INTBASE
+uart:   .word   UART0_DR
 irqh:   .word   irqhnd-0x20
 memo:   .word   MEMORY
 _table: .word   table
@@ -449,18 +490,19 @@ getrev: .word   7*4
         .word   0
         .word   0
 
-fbinfo: .word   1024    @0 Width
-        .word   768     @4 Height
-        .word   352     @8 vWidth
-        .word   264     @12 vHeight
-        .word   0       @16 GPU - Pitch
-        .word   4       @20 Bit Dpeth
-        .word   0       @24 X
-        .word   0       @28 Y
-point:  .word   0       @32 GPU - Pointer
-        .word   0       @36 GPU - Size
+fbinfo: .word   1024-672*qemu @0 Width
+        .word   768-504*qemu  @4 Height
+        .word   352           @8 vWidth
+        .word   264           @12 vHeight
+        .word   0             @16 GPU - Pitch
+        .word   4+12*qemu     @20 Bit Dpeth
+        .word   0             @24 X
+        .word   0             @28 Y
+point:  .word   0             @32 GPU - Pointer
+        .word   0             @36 GPU - Size
+
                  @rrrrrggggggbbbbb
-        .hword  0b0000000000000000
+paleta: .hword  0b0000000000000000
         .hword  0b0000000000010111
         .hword  0b1011100000000000
         .hword  0b1011100000010111
@@ -501,13 +543,14 @@ h_:     .byte   0
         .equ    otmpr3,   oa_-7
         .equ    otmpr2,   otmpr3-4
         .equ    opinrap,  otmpr2-4
-        .equ    opoint,   opinrap-40
+        .equ    opaleta,  opinrap-32
+        .equ    opoint,   opaleta-8
         .equ    ofbinfo,  opoint-32
         .equ    ogetrev,  ofbinfo-32
 
 endf:
-@        .incbin "ManicMiner.rom"
-        .incbin "48.rom"
+        .incbin "ManicMiner.rom"
+@        .incbin "48.rom"
 
 /*  GPIO23  D0
     GPIO24  D1
