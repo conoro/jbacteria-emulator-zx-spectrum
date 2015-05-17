@@ -1,9 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#ifdef __DMC__
-  #define strcasecmp stricmp
-#endif
 unsigned char *mem, *precalc;
 char *ext, *command;
 unsigned char rem= 0, inibit= 0, tzx= 0, wav= 0, channel_type= 1,
@@ -12,6 +9,15 @@ FILE *fi, *fo;
 int i, j, k, l, ind= 0, nextsilence= 0;
 float silence;
 unsigned short length, param, frequency= 44100;
+
+int strcasecmp(const char *s1, const char *s2){
+  register const unsigned char *us1= (const unsigned char *)s1,
+                               *us2= (const unsigned char *)s2;
+  while ( (*us1 & 95) == (*us2++ & 95) )
+    if( *us1++ == '\0' )
+      return 0;
+  return (*us1 & 95) - (*--us2 & 95);
+}
 
 void outbits( short val ){
   for ( i= 0; i<val; i++ ){
@@ -84,7 +90,7 @@ int main(int argc, char* argv[]){
   mem= (unsigned char *) malloc (0x20000);
   if( argc==1 )
     printf("\n"
-    "GenTape v0.21, a Tape File Generator by Antonio Villena, 12 May 2014\n\n"
+    "GenTape v0.99, a Tape File Generator by Antonio Villena, 17 May 2015\n\n"
     "  GenTape [<frequency>] [<channel_type>] <output_file>\n"
     "          [ basic <name> <startline> <input_file>\n"
     "          | hdata <name> <address>   <input_file>\n"
@@ -205,7 +211,7 @@ int main(int argc, char* argv[]){
       parseHex(argv[2], 7);
       *(short*)(mem+17)= length;
       *(short*)(mem+19)= param;
-      *(short*)(mem+21)= 0x8000;
+      *(unsigned short*)(mem+21)= 0x8000;
       length+= 2;
       *(short*)(mem+24)= length;
       mem[26]= 255;
