@@ -19791,8 +19791,7 @@ UCASE:  call    L2C8D           ;+ ROM routine ALPHA.
         ret                     ;+ Return.
 
       ELSE
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF; 223 bytes
-        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
+        DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF; 215 bytes
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
         DEFB    $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF;
