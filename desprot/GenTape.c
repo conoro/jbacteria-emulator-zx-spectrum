@@ -41,18 +41,17 @@ char char2hex(char value, char * name){
 
 int parseHex(char * name, int index){
   int flen= strlen(name);
-  if( name[0]=='\'' )
-    for ( i= 1; i<11 && name[i]!='\''; ++i )
-      mem[i+6]= name[i];
-  else if( ~flen & 1 ){
+  if( name[0]!='-' )
+    for ( i= 0; i<10 && name[i]; i++ )
+      mem[i+7]= name[i];
+  else if( flen & 1 ){
     flen>>= 1;
     flen>10 && index==7 && (flen= 10);
     for ( i= 0; i < flen; i++ )
-      mem[i+index]= char2hex(name[i<<1|1], name) | char2hex(name[i<<1], name) << 4;
-    ++i;
+      mem[i+index]= char2hex(name[i+1<<1], name) | char2hex(name[i<<1|1], name) << 4;
   }
-  while( ++i<12 )
-    mem[i+5]= ' ';
+  while( ++i<11 )
+    mem[i+6]= ' ';
   return flen;
 }
 
