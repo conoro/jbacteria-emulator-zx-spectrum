@@ -37,7 +37,7 @@
         .set    UART0_DR, 0x20201000
 
         .set    MEMORY,     endf
-        .set    LTABLE,     endf+0x10000
+        .set    LTABLE,     endf+0x10026
 
 .text
         iyi     .req      r0
@@ -150,15 +150,65 @@ gent3:  tst     r4, #0x01             @ leo bit 0 del bitmap y lo pongo e flag z
         bpl     gent1
         str     r6, [mem, #opinrap]   @ guardo el puntero tabla (he ido hacia atrás) en opinrap
 
-  .if debug==1
-@    ldr     r0, const
-@    bl      hexs
-  .endif
-
 @ Esto renderiza la imagen
 
-        mov     pcff, #0
-        mov     stlo, #224
+  .if debug==1
+        mov     r11, r6
+        ldr     pcff, [r11, #-32-2]   @ PC
+        ldr     r2, [r11, #-16]       @ IY
+        ldrh    lr, [r11, #-28-1]     @ I
+        add     iyi, lr, r2, lsl #16
+        ldr     spfa, [r11, #-30-2]   @ SP
+        ldr     bcfb, [r11, #-36-2]   @ BC
+        ldr     defr, [r11, #-26-2]   @ DE
+        ldr     r2, [r11, #-34]       @ HL
+        ldrh    lr, [r11, #-10]       @ MP
+        add     hlmp, lr, r2, lsl #16
+        ldrb    r2, [r11, #-37]       @ A
+        mov     arvpref, r2, lsl #24
+        ldrb    r2, [r11, #-27]       @ R
+        add     arvpref, r2, lsl #16
+        and     r2, #0x80
+        ldrh    lr, [r11, #-12]       @ IM | IFF
+        add     r2, lr, lsr #8
+        tst     lr, #1
+        orrne   r2, #0b100
+        add     arvpref, r2, lsl #8
+        ldr     ix, [r11, #-14-2]     @ IX
+        ldrb    r2, [r11, #-38]       @ F
+        mvn     lr, r2
+        and     lr, #0x00000040
+        pkhtb   defr, defr, lr
+        orr     r2, r2, r2, lsl #8
+        pkhtb   pcff, pcff, r2
+        and     lr, r2, #0x00000004
+        eor     r2, lr, lsl #5
+        and     r2, #0xffffff7f
+        eor     r2, lr, lsl #5
+        pkhtb   bcfb, bcfb, r2
+        uxtb    r2, r2
+        pkhtb   spfa, spfa, r2
+        str     pcff, [mem, #otmpr3]
+        ldrb    r2, [r11, #-18]       @ F'
+        mvn     r3, r2
+        and     r3, #0x00000040
+        strh    r3, [mem, #off_+2]    @ fr'
+        orr     r2, r2, r2, lsl #8
+        strh    r2, [mem, #off_]      @ ff'
+        and     r3, r2, #0x00000004
+        eor     r2, r3, lsl #5
+        and     r2, #0xffffff7f
+        eor     r2, r3, lsl #5
+        strh    r2, [mem, #ofa_+2]    @ fb'
+        uxtb    r2, r2
+        strh    r2, [mem, #ofa_]      @ fa'
+        ldrb    r2, [r11, #-17]       @ A'
+        strb    r2, [mem, #oa_]
+        ldr     r2, [r11, #-24]       @ BC' DE'
+        str     r2, [mem, #oc_]
+        ldrh    r2, [r11, #-20]       @ HL'
+        strh    r2, [mem, #oc_+6]
+  .endif
 
 render: mov     r2, #0
 drawr:  cmp     r2, #264
@@ -539,7 +589,7 @@ paleta: .hword  0b0000000000000000
         .hword  0b1111111111111111
 
 pinrap: .word   LTABLE
-tmpr2:  .word   0
+tmpr2:  .word   224
 tmpr3:  .word   0
         .byte   0, 0, 0
 a_:     .byte   0
@@ -568,7 +618,7 @@ h_:     .byte   0
         .equ    ogetrev,  ofbinfo-32
 
 endf:
-        .incbin "ManicMiner.rom"
+        .incbin "moon.mem"
 @        .incbin "ktest.rom"
 
 /*  GPIO23  D0
