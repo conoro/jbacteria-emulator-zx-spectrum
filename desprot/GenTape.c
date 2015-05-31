@@ -90,7 +90,7 @@ int main(int argc, char* argv[]){
   mem= (unsigned char *) malloc (0x20000);
   if( argc==1 )
     printf("\n"
-    "GenTape v0.99, a Tape File Generator by Antonio Villena, 17 May 2015\n\n"
+    "GenTape v1.0, a Tape File Generator by Antonio Villena, 1 Jun 2015\n\n"
     "  GenTape [<frequency>] [<channel_type>] <output_file>\n"
     "          [ basic <name> <startline> <input_file>\n"
     "          | hdata <name> <address>   <input_file>\n"
