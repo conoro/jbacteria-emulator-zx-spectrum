@@ -401,14 +401,14 @@ int main(int argc, char* argv[]){
             i= ftell(fi)-10,
             fseek(fi, 10, SEEK_SET);
           else
-            fread(mem, 1, 44, fi),
+            0!=fread(mem, 1, 44, fi),
             i= *(int*)(mem+40);
           j= i>>20;
           k= i&0xfffff;
           for ( int i= 0; i<j; i++ )
-            fread(precalc, 1, 0x100000, fi),
+            0!=fread(precalc, 1, 0x100000, fi),
             fwrite(precalc, 1, 0x100000, fo);
-          fread(precalc, 1, k, fi);
+          0!=fread(precalc, 1, k, fi);
           fwrite(precalc, 1, k, fo);
           fclose(fi);
           if( remove(command) )
@@ -429,19 +429,19 @@ int main(int argc, char* argv[]){
     i= ftell(fo);
     fseek(fo, 10, SEEK_SET);
     while( ftell(fo)<i ){
-      fread(&turbo, 1, 1, fo);
+      0!=fread(&turbo, 1, 1, fo);
       switch(turbo){
         case 0x10:
           j= ftell(fo);
           fseek(fo, 2, SEEK_CUR);
-          fread(&length, 2, 1, fo);
+          0!=fread(&length, 2, 1, fo);
           fseek(fo, length, SEEK_CUR);
           break;
         case 0x11:
           fseek(fo, 13, SEEK_CUR);
           j= ftell(fo);
           fseek(fo, 2, SEEK_CUR);
-          fread(&length, 2, 1, fo);
+          0!=fread(&length, 2, 1, fo);
           fseek(fo, length+1, SEEK_CUR);
           break;
         case 0x12:
@@ -451,21 +451,21 @@ int main(int argc, char* argv[]){
           break;
         case 0x13:
           j= 0;
-          fread(&turbo, 1, 1, fo);
+          0!=fread(&turbo, 1, 1, fo);
           fseek(fo, turbo<<1, SEEK_CUR);
           break;
         case 0x14:
           fseek(fo, 5, SEEK_CUR);
           j= ftell(fo);
           fseek(fo, 2, SEEK_CUR);
-          fread(&length, 2, 1, fo);
+          0!=fread(&length, 2, 1, fo);
           fseek(fo, length+1, SEEK_CUR);
           break;
         case 0x15:
           fseek(fo, 2, SEEK_CUR);
           j= ftell(fo);
           fseek(fo, 3, SEEK_CUR);
-          fread(&length, 2, 1, fo);
+          0!=fread(&length, 2, 1, fo);
           fseek(fo, length+1, SEEK_CUR);
           break;
         case 0x20:
