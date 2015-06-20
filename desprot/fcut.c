@@ -47,5 +47,5 @@ int main(int argc, char* argv[]){
   fwrite(mem, 1, length&0xffff, fo);
   fclose(fi);
   fclose(fo);
-  printf("\n0x%X bytes written (%d) at offset 0x%X (%d)\n", length, length, start, start);
+  printf("\n0x%lx bytes written (%lu) at offset 0x%lx (%lu)\n", length, length, start, start);
 }
