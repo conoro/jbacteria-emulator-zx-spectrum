@@ -210,4 +210,5 @@ int main(int argc, char* argv[]){
   fclose(fi);
   fclose(fo);
   printf("\nFile generated successfully\n");
+  exit(0);
 }
