@@ -129,7 +129,7 @@ int main(int argc, char* argv[]){
           i= *(int*)(mem+40);
         j= i>>16;
         k= i&0xffff;
-        for ( int i= 0; i<j; i++ )
+        for ( i= 0; i<j; i++ )
           fread(in, 1, 0x10000, ft),
           fwrite(in, 1, 0x10000, fo);
         fread(in, 1, k, ft);
