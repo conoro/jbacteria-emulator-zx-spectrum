@@ -80,7 +80,7 @@ function init() {
   cv.setAttribute('style', 'image-rendering:'+( localStorage.ft & 1
                                                 ? 'optimizeSpeed'
                                                 : '' ));
-  frameCaad= parent.frames[2] ? parent.frames[2].document : 0;
+  frameCaad= !ifra && parent.frames[2] ? parent.frames[2].document : 0;
   if( frameCaad )
     frameCaad.body.onclick= frameCaad.onclick= function(){
       parent.frames[1].focus();

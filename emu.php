@@ -65,7 +65,7 @@ else{
   ?>xhr.open(g?'POST':'GET',f,true);<?
   ?>if(!ie)<?
     ?>xhr.overrideMimeType('text/plain;charset=x-user-defined');<?
-  ?>xhr.send(g);<?
+  ?>xhr.send(g+'');<?
 ?>}<?
 ?>function bin2str(a){<?
   ?>return a.replace(/[\s\S]/g,function(t){<?
