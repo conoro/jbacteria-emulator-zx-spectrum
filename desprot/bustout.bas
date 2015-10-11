@@ -3,7 +3,10 @@
       PAPER 0:\
       CLS:\
       BRIGHT 1:\
-      GO SUB @560:\
+      FOR i= USR "a" TO USR "b"+7:\
+        READ b:\
+        POKE i, b:\
+      NEXT i:\
       LET b$= "\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b":\
       LET s$="                                ":\
       PRINT FLASH 1; AT 3, 12; INK 7; "FRONTON";\
@@ -15,9 +18,13 @@
                    AT 16, 1; "pantalla nueva.":\
       PAUSE 200:\
       LET maximo= 0
-@90:  LET tpuntos= 0:\
+
+# La partida empieza aqui
+@ini: LET tpuntos= 0:\
       LET vidas= 5
-@110: LET puntos= 0:\
+
+# Si nos hacemos 1100 puntos del tiron o pulsamos 0/Esp
+@rei: LET puntos= 0:\
       CLS:\
       INK 7:\
       PLOT 12, 13:\
@@ -38,126 +45,133 @@
                    AT 19, 2; s$(TO 28);\
                    AT 20, 0; s$(TO 32):\
       PRINT AT 21, 0; INK 0; s$(TO 32):\
-      GO SUB @540:\
-      GO TO  @220
-@210: PRINT AT 20, bx; INK 0; " "; INK 5; "\''\''\''\''"; INK 0; " ":\
-      RETURN
-@220: LET xa= 1:\
+      GO SUB @ima
+
+# Sale la pelota
+@pel: LET xa= 1:\
       LET ya= 1:\
       IF INT (RND*2)=1 THEN\
         LET xa= -xa
-@221: GO SUB @210:\
+      GO SUB @ira:\
       LET x= bx+4:\
       LET y= 11:\
       LET xc= x:\
       LET yc= y
-#bucle principal
-@250: IF puntos>1100 THEN\
-        GO TO @110
-@251: IF INKEY$=" " OR INKEY$="0" THEN\
+
+# Bucle principal
+
+#     Si llego a 1100 puntos con una pelota, restaura tablero
+@buc: IF puntos>1100 THEN\
+        GO TO @rei
+
+#     Si pulso espacio o 0 restauro tablero y pierde vida
+      IF INKEY$=" " OR INKEY$="0" THEN\
         IF vidas>1 THEN\
           LET vidas= vidas-1:\
-          GO TO @110
-#explorar teclado
-@252: LET xc= x+xa:\
+          GO TO @rei
+
+#     Actualizo posicion de la pelota y exploro teclado
+      LET xc= x+xa:\
       LET yc= y+ya:\
-      GO SUB @470:\
+      GO SUB @ete:\
+
+#     Si estoy en la linea 20, compruebo si hay raqueta
       IF yc=20 THEN\
-        IF ATTR (yc,xc)=69 THEN\
+        IF ATTR(yc, xc)=69 THEN\
           BEEP 0.12, 6:\
           LET ya= -ya:\
-          LET yc= yc-2:\
+          LET yc= 18:\
           IF xc=bx+1 OR xc=bx+4 THEN\
-            LET xa=-xa:\
-            LET xc=x+xa
-@253: IF yc=21 THEN\
-        BEEP 1, -9:\
-        PRINT AT y, x; " ":\
-        GO TO @450
-@254: GO SUB @470:\
+            LET xa= -xa:\
+            LET xc= x+xa
+      IF yc=21 THEN\
+        GO TO @pvi
+      GO SUB @ete:\
       IF yc=20 THEN\
-        GO TO @430
-@350: LET t= ATTR (yc,xc):\
+        GO TO @ape
+
+# Bucle color    
+@bco: LET t= ATTR(yc, xc):\
       IF t=71 THEN\
-        GO TO @410
-@351: IF t=64 THEN\
-        GO TO @420
-@352: LET ya= -ya:\
-      LET xz= xc:\
-      LET yz= yc:\
+        GO TO @bla
+#     Si color leido es negro, comprobar borde superior
+      IF t=64 THEN\
+        GO TO @bsu
+#     Si otro color, es ladrillo. Borrar ladrillo y rebotar
+      LET ya= -ya:\
+      PRINT AT yc, xc; INK 0; " ":\
       LET yc= yc+ya:\
-      GO SUB @510:\
       IF t=66 THEN\
         BEEP 0.12, 4:\
         LET puntos= puntos+5:\
         LET tpuntos= tpuntos+5:\
-        GO SUB @540:\
-        GO TO  @350
-@353: IF t=68 THEN\
+        GO SUB @ima:\
+        GO TO  @bco
+      IF t=68 THEN\
         BEEP 0.12, 0:\
         LET puntos= puntos+10:\
         LET tpuntos= tpuntos+10:\
-        GO SUB @540:\
-        GO TO  @350
-@354: IF t=65 THEN\
+        GO SUB @ima:\
+        GO TO  @bco
+      IF t=65 THEN\
         BEEP 0.12, 9:\
         LET puntos= puntos+20:\
         LET tpuntos= tpuntos+20:\
-        GO SUB @540:\
-        GO TO  @350
-@410: LET xa= -xa:\
+        GO SUB @ima:\
+        GO TO  @bco
+
+# Borde lateral
+@bla: LET xa= -xa:\
       LET xc= xc+2*xa:\
       BEEP 0.12, 5
-@420: IF yc=1 THEN\
+
+# Borde superior
+@bsu: IF yc=1 THEN\
         LET ya= 1
-@430: PRINT AT y,  x;  INK 0; " ";\
+
+# Actualiza pelota
+@ape: PRINT AT y,  x;  INK 0; " ";\
             AT yc, xc; INK 3; "\a":\
       LET x= xc:\
       LET y= yc:\
-      GO TO @250
-@450: LET vidas= vidas-1:\
+      GO TO @buc
+
+# Pierde vida
+@pvi: BEEP 1, -9:\
+      PRINT AT y, x; " ":\
+      LET vidas= vidas-1:\
       IF vidas=0 THEN\
-        GO TO @530
-@451: GO SUB @540:\
-      GO TO  @220
-@470: LET a$= INKEY$:\
+        GO SUB @ima:\
+        PRINT INK 7; AT 10, 9;      "FIN DEL JUEGO";\
+                     AT 12, 4; "Puntos conseguidos : "; tpuntos:\
+        FOR i= 1 TO 300:\
+        NEXT i:\
+        GO TO @ini
+      GO SUB @ima:\
+      GO TO  @pel
+
+# Imprime raqueta
+@ira: PRINT AT 20, bx; INK 0; " "; INK 5; "\''\''\''\''"; INK 0; " ":\
+      RETURN
+
+# Explora teclado
+@ete: LET a$= INKEY$:\
       IF (a$=CHR$(8) OR a$="6") AND bx>1 THEN\
         LET bx= bx-1:\
-        GO SUB @210:\
-        RETURN
-@471: IF (a$=CHR$(9) OR a$="7") AND bx<25 THEN\
+        GO SUB @ira
+      IF (a$=CHR$(9) OR a$="7") AND bx<25 THEN\
         LET bx= bx+1:\
-        GO SUB @210
-@472: RETURN
-@510: IF yz=20 THEN\
-        RETURN
-@511: PRINT AT yz, xz; INK 0; " ":\
+        GO SUB @ira
       RETURN
-@530: GO SUB @540:\
-      PRINT INK 7; AT 10, 9;      "FIN DEL JUEGO";\
-                   AT 12, 4; "Puntos conseguidos : "; tpuntos:\
-      FOR i= 1 TO 300:\
-      NEXT i:\
-      GO TO @90
-@540: IF tpuntos>maximo THEN\
+
+# Imprime marcador
+@ima: IF tpuntos>maximo THEN\
         LET maximo= tpuntos
-@541: PRINT INK 6; AT 21, 14; "MAX. "; maximo;\
+      PRINT INK 6; AT 21, 14; "MAX. "; maximo;\
                    AT 21,  1; "PUNTOS "; tpuntos;\
                    AT 21, 24; "VIDAS "; vidas:\
       RETURN
-@560: FOR i= USR "a" TO USR "b"+7:\
-        READ b:\
-        POKE i, b:\
-      NEXT i:\
-      RETURN
-#pelota
-@620: DATA 0, 60, 126, 126, 126, 126, 60, 0:\
-#ladrillo
-      DATA BIN 11111111:\
-      DATA BIN 10000001:\
-      DATA BIN 10111101:\
-      DATA BIN 10111101:\
-      DATA BIN 10111101:\
-      DATA BIN 10111101:\
-      DATA BIN 10000001:\
-      DATA BIN 11111111
+
+#pelota y ladrillo
+      DATA   0,  60, 126, 126, 126, 126,  60,   0,\
+           255, 129, 189, 189, 189, 189, 129, 255
