@@ -3,11 +3,10 @@
       PAPER 0:\
       CLS:\
       BRIGHT 1:\
-      FOR i= USR "a" TO USR "b"+7:\
-        READ b:\
-        POKE i, b:\
+      LET c$= "1441229400\{0}\{60}\{126}\{126}\{126}\{126}\{60}\{0}\{255}\{129}\{189}\{189}\{189}\{189}\{129}\{255}":\
+      FOR i= 11 TO 26:\
+        POKE 65357+i, CODE(c$(i)):\
       NEXT i:\
-      LET c$= "1441229400":\
       LET s$="                                ":\
       FOR i= 1 TO 5 STEP 2:\
         PRINT AT 5+i, 9; INK VAL(c$(i)); "\b"; INK 7; " = "; 5*VAL(c$(i+3)) ;" puntos":\
@@ -155,7 +154,3 @@
                    AT 21, 14; "MAX. "; maximo;\
                    AT 21, 24; "VIDAS "; vidas:\
       RETURN
-
-# Graficos de pelota y ladrillo
-      DATA   0,  60, 126, 126, 126, 126,  60,   0,\
-           255, 129, 189, 189, 189, 189, 129, 255
