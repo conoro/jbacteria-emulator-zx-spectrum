@@ -2,7 +2,7 @@
  *            into an actual program file loadable on a speccy.
  *
  * Public domain by Russell Marks, 1998
- * Modified by Antonio Villena, 2014-2015. v20150320
+ * Modified by Antonio Villena & Alistair Neil, 2014-2015. v20151011
  *
  * warning: this is probably the least structured program ever.
  * I guess that's what comes from hacking something into existence... :-/
@@ -32,6 +32,10 @@
  * this I've made is that randomize can be entered with -ize or -ise.
  */
 char *tokens[]={
+  "%listen #", "%listen#",
+  "%accept #", "%accept#",
+  "%close #", "%close#",
+  "-----", "",
   "copy", "",
   "return", "",
   "clear", "",
@@ -205,11 +209,11 @@ char *tokens81[]={
 #ifdef MSDOS
 #define MAX_LABELS  500
 unsigned char filebuf[32768];
-char infile[256],outfile[256];
+char infile[256], outfile[256];
 #else
 #define MAX_LABELS  2000
 unsigned char filebuf[49152];
-char infile[1024],outfile[1024];
+char infile[1024], outfile[1024];
 #endif
 
 #define MAX_LABEL_LEN   16
@@ -218,9 +222,9 @@ char infile[1024],outfile[1024];
 unsigned char headerbuf[0x74];
 int output_tape= 1, use_labels= 0, zx81mode= 0;
 unsigned int startline=0x8000;
-int autostart=10,autoincr=2;
+int autostart= 10, autoincr= 2;
 char speccy_filename[11];
-int labelend=0;
+int labelend= 0;
 unsigned char labels[MAX_LABELS][MAX_LABEL_LEN+1];
 int label_lines[MAX_LABELS];
 unsigned char startlabel[MAX_LABEL_LEN+1];
@@ -231,57 +235,11 @@ unsigned char startlabel[MAX_LABEL_LEN+1];
  * It's not great, but it's good enough for zmakebas at least.
  */
 
-int optopt=0,opterr=0,optind=1;
-char *optarg=NULL;
+int optopt= 0, opterr= 0, optind= 1;
+char *optarg= NULL;
 
 /* holds offset in current argv[] value */
-static int optpos=1;
-
-/* This routine converts normal ASCII code to special code used in ZX81.
- */
-void *memcpycnv(void *dst, void *src, size_t num){
-  unsigned char in;
-
-  while (num--){
-    in= *((char *)src)++;
-    if( in>='0' && in<='9' )
-      *((char *)dst)++= in-20;
-    else if( in>='A' && in<='Z' )
-      *((char *)dst)++= in-27;
-    else if( in>='a' && in<='z' )
-      *((char *)dst)++= in+69;
-    else switch( in ){
-      case 0x0d: *((char *)dst)++= 0x76; break; // enter
-      case 0x20: *((char *)dst)++= 0x00; break; // space
-      case 0x22: *((char *)dst)++= 0x0b; break; // "
-      case 0x24: *((char *)dst)++= 0x0d; break; // $
-      case 0x28: *((char *)dst)++= 0x10; break; // (
-      case 0x29: *((char *)dst)++= 0x11; break; // )
-      case 0x2a: *((char *)dst)++= 0x17; break; // *
-      case 0x2b: *((char *)dst)++= 0x15; break; // +
-      case 0x2c: *((char *)dst)++= 0x1a; break; // ,
-      case 0x2d: *((char *)dst)++= 0x16; break; // -
-      case 0x2e: *((char *)dst)++= 0x1b; break; // .
-      case 0x2f: *((char *)dst)++= 0x18; break; // /
-      case 0x3a: *((char *)dst)++= 0x0e; break; // :
-      case 0x3b: *((char *)dst)++= 0x19; break; // ;
-      case 0x3c: *((char *)dst)++= 0x13; break; // <
-      case 0x3d: *((char *)dst)++= 0x14; break; // =
-      case 0x3e: *((char *)dst)++= 0x12; break; // >
-      case 0x3f: *((char *)dst)++= 0x0f; break; // ?
-      case 0x7c: *((char *)dst)++= 0x41; break; // INKEY$
-      case 0x7d: *((char *)dst)++= 0x40; break; // RND
-      case 0x7e: *((char *)dst)++= in; // number
-                 *((char *)dst)++= *((char *)src)++;
-                 *((char *)dst)++= *((char *)src)++;
-                 *((char *)dst)++= *((char *)src)++;
-                 *((char *)dst)++= *((char *)src)++;
-                 *((char *)dst)++= *((char *)src)++; break;
-      case 0x7f: *((char *)dst)++= 0x42; break; // PI
-      default: *((char *)dst)++= in;
-    }
-  }
-}
+static int optpos= 1;
 
 /* This routine assumes that the caller is pretty sane and doesn't
  * try passing an invalid 'optstring' or varying argc/argv.
@@ -321,6 +279,52 @@ int getopt( int argc, char *argv[], char *optstring ){
 }
 #endif  /* !HAVE_GETOPT */
 
+/* This routine converts normal ASCII code to special code used in ZX81.
+ */
+void *memcpycnv(char *dst, char *src, size_t num){
+  unsigned char in;
+
+  while ( num-- ){
+    in= *src++;
+    if( in>='0' && in<='9' )
+      *dst++= in-20;
+    else if( in>='A' && in<='Z' )
+      *dst++= in-27;
+    else if( in>='a' && in<='z' )
+      *dst++= in+69;
+    else switch( in ){
+      case 0x0d: *dst++= 0x76; break; // enter
+      case 0x20: *dst++= 0x00; break; // space
+      case 0x22: *dst++= 0x0b; break; // "
+      case 0x24: *dst++= 0x0d; break; // $
+      case 0x28: *dst++= 0x10; break; // (
+      case 0x29: *dst++= 0x11; break; // )
+      case 0x2a: *dst++= 0x17; break; // *
+      case 0x2b: *dst++= 0x15; break; // +
+      case 0x2c: *dst++= 0x1a; break; // ,
+      case 0x2d: *dst++= 0x16; break; // -
+      case 0x2e: *dst++= 0x1b; break; // .
+      case 0x2f: *dst++= 0x18; break; // /
+      case 0x3a: *dst++= 0x0e; break; // :
+      case 0x3b: *dst++= 0x19; break; // ;
+      case 0x3c: *dst++= 0x13; break; // <
+      case 0x3d: *dst++= 0x14; break; // =
+      case 0x3e: *dst++= 0x12; break; // >
+      case 0x3f: *dst++= 0x0f; break; // ?
+      case 0x7c: *dst++= 0x41; break; // INKEY$
+      case 0x7d: *dst++= 0x40; break; // RND
+      case 0x7e: *dst++= in; // number
+                 *dst++= *src++;
+                 *dst++= *src++;
+                 *dst++= *src++;
+                 *dst++= *src++;
+                 *dst++= *src++; break;
+      case 0x7f: *dst++= 0x42; break; // PI
+      default:   *dst++= in;
+    }
+  }
+}
+
 /* dbl2spec() converts a double to an inline-basic-style speccy FP number.
  *
  * usage: dbl2spec(num,&exp,&man);
@@ -355,7 +359,7 @@ int dbl2spec( double num, int *pexp, unsigned long *pman ){
      * exp is 0x80+exponent.
      */
     num= fabs(num);
-    
+
     /* binary standard form goes from 0.50000... to 0.9999...(dec), like
      * decimal which goes from        0.10000... to 0.9999....
      *
@@ -375,20 +379,20 @@ int dbl2spec( double num, int *pexp, unsigned long *pman ){
      * we check the range of exp... -128 <= exp <= 127.
      * (if outside, we return error (i.e. 0))
      */
-     
+
     if( exp<-128 || exp>127 )
       return(0);
-      
+
     exp= 128+exp;
-    
+
     /* so now all we need to do is roll the bits off the mantissa in `num'.
      * we start at the 0.5ths bit at bit 0, and shift left 1 each time
      * round the loop.
      */
-    
+
     num*= 2.0;  /* make it so that the 0.5ths bit is the integer part, */
                 /* and the rest is the fractional (0.xxx) part. */
-    
+
     man= 0;
     for ( f=0; f<32; f++ )
       man<<= 1,
@@ -400,10 +404,10 @@ int dbl2spec( double num, int *pexp, unsigned long *pman ){
      * round up 1. We don't do this if it would cause an overflow in the
      * mantissa, though.
      */
-     
+
     if( (int)num && man!=0xFFFFFFFF )
       man++;
-      
+
     /* finally, zero out the top bit */
     man&= 0x7FFFFFFF;
   }
@@ -464,7 +468,7 @@ unsigned long grok_binary( unsigned char **ptrp, int textlinenum ){
 }
 
 void usage_help(){
-  printf( "zmakebas - public domain by Russell Marks.\n\n"
+  printf( "zmakebas 1.6 - public domain by Russell Marks.\n\n"
           "usage: zmakebas [-hplr] [-a line] [-i incr] [-n speccy_filename]\n"
           "                [-o output_file] [-s line] [input_file]\n\n"
           "        -h      give this usage help.\n"
@@ -496,7 +500,7 @@ void parse_options( int argc,char *argv[] ){
             fprintf( stderr, "Auto-start label too long\n" ),
             exit(1);
           else
-            strcpy( (char *)startlabel, optarg+1 );
+            strcpy( startlabel, optarg+1 );
         else{
           startline= (unsigned int)atoi(optarg);
           if( startline>9999 )
@@ -581,9 +585,9 @@ int grok_block( unsigned char *ptr, int textlinenum ){
   char **lptr;
   int f= 0
     , v= -1;
-              
+
   for ( lptr= zx81mode ? lookup81 :  lookup; *lptr!=NULL; lptr++, f++ )
-    if( strncmp((char *)ptr+1, *lptr, 2)==0 ){
+    if( strncmp(ptr+1, *lptr, 2)==0 ){
       if( zx81mode ){
         if( f<8 )
           v= f;
@@ -612,7 +616,7 @@ int main( int argc, char *argv[] ){
   #else
   static unsigned char buf[2048], lcasebuf[2048], outbuf[4096];
   #endif
-  int f, toknum, toklen, linenum, linelen, in_quotes, in_rem, in_deffn, lastline;
+  int f, toknum, toklen, linenum, linelen, in_quotes, in_rem, in_deffn, in_spec, lastline;
   char **tarrptr;
   unsigned char *ptr, *ptr2, *linestart, *outptr, *remptr, *fileptr, *asciiptr;
   double num;
@@ -650,13 +654,13 @@ int main( int argc, char *argv[] ){
       fprintf( stderr, "Need seekable input for label support\n" ),
       exit(1);
 
-    while ( fgets((char *)buf+1, sizeof(buf)-1, in)!=NULL ){
+    while ( fgets(buf+1, sizeof(buf)-1, in)!=NULL ){
       buf[0]= 32;          /* just in case, for all the ptr[-1] stuff */
       textlinenum++;
       lastline= linenum;
-      
-      if( buf[strlen((char *)buf)-1]=='\n' )
-        buf[strlen((char *)buf)-1]= 0;
+
+      if( buf[strlen(buf)-1]=='\n' )
+        buf[strlen(buf)-1]= 0;
 
       /* allow for (shell-style) comments which don't appear in the program,
        * and also ignore blank lines.
@@ -665,15 +669,15 @@ int main( int argc, char *argv[] ){
         continue;
 
       /* check for line continuation */
-      while ( buf[strlen((char *)buf)-1]=='\\' ){
-        f= strlen((char *)buf)-1;
-        fgets((char *)buf+f, sizeof(buf)-f, in);
+      while ( buf[strlen(buf)-1]=='\\' ){
+        f= strlen(buf)-1;
+        fgets(buf+f, sizeof(buf)-f, in);
         textlinenum++;
-        if( buf[strlen((char *)buf)-1]=='\n' )
-          buf[strlen((char *)buf)-1]= 0;
+        if( buf[strlen(buf)-1]=='\n' )
+          buf[strlen(buf)-1]= 0;
       }
-      
-      if( strlen((char *)buf)>=sizeof(buf)-MAX_LABEL_LEN-1 )
+
+      if( strlen(buf)>=sizeof(buf)-MAX_LABEL_LEN-1 )
         /* this is nasty, but given how the label substitution works it's
          * probably the safest thing to do.
          */
@@ -698,7 +702,7 @@ int main( int argc, char *argv[] ){
         if( !isdigit(*ptr) )
           fprintf( stderr, "line %d: missing line number\n", textlinenum ),
           exit(1);
-        linenum= (int)strtol( (char *)ptr, (char **)&linestart, 10);
+        linenum= (int)strtol( ptr, (char **)&linestart, 10);
         if(linenum<=lastline)
           fprintf( stderr, "warning: line %d: line no. not greater than previous one\n", textlinenum );
       }
@@ -710,29 +714,29 @@ int main( int argc, char *argv[] ){
       /* lose remaining spaces */
       while ( isspace(*linestart) )
         linestart++;
-      
+
       /* check there's no line numbers on label-using programs */
       if( use_labels && isdigit(*linestart) )
         fprintf( stderr, "line %d: line number used in labels mode\n", textlinenum ),
         exit(1);
 
       if( use_labels && *linestart=='@' ){
-        if( (ptr= (unsigned char *)strchr((char *)linestart,':'))==NULL )
+        if( (ptr= strchr(linestart,':'))==NULL )
           fprintf( stderr, "line %d: incomplete token definition\n", textlinenum ),
           exit(1);
         if( ptr-linestart-1>MAX_LABEL_LEN )
           fprintf( stderr, "line %d: token too long\n", textlinenum ),
           exit(1);
-          
+
         if( passnum==1){
           *ptr= 0;
           label_lines[labelend]= linenum;
-          strcpy( (char *)labels[labelend++], (char *)linestart+1 );
+          strcpy( labels[labelend++], linestart+1 );
           if( labelend>=MAX_LABELS )
             fprintf( stderr, "line %d: too many labels\n", textlinenum),
             exit(1);
           for ( f= 0; f<labelend-1; f++ )
-            if( strcmp((char *)linestart+1, (char *)labels[f])==0 )
+            if( strcmp(linestart+1, labels[f])==0 )
               fprintf( stderr, "line %d: attempt to redefine label\n", textlinenum ),
               exit(1);
           *ptr= ':';
@@ -740,7 +744,7 @@ int main( int argc, char *argv[] ){
         linestart= ptr+1;
         while ( isspace(*linestart) )
           linestart++;
-        
+
         /* if now blank, don't bother inserting an actual line here;
          * instead, fiddle linenum so the next line will have the
          * same number.
@@ -779,8 +783,8 @@ int main( int argc, char *argv[] ){
        * is performed on the line after that point.
        */
       remptr= NULL;
-      
-      if( (ptr=(unsigned char *)strstr((char *)lcasebuf,"rem"))!=NULL &&
+
+      if( (ptr=strstr(lcasebuf,"rem"))!=NULL &&
          !isalpha(ptr[-1]) && !isalpha(ptr[3]) ){
         ptr2= linestart+(ptr-lcasebuf);
         /* endpoint for checks must be here, then. */
@@ -792,8 +796,10 @@ int main( int argc, char *argv[] ){
         if(ptr[3]==' ')
           ptr2[3]= ptr[3]= 1;
       }
-      
-      toknum= 256;
+
+      // Run through standard tokens table
+
+      toknum= zx81mode ? 256 : 151;
       alttok= 1;
       for ( tarrptr= zx81mode ? tokens81 : tokens; *tarrptr!=NULL; tarrptr++ ){
         if(alttok)
@@ -802,13 +808,24 @@ int main( int argc, char *argv[] ){
         if( **tarrptr==0 )
           continue;
         toklen= strlen(*tarrptr);
+        // Check for table partition splitting special commands from standard commands (Alistair Neil))
+        if( strcmp(*tarrptr, "-----") == 0 ){
+          toknum= 256;
+          alttok= 0;
+          continue;
+        }
         ptr= lcasebuf;
-        while ( (ptr=(unsigned char *)strstr((char *)ptr,*tarrptr))!=NULL ){
+        while ( (ptr=strstr(ptr,*tarrptr))!=NULL ){
+          // Check for special commands which dont generate a token (Alistair Neil))
+          if( *(ptr - 1) == '%' && *tarrptr[0] != '%' ){
+            ptr+= toklen;
+            continue;
+          }
           /* check it's not in the middle of a word etc., except for
            * <>, <=, >=.
            */
           if( (*tarrptr)[0]=='<' || (*tarrptr)[1]=='=' ||
-             (!isalpha(ptr[-1]) && !isalpha(ptr[toklen])) ){
+             (!isalpha(ptr[-1]) && !isalpha(ptr[toklen])) && toknum > 150 ){
             ptr2= linestart+(ptr-lcasebuf);
             /* the token text is overwritten in the lcase copy too, to
              * avoid problems with e.g. go to/to.
@@ -831,7 +848,7 @@ int main( int argc, char *argv[] ){
           ptr+= toklen;
         }
       }
-      
+
       if( use_labels ){
         /* replace @label with matching number.
          * this expands labels in strings too, since:
@@ -841,7 +858,7 @@ int main( int argc, char *argv[] ){
          */
 
         ptr= linestart;
-        while( (ptr=(unsigned char *)strchr((char *)ptr,'@'))!=NULL ){
+        while( (ptr=strchr(ptr,'@'))!=NULL ){
           if( ptr[-1]=='\\' ){
             ptr++;
             continue;
@@ -856,7 +873,7 @@ int main( int argc, char *argv[] ){
            */
           ptr++;
           for ( f= 0; f<labelend; f++ ){
-            int len= strlen((char *)labels[f]);
+            int len= strlen(labels[f]);
             if( memcmp(labels[f],ptr,len)==0 &&
               (ptr[len]<33 || ptr[len]>126 || ptr[len]==':') ){
               unsigned char numbuf[20];
@@ -865,13 +882,13 @@ int main( int argc, char *argv[] ){
                * at least this way it's clear(er) what's happening.
                */
               /* switch text for label. first, remove text */
-              memmove( ptr-1, ptr+len, strlen((char *)ptr+len)+1 );
+              memmove( ptr-1, ptr+len, strlen(ptr+len)+1 );
               /* make number string */
-              sprintf((char *)numbuf,"%d",label_lines[f]);
-              len= strlen((char *)numbuf);
+              sprintf(numbuf,"%d",label_lines[f]);
+              len= strlen(numbuf);
               /* insert room for number string */
               ptr--;
-              memmove( ptr+len, ptr, strlen((char *)ptr)+1 );
+              memmove( ptr+len, ptr, strlen(ptr)+1 );
               if( zx81mode )
                 memcpycnv( ptr, numbuf, len );
               else
@@ -892,8 +909,8 @@ int main( int argc, char *argv[] ){
       /* remove 0x01s, deal with backslash things, and add numbers */
       ptr= linestart;
       outptr= outbuf;
-      in_rem= in_deffn= in_quotes= 0;
-      
+      in_rem= in_deffn= in_quotes= in_spec= 0;
+
       while( *ptr ){
         if( outptr>outbuf+sizeof(outbuf)-10 )
           fprintf( stderr, "line %d: line too big\n", textlinenum),
@@ -902,7 +919,8 @@ int main( int argc, char *argv[] ){
         if( *ptr=='"' )
           in_quotes= !in_quotes;
         /* as well as 0x01 chars, we skip tabs. */
-        else if( *ptr==1 || *ptr==9 || (!in_quotes && !in_rem && *ptr==' ') ){
+        // Modified to recognise special commands using in_spec flag (Alistair Neil)
+        else if( *ptr==1 || *ptr==9 || (!in_quotes && !in_rem && !in_spec && *ptr==' ') ){
           ptr++;
           continue;
         }
@@ -910,6 +928,13 @@ int main( int argc, char *argv[] ){
           in_deffn= 1;
         else if( *ptr==REM_TOKEN_NUM )
           in_rem= 1;
+        // Check for special commands at the beginning of a line and insert a space (Alistair Neil)
+        else if( *ptr == '%' && !in_rem && !in_quotes ){
+            // Check for certain commands that need to skip number processing (Alistair Neil)
+          in_spec= 1;
+          if( ptr == linestart )
+            *outptr++= ' ';
+        }
         else if( *ptr=='\\' ){
           if( isalpha(ptr[1]) && strchr("VWXYZvwxyz",ptr[1])==NULL )
             *outptr++= 144+tolower(ptr[1])-'a';
@@ -955,17 +980,17 @@ int main( int argc, char *argv[] ){
                   break;
                 case '{': /* directly specify output code */
                   /* find end of number */
-                  asciiptr= (unsigned char *)strchr((char *)ptr+2,'}');
+                  asciiptr= strchr(ptr+2,'}');
                   if( asciiptr==NULL )
                     fprintf( stderr, "line %d: unclosed brace in eight-bit character code\n", textlinenum ),
                     exit(1);
 
                   /* parse number in decimal, octal or hex */
-                  num_ascii= strtoul((char *)ptr+2, NULL, 0);
+                  num_ascii= strtoul(ptr+2, NULL, 0);
                   if( num_ascii<0 || num_ascii>255 )
                     fprintf(stderr, "line %d: eight-bit character code out of range\n", textlinenum ),
                     exit(1);
-                  *outptr++= (char)num_ascii;
+                  *outptr++= num_ascii;
                   /* set pointer to the second char from the end, so we're in the
                    * right place when we skip forward two chars below
                    */
@@ -986,17 +1011,17 @@ int main( int argc, char *argv[] ){
                   break;
                 case '{': /* directly specify output code */
                   /* find end of number */
-                  asciiptr= (unsigned char *)strchr((char *)ptr+2,'}');
+                  asciiptr= strchr(ptr+2,'}');
                   if( asciiptr==NULL )
                     fprintf( stderr, "line %d: unclosed brace in eight-bit character code\n", textlinenum ),
                     exit(1);
 
                   /* parse number in decimal, octal or hex */
-                  num_ascii= strtoul((char *)ptr+2, NULL, 0);
+                  num_ascii= strtoul(ptr+2, NULL, 0);
                   if( num_ascii<0 || num_ascii>255 )
                     fprintf(stderr, "line %d: eight-bit character code out of range\n", textlinenum ),
                     exit(1);
-                  *outptr++= (char)num_ascii;
+                  *outptr++= num_ascii;
                   /* set pointer to the second char from the end, so we're in the
                    * right place when we skip forward two chars below
                    */
@@ -1021,7 +1046,7 @@ int main( int argc, char *argv[] ){
             ((*ptr=='-' || *ptr=='+') && ptr[1]=='.' && isdigit(ptr[2]))) ){
           if( zx81mode || ptr[-1]!=BIN_TOKEN_NUM )
             /* we have a number. parse with strtod(). */
-            num= strtod((char *)ptr, (char **)&ptr2 );
+            num= strtod(ptr, (char **)&ptr2 );
           else
             /* however, if the number was after a BIN token, the inline
              * number must match the binary number, e.g. BIN 1001 would be
@@ -1029,7 +1054,7 @@ int main( int argc, char *argv[] ){
              */
             ptr2= ptr,
             num= (double)grok_binary(&ptr2,textlinenum);
-          
+
           /* output text of number */
           memcpy( outptr, ptr, ptr2-ptr );
           outptr+= ptr2-ptr;
@@ -1040,7 +1065,7 @@ int main( int argc, char *argv[] ){
             ptr= ++ptr2;
             while ( isdigit(*ptr2) || *ptr2=='+' || *ptr2=='-' )
               ++ptr2;
-            num= strtod((char *)ptr,(char **)&ptr2);
+            num= strtod(ptr,(char **)&ptr2);
           }
 
           if( !dbl2spec(num,&num_exp,&num_mantissa) )
@@ -1110,7 +1135,7 @@ int main( int argc, char *argv[] ){
       fprintf( stderr, "Auto-start label specified, but not using labels!\n" ),
       exit(1);
     for ( f= 0; f<labelend; f++ )
-      if( strcmp((char *)startlabel, (char *)labels[f])==0 ){
+      if( strcmp(startlabel, labels[f])==0 ){
         startline= label_lines[f];
         break;
       }
@@ -1172,7 +1197,7 @@ int main( int argc, char *argv[] ){
       headerbuf[0]= 0;
       for ( f= strlen(speccy_filename); f<10; f++ )
         speccy_filename[f]= 32;
-      strncpy( (char *)headerbuf+1, speccy_filename, 10 );
+      strncpy( headerbuf+1, speccy_filename, 10 );
       headerbuf[11]= (siz&255);
       headerbuf[12]= (siz/256);
       headerbuf[13]= (startline&255);
@@ -1186,7 +1211,7 @@ int main( int argc, char *argv[] ){
         chk^= headerbuf[f];
       fwrite( headerbuf, 1, 17, out );
       fputc( chk, out );
-      
+
       /* write (most of) tap bit for data block */
       fprintf ( out, "%c%c%c", (siz+2)&255, (siz+2)>>8, chk= 255 );
       for ( f= 0; f<siz; f++)
@@ -1198,7 +1223,7 @@ int main( int argc, char *argv[] ){
 
   if( output_tape ){
     if( zx81mode ){
-      for ( int i= 0; i<25; i++ )
+      for ( f= 0; f<25; f++ )
         fputc(0x76, out);
       fputc(0x80, out);
     }
