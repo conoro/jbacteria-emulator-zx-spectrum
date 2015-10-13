@@ -1,20 +1,20 @@
-      BORDER 0:\
-      INK 0:\
-      PAPER 0:\
+      BORDER NOT PI:\
+      INK NOT PI:\
+      PAPER NOT PI:\
       CLS:\
-      BRIGHT 1:\
+      BRIGHT SGN PI:\
       LET c$= "1441229400\{0}\{60}\{126}\{126}\{126}\{126}\{60}\{0}\{255}\{129}\{189}\{189}\{189}\{189}\{129}\{255}":\
-      FOR i= 11 TO 26:\
-        POKE 65357+i, CODE(c$(i)):\
+      FOR i= CODE"\{11}" TO CODE"\{26}":\
+        POKE 0|65357+i, CODE c$(i):\
       NEXT i:\
       LET s$="                                ":\
-      FOR i= 1 TO 5 STEP 2:\
-        PRINT AT 5+i, 9; INK VAL(c$(i)); "\b"; INK 7; " = "; 5*VAL(c$(i+3)) ;" puntos":\
+      FOR i= SGN PI TO VAL"5" STEP 2:\
+        PRINT AT 5+i, 9; INK VAL c$(i); "\b"; INK 7; " = "; 5*VAL c$(i+3) ;" puntos":\
       NEXT i:\
-      PRINT INK 4; AT 14, 0; "Pulse ESPACIO o DISP para ceder"'\
+      PRINT INK 4; AT 14, NOT PI; "Pulse ESPACIO o DISP para ceder"'\
                              "una vida a cambio de una"'\
                              "pantalla nueva.";\
-          FLASH 1; AT 3, 12; INK 7; "FRONTON":\
+          FLASH 1; AT INT PI, 12; INK 7; "FRONTON":\
       PAUSE 200:\
       LET maximo= 0
 
@@ -33,7 +33,7 @@
       FOR r= 1 TO 6:\
         IF r<3 OR r>4 THEN\
           FOR i= 2 TO 29:\
-            PRINT AT r, i; INK VAL(c$(r)); "\b":\
+            PRINT AT r, i; INK VAL c$(r); "\b":\
           NEXT i
       NEXT r:\
       LET bx= 9:\
@@ -112,8 +112,8 @@
       LET yc= yc+ya:\
       FOR i= 65 TO 68:\
         IF t=i THEN\
-          LET b= 5*VAL(c$(i-62)):\
-          BEEP 0.12, VAL(c$(i-58)):\
+          LET b= 5*VAL c$(i-62):\
+          BEEP 0.12, VAL c$(i-58):\
           LET puntos= puntos+b:\
           LET tpuntos= tpuntos+b:\
           GO SUB @ima:\
