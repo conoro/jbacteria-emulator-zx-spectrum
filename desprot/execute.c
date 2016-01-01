@@ -27,12 +27,14 @@
 
 #define LDPR(a, b, r)           \
           st+= 7,               \
-          mem[b|a<<8]= r,       \
+          t= b|a<<8,            \
+          t>=romp && (mem[t]= r), \
           mp= b+1&255 | a<<8
 
 #define LDPRI(a, b, r)          \
           st+= 15,              \
-          mem[((mem[pc++]^128)-128+(b|a<<8))&65535]= r
+          t= ((mem[pc++]^128)-128+(b|a<<8))&65535, \
+          t>=romp && (mem[t]= r)
 
 #define LDRR(a, b, n)           \
           st+= n,               \
@@ -41,13 +43,17 @@
 #define LDPNNRR(a, b, n)        \
           st+= n,               \
           t= mem[pc++],         \
-          mem[t|= mem[pc++]<<8]= b, \
-          mem[mp= t+1]= a
+          t|= mem[pc++]<<8,     \
+          mp= t+1,              \
+          t>=romp && (mem[t]= b), \
+          mp>=romp && (mem[mp]= a)
 
 #define LDPIN(a, b)             \
           st+= 15,              \
           t= mem[pc++],         \
-          mem[((t^128)-128+(b|a<<8))&65535]= mem[pc++]
+          t= ((t^128)-128+(b|a<<8))&65535, \
+          t>=romp && (mem[t]= mem[pc]), \
+          pc++
 
 #define INCW(a, b)              \
           st+= 6,               \
@@ -71,13 +77,15 @@
           st+= 19,              \
           fa= mem[t= (mem[pc++]^128)-128+(b|a<<8)], \
           ff= ff&256            \
-            | (fr= mem[t]= fa+(fb=1))
+            | (fr= fa+(fb=1)&255), \
+          t>=romp && (mem[t]= fr)
 
 #define DECPI(a, b)             \
           st+= 19,              \
           fa= mem[t= (mem[pc++]^128)-128+(b|a<<8)], \
           ff= ff&256            \
-            | (fr= mem[t]= fa+(fb=-1))
+            | (fr= fa+(fb=-1)&255), \
+          t>=romp && (mem[t]= fr)
 
 #define ADDRRRR(a, b, c, d)     \
           st+= 11,              \
@@ -86,7 +94,7 @@
           ff= ff    & 128       \
             | v>>8  & 296,      \
           fb= fb&128            \
-            | (v>>8^a^c^fr^fa)&16,  \
+            | (v>>8^a^c^fr^fa)&16, \
           mp= b+1+( a<<8 ),     \
           a= v>>8,              \
           b= v
@@ -183,8 +191,8 @@
 
 #define PUSH(a, b)              \
           st+= 11,              \
-          mem[--sp]= a,         \
-          mem[--sp]= b
+          --sp>=romp && (mem[sp]= a), \
+          --sp>=romp && (mem[sp]= b)
 
 #define POP(a, b)               \
           st+= 10,              \
@@ -213,33 +221,33 @@
             st+= 17,            \
             t= pc+2,            \
             mp= pc= mem[pc] | mem[pc+1]<<8, \
-            mem[--sp]= t>>8,    \
-            mem[--sp]= t
+            --sp>=romp && (mem[sp]= t>>8), \
+            --sp>=romp && (mem[sp]= t)
 
 #define CALLCI(c)               \
           if(c)                 \
             st+= 17,            \
             t= pc+2,            \
             mp= pc= mem[pc] | mem[pc+1]<<8, \
-            mem[--sp]= t>>8,    \
-            mem[--sp]= t;       \
+            --sp>=romp && (mem[sp]= t>>8), \
+            --sp>=romp && (mem[sp]= t); \
           else                  \
             st+= 10,            \
             pc+= 2
 
 #define RST(n)                  \
           st+= 11,              \
-          mem[--sp]= pc>>8,     \
-          mem[--sp]= pc,        \
+          --sp>=romp && (mem[sp]= pc>>8), \
+          --sp>=romp && (mem[sp]= pc), \
           mp= pc= n
 
 #define EXSPI(a, b)             \
           st+= 19,              \
           t= mem[sp],           \
-          mem[sp++]= b,         \
+          sp>=romp && (mem[sp]= b), \
           b= t,                 \
-          t= mem[sp],           \
-          mem[sp--]= a,         \
+          t= mem[sp+1],           \
+          sp+1>=romp && (mem[sp+1]= a), \
           a= t,                 \
           mp= b | a<<8
 
@@ -333,7 +341,7 @@
 #define RESHL(n)                \
           st+= 15,              \
           w= mem[t= l|h<<8] & n,\
-          mem[t]= w
+          t>=romp && (mem[t]= w)
 
 #define SET(n, r)               \
           st+= 8,               \
@@ -342,7 +350,7 @@
 #define SETHL(n)                \
           st+= 15,              \
           w= mem[t= l|h<<8] | n,\
-          mem[t]= w
+          t>=romp && (mem[t]= w)
 
 #define INR(r)                  \
           st+= 12,              \
@@ -401,6 +409,7 @@ unsigned short
       , fb_= 0
       , fr= 0
       , fr_= 0
+      , romp= 0
       ;
 unsigned long long
         st= 0
@@ -450,8 +459,8 @@ do{
     if( iff ){
       halted && (pc++, halted= 0);
       iff= 0;
-      mem[--sp]= pc>>8;
-      mem[--sp]= pc;
+      --sp>=romp && (mem[sp]= pc>>8);
+      --sp>=romp && (mem[sp]= pc);
       r++;
       switch( im ){
         case 1:
@@ -532,7 +541,8 @@ do{
     case 0x32: // LD (nn),A
       st+= 13;
       t= mem[pc++];
-      mem[t|= mem[pc++]<<8]= a;
+      t|= mem[pc++]<<8;
+      t>=romp && (mem[t]= a);
       mp= t+1 & 255
         | a<<8;
       prefix=0;break;
@@ -626,7 +636,8 @@ do{
         st+= 11,
         fa= mem[t= l | h<<8],
         ff= ff&256
-          | (fr= mem[t]= fa+(fb=+1));
+          | (fr= fa+(fb=1)&255),
+        t>=romp && (mem[t]= fr);
       else if( !--prefix )
         INCPI(xh, xl);
       else
@@ -671,7 +682,8 @@ do{
         st+= 11,
         fa= mem[t= l | h<<8],
         ff= ff&256
-          | (fr= mem[t]= fa+(fb=-1));
+          | (fr= fa+(fb=-1)&255),
+        t>=romp && (mem[t]= fr);
       else if( !--prefix )
         DECPI(xh, xl);
       else
@@ -714,7 +726,9 @@ do{
     case 0x36: // LD (HL),n // LD (IX+d),n // LD (IY+d),n
       if( !prefix )
         st+= 10,
-        mem[l|h<<8]= mem[pc++];
+        t= l|h<<8,
+        t>=romp && (mem[t]= mem[pc]),
+        pc++;
       else if( !--prefix )
         LDPIN(xh, xl);
       else
@@ -1711,8 +1725,8 @@ do{
       st+= 17;
       t= pc+2;
       mp= pc= mem[pc] | mem[pc+1]<<8;
-      mem[--sp]= t>>8;
-      mem[--sp]= t;
+      --sp>=romp && (mem[sp]= t>>8);
+      --sp>=romp && (mem[sp]= t);
       prefix=0;break;
     case 0xc4: // CALL NZ
       CALLCI(fr);
@@ -1884,7 +1898,7 @@ do{
                       t= l|h<<8;
                       u= mem[t];
                       RLC(u);
-                      mem[t]= u; break;                        
+                      t>=romp && (mem[t]= u); break;
           case 0x07:  RLC(a); break;                       // RLC A
           case 0x08:  RRC(b); break;                       // RRC B
           case 0x09:  RRC(c); break;                       // RRC C
@@ -1896,7 +1910,7 @@ do{
                       t= l|h<<8;
                       u= mem[t];
                       RRC(u);
-                      mem[t]= u; break;                        
+                      t>=romp && (mem[t]= u); break;
           case 0x0f:  RRC(a); break;                       // RRC A
           case 0x10:  RL(b); break;                        // RL B
           case 0x11:  RL(c); break;                        // RL C
@@ -1908,7 +1922,7 @@ do{
                       t= l|h<<8;
                       u= mem[t];
                       RL(u);
-                      mem[t]= u; break;                        
+                      t>=romp && (mem[t]= u); break;
           case 0x17:  RL(a); break;                        // RL A
           case 0x18:  RR(b); break;                        // RR B
           case 0x19:  RR(c); break;                        // RR C
@@ -1920,7 +1934,7 @@ do{
                       t= l|h<<8;
                       u= mem[t];
                       RR(u);
-                      mem[t]= u; break;                        
+                      t>=romp && (mem[t]= u); break;
           case 0x1f:  RR(a); break;                        // RR A
           case 0x20:  SLA(b); break;                       // SLA B
           case 0x21:  SLA(c); break;                       // SLA C
@@ -1932,7 +1946,7 @@ do{
                       t= l|h<<8;
                       u= mem[t];
                       SLA(u);
-                      mem[t]= u; break;                        
+                      t>=romp && (mem[t]= u); break;
           case 0x27:  SLA(a); break;                       // SLA A
           case 0x28:  SRA(b); break;                       // SRA B
           case 0x29:  SRA(c); break;                       // SRA C
@@ -1944,7 +1958,7 @@ do{
                       t= l|h<<8;
                       u= mem[t];
                       SRA(u);
-                      mem[t]= u; break;                        
+                      t>=romp && (mem[t]= u); break;
           case 0x2f:  SRA(a); break;                       // SRA A
           case 0x30:  SLL(b); break;                       // SLL B
           case 0x31:  SLL(c); break;                       // SLL C
@@ -1956,7 +1970,7 @@ do{
                       t= l|h<<8;
                       u= mem[t];
                       SLL(u);
-                      mem[t]= u; break;                        
+                      t>=romp && (mem[t]= u); break;
           case 0x37:  SLL(a); break;                       // SLL A
           case 0x38:  SRL(b); break;                       // SRL B
           case 0x39:  SRL(c); break;                       // SRL C
@@ -1968,7 +1982,7 @@ do{
                       t= l|h<<8;
                       u= mem[t];
                       SRL(u);
-                      mem[t]= u; break;                        
+                      t>=romp && (mem[t]= u); break;
           case 0x3f:  SRL(a); break;                       // SRL A
           case 0x40:  BIT(1, b); break;                    // BIT 0,B
           case 0x41:  BIT(1, c); break;                    // BIT 0,C
@@ -2171,70 +2185,70 @@ do{
           --prefix,
           w= mem[mp= ((mem[pc++]^128)-128+(yl|yh<<8))];
         switch( mem[pc++] ){
-          case 0x00: RLC(w); mem[mp]= b= w; break;         // LD B,RLC (IX+d) // LD B,RLC (IY+d)
-          case 0x01: RLC(w); mem[mp]= c= w; break;         // LD C,RLC (IX+d) // LD C,RLC (IY+d)
-          case 0x02: RLC(w); mem[mp]= d= w; break;         // LD D,RLC (IX+d) // LD D,RLC (IY+d)
-          case 0x03: RLC(w); mem[mp]= e= w; break;         // LD E,RLC (IX+d) // LD E,RLC (IY+d)
-          case 0x04: RLC(w); mem[mp]= h= w; break;         // LD H,RLC (IX+d) // LD H,RLC (IY+d)
-          case 0x05: RLC(w); mem[mp]= l= w; break;         // LD L,RLC (IX+d) // LD L,RLC (IY+d)
-          case 0x06: RLC(w); mem[mp]= w; break;            // RLC (IX+d) // RLC (IY+d)
-          case 0x07: RLC(w); mem[mp]= a= w; break;         // LD A,RLC (IX+d) // LD A,RLC (IY+d)
-          case 0x08: RRC(w); mem[mp]= b= w; break;         // LD B,RRC (IX+d) // LD B,RRC (IY+d)
-          case 0x09: RRC(w); mem[mp]= c= w; break;         // LD C,RRC (IX+d) // LD C,RRC (IY+d)
-          case 0x0a: RRC(w); mem[mp]= d= w; break;         // LD D,RRC (IX+d) // LD D,RRC (IY+d)
-          case 0x0b: RRC(w); mem[mp]= e= w; break;         // LD E,RRC (IX+d) // LD E,RRC (IY+d)
-          case 0x0c: RRC(w); mem[mp]= h= w; break;         // LD H,RRC (IX+d) // LD H,RRC (IY+d)
-          case 0x0d: RRC(w); mem[mp]= l= w; break;         // LD L,RRC (IX+d) // LD L,RRC (IY+d)
-          case 0x0e: RRC(w); mem[mp]= w; break;            // RRC (IX+d) // RRC (IY+d)
-          case 0x0f: RRC(w); mem[mp]= a= w; break;         // LD A,RRC (IX+d) // LD A,RRC (IY+d)
-          case 0x10: RL(w); mem[mp]= b= w; break;          // LD B,RL (IX+d) // LD B,RL (IY+d)
-          case 0x11: RL(w); mem[mp]= c= w; break;          // LD C,RL (IX+d) // LD C,RL (IY+d)
-          case 0x12: RL(w); mem[mp]= d= w; break;          // LD D,RL (IX+d) // LD D,RL (IY+d)
-          case 0x13: RL(w); mem[mp]= e= w; break;          // LD E,RL (IX+d) // LD E,RL (IY+d)
-          case 0x14: RL(w); mem[mp]= h= w; break;          // LD H,RL (IX+d) // LD H,RL (IY+d)
-          case 0x15: RL(w); mem[mp]= l= w; break;          // LD L,RL (IX+d) // LD L,RL (IY+d)
-          case 0x16: RL(w); mem[mp]= w; break;             // RL (IX+d) // RL (IY+d)
-          case 0x17: RL(w); mem[mp]= a= w; break;          // LD A,RL (IX+d) // LD A,RL (IY+d)
-          case 0x18: RR(w); mem[mp]= b= w; break;          // LD B,RR (IX+d) // LD B,RR (IY+d)
-          case 0x19: RR(w); mem[mp]= c= w; break;          // LD C,RR (IX+d) // LD C,RR (IY+d)
-          case 0x1a: RR(w); mem[mp]= d= w; break;          // LD D,RR (IX+d) // LD D,RR (IY+d)
-          case 0x1b: RR(w); mem[mp]= e= w; break;          // LD E,RR (IX+d) // LD E,RR (IY+d)
-          case 0x1c: RR(w); mem[mp]= h= w; break;          // LD H,RR (IX+d) // LD H,RR (IY+d)
-          case 0x1d: RR(w); mem[mp]= l= w; break;          // LD L,RR (IX+d) // LD L,RR (IY+d)
-          case 0x1e: RR(w); mem[mp]= w; break;             // RR (IX+d) // RR (IY+d)
-          case 0x1f: RR(w); mem[mp]= a= w; break;          // LD A,RR (IX+d) // LD A,RR (IY+d)
-          case 0x20: SLA(w); mem[mp]= b= w; break;         // LD B,SLA (IX+d) // LD B,SLA (IY+d)
-          case 0x21: SLA(w); mem[mp]= c= w; break;         // LD C,SLA (IX+d) // LD C,SLA (IY+d)
-          case 0x22: SLA(w); mem[mp]= d= w; break;         // LD D,SLA (IX+d) // LD D,SLA (IY+d)
-          case 0x23: SLA(w); mem[mp]= e= w; break;         // LD E,SLA (IX+d) // LD E,SLA (IY+d)
-          case 0x24: SLA(w); mem[mp]= h= w; break;         // LD H,SLA (IX+d) // LD H,SLA (IY+d)
-          case 0x25: SLA(w); mem[mp]= l= w; break;         // LD L,SLA (IX+d) // LD L,SLA (IY+d)
-          case 0x26: SLA(w); mem[mp]= w; break;            // SLA (IX+d) // SLA (IY+d)
-          case 0x27: SLA(w); mem[mp]= a= w; break;         // LD A,SLA (IX+d) // LD A,SLA (IY+d)
-          case 0x28: SRA(w); mem[mp]= b= w; break;         // LD B,SRA (IX+d) // LD B,SRA (IY+d)
-          case 0x29: SRA(w); mem[mp]= c= w; break;         // LD C,SRA (IX+d) // LD C,SRA (IY+d)
-          case 0x2a: SRA(w); mem[mp]= d= w; break;         // LD D,SRA (IX+d) // LD D,SRA (IY+d)
-          case 0x2b: SRA(w); mem[mp]= e= w; break;         // LD E,SRA (IX+d) // LD E,SRA (IY+d)
-          case 0x2c: SRA(w); mem[mp]= h= w; break;         // LD H,SRA (IX+d) // LD H,SRA (IY+d)
-          case 0x2d: SRA(w); mem[mp]= l= w; break;         // LD L,SRA (IX+d) // LD L,SRA (IY+d)
-          case 0x2e: SRA(w); mem[mp]= w; break;            // SRA (IX+d) // SRA (IY+d)
-          case 0x2f: SRA(w); mem[mp]= a= w; break;         // LD A,SRA (IX+d) // LD A,SRA (IY+d)
-          case 0x30: SLL(w); mem[mp]= b= w; break;         // LD B,SLL (IX+d) // LD B,SLL (IY+d)
-          case 0x31: SLL(w); mem[mp]= c= w; break;         // LD C,SLL (IX+d) // LD C,SLL (IY+d)
-          case 0x32: SLL(w); mem[mp]= d= w; break;         // LD D,SLL (IX+d) // LD D,SLL (IY+d)
-          case 0x33: SLL(w); mem[mp]= e= w; break;         // LD E,SLL (IX+d) // LD E,SLL (IY+d)
-          case 0x34: SLL(w); mem[mp]= h= w; break;         // LD H,SLL (IX+d) // LD H,SLL (IY+d)
-          case 0x35: SLL(w); mem[mp]= l= w; break;         // LD L,SLL (IX+d) // LD L,SLL (IY+d)
-          case 0x36: SLL(w); mem[mp]= w; break;            // SLL (IX+d) // SLL (IY+d)
-          case 0x37: SLL(w); mem[mp]= a= w; break;         // LD A,SLL (IX+d) // LD A,SLL (IY+d)
-          case 0x38: SRL(w); mem[mp]= b= w; break;         // LD B,SRL (IX+d) // LD B,SRL (IY+d)
-          case 0x39: SRL(w); mem[mp]= c= w; break;         // LD C,SRL (IX+d) // LD C,SRL (IY+d)
-          case 0x3a: SRL(w); mem[mp]= d= w; break;         // LD D,SRL (IX+d) // LD D,SRL (IY+d)
-          case 0x3b: SRL(w); mem[mp]= e= w; break;         // LD E,SRL (IX+d) // LD E,SRL (IY+d)
-          case 0x3c: SRL(w); mem[mp]= h= w; break;         // LD H,SRL (IX+d) // LD H,SRL (IY+d)
-          case 0x3d: SRL(w); mem[mp]= l= w; break;         // LD L,SRL (IX+d) // LD L,SRL (IY+d)
-          case 0x3e: SRL(w); mem[mp]= w; break;            // SRL (IX+d) // SRL (IY+d)
-          case 0x3f: SRL(w); mem[mp]= a= w; break;         // LD A,SRL (IX+d) // LD A,SRL (IY+d)
+          case 0x00: RLC(w); b= w; mp>=romp && (mem[mp]= w); break; // LD B,RLC (IX+d) // LD B,RLC (IY+d)
+          case 0x01: RLC(w); c= w; mp>=romp && (mem[mp]= w); break; // LD C,RLC (IX+d) // LD C,RLC (IY+d)
+          case 0x02: RLC(w); d= w; mp>=romp && (mem[mp]= w); break; // LD D,RLC (IX+d) // LD D,RLC (IY+d)
+          case 0x03: RLC(w); e= w; mp>=romp && (mem[mp]= w); break; // LD E,RLC (IX+d) // LD E,RLC (IY+d)
+          case 0x04: RLC(w); h= w; mp>=romp && (mem[mp]= w); break; // LD H,RLC (IX+d) // LD H,RLC (IY+d)
+          case 0x05: RLC(w); l= w; mp>=romp && (mem[mp]= w); break; // LD L,RLC (IX+d) // LD L,RLC (IY+d)
+          case 0x06: RLC(w);       mp>=romp && (mem[mp]= w); break; // RLC (IX+d) // RLC (IY+d)
+          case 0x07: RLC(w); a= w; mp>=romp && (mem[mp]= w); break; // LD A,RLC (IX+d) // LD A,RLC (IY+d)
+          case 0x08: RRC(w); b= w; mp>=romp && (mem[mp]= w); break; // LD B,RRC (IX+d) // LD B,RRC (IY+d)
+          case 0x09: RRC(w); c= w; mp>=romp && (mem[mp]= w); break; // LD C,RRC (IX+d) // LD C,RRC (IY+d)
+          case 0x0a: RRC(w); d= w; mp>=romp && (mem[mp]= w); break; // LD D,RRC (IX+d) // LD D,RRC (IY+d)
+          case 0x0b: RRC(w); e= w; mp>=romp && (mem[mp]= w); break; // LD E,RRC (IX+d) // LD E,RRC (IY+d)
+          case 0x0c: RRC(w); h= w; mp>=romp && (mem[mp]= w); break; // LD H,RRC (IX+d) // LD H,RRC (IY+d)
+          case 0x0d: RRC(w); l= w; mp>=romp && (mem[mp]= w); break; // LD L,RRC (IX+d) // LD L,RRC (IY+d)
+          case 0x0e: RRC(w);       mp>=romp && (mem[mp]= w); break; // RRC (IX+d) // RRC (IY+d)
+          case 0x0f: RRC(w); a= w; mp>=romp && (mem[mp]= w); break; // LD A,RRC (IX+d) // LD A,RRC (IY+d)
+          case 0x10: RL(w);  b= w; mp>=romp && (mem[mp]= w); break; // LD B,RL (IX+d) // LD B,RL (IY+d)
+          case 0x11: RL(w);  c= w; mp>=romp && (mem[mp]= w); break; // LD C,RL (IX+d) // LD C,RL (IY+d)
+          case 0x12: RL(w);  d= w; mp>=romp && (mem[mp]= w); break; // LD D,RL (IX+d) // LD D,RL (IY+d)
+          case 0x13: RL(w);  e= w; mp>=romp && (mem[mp]= w); break; // LD E,RL (IX+d) // LD E,RL (IY+d)
+          case 0x14: RL(w);  h= w; mp>=romp && (mem[mp]= w); break; // LD H,RL (IX+d) // LD H,RL (IY+d)
+          case 0x15: RL(w);  l= w; mp>=romp && (mem[mp]= w); break; // LD L,RL (IX+d) // LD L,RL (IY+d)
+          case 0x16: RL(w);        mp>=romp && (mem[mp]= w); break; // RL (IX+d) // RL (IY+d)
+          case 0x17: RL(w);  a= w; mp>=romp && (mem[mp]= w); break; // LD A,RL (IX+d) // LD A,RL (IY+d)
+          case 0x18: RR(w);  b= w; mp>=romp && (mem[mp]= w); break; // LD B,RR (IX+d) // LD B,RR (IY+d)
+          case 0x19: RR(w);  c= w; mp>=romp && (mem[mp]= w); break; // LD C,RR (IX+d) // LD C,RR (IY+d)
+          case 0x1a: RR(w);  d= w; mp>=romp && (mem[mp]= w); break; // LD D,RR (IX+d) // LD D,RR (IY+d)
+          case 0x1b: RR(w);  e= w; mp>=romp && (mem[mp]= w); break; // LD E,RR (IX+d) // LD E,RR (IY+d)
+          case 0x1c: RR(w);  h= w; mp>=romp && (mem[mp]= w); break; // LD H,RR (IX+d) // LD H,RR (IY+d)
+          case 0x1d: RR(w);  l= w; mp>=romp && (mem[mp]= w); break; // LD L,RR (IX+d) // LD L,RR (IY+d)
+          case 0x1e: RR(w);        mp>=romp && (mem[mp]= w); break; // RR (IX+d) // RR (IY+d)
+          case 0x1f: RR(w);  a= w; mp>=romp && (mem[mp]= w); break; // LD A,RR (IX+d) // LD A,RR (IY+d)
+          case 0x20: SLA(w); b= w; mp>=romp && (mem[mp]= w); break; // LD B,SLA (IX+d) // LD B,SLA (IY+d)
+          case 0x21: SLA(w); c= w; mp>=romp && (mem[mp]= w); break; // LD C,SLA (IX+d) // LD C,SLA (IY+d)
+          case 0x22: SLA(w); d= w; mp>=romp && (mem[mp]= w); break; // LD D,SLA (IX+d) // LD D,SLA (IY+d)
+          case 0x23: SLA(w); e= w; mp>=romp && (mem[mp]= w); break; // LD E,SLA (IX+d) // LD E,SLA (IY+d)
+          case 0x24: SLA(w); h= w; mp>=romp && (mem[mp]= w); break; // LD H,SLA (IX+d) // LD H,SLA (IY+d)
+          case 0x25: SLA(w); l= w; mp>=romp && (mem[mp]= w); break; // LD L,SLA (IX+d) // LD L,SLA (IY+d)
+          case 0x26: SLA(w);       mp>=romp && (mem[mp]= w); break; // SLA (IX+d) // SLA (IY+d)
+          case 0x27: SLA(w); a= w; mp>=romp && (mem[mp]= w); break; // LD A,SLA (IX+d) // LD A,SLA (IY+d)
+          case 0x28: SRA(w); b= w; mp>=romp && (mem[mp]= w); break; // LD B,SRA (IX+d) // LD B,SRA (IY+d)
+          case 0x29: SRA(w); c= w; mp>=romp && (mem[mp]= w); break; // LD C,SRA (IX+d) // LD C,SRA (IY+d)
+          case 0x2a: SRA(w); d= w; mp>=romp && (mem[mp]= w); break; // LD D,SRA (IX+d) // LD D,SRA (IY+d)
+          case 0x2b: SRA(w); e= w; mp>=romp && (mem[mp]= w); break; // LD E,SRA (IX+d) // LD E,SRA (IY+d)
+          case 0x2c: SRA(w); h= w; mp>=romp && (mem[mp]= w); break; // LD H,SRA (IX+d) // LD H,SRA (IY+d)
+          case 0x2d: SRA(w); l= w; mp>=romp && (mem[mp]= w); break; // LD L,SRA (IX+d) // LD L,SRA (IY+d)
+          case 0x2e: SRA(w);       mp>=romp && (mem[mp]= w); break; // SRA (IX+d) // SRA (IY+d)
+          case 0x2f: SRA(w); a= w; mp>=romp && (mem[mp]= w); break; // LD A,SRA (IX+d) // LD A,SRA (IY+d)
+          case 0x30: SLL(w); b= w; mp>=romp && (mem[mp]= w); break; // LD B,SLL (IX+d) // LD B,SLL (IY+d)
+          case 0x31: SLL(w); c= w; mp>=romp && (mem[mp]= w); break; // LD C,SLL (IX+d) // LD C,SLL (IY+d)
+          case 0x32: SLL(w); d= w; mp>=romp && (mem[mp]= w); break; // LD D,SLL (IX+d) // LD D,SLL (IY+d)
+          case 0x33: SLL(w); e= w; mp>=romp && (mem[mp]= w); break; // LD E,SLL (IX+d) // LD E,SLL (IY+d)
+          case 0x34: SLL(w); h= w; mp>=romp && (mem[mp]= w); break; // LD H,SLL (IX+d) // LD H,SLL (IY+d)
+          case 0x35: SLL(w); l= w; mp>=romp && (mem[mp]= w); break; // LD L,SLL (IX+d) // LD L,SLL (IY+d)
+          case 0x36: SLL(w);       mp>=romp && (mem[mp]= w); break; // SLL (IX+d) // SLL (IY+d)
+          case 0x37: SLL(w); a= w; mp>=romp && (mem[mp]= w); break; // LD A,SLL (IX+d) // LD A,SLL (IY+d)
+          case 0x38: SRL(w); b= w; mp>=romp && (mem[mp]= w); break; // LD B,SRL (IX+d) // LD B,SRL (IY+d)
+          case 0x39: SRL(w); c= w; mp>=romp && (mem[mp]= w); break; // LD C,SRL (IX+d) // LD C,SRL (IY+d)
+          case 0x3a: SRL(w); d= w; mp>=romp && (mem[mp]= w); break; // LD D,SRL (IX+d) // LD D,SRL (IY+d)
+          case 0x3b: SRL(w); e= w; mp>=romp && (mem[mp]= w); break; // LD E,SRL (IX+d) // LD E,SRL (IY+d)
+          case 0x3c: SRL(w); h= w; mp>=romp && (mem[mp]= w); break; // LD H,SRL (IX+d) // LD H,SRL (IY+d)
+          case 0x3d: SRL(w); l= w; mp>=romp && (mem[mp]= w); break; // LD L,SRL (IX+d) // LD L,SRL (IY+d)
+          case 0x3e: SRL(w);       mp>=romp && (mem[mp]= w); break; // SRL (IX+d) // SRL (IY+d)
+          case 0x3f: SRL(w); a= w; mp>=romp && (mem[mp]= w); break; // LD A,SRL (IX+d) // LD A,SRL (IY+d)
           case 0x40: case 0x41: case 0x42: case 0x43:      // BIT 0,(IX+d) // BIT 0,(IY+d)
           case 0x44: case 0x45: case 0x46: case 0x47:
                      BITI(1); break;
@@ -2259,134 +2273,134 @@ do{
           case 0x78: case 0x79: case 0x7a: case 0x7b:      // BIT 7,(IX+d) // BIT 7,(IY+d)
           case 0x7c: case 0x7d: case 0x7e: case 0x7f:
                      BITI(128); break;
-          case 0x80: RES(254, w); mem[mp]= b= w; break;    // LD B,RES 0,(IX+d) // LD B,RES 0,(IY+d)
-          case 0x81: RES(254, w); mem[mp]= c= w; break;    // LD C,RES 0,(IX+d) // LD C,RES 0,(IY+d)
-          case 0x82: RES(254, w); mem[mp]= d= w; break;    // LD D,RES 0,(IX+d) // LD D,RES 0,(IY+d)
-          case 0x83: RES(254, w); mem[mp]= e= w; break;    // LD E,RES 0,(IX+d) // LD E,RES 0,(IY+d)
-          case 0x84: RES(254, w); mem[mp]= h= w; break;    // LD H,RES 0,(IX+d) // LD H,RES 0,(IY+d)
-          case 0x85: RES(254, w); mem[mp]= l= w; break;    // LD L,RES 0,(IX+d) // LD L,RES 0,(IY+d)
-          case 0x86: RES(254, w); mem[mp]= w; break;       // RES 0,(IX+d) // RES 0,(IY+d)
-          case 0x87: RES(254, w); mem[mp]= a= w; break;    // LD A,RES 0,(IX+d) // LD A,RES 0,(IY+d)
-          case 0x88: RES(253, w); mem[mp]= b= w; break;    // LD B,RES 1,(IX+d) // LD B,RES 1,(IY+d)
-          case 0x89: RES(253, w); mem[mp]= c= w; break;    // LD C,RES 1,(IX+d) // LD C,RES 1,(IY+d)
-          case 0x8a: RES(253, w); mem[mp]= d= w; break;    // LD D,RES 1,(IX+d) // LD D,RES 1,(IY+d)
-          case 0x8b: RES(253, w); mem[mp]= e= w; break;    // LD E,RES 1,(IX+d) // LD E,RES 1,(IY+d)
-          case 0x8c: RES(253, w); mem[mp]= h= w; break;    // LD H,RES 1,(IX+d) // LD H,RES 1,(IY+d)
-          case 0x8d: RES(253, w); mem[mp]= l= w; break;    // LD L,RES 1,(IX+d) // LD L,RES 1,(IY+d)
-          case 0x8e: RES(253, w); mem[mp]= w; break;       // RES 1,(IX+d) // RES 1,(IY+d)
-          case 0x8f: RES(253, w); mem[mp]= a= w; break;    // LD A,RES 1,(IX+d) // LD A,RES 1,(IY+d)
-          case 0x90: RES(251, w); mem[mp]= b= w; break;    // LD B,RES 2,(IX+d) // LD B,RES 2,(IY+d)
-          case 0x91: RES(251, w); mem[mp]= c= w; break;    // LD C,RES 2,(IX+d) // LD C,RES 2,(IY+d)
-          case 0x92: RES(251, w); mem[mp]= d= w; break;    // LD D,RES 2,(IX+d) // LD D,RES 2,(IY+d)
-          case 0x93: RES(251, w); mem[mp]= e= w; break;    // LD E,RES 2,(IX+d) // LD E,RES 2,(IY+d)
-          case 0x94: RES(251, w); mem[mp]= h= w; break;    // LD H,RES 2,(IX+d) // LD H,RES 2,(IY+d)
-          case 0x95: RES(251, w); mem[mp]= l= w; break;    // LD L,RES 2,(IX+d) // LD L,RES 2,(IY+d)
-          case 0x96: RES(251, w); mem[mp]= w; break;       // RES 2,(IX+d) // RES 2,(IY+d)
-          case 0x97: RES(251, w); mem[mp]= a= w; break;    // LD A,RES 2,(IX+d) // LD A,RES 2,(IY+d)
-          case 0x98: RES(247, w); mem[mp]= b= w; break;    // LD B,RES 3,(IX+d) // LD B,RES 3,(IY+d)
-          case 0x99: RES(247, w); mem[mp]= c= w; break;    // LD C,RES 3,(IX+d) // LD C,RES 3,(IY+d)
-          case 0x9a: RES(247, w); mem[mp]= d= w; break;    // LD D,RES 3,(IX+d) // LD D,RES 3,(IY+d)
-          case 0x9b: RES(247, w); mem[mp]= e= w; break;    // LD E,RES 3,(IX+d) // LD E,RES 3,(IY+d)
-          case 0x9c: RES(247, w); mem[mp]= h= w; break;    // LD H,RES 3,(IX+d) // LD H,RES 3,(IY+d)
-          case 0x9d: RES(247, w); mem[mp]= l= w; break;    // LD L,RES 3,(IX+d) // LD L,RES 3,(IY+d)
-          case 0x9e: RES(247, w); mem[mp]= w; break;       // RES 3,(IX+d) // RES 3,(IY+d)
-          case 0x9f: RES(247, w); mem[mp]= a= w; break;    // LD A,RES 3,(IX+d) // LD A,RES 3,(IY+d)
-          case 0xa0: RES(239, w); mem[mp]= b= w; break;    // LD B,RES 4,(IX+d) // LD B,RES 4,(IY+d)
-          case 0xa1: RES(239, w); mem[mp]= c= w; break;    // LD C,RES 4,(IX+d) // LD C,RES 4,(IY+d)
-          case 0xa2: RES(239, w); mem[mp]= d= w; break;    // LD D,RES 4,(IX+d) // LD D,RES 4,(IY+d)
-          case 0xa3: RES(239, w); mem[mp]= e= w; break;    // LD E,RES 4,(IX+d) // LD E,RES 4,(IY+d)
-          case 0xa4: RES(239, w); mem[mp]= h= w; break;    // LD H,RES 4,(IX+d) // LD H,RES 4,(IY+d)
-          case 0xa5: RES(239, w); mem[mp]= l= w; break;    // LD L,RES 4,(IX+d) // LD L,RES 4,(IY+d)
-          case 0xa6: RES(239, w); mem[mp]= w; break;       // RES 4,(IX+d) // RES 4,(IY+d)
-          case 0xa7: RES(239, w); mem[mp]= a= w; break;    // LD A,RES 4,(IX+d) // LD A,RES 4,(IY+d)
-          case 0xa8: RES(223, w); mem[mp]= b= w; break;    // LD B,RES 5,(IX+d) // LD B,RES 5,(IY+d)
-          case 0xa9: RES(223, w); mem[mp]= c= w; break;    // LD C,RES 5,(IX+d) // LD C,RES 5,(IY+d)
-          case 0xaa: RES(223, w); mem[mp]= d= w; break;    // LD D,RES 5,(IX+d) // LD D,RES 5,(IY+d)
-          case 0xab: RES(223, w); mem[mp]= e= w; break;    // LD E,RES 5,(IX+d) // LD E,RES 5,(IY+d)
-          case 0xac: RES(223, w); mem[mp]= h= w; break;    // LD H,RES 5,(IX+d) // LD H,RES 5,(IY+d)
-          case 0xad: RES(223, w); mem[mp]= l= w; break;    // LD L,RES 5,(IX+d) // LD L,RES 5,(IY+d)
-          case 0xae: RES(223, w); mem[mp]= w; break;       // RES 5,(IX+d) // RES 5,(IY+d)
-          case 0xaf: RES(223, w); mem[mp]= a= w; break;    // LD A,RES 5,(IX+d) // LD A,RES 5,(IY+d)
-          case 0xb0: RES(191, w); mem[mp]= b= w; break;    // LD B,RES 6,(IX+d) // LD B,RES 6,(IY+d)
-          case 0xb1: RES(191, w); mem[mp]= c= w; break;    // LD C,RES 6,(IX+d) // LD C,RES 6,(IY+d)
-          case 0xb2: RES(191, w); mem[mp]= d= w; break;    // LD D,RES 6,(IX+d) // LD D,RES 6,(IY+d)
-          case 0xb3: RES(191, w); mem[mp]= e= w; break;    // LD E,RES 6,(IX+d) // LD E,RES 6,(IY+d)
-          case 0xb4: RES(191, w); mem[mp]= h= w; break;    // LD H,RES 6,(IX+d) // LD H,RES 6,(IY+d)
-          case 0xb5: RES(191, w); mem[mp]= l= w; break;    // LD L,RES 6,(IX+d) // LD L,RES 6,(IY+d)
-          case 0xb6: RES(191, w); mem[mp]= w; break;       // RES 6,(IX+d) // RES 6,(IY+d)
-          case 0xb7: RES(191, w); mem[mp]= a= w; break;    // LD A,RES 6,(IX+d) // LD A,RES 6,(IY+d)
-          case 0xb8: RES(127, w); mem[mp]= b= w; break;    // LD B,RES 7,(IX+d) // LD B,RES 7,(IY+d)
-          case 0xb9: RES(127, w); mem[mp]= c= w; break;    // LD C,RES 7,(IX+d) // LD C,RES 7,(IY+d)
-          case 0xba: RES(127, w); mem[mp]= d= w; break;    // LD D,RES 7,(IX+d) // LD D,RES 7,(IY+d)
-          case 0xbb: RES(127, w); mem[mp]= e= w; break;    // LD E,RES 7,(IX+d) // LD E,RES 7,(IY+d)
-          case 0xbc: RES(127, w); mem[mp]= h= w; break;    // LD H,RES 7,(IX+d) // LD H,RES 7,(IY+d)
-          case 0xbd: RES(127, w); mem[mp]= l= w; break;    // LD L,RES 7,(IX+d) // LD L,RES 7,(IY+d)
-          case 0xbe: RES(127, w); mem[mp]= w; break;       // RES 7,(IX+d) // RES 7,(IY+d)
-          case 0xbf: RES(127, w); mem[mp]= a= w; break;    // LD A,RES 7,(IX+d) // LD A,RES 7,(IY+d)
-          case 0xc0: SET(1, w); mem[mp]= b= w; break;      // LD B,SET 0,(IX+d) // LD B,SET 0,(IY+d)
-          case 0xc1: SET(1, w); mem[mp]= c= w; break;      // LD C,SET 0,(IX+d) // LD C,SET 0,(IY+d)
-          case 0xc2: SET(1, w); mem[mp]= d= w; break;      // LD D,SET 0,(IX+d) // LD D,SET 0,(IY+d)
-          case 0xc3: SET(1, w); mem[mp]= e= w; break;      // LD E,SET 0,(IX+d) // LD E,SET 0,(IY+d)
-          case 0xc4: SET(1, w); mem[mp]= h= w; break;      // LD H,SET 0,(IX+d) // LD H,SET 0,(IY+d)
-          case 0xc5: SET(1, w); mem[mp]= l= w; break;      // LD L,SET 0,(IX+d) // LD L,SET 0,(IY+d)
-          case 0xc6: SET(1, w); mem[mp]= w; break;         // SET 0,(IX+d) // SET 0,(IY+d)
-          case 0xc7: SET(1, w); mem[mp]= a= w; break;      // LD A,SET 0,(IX+d) // LD A,SET 0,(IY+d)
-          case 0xc8: SET(2, w); mem[mp]= b= w; break;      // LD B,SET 1,(IX+d) // LD B,SET 1,(IY+d)
-          case 0xc9: SET(2, w); mem[mp]= c= w; break;      // LD C,SET 1,(IX+d) // LD C,SET 1,(IY+d)
-          case 0xca: SET(2, w); mem[mp]= d= w; break;      // LD D,SET 1,(IX+d) // LD D,SET 1,(IY+d)
-          case 0xcb: SET(2, w); mem[mp]= e= w; break;      // LD E,SET 1,(IX+d) // LD E,SET 1,(IY+d)
-          case 0xcc: SET(2, w); mem[mp]= h= w; break;      // LD H,SET 1,(IX+d) // LD H,SET 1,(IY+d)
-          case 0xcd: SET(2, w); mem[mp]= l= w; break;      // LD L,SET 1,(IX+d) // LD L,SET 1,(IY+d)
-          case 0xce: SET(2, w); mem[mp]= w; break;         // SET 1,(IX+d) // SET 1,(IY+d)
-          case 0xcf: SET(2, w); mem[mp]= a= w; break;      // LD A,SET 1,(IX+d) // LD A,SET 1,(IY+d)
-          case 0xd0: SET(4, w); mem[mp]= b= w; break;      // LD B,SET 2,(IX+d) // LD B,SET 2,(IY+d)
-          case 0xd1: SET(4, w); mem[mp]= c= w; break;      // LD C,SET 2,(IX+d) // LD C,SET 2,(IY+d)
-          case 0xd2: SET(4, w); mem[mp]= d= w; break;      // LD D,SET 2,(IX+d) // LD D,SET 2,(IY+d)
-          case 0xd3: SET(4, w); mem[mp]= e= w; break;      // LD E,SET 2,(IX+d) // LD E,SET 2,(IY+d)
-          case 0xd4: SET(4, w); mem[mp]= h= w; break;      // LD H,SET 2,(IX+d) // LD H,SET 2,(IY+d)
-          case 0xd5: SET(4, w); mem[mp]= l= w; break;      // LD L,SET 2,(IX+d) // LD L,SET 2,(IY+d)
-          case 0xd6: SET(4, w); mem[mp]= w; break;         // SET 2,(IX+d) // SET 2,(IY+d)
-          case 0xd7: SET(4, w); mem[mp]= a= w; break;      // LD A,SET 2,(IX+d) // LD A,SET 2,(IY+d)
-          case 0xd8: SET(8, w); mem[mp]= b= w; break;      // LD B,SET 3,(IX+d) // LD B,SET 3,(IY+d)
-          case 0xd9: SET(8, w); mem[mp]= c= w; break;      // LD C,SET 3,(IX+d) // LD C,SET 3,(IY+d)
-          case 0xda: SET(8, w); mem[mp]= d= w; break;      // LD D,SET 3,(IX+d) // LD D,SET 3,(IY+d)
-          case 0xdb: SET(8, w); mem[mp]= e= w; break;      // LD E,SET 3,(IX+d) // LD E,SET 3,(IY+d)
-          case 0xdc: SET(8, w); mem[mp]= h= w; break;      // LD H,SET 3,(IX+d) // LD H,SET 3,(IY+d)
-          case 0xdd: SET(8, w); mem[mp]= l= w; break;      // LD L,SET 3,(IX+d) // LD L,SET 3,(IY+d)
-          case 0xde: SET(8, w); mem[mp]= w; break;         // SET 3,(IX+d) // SET 3,(IY+d)
-          case 0xdf: SET(8, w); mem[mp]= a= w; break;      // LD A,SET 3,(IX+d) // LD A,SET 3,(IY+d)
-          case 0xe0: SET(16, w); mem[mp]= b= w; break;     // LD B,SET 4,(IX+d) // LD B,SET 4,(IY+d)
-          case 0xe1: SET(16, w); mem[mp]= c= w; break;     // LD C,SET 4,(IX+d) // LD C,SET 4,(IY+d)
-          case 0xe2: SET(16, w); mem[mp]= d= w; break;     // LD D,SET 4,(IX+d) // LD D,SET 4,(IY+d)
-          case 0xe3: SET(16, w); mem[mp]= e= w; break;     // LD E,SET 4,(IX+d) // LD E,SET 4,(IY+d)
-          case 0xe4: SET(16, w); mem[mp]= h= w; break;     // LD H,SET 4,(IX+d) // LD H,SET 4,(IY+d)
-          case 0xe5: SET(16, w); mem[mp]= l= w; break;     // LD L,SET 4,(IX+d) // LD L,SET 4,(IY+d)
-          case 0xe6: SET(16, w); mem[mp]= w; break;        // SET 4,(IX+d) // SET 4,(IY+d)
-          case 0xe7: SET(16, w); mem[mp]= a= w; break;     // LD A,SET 4,(IX+d) // LD A,SET 4,(IY+d)
-          case 0xe8: SET(32, w); mem[mp]= b= w; break;     // LD B,SET 5,(IX+d) // LD B,SET 5,(IY+d)
-          case 0xe9: SET(32, w); mem[mp]= c= w; break;     // LD C,SET 5,(IX+d) // LD C,SET 5,(IY+d)
-          case 0xea: SET(32, w); mem[mp]= d= w; break;     // LD D,SET 5,(IX+d) // LD D,SET 5,(IY+d)
-          case 0xeb: SET(32, w); mem[mp]= e= w; break;     // LD E,SET 5,(IX+d) // LD E,SET 5,(IY+d)
-          case 0xec: SET(32, w); mem[mp]= h= w; break;     // LD H,SET 5,(IX+d) // LD H,SET 5,(IY+d)
-          case 0xed: SET(32, w); mem[mp]= l= w; break;     // LD L,SET 5,(IX+d) // LD L,SET 5,(IY+d)
-          case 0xee: SET(32, w); mem[mp]= w; break;        // SET 5,(IX+d) // SET 5,(IY+d)
-          case 0xef: SET(32, w); mem[mp]= a= w; break;     // LD A,SET 5,(IX+d) // LD A,SET 5,(IY+d)
-          case 0xf0: SET(64, w); mem[mp]= b= w; break;     // LD B,SET 6,(IX+d) // LD B,SET 6,(IY+d)
-          case 0xf1: SET(64, w); mem[mp]= c= w; break;     // LD C,SET 6,(IX+d) // LD C,SET 6,(IY+d)
-          case 0xf2: SET(64, w); mem[mp]= d= w; break;     // LD D,SET 6,(IX+d) // LD D,SET 6,(IY+d)
-          case 0xf3: SET(64, w); mem[mp]= e= w; break;     // LD E,SET 6,(IX+d) // LD E,SET 6,(IY+d)
-          case 0xf4: SET(64, w); mem[mp]= h= w; break;     // LD H,SET 6,(IX+d) // LD H,SET 6,(IY+d)
-          case 0xf5: SET(64, w); mem[mp]= l= w; break;     // LD L,SET 6,(IX+d) // LD L,SET 6,(IY+d)
-          case 0xf6: SET(64, w); mem[mp]= w; break;        // SET 6,(IX+d) // SET 6,(IY+d)
-          case 0xf7: SET(64, w); mem[mp]= a= w; break;     // LD A,SET 6,(IX+d) // LD A,SET 6,(IY+d)
-          case 0xf8: SET(128, w); mem[mp]= b= w; break;    // LD B,SET 7,(IX+d) // LD B,SET 7,(IY+d)
-          case 0xf9: SET(128, w); mem[mp]= c= w; break;    // LD C,SET 7,(IX+d) // LD C,SET 7,(IY+d)
-          case 0xfa: SET(128, w); mem[mp]= d= w; break;    // LD D,SET 7,(IX+d) // LD D,SET 7,(IY+d)
-          case 0xfb: SET(128, w); mem[mp]= e= w; break;    // LD E,SET 7,(IX+d) // LD E,SET 7,(IY+d)
-          case 0xfc: SET(128, w); mem[mp]= h= w; break;    // LD H,SET 7,(IX+d) // LD H,SET 7,(IY+d)
-          case 0xfd: SET(128, w); mem[mp]= l= w; break;    // LD L,SET 7,(IX+d) // LD L,SET 7,(IY+d)
-          case 0xfe: SET(128, w); mem[mp]= w; break;       // SET 7,(IX+d) // SET 7,(IY+d)
-          case 0xff: SET(128, w); mem[mp]= a= w; break;    // LD A,SET 7,(IX+d) // LD A,SET 7,(IY+d)
+          case 0x80: RES(254, w); b= w; mp>=romp && (mem[mp]= w); break; // LD B,RES 0,(IX+d) // LD B,RES 0,(IY+d)
+          case 0x81: RES(254, w); c= w; mp>=romp && (mem[mp]= w); break; // LD C,RES 0,(IX+d) // LD C,RES 0,(IY+d)
+          case 0x82: RES(254, w); d= w; mp>=romp && (mem[mp]= w); break; // LD D,RES 0,(IX+d) // LD D,RES 0,(IY+d)
+          case 0x83: RES(254, w); e= w; mp>=romp && (mem[mp]= w); break; // LD E,RES 0,(IX+d) // LD E,RES 0,(IY+d)
+          case 0x84: RES(254, w); h= w; mp>=romp && (mem[mp]= w); break; // LD H,RES 0,(IX+d) // LD H,RES 0,(IY+d)
+          case 0x85: RES(254, w); l= w; mp>=romp && (mem[mp]= w); break; // LD L,RES 0,(IX+d) // LD L,RES 0,(IY+d)
+          case 0x86: RES(254, w);       mp>=romp && (mem[mp]= w); break; // RES 0,(IX+d) // RES 0,(IY+d)
+          case 0x87: RES(254, w); a= w; mp>=romp && (mem[mp]= w); break; // LD A,RES 0,(IX+d) // LD A,RES 0,(IY+d)
+          case 0x88: RES(253, w); b= w; mp>=romp && (mem[mp]= w); break; // LD B,RES 1,(IX+d) // LD B,RES 1,(IY+d)
+          case 0x89: RES(253, w); c= w; mp>=romp && (mem[mp]= w); break; // LD C,RES 1,(IX+d) // LD C,RES 1,(IY+d)
+          case 0x8a: RES(253, w); d= w; mp>=romp && (mem[mp]= w); break; // LD D,RES 1,(IX+d) // LD D,RES 1,(IY+d)
+          case 0x8b: RES(253, w); e= w; mp>=romp && (mem[mp]= w); break; // LD E,RES 1,(IX+d) // LD E,RES 1,(IY+d)
+          case 0x8c: RES(253, w); h= w; mp>=romp && (mem[mp]= w); break; // LD H,RES 1,(IX+d) // LD H,RES 1,(IY+d)
+          case 0x8d: RES(253, w); l= w; mp>=romp && (mem[mp]= w); break; // LD L,RES 1,(IX+d) // LD L,RES 1,(IY+d)
+          case 0x8e: RES(253, w);       mp>=romp && (mem[mp]= w); break; // RES 1,(IX+d) // RES 1,(IY+d)
+          case 0x8f: RES(253, w); a= w; mp>=romp && (mem[mp]= w); break; // LD A,RES 1,(IX+d) // LD A,RES 1,(IY+d)
+          case 0x90: RES(251, w); b= w; mp>=romp && (mem[mp]= w); break; // LD B,RES 2,(IX+d) // LD B,RES 2,(IY+d)
+          case 0x91: RES(251, w); c= w; mp>=romp && (mem[mp]= w); break; // LD C,RES 2,(IX+d) // LD C,RES 2,(IY+d)
+          case 0x92: RES(251, w); d= w; mp>=romp && (mem[mp]= w); break; // LD D,RES 2,(IX+d) // LD D,RES 2,(IY+d)
+          case 0x93: RES(251, w); e= w; mp>=romp && (mem[mp]= w); break; // LD E,RES 2,(IX+d) // LD E,RES 2,(IY+d)
+          case 0x94: RES(251, w); h= w; mp>=romp && (mem[mp]= w); break; // LD H,RES 2,(IX+d) // LD H,RES 2,(IY+d)
+          case 0x95: RES(251, w); l= w; mp>=romp && (mem[mp]= w); break; // LD L,RES 2,(IX+d) // LD L,RES 2,(IY+d)
+          case 0x96: RES(251, w);       mp>=romp && (mem[mp]= w); break; // RES 2,(IX+d) // RES 2,(IY+d)
+          case 0x97: RES(251, w); a= w; mp>=romp && (mem[mp]= w); break; // LD A,RES 2,(IX+d) // LD A,RES 2,(IY+d)
+          case 0x98: RES(247, w); b= w; mp>=romp && (mem[mp]= w); break; // LD B,RES 3,(IX+d) // LD B,RES 3,(IY+d)
+          case 0x99: RES(247, w); c= w; mp>=romp && (mem[mp]= w); break; // LD C,RES 3,(IX+d) // LD C,RES 3,(IY+d)
+          case 0x9a: RES(247, w); d= w; mp>=romp && (mem[mp]= w); break; // LD D,RES 3,(IX+d) // LD D,RES 3,(IY+d)
+          case 0x9b: RES(247, w); e= w; mp>=romp && (mem[mp]= w); break; // LD E,RES 3,(IX+d) // LD E,RES 3,(IY+d)
+          case 0x9c: RES(247, w); h= w; mp>=romp && (mem[mp]= w); break; // LD H,RES 3,(IX+d) // LD H,RES 3,(IY+d)
+          case 0x9d: RES(247, w); l= w; mp>=romp && (mem[mp]= w); break; // LD L,RES 3,(IX+d) // LD L,RES 3,(IY+d)
+          case 0x9e: RES(247, w);       mp>=romp && (mem[mp]= w); break; // RES 3,(IX+d) // RES 3,(IY+d)
+          case 0x9f: RES(247, w); a= w; mp>=romp && (mem[mp]= w); break; // LD A,RES 3,(IX+d) // LD A,RES 3,(IY+d)
+          case 0xa0: RES(239, w); b= w; mp>=romp && (mem[mp]= w); break; // LD B,RES 4,(IX+d) // LD B,RES 4,(IY+d)
+          case 0xa1: RES(239, w); c= w; mp>=romp && (mem[mp]= w); break; // LD C,RES 4,(IX+d) // LD C,RES 4,(IY+d)
+          case 0xa2: RES(239, w); d= w; mp>=romp && (mem[mp]= w); break; // LD D,RES 4,(IX+d) // LD D,RES 4,(IY+d)
+          case 0xa3: RES(239, w); e= w; mp>=romp && (mem[mp]= w); break; // LD E,RES 4,(IX+d) // LD E,RES 4,(IY+d)
+          case 0xa4: RES(239, w); h= w; mp>=romp && (mem[mp]= w); break; // LD H,RES 4,(IX+d) // LD H,RES 4,(IY+d)
+          case 0xa5: RES(239, w); l= w; mp>=romp && (mem[mp]= w); break; // LD L,RES 4,(IX+d) // LD L,RES 4,(IY+d)
+          case 0xa6: RES(239, w);       mp>=romp && (mem[mp]= w); break; // RES 4,(IX+d) // RES 4,(IY+d)
+          case 0xa7: RES(239, w); a= w; mp>=romp && (mem[mp]= w); break; // LD A,RES 4,(IX+d) // LD A,RES 4,(IY+d)
+          case 0xa8: RES(223, w); b= w; mp>=romp && (mem[mp]= w); break; // LD B,RES 5,(IX+d) // LD B,RES 5,(IY+d)
+          case 0xa9: RES(223, w); c= w; mp>=romp && (mem[mp]= w); break; // LD C,RES 5,(IX+d) // LD C,RES 5,(IY+d)
+          case 0xaa: RES(223, w); d= w; mp>=romp && (mem[mp]= w); break; // LD D,RES 5,(IX+d) // LD D,RES 5,(IY+d)
+          case 0xab: RES(223, w); e= w; mp>=romp && (mem[mp]= w); break; // LD E,RES 5,(IX+d) // LD E,RES 5,(IY+d)
+          case 0xac: RES(223, w); h= w; mp>=romp && (mem[mp]= w); break; // LD H,RES 5,(IX+d) // LD H,RES 5,(IY+d)
+          case 0xad: RES(223, w); l= w; mp>=romp && (mem[mp]= w); break; // LD L,RES 5,(IX+d) // LD L,RES 5,(IY+d)
+          case 0xae: RES(223, w);       mp>=romp && (mem[mp]= w); break; // RES 5,(IX+d) // RES 5,(IY+d)
+          case 0xaf: RES(223, w); a= w; mp>=romp && (mem[mp]= w); break; // LD A,RES 5,(IX+d) // LD A,RES 5,(IY+d)
+          case 0xb0: RES(191, w); b= w; mp>=romp && (mem[mp]= w); break; // LD B,RES 6,(IX+d) // LD B,RES 6,(IY+d)
+          case 0xb1: RES(191, w); c= w; mp>=romp && (mem[mp]= w); break; // LD C,RES 6,(IX+d) // LD C,RES 6,(IY+d)
+          case 0xb2: RES(191, w); d= w; mp>=romp && (mem[mp]= w); break; // LD D,RES 6,(IX+d) // LD D,RES 6,(IY+d)
+          case 0xb3: RES(191, w); e= w; mp>=romp && (mem[mp]= w); break; // LD E,RES 6,(IX+d) // LD E,RES 6,(IY+d)
+          case 0xb4: RES(191, w); h= w; mp>=romp && (mem[mp]= w); break; // LD H,RES 6,(IX+d) // LD H,RES 6,(IY+d)
+          case 0xb5: RES(191, w); l= w; mp>=romp && (mem[mp]= w); break; // LD L,RES 6,(IX+d) // LD L,RES 6,(IY+d)
+          case 0xb6: RES(191, w);       mp>=romp && (mem[mp]= w); break; // RES 6,(IX+d) // RES 6,(IY+d)
+          case 0xb7: RES(191, w); a= w; mp>=romp && (mem[mp]= w); break; // LD A,RES 6,(IX+d) // LD A,RES 6,(IY+d)
+          case 0xb8: RES(127, w); b= w; mp>=romp && (mem[mp]= w); break; // LD B,RES 7,(IX+d) // LD B,RES 7,(IY+d)
+          case 0xb9: RES(127, w); c= w; mp>=romp && (mem[mp]= w); break; // LD C,RES 7,(IX+d) // LD C,RES 7,(IY+d)
+          case 0xba: RES(127, w); d= w; mp>=romp && (mem[mp]= w); break; // LD D,RES 7,(IX+d) // LD D,RES 7,(IY+d)
+          case 0xbb: RES(127, w); e= w; mp>=romp && (mem[mp]= w); break; // LD E,RES 7,(IX+d) // LD E,RES 7,(IY+d)
+          case 0xbc: RES(127, w); h= w; mp>=romp && (mem[mp]= w); break; // LD H,RES 7,(IX+d) // LD H,RES 7,(IY+d)
+          case 0xbd: RES(127, w); l= w; mp>=romp && (mem[mp]= w); break; // LD L,RES 7,(IX+d) // LD L,RES 7,(IY+d)
+          case 0xbe: RES(127, w);       mp>=romp && (mem[mp]= w); break; // RES 7,(IX+d) // RES 7,(IY+d)
+          case 0xbf: RES(127, w); a= w; mp>=romp && (mem[mp]= w); break; // LD A,RES 7,(IX+d) // LD A,RES 7,(IY+d)
+          case 0xc0: SET(1, w);   b= w; mp>=romp && (mem[mp]= w); break; // LD B,SET 0,(IX+d) // LD B,SET 0,(IY+d)
+          case 0xc1: SET(1, w);   c= w; mp>=romp && (mem[mp]= w); break; // LD C,SET 0,(IX+d) // LD C,SET 0,(IY+d)
+          case 0xc2: SET(1, w);   d= w; mp>=romp && (mem[mp]= w); break; // LD D,SET 0,(IX+d) // LD D,SET 0,(IY+d)
+          case 0xc3: SET(1, w);   e= w; mp>=romp && (mem[mp]= w); break; // LD E,SET 0,(IX+d) // LD E,SET 0,(IY+d)
+          case 0xc4: SET(1, w);   h= w; mp>=romp && (mem[mp]= w); break; // LD H,SET 0,(IX+d) // LD H,SET 0,(IY+d)
+          case 0xc5: SET(1, w);   l= w; mp>=romp && (mem[mp]= w); break; // LD L,SET 0,(IX+d) // LD L,SET 0,(IY+d)
+          case 0xc6: SET(1, w);         mp>=romp && (mem[mp]= w); break; // SET 0,(IX+d) // SET 0,(IY+d)
+          case 0xc7: SET(1, w);   a= w; mp>=romp && (mem[mp]= w); break; // LD A,SET 0,(IX+d) // LD A,SET 0,(IY+d)
+          case 0xc8: SET(2, w);   b= w; mp>=romp && (mem[mp]= w); break; // LD B,SET 1,(IX+d) // LD B,SET 1,(IY+d)
+          case 0xc9: SET(2, w);   c= w; mp>=romp && (mem[mp]= w); break; // LD C,SET 1,(IX+d) // LD C,SET 1,(IY+d)
+          case 0xca: SET(2, w);   d= w; mp>=romp && (mem[mp]= w); break; // LD D,SET 1,(IX+d) // LD D,SET 1,(IY+d)
+          case 0xcb: SET(2, w);   e= w; mp>=romp && (mem[mp]= w); break; // LD E,SET 1,(IX+d) // LD E,SET 1,(IY+d)
+          case 0xcc: SET(2, w);   h= w; mp>=romp && (mem[mp]= w); break; // LD H,SET 1,(IX+d) // LD H,SET 1,(IY+d)
+          case 0xcd: SET(2, w);   l= w; mp>=romp && (mem[mp]= w); break; // LD L,SET 1,(IX+d) // LD L,SET 1,(IY+d)
+          case 0xce: SET(2, w);         mp>=romp && (mem[mp]= w); break; // SET 1,(IX+d) // SET 1,(IY+d)
+          case 0xcf: SET(2, w);   a= w; mp>=romp && (mem[mp]= w); break; // LD A,SET 1,(IX+d) // LD A,SET 1,(IY+d)
+          case 0xd0: SET(4, w);   b= w; mp>=romp && (mem[mp]= w); break; // LD B,SET 2,(IX+d) // LD B,SET 2,(IY+d)
+          case 0xd1: SET(4, w);   c= w; mp>=romp && (mem[mp]= w); break; // LD C,SET 2,(IX+d) // LD C,SET 2,(IY+d)
+          case 0xd2: SET(4, w);   d= w; mp>=romp && (mem[mp]= w); break; // LD D,SET 2,(IX+d) // LD D,SET 2,(IY+d)
+          case 0xd3: SET(4, w);   e= w; mp>=romp && (mem[mp]= w); break; // LD E,SET 2,(IX+d) // LD E,SET 2,(IY+d)
+          case 0xd4: SET(4, w);   h= w; mp>=romp && (mem[mp]= w); break; // LD H,SET 2,(IX+d) // LD H,SET 2,(IY+d)
+          case 0xd5: SET(4, w);   l= w; mp>=romp && (mem[mp]= w); break; // LD L,SET 2,(IX+d) // LD L,SET 2,(IY+d)
+          case 0xd6: SET(4, w);         mp>=romp && (mem[mp]= w); break; // SET 2,(IX+d) // SET 2,(IY+d)
+          case 0xd7: SET(4, w);   a= w; mp>=romp && (mem[mp]= w); break; // LD A,SET 2,(IX+d) // LD A,SET 2,(IY+d)
+          case 0xd8: SET(8, w);   b= w; mp>=romp && (mem[mp]= w); break; // LD B,SET 3,(IX+d) // LD B,SET 3,(IY+d)
+          case 0xd9: SET(8, w);   c= w; mp>=romp && (mem[mp]= w); break; // LD C,SET 3,(IX+d) // LD C,SET 3,(IY+d)
+          case 0xda: SET(8, w);   d= w; mp>=romp && (mem[mp]= w); break; // LD D,SET 3,(IX+d) // LD D,SET 3,(IY+d)
+          case 0xdb: SET(8, w);   e= w; mp>=romp && (mem[mp]= w); break; // LD E,SET 3,(IX+d) // LD E,SET 3,(IY+d)
+          case 0xdc: SET(8, w);   h= w; mp>=romp && (mem[mp]= w); break; // LD H,SET 3,(IX+d) // LD H,SET 3,(IY+d)
+          case 0xdd: SET(8, w);   l= w; mp>=romp && (mem[mp]= w); break; // LD L,SET 3,(IX+d) // LD L,SET 3,(IY+d)
+          case 0xde: SET(8, w);         mp>=romp && (mem[mp]= w); break; // SET 3,(IX+d) // SET 3,(IY+d)
+          case 0xdf: SET(8, w);   a= w; mp>=romp && (mem[mp]= w); break; // LD A,SET 3,(IX+d) // LD A,SET 3,(IY+d)
+          case 0xe0: SET(16, w);  b= w; mp>=romp && (mem[mp]= w); break; // LD B,SET 4,(IX+d) // LD B,SET 4,(IY+d)
+          case 0xe1: SET(16, w);  c= w; mp>=romp && (mem[mp]= w); break; // LD C,SET 4,(IX+d) // LD C,SET 4,(IY+d)
+          case 0xe2: SET(16, w);  d= w; mp>=romp && (mem[mp]= w); break; // LD D,SET 4,(IX+d) // LD D,SET 4,(IY+d)
+          case 0xe3: SET(16, w);  e= w; mp>=romp && (mem[mp]= w); break; // LD E,SET 4,(IX+d) // LD E,SET 4,(IY+d)
+          case 0xe4: SET(16, w);  h= w; mp>=romp && (mem[mp]= w); break; // LD H,SET 4,(IX+d) // LD H,SET 4,(IY+d)
+          case 0xe5: SET(16, w);  l= w; mp>=romp && (mem[mp]= w); break; // LD L,SET 4,(IX+d) // LD L,SET 4,(IY+d)
+          case 0xe6: SET(16, w);        mp>=romp && (mem[mp]= w); break; // SET 4,(IX+d) // SET 4,(IY+d)
+          case 0xe7: SET(16, w);  a= w; mp>=romp && (mem[mp]= w); break; // LD A,SET 4,(IX+d) // LD A,SET 4,(IY+d)
+          case 0xe8: SET(32, w);  b= w; mp>=romp && (mem[mp]= w); break; // LD B,SET 5,(IX+d) // LD B,SET 5,(IY+d)
+          case 0xe9: SET(32, w);  c= w; mp>=romp && (mem[mp]= w); break; // LD C,SET 5,(IX+d) // LD C,SET 5,(IY+d)
+          case 0xea: SET(32, w);  d= w; mp>=romp && (mem[mp]= w); break; // LD D,SET 5,(IX+d) // LD D,SET 5,(IY+d)
+          case 0xeb: SET(32, w);  e= w; mp>=romp && (mem[mp]= w); break; // LD E,SET 5,(IX+d) // LD E,SET 5,(IY+d)
+          case 0xec: SET(32, w);  h= w; mp>=romp && (mem[mp]= w); break; // LD H,SET 5,(IX+d) // LD H,SET 5,(IY+d)
+          case 0xed: SET(32, w);  l= w; mp>=romp && (mem[mp]= w); break; // LD L,SET 5,(IX+d) // LD L,SET 5,(IY+d)
+          case 0xee: SET(32, w);        mp>=romp && (mem[mp]= w); break; // SET 5,(IX+d) // SET 5,(IY+d)
+          case 0xef: SET(32, w);  a= w; mp>=romp && (mem[mp]= w); break; // LD A,SET 5,(IX+d) // LD A,SET 5,(IY+d)
+          case 0xf0: SET(64, w);  b= w; mp>=romp && (mem[mp]= w); break; // LD B,SET 6,(IX+d) // LD B,SET 6,(IY+d)
+          case 0xf1: SET(64, w);  c= w; mp>=romp && (mem[mp]= w); break; // LD C,SET 6,(IX+d) // LD C,SET 6,(IY+d)
+          case 0xf2: SET(64, w);  d= w; mp>=romp && (mem[mp]= w); break; // LD D,SET 6,(IX+d) // LD D,SET 6,(IY+d)
+          case 0xf3: SET(64, w);  e= w; mp>=romp && (mem[mp]= w); break; // LD E,SET 6,(IX+d) // LD E,SET 6,(IY+d)
+          case 0xf4: SET(64, w);  h= w; mp>=romp && (mem[mp]= w); break; // LD H,SET 6,(IX+d) // LD H,SET 6,(IY+d)
+          case 0xf5: SET(64, w);  l= w; mp>=romp && (mem[mp]= w); break; // LD L,SET 6,(IX+d) // LD L,SET 6,(IY+d)
+          case 0xf6: SET(64, w);        mp>=romp && (mem[mp]= w); break; // SET 6,(IX+d) // SET 6,(IY+d)
+          case 0xf7: SET(64, w);  a= w; mp>=romp && (mem[mp]= w); break; // LD A,SET 6,(IX+d) // LD A,SET 6,(IY+d)
+          case 0xf8: SET(128, w); b= w; mp>=romp && (mem[mp]= w); break; // LD B,SET 7,(IX+d) // LD B,SET 7,(IY+d)
+          case 0xf9: SET(128, w); c= w; mp>=romp && (mem[mp]= w); break; // LD C,SET 7,(IX+d) // LD C,SET 7,(IY+d)
+          case 0xfa: SET(128, w); d= w; mp>=romp && (mem[mp]= w); break; // LD D,SET 7,(IX+d) // LD D,SET 7,(IY+d)
+          case 0xfb: SET(128, w); e= w; mp>=romp && (mem[mp]= w); break; // LD E,SET 7,(IX+d) // LD E,SET 7,(IY+d)
+          case 0xfc: SET(128, w); h= w; mp>=romp && (mem[mp]= w); break; // LD H,SET 7,(IX+d) // LD H,SET 7,(IY+d)
+          case 0xfd: SET(128, w); l= w; mp>=romp && (mem[mp]= w); break; // LD L,SET 7,(IX+d) // LD L,SET 7,(IY+d)
+          case 0xfe: SET(128, w);       mp>=romp && (mem[mp]= w); break; // SET 7,(IX+d) // SET 7,(IY+d)
+          case 0xff: SET(128, w); a= w; mp>=romp && (mem[mp]= w); break; // LD A,SET 7,(IX+d) // LD A,SET 7,(IY+d)
         }
       }
       break;
@@ -2484,8 +2498,9 @@ do{
         case 0x63: LDPNNRR(h, l, 20); break;               // LD (NN),HL
         case 0x73: st+= 20;                                // LD (NN),SP
                    mp= mem[pc++];
-                   mem[mp|= mem[pc++]<<8]= sp;
-                   mem[++mp]= sp>>8; break;
+                   mp|= mem[pc++]<<8;
+                   mp>=romp && (mem[mp]= sp);
+                   ++mp>=romp && (mem[mp]= sp>>8); break;
         case 0x4b: LDRRPNN(b, c, 20); break;               // LD BC,(NN)
         case 0x5b: LDRRPNN(d, e, 20); break;               // LD DE,(NN)
         case 0x6b: LDRRPNN(h, l, 20); break;               // LD HL,(NN)
@@ -2528,7 +2543,7 @@ do{
                       | (fr= a);
                    fa= a|256;
                    fb= 0;
-                   mem[mp++]= t>>4; break;
+                   mp++>=romp && (mem[mp-1]= t>>4); break;
         case 0x6f: st+= 18;                                // RLD
                    t= mem[mp= l|h<<8]<<4
                     | a&15;
@@ -2538,9 +2553,10 @@ do{
                       | (fr= a);
                    fa= a|256;
                    fb= 0;
-                   mem[mp++]= t; break;
+                   mp++>=romp && (mem[mp-1]= t); break;
         case 0xa0: st+= 16;                                // LDI
-                   mem[e | d<<8]= t= mem[l | h<<8];
+                   t= mem[l | h<<8];
+                   (e|d<<8)>=romp && (mem[e | d<<8]= t);
                    ++l || h++;
                    ++e || d++;
                    c-- || b--;
@@ -2553,7 +2569,8 @@ do{
                    b|c && (fa= 128);
                    fb= fa; break;
         case 0xa8: st+= 16;                                // LDD
-                   mem[e | d<<8]= t= mem[l | h<<8];
+                   t= mem[l | h<<8];
+                   (e|d<<8)>=romp && (mem[e | d<<8]= t);
                    l-- || h--;
                    e-- || d--;
                    c-- || b--;
@@ -2566,7 +2583,8 @@ do{
                    b|c && (fa= 128);
                    fb= fa; break;
         case 0xb0: st+= 16;                                // LDIR
-                   mem[e | d<<8]= t= mem[l | h<<8];
+                   t= mem[l | h<<8];
+                   (e|d<<8)>=romp && (mem[e | d<<8]= t);
                    ++l || h++;
                    ++e || d++;
                    c-- || b--;
@@ -2582,7 +2600,8 @@ do{
                             --pc);
                    fb= fa; break;
         case 0xb8: st+= 16;                                // LDDR
-                   mem[e | d<<8]= t= mem[l | h<<8];
+                   t= mem[l | h<<8];
+                   (e|d<<8)>=romp && (mem[e | d<<8]= t);
                    l-- || h--;
                    e-- || d--;
                    c-- || b--;
@@ -2664,7 +2683,8 @@ do{
                   ff|= w<<4 & 32
                      | w    &  8; break;
         case 0xa2: st+= 16;                                // INI
-                   mem[l | h<<8]= t= in(mp= c | b<<8);
+                   t= in(mp= c | b<<8);
+                   (l|h<<8)>=romp && (mem[l | h<<8]= t);
                    ++l || h++;
                    ++mp;
                    u= t+(c+1&255);
@@ -2676,7 +2696,8 @@ do{
                       | u>>4
                       | (t&128)<<2; break;
         case 0xaa: st+= 16;                                // IND
-                   mem[l | h<<8]= t= in(mp= c | b<<8);
+                   t= in(mp= c | b<<8);
+                   (l|h<<8)>=romp && (mem[l | h<<8]= t);
                    l-- || h--;
                    --mp;
                    u= t+(c-1&255);
@@ -2688,7 +2709,8 @@ do{
                       | u>>4
                       | (t&128)<<2; break;
         case 0xb2: st+= 16;                                // INIR
-                   mem[l | h<<8]= t= in(mp= c | b<<8);
+                   t= in(mp= c | b<<8);
+                   (l|h<<8)>=romp && (mem[l | h<<8]= t);
                    ++l || h++;
                    ++mp;
                    u= t+(c+1&255);
@@ -2700,7 +2722,8 @@ do{
                       | u>>4
                       | (t&128)<<2; break;
         case 0xba: st+= 16;                                // INDR
-                   mem[l | h<<8]= t= in(mp= c | b<<8);
+                   t= in(mp= c | b<<8);
+                   (l|h<<8)>=romp && (mem[l | h<<8]= t);
                    l-- || h--;
                    --mp;
                    u= t+(c-1&255);

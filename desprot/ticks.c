@@ -40,6 +40,7 @@ extern unsigned short
       , fb_
       , fr
       , fr_
+      , romp
       ;
 extern unsigned long long
         st
@@ -128,7 +129,7 @@ int main (int argc, char **argv){
   FILE * fh;
   tapbuf= (unsigned char *) malloc (0x20000);
   if( argc==1 )
-    printf( "Ticks v0.15 beta, a silent Z80 emulator by Antonio Villena, 21 Jan 2013\n"
+    printf( "Ticks v0.16 beta, a silent Z80 emulator by Antonio Villena, 1 Jan 2016\n"
             "                            Linux port by Jose Luis Sanchez, 7 Jan 2014\n\n"
             "  ticks <input_file> [-pc X] [-start X] [-end X] [-counter X] [-output <file>]\n\n"
             "  <input_file>   File between 1 and 65536 bytes with Z80 machine code\n"
@@ -138,7 +139,8 @@ int main (int argc, char **argv){
             "  -end X         X in hexadecimal is the PC condition to exit\n"
             "  -counter X     X in decimal is another condition to exit\n"
             "  -int X         X in decimal are number of cycles for periodic interrupts\n"
-            "  -output <file> dumps the RAM content to a 64K file\n\n"
+            "  -output <file> dumps the RAM content to a 64K file\n"
+            "  -romprotect    disable writes between 0000 and $3fff\n\n"
             "  Default values for -pc, -start and -end are 0000 if ommited. When the program\n"
             "exits, it'll show the number of cycles between start and end trigger in decimal\n\n"),
     exit(0);
@@ -191,6 +193,11 @@ int main (int argc, char **argv){
             printf("\nInvalid header size\n"),
             exit(-1);
           wavpos= 44;
+          break;
+        case 'r':
+          --argv;
+          ++argc;
+          romp= 0x4000;
           break;
         default:
           printf("\nWrong Argument: %s\n", argv[0]);
