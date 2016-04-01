@@ -19693,7 +19693,7 @@ pok15   inc     e
         pop     de
         jr      nz, pok16
         ex      de, hl
-        ld      (hl), a
+        ld      (hl), e
         inc     hl
 pok16   push    hl
         ld      a, (hl)
