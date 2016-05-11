@@ -1,6 +1,6 @@
 #include <string.h>
 #include <stdio.h>
-#define BUFFER_LENGTH 0x10000
+#define BUFFER_LENGTH 0x60000
 
 char char2hex(char value){
   if( value<'0' || value>'f' || value<'A' && value>'9' || value<'a' && value>'F' )
@@ -35,7 +35,7 @@ int main(int argc, char* argv[]){
   if( argc&1 )
     printf("\nInvalid number of parameters\n"),
     exit(-1);
-  fi= fopen(argv[1], "r+");
+  fi= fopen(argv[1], "rb+");
   if( !fi )
     printf("\nInput file not found: %s\n", argv[1]),
     exit(-1);
@@ -46,7 +46,8 @@ int main(int argc, char* argv[]){
     if( start<0 )
       start+= size;
     if( bytes= strchr(argv[2], ':') )
-      rep= -1;
+      rep= -1,
+      argv++;
     else if( strchr(argv[2], 'x') || strchr(argv[2], 'X') )
       rep= strtol(strtok(argv++[2], "xX"), NULL, 16),
       bytes= strtok(NULL, "xX");
@@ -59,7 +60,7 @@ int main(int argc, char* argv[]){
       bytes= strtok(bytes, "'"),
       length= strlen(bytes);
     else if( rep==-1 ){
-      fi2= fopen(++bytes, "r+");
+      fi2= fopen(++bytes, "rb+");
       if( !fi2 )
         printf("\nInput file not found: %s\n", bytes),
         exit(-1);
@@ -81,7 +82,9 @@ int main(int argc, char* argv[]){
       printf("\nOut of buffer\n"),
       exit(-1);
     if( rep==-1 )
-      fread(mem, 1, length, fi2);
+      
+      printf("hola %d %d %d\n", argc, length, fread(mem, 1, length, fi2)),
+      fclose(fi2);
     else if( bytes[-1]=='g' )
       for ( i= 0; i < length; i++ )
         mem[i]= char2hex(bytes[i<<1|1]) | char2hex(bytes[i<<1]) << 4;
