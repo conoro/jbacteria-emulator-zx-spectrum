@@ -1,6 +1,6 @@
 #include <string.h>
 #include <stdio.h>
-#define BUFFER_LENGTH 0x1000
+#define BUFFER_LENGTH 0x10000
 
 char char2hex(char value){
   if( value<'0' || value>'f' || value<'A' && value>'9' || value<'a' && value>'F' )
@@ -11,24 +11,26 @@ char char2hex(char value){
 
 int main(int argc, char* argv[]){
   unsigned char *mem= (unsigned char *) malloc (BUFFER_LENGTH);
-  FILE *fi;
+  FILE *fi, *fi2;
   char *bytes;
   long start, size, rep, length, i, j, k;
   if( argc==1 )
-    printf("\nfpoke 0.99, tool that overwrites bytes in a file by Antonio Villena, 25 Dec 2012\n\n"),
+    printf("\nfpoke 1.0, tool that overwrites bytes in a file by Antonio Villena, 11 May 2016\n\n"),
     printf("  fpoke <target_file> <addr> [<repeat>x]<bytes> [<addr> [<repeat>x]<bytes>] ..\n\n"),
     printf("  <target_file>  Origin and target file to poke\n"),
     printf("  <addr>         In hexadecimal, address of the first byte to poke\n"),
     printf("  <repeat>       Number of repetitions, also in hex\n"),
-    printf("  <bytes>        Even digits in hex or single quotation string like 'hello'\n\n"),
-    printf("At least one secuence of <addr> <bytes> is mandatory (<repeat> is optional). The\n"),
-    printf("first char of <bytes> can be 'g' or 'l' to indicate biG endian or Little endian,\n"),
-    printf("default is little endian. Example: hello.txt 48 65 6C 6C 6F 20 57 6F 72 6C 64 21\n"),
-    printf("  fpoke hello.txt 2 12                       48 65 12 6C 6F 20 57 6F 72 6C 64 21\n"),
-    printf("  fpoke hello.txt 3 1234                     48 65 6C 34 12 20 57 6F 72 6C 64 21\n"),
-    printf("  fpoke hello.txt 4 g123456 0 l1234          34 12 6C 6C 12 34 56 6F 72 6C 64 21\n"),
-    printf("  fpoke hello.txt 5 3xab                     48 65 6C 6C 6F AB AB AB 72 6C 64 21\n"),
-    printf("  fpoke hello.txt 6 'Earth'                  48 65 6C 6C 6F 20 45 61 72 74 68 21\n\n"),
+    printf("  <bytes>        Even digits in hex or single quotation string like 'hello'\n"),
+    printf("  file:filename  Equivalent to [<repeat>x]<bytes> but with a file\n\n"),
+    printf("At least one secuence of <addr><bytes> is mandatory (<repeat> is optional). The\n"),
+    printf("first char of <bytes> can be g or l to indicate biG endian or Little endian,\n"),
+    printf("default is little endian. Example:hello.txt 48 65 6C 6C 6F 20 57 6F 72 6C 64 21\n"),
+    printf("  fpoke hello.txt 2 12                      48 65 12 6C 6F 20 57 6F 72 6C 64 21\n"),
+    printf("  fpoke hello.txt 3 1234                    48 65 6C 34 12 20 57 6F 72 6C 64 21\n"),
+    printf("  fpoke hello.txt 4 g123456 0 l1234         34 12 6C 6C 12 34 56 6F 72 6C 64 21\n"),
+    printf("  fpoke hello.txt 5 3xab                    48 65 6C 6C 6F AB AB AB 72 6C 64 21\n"),
+    printf("  fpoke hello.txt 6 'Earth'                 48 65 6C 6C 6F 20 45 61 72 74 68 21\n"),
+    printf("  fpoke hello.txt 6 file:hi.bin\n\n"),
     exit(0);
   if( argc&1 )
     printf("\nInvalid number of parameters\n"),
@@ -43,7 +45,9 @@ int main(int argc, char* argv[]){
     start= strtol(argv++[2], NULL, 16);
     if( start<0 )
       start+= size;
-    if( strchr(argv[2], 'x') || strchr(argv[2], 'X') )
+    if( bytes= strchr(argv[2], ':') )
+      rep= -1;
+    else if( strchr(argv[2], 'x') || strchr(argv[2], 'X') )
       rep= strtol(strtok(argv++[2], "xX"), NULL, 16),
       bytes= strtok(NULL, "xX");
     else
@@ -54,6 +58,15 @@ int main(int argc, char* argv[]){
     if( bytes[-1]=='\'' )
       bytes= strtok(bytes, "'"),
       length= strlen(bytes);
+    else if( rep==-1 ){
+      fi2= fopen(++bytes, "r+");
+      if( !fi2 )
+        printf("\nInput file not found: %s\n", bytes),
+        exit(-1);
+      fseek(fi2, 0, SEEK_END);
+      length= ftell(fi2);
+      fseek(fi2, 0, SEEK_SET);
+    }
     else{
       length= strlen(bytes);
       if( length&1 )
@@ -67,7 +80,9 @@ int main(int argc, char* argv[]){
     if( length>BUFFER_LENGTH )
       printf("\nOut of buffer\n"),
       exit(-1);
-    if( bytes[-1]=='g' )
+    if( rep==-1 )
+      fread(mem, 1, length, fi2);
+    else if( bytes[-1]=='g' )
       for ( i= 0; i < length; i++ )
         mem[i]= char2hex(bytes[i<<1|1]) | char2hex(bytes[i<<1]) << 4;
     else if( bytes[-1]=='\'' )
