@@ -9853,7 +9853,7 @@ m14e5   defm    $10, $00, $11, $07, $13, $00
         defm    "To cancel - press BREAK twic", 'e'+$80
         defb    0, 0, 0, 0, 0, 0, 0, 0
 l3834   defm    $7f, "1982, 1986, 1987 Amstrad Plc.", 13
-        defm    $7f, "2000-2009 Garry Lancaster v1.3", '8'+$80
+        defm    $7f, "2000-2015 Garry Lancaster v1.4", '3'+$80
         ret     nc
         call    l15da
         ret     c
@@ -11408,6 +11408,16 @@ m0455   push    bc              ; save addresses
         jr      z,m046d         ; move on if ? wildcard present
         jr      m0499           ; move on for a single file
 m046d
+      IFDEF mmcen
+        push    bc
+        push    de
+        ld      a, $fd
+        rst     $28
+        defw    $1601           ; open channel to stream
+        pop     de
+        pop     bc
+      ENDIF
+
       IF garry
         ld      hl, merase
       ELSE
@@ -11430,9 +11440,11 @@ m0481   bit     5,(hl)
         and     $df             ; make uppercase
         cp      'N'
         jr      nz,m0493        ; move on if not "N"
+    IFNDEF mmcen
         pop     de              ; exit without doing anything
         pop     bc              ; (lower screen should have been cleared)
         ret
+
       IF spanish
 m0493   cp      'S'
       ELSE
@@ -11440,10 +11452,23 @@ m0493   cp      'Y'
       ENDIF
         jr      z,m0499
         jr      m047c           ; loop back for another key if not "Y"
+    ELSE
+m0493
+    ENDIF
 m0499   rst     $28
         defw    $0d6e           ; clear lower screen
         pop     de
         pop     bc
+      IFDEF mmcen
+        ret
+        cp      $59
+        jr      z, m04a1
+        jr      m047c
+m04a1   rst     $28
+        defw    $0d6e           ; clear lower screen
+        pop     de
+        pop     bc
+      ENDIF
         ld      hl,tmp_fspec
         ex      de,hl
         call    m3f63           ; copy filespec into page 7
@@ -11484,7 +11509,11 @@ m04ce   inc     de
 
 ; Erase messages
     IF garry
-m04d5   rst     $28
+m04d5
+      IFDEF mmcen
+        defb    0
+      ELSE
+        rst     $28
         defw    $c101
         ld      (bc), a
         inc     (hl)
@@ -11494,6 +11523,7 @@ m04d5   rst     $28
         nop
         ld      ($38e1), a
         ret
+      ENDIF
         defb    0, 0, 0
     ELSE
       IF spanish
@@ -11691,9 +11721,19 @@ m060a   call    m10b1           ; check for end-of-statement
         dec     hl
         ld      a,(hl)
         and     $df
+      IFDEF mmcen
+        cp      $41
+        jr      c, m0623
+        cp      $5b
+        jr      nc, m0623
+      ENDIF
         ld      (DEFADD),a      ; else save capitalised drive letter
         jr      m0628           ; move on
+      IFDEF mmcen
+m0623   xor     a
+      ELSE
 m0623   ld      a,$00
+      ENDIF
         ld      (DEFADD),a      ; signal "use default drive"
 m0628   pop     bc
         jr      m0645           ; move on
@@ -11706,9 +11746,16 @@ m062e   cp      $b9
         rst     $28
         defw    $0020           ; get next char
 m063a   call    m10b1           ; check for end-of-statement
+      IFDEF mmcen
+        xor     a
+        ld      (DEFADD),a      ; signal "use default drive"
+        ld      b, a
+        ld      c, a
+      ELSE
         ld      bc,$0000        ; filespec length=0
         ld      a,$00
         ld      (DEFADD),a      ; signal "use default drive"
+      ENDIF
 m0645   ld      a,c
         dec     a
         dec     a
@@ -11739,10 +11786,16 @@ m0668   pop     bc
         ld      hl,tmp_buff
         ld      de,tmp_buff+1
         ld      bc,$000b
+      IFDEF mmcen
+        ld      (hl), b
+      ELSE
         ld      (hl),$00
+      ENDIF
         ldir                    ; zero entry 0
 m067f   ld      b,$40           ; 64 entries in buffer
+      IFNDEF mmcen
         ld      c,$00           ; C=0 for standard catalog
+      ENDIF
         ld      hl,FLAGS3
         bit     6,(hl)
         jr      z,m068c
@@ -11920,7 +11973,9 @@ m07ba
         ld      hl, m07d1
         call    z, m07e2
         jp      m077e
+      IFNDEF mmcen
         defb    0, 0, 0
+      ENDIF
 m07cf   call    m2b64
         rst     $10
 m07d3   call    m2b89
@@ -13816,6 +13871,9 @@ m12e1   jp      nz,m1125        ; error if expression not correct type
         call    m10b1           ; check for end of statement
         ret
 
+      IFDEF mmcen
+        nop
+      ENDIF
 
 ; The Loader routine, called from ROM 0
 
@@ -16252,7 +16310,7 @@ m21aa   rst     $18
         cp      $b9
         jp      z,m3328         ; go to do expanded copy if COPY EXP
       IF garry
-        defs    5
+        defs    3
       ELSE
         cp      $f9
         jp      z,m35c4         ; move on if COPY RANDOMIZE
@@ -16283,7 +16341,9 @@ m21d0   cp      $aa
         jr      nz,m21f0
         call    m2ada
         defb    $2c             ; error "Bad filename"
-m21f0   inc     de
+m21f0
+      IF garry=0
+        inc     de
         ld      a,(de)          ; check 2nd char of 2nd string
         dec     de
         cp      ':'
@@ -16291,6 +16351,7 @@ m21f0   inc     de
         ld      a,(de)
         and     $df             ; convert drive letter to uppercase
         ld      (de),a
+      ENDIF
 m21fb   ld      hl,tmp_fspec
         ex      de,hl
         call    m3f63           ; copy 2nd string to page 7
@@ -16307,7 +16368,9 @@ m21fb   ld      hl,tmp_fspec
         jr      nz,m2218        ; check length of first string
         call    m2ada
         defb    $2c             ; error "Bad filename"
-m2218   inc     de
+m2218
+      IF garry=0
+        inc     de
         ld      a,(de)          ; check 2nd char of first string
         dec     de
         cp      ':'
@@ -16315,6 +16378,7 @@ m2218   inc     de
         ld      a,(de)
         and     $df             ; convert drive letter to uppercase
         ld      (de),a
+      ENDIF
 m2223   pop     hl              ; restore address in page 7
         ex      de,hl
         call    m3f63           ; copy 1st filename to page 7
@@ -16332,7 +16396,13 @@ m2223   pop     hl              ; restore address in page 7
 m2237   push    af              ; save keyword
         rst     $28
         defw    $0020           ; get next char
+      IF garry
+        pop     bc
 m223b   call    m10b1           ; check for end-of-statement
+        push    bc
+      ELSE
+m223b   call    m10b1           ; check for end-of-statement
+      ENDIF
         rst     $28
         defw    $2bf1           ; get string
         ld      hl,tmp_fspec
@@ -16644,8 +16714,9 @@ m240a   call    m10b1           ; check for end-of-statement
 ; Subroutine called from ROM 0 to initialise DOS & check the status
 ; of drives on the system, displaying information to the user.
 
-m2410   call    m2b89           ; page in DOS workspace (page 7)
       IF garry
+        defs    22
+m2410   call    m2b89           ; page in DOS workspace (page 7)
         call    m32b6
         ld      hl,FLAGS3
         bit     7,(hl)
@@ -16668,6 +16739,7 @@ m242a   ld      a,$ff
         ld      hl,FLAGS3
         res     4,(hl)          ; signal "disk interface not present"
       ELSE
+m2410   call    m2b89           ; page in DOS workspace (page 7)
         ld      hl,FLAGS3
         bit     7,(hl)
         jr      nz,m242a        ; move on if DOS already initialised
@@ -17160,7 +17232,6 @@ m2705   defw    m276d
         defw    m3781
         defw    m378d
         defw    m379e
-        defs    18
       ENDIF
 
       IF v41 || spanish
@@ -17381,7 +17452,6 @@ m2b56   rst     $28
         rrca
         defb    $38
         ret
-        defs    4
       ELSE
 m2b09   ei
         ex      af,af'
@@ -17755,12 +17825,49 @@ m2dd1   xor     a
         call    m30f0           ; get past drive of dest
         ld      a,(hl)
         cp      $ff
+      IF garry
+        jr      nz,m2e5d        ; if dest filename specified, jump on
+      ELSE
         jp      nz,m2e5d        ; if dest filename specified, jump on
+      ENDIF
         ld      hl,src_file
         call    m30f0           ; get past drive of source
         ld      a,(hl)
 m2deb   cp      $ff
-        jp      nz,m2e5d        ; if source filename specified, jump on
+      IF garry
+        jr      nz,m2e5d        ; if dest filename specified, jump on
+        call    m2b64           ; page in normal memory
+        call    m2ada
+        defb    $30             ; error if filespecs the same
+m2e5d   ld      hl,src_file     ; source name
+        ld      a,$ff
+        ld      (SCR_CT),a      ; set max scroll count
+        push    hl
+        push    hl
+        call    m3268           ; display filespec
+        pop     de
+        ex      de,hl
+        or      a
+        sbc     hl,de
+        ld      de,$0011
+        add     hl,de
+        ld      b,l             ; B=# spaces required
+m2e74   push    bc
+        ld      a,' '
+        rst     $10             ; output a space
+        pop     bc
+        djnz    m2e74           ; loop back
+        pop     hl
+        ld      a,(dst_drv)     ; get dest drive letter
+        cp      'M'
+        jr      z,m2e95         ; move on if copying to M:
+        ld      a,(copy_ram)
+        or      a
+        jr      nz,m2e95        ; or if >=2K free on M:
+        ld      a,(src_drv)     ; get source drive letter
+        cp      'M'
+      ELSE
+        jp      nz,m2e5d        ; if dest filename specified, jump on
         ld      a,(dst_drv)     ; check destination drive
         cp      'M'
         jp      z,m2e5d         ; move on if M: (will fail on attempted copy)
@@ -17831,6 +17938,7 @@ m2e74   push    bc
         ld      a,(src_drv)     ; get source drive letter
         or      $20
         cp      'm'
+      ENDIF
         jp      nz,m2f2d        ; if not copying from M:, move on
 m2e95   ld      hl,src_file     ; source filename
         ld      bc,$0001        ; file 0,excl read
@@ -18345,6 +18453,10 @@ m3268   ld      a,(hl)          ; get next char
         cp      $ff
         ret     z               ; or $ff
         and     $7f
+      IF garry
+        cp      ' '
+        jr      c, m3268
+      ENDIF
         rst     $10             ; display character
         jr      m3268           ; loop back
 
@@ -18364,9 +18476,7 @@ m3279   bit     5,(hl)
 m3283   defm    "M:VAXNSUZ.$$$", $ff
 
 ; Files copied messages
-    IF garry
-        defs    37
-    ELSE
+    IF garry=0
       IF spanish
 m3291   defm    $0d, "  1 fichero copiado.", $0d, $0d, 0
 m32a5   defm    " ficheros copiados.", $0d, $0d, 0
@@ -18874,7 +18984,6 @@ m35f0   call    m111c
         call    m3f00
         defw    $0062
         ret
-        defs    $75
         defm    "Physical drives: ", 0
         defm    " floppy, ", 0
         defm    " MMCLogical drives: ", 0
@@ -18890,7 +18999,6 @@ m376d   defm    "Drive already mappe", 'd'+$80
 m3781   defm    "Out of XDPB", 's'+$80
 m378d   defm    "No swap partitio", 'n'+$80
 m379e   defm    "Invalid devic", 'e'+$80
-        defs    $31
 m37dd   call    m24b5
         ld      hl, FLAGS
         res     5, (hl)
@@ -18982,7 +19090,8 @@ m387b   call    m0ecb
         jr      z, m388e
         call    m10b1
         jp      m2280
-m388e   push    af
+m388e   rst     $28
+        defw    $2d28
         rst     $20
         rst     $28
         defw    $1c8c
@@ -18998,8 +19107,11 @@ m3899   rst     $20
         push    bc
         call    m3965
         jp      nz, m398a
+        push    de
+        rst     $28
+        defw    $1e94
+        pop     de
         pop     hl
-        pop     af
         cp      $b9
         ld      a, 2
         ld      bc, 17
@@ -19305,7 +19417,9 @@ m3b08   push    bc
         rst     $28
         defw    $1c82
         call    m3a81
+        pop     bc
         call    m10b1
+        push    bc
         rst     $28
         defw    $1e94
         pop     bc
@@ -19476,11 +19590,33 @@ m3c63   call    m07d7
         cp      3
         ld      hl, m3d57
         jr      z, m3c8f
-        cp      $fe
+        cp      $04
         ld      hl, m3d5d
         jr      z, m3c8f
-        cp      $ff
+        cp      $05
         ld      hl, m3d63
+        jr      z, m3c8f
+        cp      15
+        ld      hl, m3d8b
+        jr      z, m3c8f
+        cp      $10
+        ld      hl, m3d8b
+        jr      z, m3c8f
+        cp      $20
+        ld      hl, m3d8b
+        jr      z, m3c8f
+        cp      $fe
+        ld      hl, m3d8b
+        jr      z, m3c8f
+        cp      $ff
+        ld      hl, m3d8b
+        jr      z, m3c8f
+        and     $f0
+        cp      $30
+        ld      hl, m3d8b
+        jr      z, m3c8f
+        cp      $40
+        ld      hl, m3d8b
         jr      z, m3c8f
         ld      hl, m3d68
 m3c8f   call    m07d7
@@ -19561,6 +19697,13 @@ m3d68   defm    "unknown", 0
 m3d70   defm    " End: ", 0
 m3d77   defm    " (", 0
 m3d7a   defm    " (not detected)", 13, 0
+        defm    "CPM Phys", 0
+        defm    "Boot HW", 0
+        defm    "Movie", 0
+        defm    "FAT16", 0
+        defm    "UZIX", 0
+        defm    "Disk Img", 0
+        defm    "CPM Img", 0
 m3d8b   defb    0, 2, 0, 0, 0, 0, 0, $ff, 1, 0, 0, 0, $80, 0
         defb    0, 2, 3, 0, 0, $80, 0, 0, 2, 0, 0, 0, 0, 0, 0
 m3da8   rst     $20
@@ -19670,6 +19813,17 @@ m3e5c   ld      b, a
         call    m32ee
         call    m2b64
         ret
+        rst     $28
+        defw    $c101
+        ld      (bc), a
+        inc     (hl)
+        ld      b, b
+        ld      b, c
+        nop
+        nop
+        ld      ($38e1), a
+        ret
+        defs    206
   ELSE
 ; The "COPY RANDOMIZE" command
 ; This is a silly command
