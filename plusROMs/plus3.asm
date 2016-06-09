@@ -11406,28 +11406,24 @@ m0455   push    bc              ; save addresses
         cpir
         pop     bc
         jr      z,m046d         ; move on if ? wildcard present
-        jr      m0499           ; move on for a single file
-m046d
-      IFDEF mmcen
-        push    bc
+      IF garry
+        jr      m04a1           ; move on for a single file
+m046d   push    bc
         push    de
         ld      a, $fd
         rst     $28
         defw    $1601           ; open channel to stream
         pop     de
         pop     bc
-      ENDIF
-
-      IF garry
         ld      hl, merase
-      ELSE
-        ld      hl,m04d5
-      ENDIF
         call    m04c1           ; output "Erase "
         call    m04ca           ; output filespec
-      IF garry
         ld      hl, myn
       ELSE
+        jr      m0499           ; move on for a single file
+m046d   ld      hl,m04d5
+        call    m04c1           ; output "Erase "
+        call    m04ca           ; output filespec
         ld      hl,m04dc
       ENDIF
         call    m04c1           ; output "? (Y/N"
@@ -11439,12 +11435,25 @@ m0481   bit     5,(hl)
         ld      a,(LAST_K)      ; get key
         and     $df             ; make uppercase
         cp      'N'
+    IF garry
+        jr      nz,m049c
+m0499   rst     $28
+        defw    $0d6e           ; clear lower screen
+        pop     de
+        pop     bc
+        ret
+m049c   cp      $59
+        jr      z, m04a1
+        jr      m047c
+m04a1   rst     $28
+        defw    $0d6e           ; clear lower screen
+        pop     de
+        pop     bc
+    ELSE
         jr      nz,m0493        ; move on if not "N"
-    IFNDEF mmcen
         pop     de              ; exit without doing anything
         pop     bc              ; (lower screen should have been cleared)
         ret
-
       IF spanish
 m0493   cp      'S'
       ELSE
@@ -11452,24 +11461,12 @@ m0493   cp      'Y'
       ENDIF
         jr      z,m0499
         jr      m047c           ; loop back for another key if not "Y"
-    ELSE
-m0493
-    ENDIF
 m0499   rst     $28
         defw    $0d6e           ; clear lower screen
         pop     de
         pop     bc
-      IFDEF mmcen
-        ret
-        cp      $59
-        jr      z, m04a1
-        jr      m047c
-m04a1   rst     $28
-        defw    $0d6e           ; clear lower screen
-        pop     de
-        pop     bc
-      ENDIF
-        ld      hl,tmp_fspec
+    ENDIF
+m4b0    ld      hl,tmp_fspec
         ex      de,hl
         call    m3f63           ; copy filespec into page 7
         call    m2b89           ; page in DOS workspace
@@ -11692,7 +11689,7 @@ m05e8   ld      hl,(CH_ADD)
         cp      ':'
         jr      z,m062b         ; or if end-of-statement
       IF garry
-        jp      n3b55
+        jp      n3a14
         nop
       ELSE
         cp      $b9
@@ -13181,7 +13178,7 @@ m0eeb   defb    m0f9c-$         ; DEF FN
 m0f1d   defb    $01,'=',$02     ; LET
       IF garry
 m0f20   defb    $0e
-        defw    $35e1           ; GOTO
+        defw    $353e           ; GOTO
         defb    $00
       ELSE
 m0f20   defb    $06,$00
@@ -13201,7 +13198,8 @@ m0f30   defb    $0c
         defw    m1266           ; RETURN
       ENDIF
 m0f33   defb    $04,'=',$06
-        defb    $cc,$06,$0e
+        defb    $cc,$06
+        defb    $0e
         defw    m1178           ; FOR
       IF garry
 m0f3b   defb    $0e
@@ -13225,7 +13223,7 @@ m0f48   defb    $0e
         defw    m1072           ; REM
       IF garry
 m0f4b   defb    $0e
-        defw    $387f           ; NEW
+        defw    $3736           ; NEW
       ELSE
 m0f4b   defb    $0c
         defw    m2280           ; NEW
@@ -13284,33 +13282,33 @@ m0f9c   defb    $0e
         defw    m1283           ; DEF FN
       IF garry
 m0f9f   defb    $06,',',$0a,$0c
-        defw    $35c4           ; OPEN#
+        defw    $3521           ; OPEN#
 m0fa5   defb    $06,$0c
-        defw    $35d7           ; CLOSE#
+        defw    $3534           ; CLOSE#
+m0fa9   defb    $0e
+        defw    m026c           ; FORMAT
+m0fac   defb    $0a,$0e
+        defw    $3878           ; MOVE
+        defb    0, 0
+m0fb2   defb    $0a,$0c
+        defw    m044a           ; ERASE
+m0fb6   defb    $0e
+        defw    m05b8           ; CAT
+m0fb9   defb    $0e
+        defw    $396c           ; SPECTRUM
       ELSE
 m0f9f   defb    $06,',',$0a,$00
         defw    o1736           ; OPEN#
 m0fa5   defb    $06,$00
         defw    $16e5           ; CLOSE#
-      ENDIF
 m0fa9   defb    $0e
         defw    m026c           ; FORMAT
-      IF garry
-m0fac   defb    $0a,$0e
-        defw    $39bb           ; MOVE
-        defb    0, 0
-      ELSE
 m0fac   defb    $0a,$cc,$0a,$0c
         defw    m04e5           ; MOVE
-      ENDIF
 m0fb2   defb    $0a,$0c
         defw    m044a           ; ERASE
 m0fb6   defb    $0e
         defw    m05b8           ; CAT
-      IF garry
-m0fb9   defb    $0e
-        defw    $3aaf           ; SPECTRUM
-      ELSE
 m0fb9   defb    $0c
         defw    m1465           ; SPECTRUM
       ENDIF
@@ -14045,7 +14043,11 @@ m1465   call    m14c4           ; set "P" channel to use screen
         pop     hl              ; discard current error return address
         ld      hl,$1303
         push    hl              ; address to enter ROM 3 at, in main loop
+      IF garry
+        ld      hl,$0003        ; "AF"
+      ELSE
         ld      hl,$0013        ; "AF"
+      ENDIF
         push    hl
         ld      hl,$0008        ; "BC"
         push    hl
@@ -14974,7 +14976,11 @@ m1a2d   ld      (ix+$00),c      ; save last note value
         ld      a,c
         sub     $15
         jr      nc,m1a45
+      IF garry
+        ld      de,$0fbe        ; lowest note possible
+      ELSE
         ld      de,$0fbf        ; lowest note possible
+      ENDIF
         jr      m1a4c
 m1a45   ld      c,a
         sla     c               ; form offset into semitone table
@@ -16728,7 +16734,7 @@ m2410   call    m2b89           ; page in DOS workspace (page 7)
 m2427   call    m3f00
         defw    $0100
         call    m32ee
-        ld      hl, $368c
+        ld      hl, $3574
         call    m24b5
 m242a   ld      a,$ff
         ld      hl, $0002       ; standard ALERT routine in ROM 2
@@ -16818,12 +16824,12 @@ m24a3   ld      hl,FLAGS3
       IF garry
         ld      a, $32
 m2488   rst     $10
-        ld      hl, $369e
+        ld      hl, $3586
         call    m24b5
         ld      a, ($df9d)
         add     a, $30
         rst     $10
-        ld      hl, $36a8
+        ld      hl, $3590
         call    m24b5
         ld      hl, $e2a0
         ld      c, $41
@@ -18241,10 +18247,17 @@ m30d9   ld      a,(hl)          ; get next char
 m30e3   dec     hl
         dec     hl
         ld      a,(hl)          ; get character before colon
+      IF garry
+        and     $df             ; make lowercase
+        cp      'A'
+        ret     c               ; exit if < 'a'
+        cp      '['
+      ELSE
         or      $20             ; make lowercase
         cp      'a'
         ret     c               ; exit if < 'a'
         cp      '{'
+      ENDIF
         ret     nc              ; or if > 'z'
         ld      (de),a          ; store drive letter
         ret
@@ -18259,7 +18272,11 @@ m30f0   push    hl
         ld      a,(hl)          ; get first char
         inc     a
         jr      z,m3103         ; move to exit if end of filename
+      IF garry
+        ld      b,$04           ; check first 3 chars
+      ELSE
         ld      b,$03           ; check first 3 chars
+      ENDIF
 m30f8   ld      a,(hl)
         cp      ':'             ; is char a ':' ?
         jr      z,m3107         ; move on if so
@@ -18965,7 +18982,7 @@ m35d7   rst     $28
         ret
 m35f0   call    m111c
         call    m10b1
-        ld      de, m04d5
+        ld      de, m3f5c
         ld      bc, 13
         call    m14f0
         rst     $28
@@ -19193,7 +19210,7 @@ m3925   ld      ($efca), a
         jr      nc, m395d
         pop     af
         ld      l, $e5
-        ld      ix, $0020
+        ld      ix, $001f
         call    m32b6
         call    m3f00
         defw    $00bb
@@ -19590,33 +19607,33 @@ m3c63   call    m07d7
         cp      3
         ld      hl, m3d57
         jr      z, m3c8f
-        cp      $04
-        ld      hl, m3d5d
+        cp      4
+        ld      hl, m3c7d
         jr      z, m3c8f
-        cp      $05
-        ld      hl, m3d63
+        cp      5
+        ld      hl, m3c81
         jr      z, m3c8f
         cp      15
-        ld      hl, m3d8b
+        ld      hl, m3c8e
         jr      z, m3c8f
         cp      $10
-        ld      hl, m3d8b
+        ld      hl, m3c94
         jr      z, m3c8f
         cp      $20
-        ld      hl, m3d8b
+        ld      hl, m3c9a
         jr      z, m3c8f
         cp      $fe
-        ld      hl, m3d8b
+        ld      hl, m3d5d
         jr      z, m3c8f
         cp      $ff
-        ld      hl, m3d8b
+        ld      hl, m3d63
         jr      z, m3c8f
         and     $f0
         cp      $30
-        ld      hl, m3d8b
+        ld      hl, m3c9f
         jr      z, m3c8f
         cp      $40
-        ld      hl, m3d8b
+        ld      hl, m3ca8
         jr      z, m3c8f
         ld      hl, m3d68
 m3c8f   call    m07d7
@@ -19697,13 +19714,13 @@ m3d68   defm    "unknown", 0
 m3d70   defm    " End: ", 0
 m3d77   defm    " (", 0
 m3d7a   defm    " (not detected)", 13, 0
-        defm    "CPM Phys", 0
-        defm    "Boot HW", 0
-        defm    "Movie", 0
-        defm    "FAT16", 0
-        defm    "UZIX", 0
-        defm    "Disk Img", 0
-        defm    "CPM Img", 0
+m3c7d   defm    "CPM Phys", 0
+m3c81   defm    "Boot HW", 0
+m3c8e   defm    "Movie", 0
+m3c94   defm    "FAT16", 0
+m3c9a   defm    "UZIX", 0
+m3c9f   defm    "Disk Img", 0
+m3ca8   defm    "CPM Img", 0
 m3d8b   defb    0, 2, 0, 0, 0, 0, 0, $ff, 1, 0, 0, 0, $80, 0
         defb    0, 2, 3, 0, 0, $80, 0, 0, 2, 0, 0, 0, 0, 0, 0
 m3da8   rst     $20
@@ -19813,7 +19830,7 @@ m3e5c   ld      b, a
         call    m32ee
         call    m2b64
         ret
-        rst     $28
+m3f5c   rst     $28
         defw    $c101
         ld      (bc), a
         inc     (hl)
@@ -29947,7 +29964,7 @@ n3a04   ld      a, b
         cp      $0a
         ccf
         ret     c
-        push    de
+n3a14   push    de
         add     hl, hl
         ld      d, h
         ld      e, l
