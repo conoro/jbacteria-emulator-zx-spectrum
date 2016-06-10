@@ -173,11 +173,6 @@
         define  pg_buffer $db00   ; ($20) buffer for copying between pages
         define  rt_alert  $db20   ; (2) ALERT routine address
         define  al_resp   $db22   ; (7) ALERT response string
-      IF spanish
-        define  al_mess   $db22   ; ($77) message for ALERT routine
-      ELSE
-        define  al_mess   $db29   ; ($77) message for ALERT routine
-      ENDIF
         define  fcbs      $dba0   ; ($380) FCBs ($38 bytes each for $10 files)
         define  sysfcb0   $df20   ; ($38) system FCB 0
         define  sysfcb1   $df58   ; ($38) system FCB 1
@@ -1791,7 +1786,11 @@ l086b   defb    $03
 
       ENDIF
     IF garry
+      IF spanish
+l0884   defs    13
+      ELSE
 l0884   defs    27
+      ENDIF
 l089f   ld      hl, (CURCHL)
         ld      de, 13
         add     hl, de
@@ -9849,9 +9848,14 @@ l37db
         defs    $10
         defm    $16, $00, $00
 m14e5   defm    $10, $00, $11, $07, $13, $00
-        defm    "Insert tape and press PLAY", 13
+      IF spanish
+        defm    "Introduzca la cinta y pulse PLAY"
+        defm    "Cancelar: pulse BREAK dos veces", '.'+$80
+      ELSE
+        defm    "Insert tape and press PLAY", $0d
         defm    "To cancel - press BREAK twic", 'e'+$80
         defb    0, 0, 0, 0, 0, 0, 0, 0
+      ENDIF
 l3834   defm    $7f, "1982, 1986, 1987 Amstrad Plc.", 13
         defm    $7f, "2000-2015 Garry Lancaster v1.4", '3'+$80
         ret     nc
@@ -10793,12 +10797,17 @@ m0048   push    bc
         pop     af
         ei                      ; re-enable interrupts & exit
         ret
-      IF garry
+    IF garry
+      IF spanish
+m0056   defm    "Inicio:", 0
+m005e   defm    "sistema", 0
+      ELSE
 m0056   defm    "Start: ", 0
 m005e   defm    "system", 0, 0
-      ELSE
-        defs    $10
       ENDIF
+    ELSE
+        defs    $10
+    ENDIF
 
 ; The NMI routine
 
@@ -11281,13 +11290,16 @@ m0392   bit     5,(iy+$01)
 
 ; Formatting message
 
-      IF spanish
+    IF spanish
 m03a7   defm    "Ya formateado. Tecla A para", $0d
         defm    "abandonar/otra para continuar", 0
-      ELSE
+      IF garry
+        defb    0, 0
+      ENDIF
+    ELSE
 m03a7   defm    "Disk is already formatted.", $0d
         defm    "A to abandon, other key continue", 0
-      ENDIF
+    ENDIF
 
 ; The FORMAT LPRINT command
 
@@ -11442,7 +11454,11 @@ m0499   rst     $28
         pop     de
         pop     bc
         ret
-m049c   cp      $59
+      IF spanish
+m049c   cp      'S'
+      ELSE
+m049c   cp      'Y'
+      ENDIF
         jr      z, m04a1
         jr      m047c
 m04a1   rst     $28
@@ -11675,7 +11691,7 @@ m05e8   ld      hl,(CH_ADD)
         cp      ':'
         jr      z,m062b         ; or if end-of-statement
       IF garry
-        jp      n3a14
+        jp      m3b50
         nop
       ELSE
         cp      $b9
@@ -13015,20 +13031,26 @@ m0e31   halt                    ; delay for 1 sec
         jp      m0828           ; save & exit
 
 ; Looks like these bits aren't used
-      IF garry
+    IF garry
 msg18   defb    $16, 0, 0, $10, 0, $11, $07, $13, 0
-        defm    "Insert tape and press PLAY", 13
+      IF spanish
+        defm    "Introduzca la cinta y pulse PLAY"
+        defm    "Cancelar: pulse BREAK dos veces.", $ff
+m297c   defm    "SIN DATO", 'S'+$80
+      ELSE
+        defm    "Insert tape and press PLAY", $0d
         defm    "To cancel - press BREAK twice", $ff
         defb    0, 0, 0, 0, 0, 0, 0, 0
         defb    0, 0, 0, 0, 0, 0, 0, 0, 0
-      ELSE
+      ENDIF
+    ELSE
         defb    $80
 m0e42   defm    "Press REC & PLAY, then any key", $ae
         defm    $0d, "Program:", $a0
         defm    $0d, "Number array:", $a0
         defm    $0d, "Character array:", $a0
         defm    $0d, "Bytes:", $a0
-      ENDIF
+    ENDIF
 
 ; Subroutine to check if char in A is a statement terminator
 
@@ -13161,7 +13183,7 @@ m0eeb   defb    m0f9c-$         ; DEF FN
 m0f1d   defb    $01,'=',$02     ; LET
       IF garry
 m0f20   defb    $0e
-        defw    $353e           ; GOTO
+        defw    m35da
         defb    $00
       ELSE
 m0f20   defb    $06,$00
@@ -13206,7 +13228,7 @@ m0f48   defb    $0e
         defw    m1072           ; REM
       IF garry
 m0f4b   defb    $0e
-        defw    $3736           ; NEW
+        defw    m3880           ; NEW
       ELSE
 m0f4b   defb    $0c
         defw    m2280           ; NEW
@@ -13265,20 +13287,20 @@ m0f9c   defb    $0e
         defw    m1283           ; DEF FN
       IF garry
 m0f9f   defb    $06,',',$0a,$0c
-        defw    $3521           ; OPEN#
+        defw    m35d0           ; OPEN#
 m0fa5   defb    $06,$0c
-        defw    $3534           ; CLOSE#
+        defw    m35d7           ; CLOSE#
 m0fa9   defb    $0e
         defw    m026c           ; FORMAT
 m0fac   defb    $0a,$0e
-        defw    $3878           ; MOVE
+        defw    m39bb           ; MOVE
         defb    0, 0
 m0fb2   defb    $0a,$0c
         defw    m044a           ; ERASE
 m0fb6   defb    $0e
         defw    m05b8           ; CAT
 m0fb9   defb    $0e
-        defw    $396c           ; SPECTRUM
+        defw    m3aaf           ; SPECTRUM
       ELSE
 m0f9f   defb    $06,',',$0a,$00
         defw    o1736           ; OPEN#
@@ -16717,7 +16739,7 @@ m2410   call    m2b89           ; page in DOS workspace (page 7)
 m2427   call    m3f00
         defw    $0100
         call    m32ee
-        ld      hl, $3574
+        ld      hl, m36b0
         call    m24b5
 m242a   ld      a,$ff
         ld      hl, $0002       ; standard ALERT routine in ROM 2
@@ -16807,12 +16829,12 @@ m24a3   ld      hl,FLAGS3
       IF garry
         ld      a, $32
 m2488   rst     $10
-        ld      hl, $3586
+        ld      hl, m36b1
         call    m24b5
         ld      a, ($df9d)
         add     a, $30
         rst     $10
-        ld      hl, $3590
+        ld      hl, m36b2
         call    m24b5
         ld      hl, $e2a0
         ld      c, $41
@@ -17210,7 +17232,7 @@ m2705   defw    m276d
         defw    m2a74
         defw    m2a8a
         defw    m2a97
-      IF garry
+    IF garry
         defw    m36fb
         defw    m370c
         defw    m3724
@@ -17221,15 +17243,15 @@ m2705   defw    m276d
         defw    m3781
         defw    m378d
         defw    m379e
-      ENDIF
-
+    ELSE
       IF v41 || spanish
         defw    m2aa8
         defw    m2ac1
       ENDIF
+    ENDIF
 
 ; The +3 BASIC and +3DOS error messages
-      IF spanish
+    IF spanish
 m276d   defm    "Error en MERG", 'E'+$80
 m2778   defm    "FICHERO INCORRECT", 'O'+$80
 m2787   defm    "Error en COD", 'E'+$80
@@ -17238,11 +17260,19 @@ m27a2   defm    "YA EXISTE EL FICHER", 'O'+$80
 m27b5   defm    "NOMBRE NO VALID", 'O'+$80
 m27c1   defm    "NO EXISTE ESE FICHER", 'O'+$80
 m27d4   defm    "DIPOSITIVO NO VALID", 'O'+$80
-m27e2   defm    "VELOCIDAD NO VALID", 'A'+$80
-m27f3   defm    "NOTA NO VALID", 'A'+$80
+      IF garry
+m27e2   defm    "VELOCIDAD NO VALID", 'O'+$80   ;errata, velocidad es femenino
+m27f3   defm    "NOTA NO VALID", 'O'+$80        ;errata, nota es femenino
+m2804   defm    "NUMERO MUY GRAND", 'E'+$80
+m2812   defm    "NOTA "
+m2823   defm    "FUERA DE MARGE", 'N'+$80
+      ELSE
+m27e2   defm    "VELOCIDAD NO VALID", 'A'+$80   ;errata, velocidad es femenino
+m27f3   defm    "NOTA NO VALID", 'A'+$80        ;errata, nota es femenino
 m2804   defm    "NUMERO MUY GRAND", 'E'+$80
 m2812   defm    "NOTA FUERA DE MARGE", 'N'+$80
 m2823   defm    "FUERA DE MARGE", 'N'+$80
+      ENDIF
 m282f   defm    "DEMASIADAS NOTA", 'S'+$80
 m2842   defm    "NOMBRE INCORRECT", 'O'+$80
 m284e   defm    "PARAMETRO INCORRECT", 'O'+$80
@@ -17264,8 +17294,10 @@ m2933   defm    "UNIDAD YA EN US", 'O'+$80
 m293f   defm    "UNIDAD NO PREPARAD", 'A'+$80
 m294e   defm    "DISCO PROTEGID", 'O'+$80
 m2965   defm    "FALLO DE BUSQUED", 'A'+$80
+      IF garry=0
 m296e   defm    "ERROR DE DATO", 'S'+$80
 m297c   defm    "SIN DATO", 'S'+$80
+      ENDIF
 m2983   defm    "SIN MARCA DIRECCIONE", 'S'+$80
 m2997   defm    "FORMATO NO RECONOCID", 'O'+$80
 m29af   defm    "ERROR DESCONOCID", 'O'+$80
@@ -17280,7 +17312,7 @@ m2a59   defm    "+2A NO ADMITE FORMA", 'T'+$80
 m2a74   defm    "LA UNIDAD NO ES A NI ", 'B'+$80
 m2a8a   defm    "UNIDAD INCORRECT", 'A'+$80
 m2a97   defm    "ERROR DE LONGITU", 'D'+$80
-      ELSE
+    ELSE
 m276d   defm    "MERGE erro", 'r'+$80
 m2778   defm    "Wrong file typ", 'e'+$80
 m2787   defm    "CODE erro", 'r'+$80
@@ -17331,7 +17363,7 @@ m2a59   defm    "+2A does not support forma", 't'+$80
 m2a74   defm    "Drive must be A: or B", ':'+$80
 m2a8a   defm    "Invalid driv", 'e'+$80
 m2a97   defm    "Code length erro", 'r'+$80
-      ENDIF
+    ENDIF
       IF garry=0
 m2aa8   defm    "You should never see thi", 's'+$80
 m2ac1   defm    "Hello there !"
@@ -18937,7 +18969,7 @@ m35b9   defm    "$() ", 0
 m35be   defm    "LINE ", 0
 
   IF garry
-        rst     $28
+m35d0   rst     $28
         defw    $2bf1
         push    bc
         push    de
@@ -18954,7 +18986,7 @@ m35d7   rst     $28
         call    l3f00
         defw    $0059
         jr      m35d3
-        rst     $18
+m35da   rst     $18
         cp      '#'
         jr      z, m35f0
         rst     $28
@@ -18984,9 +19016,26 @@ m35f0   call    m111c
         call    m3f00
         defw    $0062
         ret
-        defm    "Physical drives: ", 0
-        defm    " floppy, ", 0
-        defm    " MMCLogical drives: ", 0
+      IF spanish
+m36b0   defm    "Unidades fisicas: ", 0
+m36b1   defm    " disq., ", 0
+m36b2   defm    " MMCUnidades logicas: ", 0
+m36bd   defm    "Formatear disco duro, seguro (S/N)?", 0
+m36dc   defm    "Borrar particion, seguro (S/N)?", 0
+m36fb   defm    "PARTICION INVALID", 'A'+$80
+m370c   defm    "YA HAY PARTICIO", 'N'+$80
+m3724   defm    "SIN IMPLEMENTA", 'R'+$80
+m3733   defm    "PARTICION ABIERT", 'A'+$80
+m3741   defm    "PARTICION FUERA DE RANG", 'O'+$80
+m3759   defm    "NO ES PARTICION SWA", 'P'+$80
+m376d   defm    "UNIDAD YA MAPEAD", 'A'+$80
+m3781   defm    "FUERA DE XBPD", 'S'+$80
+m378d   defm    "NO HAY PARTICION SWA", 'P'+$80
+m379e   defm    "DISPOSITIVO INVALID", 'O'+$80
+      ELSE
+m36b0   defm    "Physical drives: ", 0
+m36b1   defm    " floppy, ", 0
+m36b2   defm    " MMCLogical drives: ", 0
 m36bd   defm    "Really format hard disk (Y/N)?", 0
 m36dc   defm    "Really delete partition (Y/N)?", 0
 m36fb   defm    "Invalid partitio", 'n'+$80
@@ -18999,6 +19048,7 @@ m376d   defm    "Drive already mappe", 'd'+$80
 m3781   defm    "Out of XDPB", 's'+$80
 m378d   defm    "No swap partitio", 'n'+$80
 m379e   defm    "Invalid devic", 'e'+$80
+      ENDIF
 m37dd   call    m24b5
         ld      hl, FLAGS
         res     5, (hl)
@@ -19009,7 +19059,11 @@ m37e5   bit     5, (hl)
         and     $df
         cp      'N'
         jr      z, m37f8
+      IF spanish
+        cp      'S'
+      ELSE
         cp      'Y'
+      ENDIF
         jr      nz, m37e5
 m37f8   push    af
         rst     $28
@@ -19083,7 +19137,7 @@ m3863   pop     bc
         ret     c
 m387b   call    m0ecb
         rst     $38
-        rst     $18
+m3880   rst     $18
         cp      $e4
         jr      z, m388e
         cp      $b9
@@ -19373,7 +19427,7 @@ m3a8e   rst     $28
         ret
 m3aab   call    m2ada
         ld      c, (hl)
-        rst     $18
+m3aaf   rst     $18
         cp      $ab
         ld      bc, $1ff
         jr      z, m3b08
@@ -19456,7 +19510,7 @@ m3b48   cp      $ad
         jp      z, m3da8
         call    m2ada
         dec     bc
-        cp      $b9
+m3b50   cp      $b9
         jp      z, m062b
         cp      $b5
         jp      z, m3da8
@@ -19687,6 +19741,25 @@ m3d21   call    m2b64
         jp      m387b
 m3d27   defm    "Mb ", 0
 m3d2b   defm    "K ", 0
+      IF spanish
+m3d2e   defm    " particiones libres", 13, 13, 0
+m3d48   defm    "Unidad MMC ", 0
+m3d52   defm    "swap", 0
+m3d57   defm    "datos ", 0
+m3d5d   defm    "*MAL*", 0
+m3d63   defm    "LIBRES", 0
+m3d68   defm    "?????", 0
+m3d70   defm    " Fin:", 0
+m3d77   defm    " (", 0
+m3d7a   defm    " (no detectada)", 13, 0
+m3c7d   defm    "CPM Fis.", 0
+m3c81   defm    "Boot HW", 0
+m3c8e   defm    "Video", 0
+m3c94   defm    "FAT16", 0
+m3c9a   defm    "UZIX", 0
+m3c9f   defm    "Disk Img", 0
+m3ca8   defm    "CPM Img", 0
+      ELSE
 m3d2e   defm    " free partition entries", 13, 13, 0
 m3d48   defm    "MMC unit ", 0
 m3d52   defm    "swap", 0
@@ -19704,6 +19777,7 @@ m3c94   defm    "FAT16", 0
 m3c9a   defm    "UZIX", 0
 m3c9f   defm    "Disk Img", 0
 m3ca8   defm    "CPM Img", 0
+      ENDIF
 m3d8b   defb    0, 2, 0, 0, 0, 0, 0, $ff, 1, 0, 0, 0, $80, 0
         defb    0, 2, 3, 0, 0, $80, 0, 0, 2, 0, 0, 0, 0, 0, 0
 m3da8   rst     $20
@@ -19823,7 +19897,11 @@ m3f5c   rst     $28
         nop
         ld      ($38e1), a
         ret
+      IF spanish
+        defs    187
+      ELSE
         defs    206
+      ENDIF
   ELSE
 ; The "COPY RANDOMIZE" command
 ; This is a silly command
@@ -20098,13 +20176,19 @@ m3ec5   ei
         pop     af
         ret                     ; return
 
-      IF garry
+    IF garry
+      IF spanish
+m3291   defm    $0d, "  1 fichero copiado.", $0d, $0d, 0
+m32a5   defm    " ficheros copiados.", $0d, $0d, 0
+        defs    9
+      ELSE
 m3291   defm    $0d, "  1 file copied.", $0d, $0d, 0
 m32a5   defm    " files copied.", $0d, $0d, 0
-        defs    $12
-      ELSE
-        defs    $37
+        defs    18
       ENDIF
+    ELSE
+        defs    $37
+    ENDIF
 ; Subroutine to call a subroutine in ROM 2
 ; The subroutine address is inline after the call to this routine
 ; This routine is duplicated in ROMs 0 & 2, so that when we start switching
@@ -20233,11 +20317,19 @@ m3f90   exx
         ei                      ; enable interrupts
         ret
   IF garry
+      IF spanish
+m07c9   defm    "K LIBRES", 13, 0
+m07d1   defm    "NINGUN FICHERO ENCONTRADO", 13, 0
+merase  defm    "]Borrar ", 0
+myn     defm    " (S/N)?", 0
+m296e   defm    "ERROR DE DATO", 'S'+$80
+      ELSE
 m07c9   defm    "K free", 13, 0
 m07d1   defm    "No files found", 13, 0
 merase  defm    "Erase ", 0
 myn     defm    " ? (Y/N)", 0
         defs    28
+      ENDIF
         defb    $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff
         defb    $ff,$ff,$ff
   ELSE
@@ -20433,7 +20525,7 @@ n0095   ld      bc,$7ffd
 
       IF garry
         defb    0, 0
-        jp      n2825
+        jp      n2820
         jp      n275b
         jp      n2845
         jp      n282a
@@ -20578,18 +20670,20 @@ n01cd   xor     a
         ld      b,a
         ld      c,a             ; A=BC=0
         ld      de,$0101        ; DE=version info
-        ld      hl,$0069        ; HL=?
     ELSE
         ld      b,a
         ld      c,a             ; A=BC=0
       IF spanish
         ld      de,$0101        ; DE=version info
-        ld      hl,$0070        ; HL=?
       ELSE
         ld      de,$0100        ; DE=version info
-        ld      hl,$0069        ; HL=?
       ENDIF
     ENDIF
+      IF spanish
+        ld      hl,$0070        ; HL=?
+      ELSE
+        ld      hl,$0069        ; HL=?
+      ENDIF
         scf                     ; signal success
         ret
 
@@ -20910,7 +21004,11 @@ n0338   ld      a,$0a           ; message 10
         ld      hl, l03cd
         ld      (al_resp), hl
       ENDIF
-n033a   ld      ix,al_mess      ; address to place message
+      IF (garry=0) && (spanish=1)
+n033a   ld      ix,al_resp      ; address to place message
+      ELSE
+n033a   ld      ix,al_resp+7    ; address to place message
+      ENDIF
         push    ix
         call    n0349           ; generate it
         ld      (ix+$00),$ff    ; add a terminator
@@ -26769,7 +26867,7 @@ n231d   defb    $d0,$ce,$a8,$ca
         defb    $d3,$d4,$d1,$d2
         defb    $a9,$cf
 
-      IF garry
+    IF garry
 n22c5x  xor     a
         ld      a, b
 n22c7   push    hl
@@ -26795,6 +26893,26 @@ n22c7   push    hl
         pop     hl
         ld      (CURCHL),hl
         ret
+
+      IF spanish
+        defm    $8b, 13, $fb, "NO PREPARADA", 13
+        defm    $8e, $ff, $8b, 13, $fb, "DISCO PROTEGIDO CONTRA ESCRITURA"
+        defm    $8e, $ff, $8c, 13, $fb, "FALLO DE BUSQUEDA", 13
+        defm    $8e, $ff, $8d, "ERROR DE DATOS", 13
+        defm    $8e, $ff, $8d, "SIN DATOS", 13
+        defm    $8e, $ff, $8d, "FALTA MARCA DE DIRECCIONES", 13
+        defm    $8e, $ff, $8b, 13, $fb, "FORMATO INCORRECTO", 13
+        defm    $8e, $ff, $8d, "ERROR DESCONOCIDO", 13
+        defm    $8e, $ff, $8b, 13, $fb, "DISCO CAMBIADO; SUSTITUYALO", 13
+        defm    $8e, $ff, $8b, 13, $fb, "DISCO NO ADECUADO", 13
+        defm    $8e, $ff, "Introduzca el disco en la unidad para ", $fe
+        defm    " y luego pulse una tecla", $ff
+        defm    "UNIDAD ", $fe
+        defm    ":", $ff, $8b, " PISTA ", $fd, $ff, $8c
+        defm    " SECTOR ", $fc, 13, $fb, $ff, $fa
+        defm    "]REINTENTAR, IGNORAR O CANCELAR?", $ff
+        defs    5
+      ELSE
         defm    $8b, 13, $fb, "Not ready", 13
         defm    $8e, $ff, $8b, 13, $fb, "Write protected", 13
         defm    $8e, $ff, $8c, 13, $fb, "Seek fail", 13
@@ -26812,6 +26930,7 @@ n22c7   push    hl
         defm    " sector ", $fc, 13, $fb, $ff, $fa
         defm    "Retry, Ignore or Cancel?", $ff
         defs    29
+      ENDIF
 
 n2475   push    bc
         push    de
@@ -27045,7 +27164,7 @@ n25e9   ld      d, a
         adc     hl, bc
         ld      b, a
         bit     4, (ix+$10)
-        call    $27f1
+        call    n27f1
         jr      c, n2600
         ld      h, l
         ld      l, d
@@ -27389,7 +27508,7 @@ n280d   sla     e
         call    n2529
         pop     ix
         ret
-n2825   ld      de, $0106
+n2820   ld      de, $0106
         scf
         ret
 n282a   srl     a
@@ -27471,7 +27590,7 @@ n28ba   ld      hl, FLAGS3
         call    n2b77
         jr      nc, n28fc
         ld      hl, $ef3b
-        ld      de, $294b
+        ld      de, n2940
         ld      b, 3
 n28d2   ld      a, (hl)
         and     a
@@ -27545,7 +27664,7 @@ n2938   cp      $38
         cp      $16
         jr      z, n2919
         jr      n2914
-        ld      b, c
+n2940   ld      b, c
         ld      b, d
         ld      c, l
 n2945   push    hl
@@ -27934,6 +28053,29 @@ n2c11   pop     hl
         pop     af
         jr      n2bdb
 
+      IF spanish
+n2c1d   ld      a, $3a
+        and     a
+        ret
+n2c49   push    hl
+        push    af
+        ld      hl, $ef11
+        call    n2b77
+        jr      nc, n2c46
+        pop     af
+        pop     hl
+        ld      de, $ef31
+        push    bc
+        ld      bc, $0020
+        ldir
+        pop     bc
+        ld      hl, $ef11
+        call    n2ba0
+        ret
+n2c46   pop     hl
+        pop     hl
+        ret     
+      ELSE
 n2c1d   push    hl
         push    af
         push    bc
@@ -27957,11 +28099,9 @@ n2c1d   push    hl
         ld      hl, $ef11
         call    n2ba0
         ret
-        
 n2c46   pop     hl
         pop     hl
         ret     
-        
 n2c49   push    hl
         push    af
         ld      hl, $ef11
@@ -27981,6 +28121,7 @@ n2c49   push    hl
 n2c66   pop     hl
         pop     hl
         ret     
+      ENDIF
 
 n2c69   push    ix
         push    de
@@ -28904,17 +29045,17 @@ n3282   ld      (hl), 0
         inc     hl
         ld      (hl), d
         inc     hl
-        ld      (hl), $fc
+        ld      (hl), n27f3 & 255
         inc     hl
-        ld      (hl), $27
+        ld      (hl), n27f3 >> 8
         inc     hl
-        ld      (hl), $fe
+        ld      (hl), n27f5 & 255
         inc     hl
-        ld      (hl), $27
+        ld      (hl), n27f5 >> 8
         inc     hl
-        ld      (hl), $16
+        ld      (hl), n280d & 255
         inc     hl
-        ld      (hl), $28
+        ld      (hl), n280d >> 8
         pop     af
         pop     bc
         push    bc
@@ -29189,13 +29330,22 @@ n344b   ld      l, (ix+$02)
         pop     ix
         ret
 
-n3462   defb    $c0, $e2, $74, $34, $11, $02, $2d, $e3
-        defb    $85, $34, $11, $03, $9a, $e3, $96, $34
-        defb    $09, $04
-
+      IF spanish
+n3462   defb    $c0, $e2,  $74, $34,  $0e, $02
+        defb    $2d, $e3,  $82, $34,  $0e, $03
+        defb    $9a, $e3,  $90, $34,  $0b, $04
+n3474   defm    "2>Disquetera 0"
+n3485   defm    "3>Disquetera 1"
+n3496   defm    "4>Disco RAM"
+        defs    4
+      ELSE
+n3462   defb    $c0, $e2,  $74, $34,  $11, $02
+        defb    $2d, $e3,  $85, $34,  $11, $03
+        defb    $9a, $e3,  $96, $34,  $09, $04
 n3474   defm    "2>Floppy device 0"
 n3485   defm    "3>Floppy device 1"
 n3496   defm    "4>RAMdisk"
+      ENDIF
 
 n349f   push    hl
         xor     a
@@ -30632,7 +30782,7 @@ n3e2d   push    bc
         pop     af
         pop     bc
         ret     
-      ENDIF
+    ENDIF
 
 ; This is a copy of the "keyboard scanning" subroutine from
 ; $028e in ROM 3
@@ -32050,7 +32200,7 @@ o0010:  JP      o15F2           ; Jump forward to continue at PRINT-A-2.
 ; ---
 
     IF spanish
-      IF v41
+      IF v41 || garry
         DEFB    $FF, $FC        ; Five unused locations.
       ELSE
         DEFB    $FF, $C0        ; Five unused locations.
@@ -34974,7 +35124,7 @@ o0991:  HALT                    ; wait for interrupt
     IF spanish
 o09A1:  DEFB    $80
         DEFM    "PREPARE LA CINTA Y PULSE "
-      IF v41
+      IF v41 || garry
         DEFM    "ENTER"
       ELSE
         DEFM    "INTRO"
@@ -37843,7 +37993,7 @@ o1391:  DEFB    $80
         DEFB    'O','K'+$80                             ; 0
   IF spanish
         DEFM    "NEXT "
-      IF v41
+      IF v41 || garry
         DEFM    "SIN"
       ELSE
         DEFM    "sin"
@@ -37861,7 +38011,7 @@ o1391:  DEFB    $80
         DEFM    "NUMERO MUY GRAND"
         DEFB    'E'+$80                                 ; 6
         DEFM    "RETURN "
-      IF v41
+      IF v41 || garry
         DEFM    "SIN"
       ELSE
         DEFM    "sin"
@@ -37870,7 +38020,7 @@ o1391:  DEFB    $80
         DEFB    'B'+$80                                 ; 7
         DEFM    "FIN DE FICHER"
         DEFB    'O'+$80                                 ; 8
-      IF v41
+      IF v41 || garry
         DEFM    "SENTENCIA STO"
       ELSE
         DEFM    "Sentencia STO"
@@ -37883,7 +38033,7 @@ o1391:  DEFB    $80
         DEFM    "SIN SENTIDO EN BASI"
         DEFB    'C'+$80                                 ; C
         DEFM    "BREAK/CONT "
-      IF v41
+      IF v41 || garry
         DEFM    "REPIT"
         DEFB    'E'+$80                                 ; D
       ELSE
@@ -37897,7 +38047,7 @@ o1391:  DEFB    $80
         DEFM    "NO CABE LA LINE"
         DEFB    'A'+$80                                 ; G
         DEFM    "STOP "
-      IF v41
+      IF v41 || garry
         DEFM    "EN"
       ELSE
         DEFM    "en"
@@ -37905,7 +38055,7 @@ o1391:  DEFB    $80
         DEFB    " INPU"
         DEFB    'T'+$80                                 ; H
         DEFM    "FOR "
-      IF v41
+      IF v41 || garry
         DEFM    "SIN"
       ELSE
         DEFM    "sin"
@@ -37919,7 +38069,7 @@ o1391:  DEFB    $80
         DEFM    "PROGR. INTERRUMPID"
         DEFB    'O'+$80                                 ; L
         DEFM    "RAMTOP "
-      IF v41
+      IF v41 || garry
         DEFM    "INCORRECT"
         DEFB    'A'+$80                                 ; M
       ELSE
@@ -37931,7 +38081,7 @@ o1391:  DEFB    $80
         DEFM    "CANAL NO VALID"
         DEFB    'O'+$80                                 ; O
         DEFM    "FN "
-      IF v41
+      IF v41 || garry
         DEFM    "SIN"
       ELSE
         DEFM    "sin"
@@ -48129,7 +48279,7 @@ o30CA:  LD      A,(DE)          ;
 
 ;; MULT-RSLT
 o30EA:  CALL    o2D8E           ; routine INT-STORE
-        POP      DE             ;
+        POP     DE              ;
         RET                     ;
 
 ; ---
@@ -51276,7 +51426,7 @@ o3A1B   EX      AF,AF'
 ; Patch to print error message routine
 
 o3A29   BIT     4,(IY+$01)      ; check bit 4 of FLAGS
-      IF v41
+      IF v41 || (garry && spanish)
         DEFB    $00, $00
       ELSE
         JR      NZ,o3A34        ; move on if in +3 BASIC
@@ -51295,7 +51445,7 @@ o3A37   EX      (SP),HL
 ; Patch to "STMT-RET" routine
 
 o3A3B   BIT     4,(IY+$01)      ; check bit 4 of FLAGS
-      IF v41
+      IF v41 || (garry && spanish)
         DEFB    $00, $00
       ELSE
         JR      NZ,o3A46        ; move on if in +3 BASIC
@@ -51309,7 +51459,7 @@ o3A46   LD      HL,$0112
 ; Patch to "STMT-NEXT" routine
 
 o3A4B   BIT     4,(IY+$01)      ; check bit 4 of FLAGS
-      IF v41
+      IF v41 || (garry && spanish)
         DEFB    $00, $00
       ELSE
         JR      NZ,o3A55        ; move on if in +3 BASIC
