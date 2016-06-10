@@ -26828,7 +26828,7 @@ n22c7   push    hl
         defm    ":", $ff, $8b, " track ", $fd, $ff, $8c
         defm    " sector ", $fc, 13, $fb, $ff, $fa
         defm    "Retry, Ignore or Cancel?", $ff
-        defs    $4f
+        defs    29
 
 n2475   push    bc
         push    de
@@ -26840,28 +26840,17 @@ n2475   push    bc
         ld      e, l
         inc     de
         xor     a
-        ld      bc, 20
         ld      (hl), a
-        ldir
-        ld      (hl), '0'
-        ld      c, 20
-        ldir
-        ld      (hl), a
-        ld      c, 6
-        ldir
-        ld      (hl), '0'
-        ld      c, 48
-        ldir
-        ld      (hl), a
-        ld      bc, $01a1
+        ld      bc, $01ff
         ldir
         pop     bc
         inc     c
         dec     c
         ld      hl, $ef98
         call    n266d
-        ld      a, 0
-        jr      nc, n251d
+        jr      nc, n24c7
+        and     a
+        jr      z, n24d2
         ld      hl, ($ef9e)
         ld      a, h
         ld      h, l
@@ -26891,7 +26880,35 @@ n24d2   add     hl, hl
         ex      de, hl
         dec     a
         jr      nz, n24d2
-        ex      (sp), ix
+        ld      l, h
+        ld      h, e
+        ld      e, d
+        ld      d, 0
+        jr      n2500
+        ld      a, 0
+        jr      n2510
+        ld      hl, ($efa0)
+        ld      a, h
+        ld      h, l
+        ld      l, a
+        ld      a, ($ef9f)
+        and     $3f
+        ld      de, 1
+        add     hl, de
+        adc     a, d
+        add     hl, hl
+        adc     a, a
+        add     hl, hl
+        adc     a, a
+        ld      e, h
+        ld      h, l
+        ld      l, d
+        and     a
+        jr      z, n2500
+        ld      e, $ff
+        ld      h, e
+        ld      l, e
+n2500   ex      (sp), ix
         ld      (ix+$72), h
         ld      (ix+$73), e
         ld      (ix+$74), d
@@ -26904,12 +26921,8 @@ n24d2   add     hl, hl
         ld      (ix+$03), d
         ld      (ix+$6e), 2
         ld      (ix+$06), 2
-        ld      (ix+$70), $80
+n2510   ld      (ix+$70), $80
         ld      (ix+$0c), $80
-        ld      (ix+$00), $80
-        ld      (ix+$63), 3
-        ld      (ix+$65), $40
-        ld      (ix+$6a), 1
         ex      (sp), ix
         scf
 n251d   pop     hl
@@ -26933,7 +26946,6 @@ n252c   push    de
         and     7
         call    n0207
         bit     7, b
-        ld      b, 1
         jr      nz, n2548
         pop     af
         call    n2710
@@ -26950,18 +26962,34 @@ n254e   push    af
         ret
 n2558   push    hl
         call    n26d7
-        ld      e, (ix+$00)
-        ld      d, (ix+$01)
-        ld      l, (ix+$02)
-        ld      h, (ix+$03)
+        bit     7, (ix+$04)
+        call    n2637
+n2571   jr      nc, n2580
+        jr      nz, n2580
+        inc     (ix)
+        jr      nz, n2580
+        inc     (ix+1)
+        jr      nz, n2580
+        jr      n2580
+        ld      a, (ix+$01)
+        add     a, 2
+        ld      (ix+$01), a
+        jr      nc, n2580
+        inc     (ix+2)
+        jr      nz, n2580
+        inc     (ix+3)
+        ld      e, (ix)
+        ld      d, (ix+1)
+        ld      l, (ix+2)
+        ld      h, (ix+3)
         bit     7, (ix+$04)
         ld      a, $51
-        call    n2637
-n2571   call    n26a6
+        call    n26a6
+        call    n26a6
         cp      $fe
-        jr      nz, n2571
+        jr      nz, n2580
         ld      de, $0200
-        ld      c, mmcdata
+n2580   ld      c, mmcdata
         pop     hl
         and     a
         rl      (ix+$04)
@@ -26969,13 +26997,6 @@ n2571   call    n26a6
         dec     (ix+$04)
         jr      z, n25a0
         rr      (ix+$04)
-        ld      a, (ix+$01)
-        add     a, 2
-        ld      (ix+$01), a
-        ret     nc
-        inc     (ix+$02)
-        ret     nz
-        inc     (ix+$03)
         ret
 n25a0   inc     ix
         inc     ix
@@ -27005,6 +27026,12 @@ n25c2   ld      c, mmcdata
         dec     hl
         dec     de
         jr      n25c2
+        dec     de
+        ld      a, b
+        and     e
+        inc     a
+        jr      nz, n25cd
+        dec     bc
 n25cd   xor     a
         push    bc
         push    de
@@ -27034,6 +27061,9 @@ n25e9   ld      d, a
         ex      de, hl
         adc     hl, bc
         ld      b, a
+        bit     4, (ix+$10)
+        call    $27f1
+        jr      c, n2600
         ld      h, l
         ld      l, d
         ld      d, e
@@ -27042,38 +27072,30 @@ n25e9   ld      d, a
         add     hl, hl
         ex      de, hl
         adc     hl, hl
-        bit     4, (ix+$10)
+n2600   bit     4, (ix+$10)
         scf
         ret
 n260f   push    af
         ld      a, $ff
         jr      n261d
-n2614   and     1
+n2614   and     a
 n2616   push    af
         ld      a, $fe
         jr      z, n261d
         ld      a, $fd
 n261d   out     (mmcen), a
+        in      a, (mmcdata)
         pop     af
         ret
-n2621   push    af
+        ld      h, 0
+        ld      l, 0
+        ld      d, l
+        ld      e, l
         push    bc
-        ld      b, 4
-n2625   in      a, (mmcdata)
-        djnz    n2625
-        pop     bc
-        pop     af
-        ret
-n262c   push    hl
-        ld      hl, $8000
-n2630   dec     hl
-        ld      a, h
-        or      l
-        jr      nz, n2630
-        pop     hl
-        ret
+        ld      b, $ff
+        jr      n2638
 n2637   push    bc
-        ld      c, a
+n2638   ld      c, a
         call    n260f
         call    n2621
         nop
@@ -27092,36 +27114,27 @@ n2637   push    bc
         ld      a, e
         nop
         out     (mmcdata), a
-        ld      a, $ff
-        nop
-        out     (mmcdata), a
         call    n2695
+        pop     bc
         and     a
-        jr      nz, n2664
-        pop     bc
+        ret     nz
         scf
-        ret
-n2664   push    af
-        call    n260f
-        in      a, (mmcdata)
-        pop     af
-        pop     bc
         ret
 n266d   push    bc
         push    de
         push    hl
-        ld      h, 0
-        ld      l, h
-        ld      d, h
-        ld      e, h
+        push    af
+        call    n2637
+        pop     af
+        push    de
         ld      a, $49
         call    n2637
+        pop     de
         pop     hl
         jr      nc, n2692
         call    n26a6
         cp      $fe
         jr      z, n2689
-        ld      a, 2
         and     a
         jr      n2692
 n2689   ld      b, $12
@@ -27129,8 +27142,10 @@ n2689   ld      b, $12
 n268d   ini
         jr      nz, n268d
         scf
+        ld      a, d
 n2692   pop     de
-        jr      n2664
+        pop     bc
+        jr      n2699
 n2695   push    bc
         ld      bc, 50
 n2699   in      a, (mmcdata)
@@ -27154,7 +27169,7 @@ n26b6   pop     bc
 n26b8   ld      a, $51
         call    n2637
 n26bd   ld      a, 0
-        ret     nc
+        jr      nc, n26ca
         call    n26a6
         cp      $fe
         jr      z, n26ca
@@ -27172,9 +27187,15 @@ n26d7   in      a, (mmcdata)
         nop
         nop
         in      a, (mmcdata)
-        call    n260f
-        call    n2621
         scf
+        call    n260f
+n2621   push    af
+        push    bc
+        ld      b, 4
+n2625   in      a, (mmcdata)
+        djnz    n2625
+        pop     bc
+        pop     af
         ret
 n26e5   ld      c, mmcdata
         in      a, (c)
@@ -27183,31 +27204,9 @@ n26e5   ld      c, mmcdata
         or      e
         jr      nz, n26e5
         jr      n26d7
-n26f0   call    n2614
-        ld      a, $50
-        out     (mmcdata), a
-        xor     a
-        nop
-        out     (mmcdata), a
-        nop
-        nop
-        out     (mmcdata), a
-        ld      a, d
-        nop
-        out     (mmcdata), a
-        ld      a, e
-        nop
-        out     (mmcdata), a
-        ld      a, $ff
-        nop
-        out     (mmcdata), a
-        nop
-        nop
-        jr      n26d7
 n2710   ld      a, $58
         call    n2637
-        ld      a, 0
-        ret     nc
+        jr      nc, n2745
         ld      a, $fe
         out     (mmcdata), a
         push    bc
@@ -27240,12 +27239,11 @@ n2746   call    n2695
         cp      0
         jr      z, n2746
         call    n260f
-        call    n2621
-        djnz    n2710
         scf
         ret
 n2757   ld      a, 0
         and     a
+        call    n2621
         ret
 n275b   ld      bc, $0200
 n275e   ld      a, 2
@@ -27253,81 +27251,136 @@ n275e   ld      a, 2
         ld      hl, tmp_buff
         call    n266d
         jr      c, n2771
-        bit     0, a
-        jr      nz, n2779
-        inc     a
-        jr      z, n2779
 n2770   dec     c
 n2771   inc     c
         djnz    n275e
         ld      a, c
         ld      ($df9d), a
         ret
-n2779   ld      a, b
-        sub     2
-        call    n278c
-        jr      nc, n2770
-        ld      a, b
-        sub     2
-        ld      de, $0200
-        call    n26f0
-        jr      n275e
 n278c   push    bc
         push    af
-        call    n260f
-        ld      b, 10
-        ld      a, $ff
-n2795   out     (mmcdata), a
-        djnz    n2795
-        pop     af
-        push    af
-        call    n2614
+        call    n278c
         ld      a, $40
-        call    n27e2
+        ld      hl, 0
+        ld      d, h
+        ld      e, l
+        ld      b, $95
         call    n2695
-        cp      1
-        jr      nz, n27d9
+        dec     a
+        jr      nz, n278c
         ld      bc, $0078
-n27ad   call    n260f
-        ld      a, $ff
-        out     (mmcdata), a
         pop     af
         push    af
+        push    bc
+        ld      a, $48
+        ld      hl, 0
+        ld      de, $01aa
+        ld      b, $87
+n27ad   call    n260f
+        pop     bc
+        bit     2, a
+        ld      h, 0
+        jr      nz, n27d9
+        dec     a
+        jr      nz, n27d9
+        in      a, (mmcdata)
+        ld      h, a
+        nop
+        in      a, (mmcdata)
+        ld      l, a
+        nop
+        in      a, (mmcdata)
+        and     $0f
+        ld      d, a
+        in      a, (mmcdata)
+        cp      e
+        jr      nz, n27d9
+        dec     d
+        jr      nz, n27d9
+        ld      h, $40
+        pop     af
+        push    af
+        push    hl
+        ld      a, $77
         call    n2614
-        ld      a, $41
-        call    n27e2
-        call    n2695
-        bit     0, a
+        pop     hl
+        pop     af
+        push    af
+        push    hl
+        ld      a, $69
+        call    n2614
+        pop     hl
+        bit     2, a
+        jr      nz, n27ce
+        jr      c, n27ce
+        dec     a
         jr      z, n27ce
+        jr      n27ce
         djnz    n27ad
         dec     c
         jr      nz, n27ad
-        ld      a, 2
         jr      n27db
+        pop     af
+        push    af
+        ld      a, $41
 n27ce   call    n260f
-        in      a, (mmcdata)
-        call    n262c
-        scf
+        jr      c, n27df
+        djnz    n27ad
+        dec     c
+        jr      nz, n27ad
+        jr      n27db
+        pop     af
+        push    af
+        call    n260f
+        jr      nc, n27df
+        ld      d, a
+        jr      z, n27ad
+        pop     af
+        push    af
+        ld      a, $50
+        ld      de, $0200
+        ld      h, e
+        ld      l, e
+        call    n260f
+        jr      nc, n27df
+n27d9   ld      d, 1
+n27db   scf
         jr      n27df
-n27d9   ld      a, 1
-n27db   call    n260f
         and     a
 n27df   pop     bc
         pop     bc
-        ret
-n27e2   push    bc
-        out     (mmcdata), a
-        ld      b, 4
-        xor     a
-n27e8   out     (mmcdata), a
-        djnz    n27e8
-        ld      a, $95
+        jp      n260f
+        ld      a, $7a
+        call    n260f
+        ret     nc
+        ld      d, $c0
+        in      a, (mmcdata)
+        and     d
+        ld      h, a
+        in      a, (mmcdata)
+        ld      l, a
         nop
-        out     (mmcdata), a
-        pop     bc
+        in      a, (mmcdata)
+        ld      e, a
+        nop
+        in      a, (mmcdata)
+        ld      a, h
+        sub     d
+        scf
+        ret
+
+        push    hl
+        push    de
+        call    n260f
+        pop     de
+        pop     hl
+        ret     nc
+        ret     z
+        and     a
         ret
 n27f3   scf
         ret
+
 n27f5   sla     e
         srl     d
         rr      e
@@ -28515,6 +28568,24 @@ n305d   ld      (hl), 0
         pop     ix
         ret     
 
+        call    n2b77
+        ret     nc
+        ld      a, (hl)
+        and     a
+        scf
+        ret
+
+n3084   push    af
+        call    n2b77
+        jr      nc, n3060
+        ld      (hl), a
+        pop     af
+        ld      hl, $ef11
+        call    n2b77
+        ret
+n3060   pop     hl
+        ret
+
 n306d   push    hl
         ld      hl, $ef11
         call    n2b77
@@ -28523,35 +28594,13 @@ n306d   push    hl
         ld      a, l
         and     $1f
         ld      l, a
-        ld      h, 0
-        ld      de, $ef31
-        add     hl, de
-        ld      a, (hl)
-        and     a
-        scf     
-        ret     
-
-n3084   push    af
-        push    hl
-        ld      hl, $ef11
-        call    n2b77
-        pop     hl
-        jr      nc, n30a3
-        ld      a, l
-        and     $1f
-        ld      l, a
         ld      a, h
         ld      h, 0
         ld      de, $ef31
         add     hl, de
-        ld      (hl), a
-        pop     af
-        ld      hl, $ef11
-        call    n2ba0
-        ret
-n30a3   pop     hl
-        ret
-        
+        scf     
+        ret     
+
 n30a5   ld      a, (ix+$00)
         cp      2
         scf
