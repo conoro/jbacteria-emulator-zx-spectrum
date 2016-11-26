@@ -320,6 +320,10 @@
 
         ; $fe00-$ffff used to load bootsector by +3DOS ROM
 ;--------------------------------------------------
+      .macro  ROM3  par1
+        rst     $28
+        defw    par1
+      .endm
 
         org     $0000
 
@@ -337,24 +341,21 @@ l0004   dec     bc              ; Delay for approx 0.2s
 
 ; RST 10: call the RST 10 routine in ROM 3 to print a character
 
-l0010   rst     $28
-        defw    $0010           ; call RST 10 in ROM 3
+l0010   ROM3    o0010           ; call RST 10 in ROM 3
         ret
 
         defs    4
 
 ; RST 18: call the RST 18 routine in ROM 3 to collect a character
 
-l0018   rst     $28
-        defw    $0018           ; call RST 18 in ROM 3
+l0018   ROM3    o0018           ; call RST 18 in ROM 3
         ret
 
         defs    4
 
 ; RST 20: call the RST 20 routine in ROM 3 to collect next character
 
-l0020   rst     $28
-        defw    $0020           ; call RST 20 in ROM 3
+l0020   ROM3    o0020           ; call RST 20 in ROM 3
         ret
 
         defs    4
@@ -630,8 +631,7 @@ l016c   ld      b,d
         ld      de,$3eaf        ; prepare to copy chars A-U from ROM 3
         ld      bc,$00a8        ; to UDG area
         ex      de,hl
-        rst     $28             ; execute a LDDR from ROM 3 to copy them
-        defw    $1661
+        ROM3    o1661           ; execute a LDDR from ROM 3 to copy them
         ex      de,hl
         inc     hl
         ld      (UDG),hl        ; store address of first UDG
@@ -726,8 +726,7 @@ l01b0   ld      hl,$3c00
         inc     hl
         ld      sp,hl           ; set SP to RAMTOP+1
         ei                      ; enable interrupts
-        rst     $28
-        defw    $0d6b           ; CLS using ROM 3
+        ROM3    o0D6B           ; CLS using ROM 3
         call    l02aa           ; display test image if BREAK held down
       IF garry
         ld      de,l3834
@@ -780,8 +779,7 @@ l02ae   rra
         ld      a,$07
         out     ($fe),a         ; white border
         ld      a,$02
-        rst     $28
-        defw    $1601           ; open stream 2 for output
+        ROM3    o1601           ; open stream 2 for output
         xor     a
         ld      (TV_FLAG),a     ; clear TV FLAG
         ld      a,$16
@@ -857,7 +855,7 @@ l030a   dec     bc
 l032e   djnz    l034f
         ld      a, d
         or      e
-       jp      nz, $38d5
+        jp      nz, l38d5
         push    hl
         ld      hl, (CURCHL)
         ld      de, 13
@@ -872,7 +870,7 @@ l032e   djnz    l034f
         and     a
         sbc     hl, bc
         ex      de, hl
-       jp      c, $38d5
+        jp      c, l38d5
         ld      (hl), c
         inc     hl
         ld      (hl), b
@@ -1467,8 +1465,7 @@ l064e   ld      hl,TSTACK
         ld      (OLDSP),hl      ; set "OLDSP" to temporary stack area
         call    l05cc           ; page in DOS workspace
         ld      a,$02
-        rst     $28
-        defw    $1601           ; open channel to stream 2
+        ROM3    o1601           ; open channel to stream 2
 l065c   ld      hl,l07f2
         ld      (men_rout),hl   ; store main menu routine table address
         ld      hl,l07ff
@@ -1490,8 +1487,7 @@ l067b   ld      ix,$fd98
         ld      (OLDSP),hl
         call    l05cc
         ld      a,$02
-        rst     $28
-        defw    $1601
+        ROM3    o1601
         call    l185a
         ld      hl,$5c3b
 
@@ -1528,10 +1524,8 @@ l06b4   call    l11a4
         ld      ($ec08),hl      ; ??? last line
 l06da   ld      hl,($ec08)      ; ??? last line
 l06dd   call    l05a7           ; page in normal memory
-        rst     $28
-        defw    $196e           ; ???
-        rst     $28
-        defw    $1695
+        ROM3    o196E           ; ???
+        ROM3    o1695
         call    l05cc           ; page in DOS workspace
         ld      (E_PPC),de
         ld      hl,ed_flags
@@ -1634,8 +1628,7 @@ l0799   push    ix              ; save IX
       ELSE
         ld      hl,$0c80        ; HL=timing constant
       ENDIF
-l07a1   rst     $28
-        defw    $03b5           ; call BEEPER
+l07a1   ROM3    o03B5           ; call BEEPER
         pop     ix              ; restore IX
         ret
 
@@ -1828,7 +1821,7 @@ l089f   ld      hl, (CURCHL)
         sbc     hl, bc
         pop     hl
         ex      de, hl
-       jp      nc, $38d5
+        jp      nc, l38d5
         inc     de
         ld      (hl), d
         dec     hl
@@ -2092,10 +2085,8 @@ l0a4e   ld      a,(process)
         call    l0ab7           ; remove cursor
         ld      hl,$0000        ; line 0
         call    l05a7           ; page in normal memory
-        rst     $28
-        defw    $196e           ; get address of first line in HL
-        rst     $28
-        defw    $1695           ; get line number in DE
+        ROM3    o196E           ; get address of first line in HL
+        ROM3    o1695           ; get line number in DE
         call    l05cc           ; page in DOS workspace
         ld      (E_PPC),de      ; set as current line
         ld      a,$0f
@@ -2112,11 +2103,9 @@ l0a76   ld      a,(process)
         call    l0ab7           ; remove cursor
         ld      hl,9999         ; last possible line
         call    l05a7           ; page in normal memory
-        rst     $28
-        defw    $196e           ; get last line address in DE
+        ROM3    o196E           ; get last line address in DE
         ex      de,hl
-        rst     $28
-        defw    $1695           ; get last line number in DE
+        ROM3    o1695           ; get last line number in DE
         call    l05cc           ; page in DOS workspace
         ld      (E_PPC),de      ; set as current line
         ld      a,$0f
@@ -4537,8 +4526,7 @@ l1887   cp      $10
         jr      nc,l1872
 l1894   pop     hl              ; restore HL
         ret
-l1896   rst     $28
-        defw    $10db           ; call key mode change routine
+l1896   ROM3    o10DB           ; call key mode change routine
         ret
 
 ; Subroutine to display a menu
@@ -4616,8 +4604,7 @@ l190b   push    af              ; save registers
         push    bc
         ld      b,h
         ld      c,l
-        rst     $28
-        defw    $22e9           ; plot a pixel
+        ROM3    o22E9           ; plot a pixel
         pop     bc              ; restore registers
         pop     de
         pop     hl
@@ -4709,8 +4696,7 @@ l196d   ex      af,af'          ; save carry flag
 l197b   push    bc              ; save registers
         push    af
         push    de
-        rst     $28
-        defw    $0e9b           ; get HL=address of line B in display file
+        ROM3    o0E9B           ; get HL=address of line B in display file
         ld      bc,$0007
         add     hl,bc           ; HL=address of left of window line
         pop     de              ; restore save area in page 7
@@ -4745,8 +4731,7 @@ l19a0   ex      af,af'          ; save carry flag
         djnz    l1993           ; back for more pixel lines
         push    bc
         push    de
-        rst     $28
-        defw    $0e88
+        ROM3    o0E88
         ex      de,hl           ; HL=attributes address
         pop     de
         pop     bc
@@ -4919,8 +4904,7 @@ l1a95   call    l05a7           ; page in normal memory
         or      e
         jp      z,l1bcd         ; if none, signal "command failed" & exit
         ld      hl,(RC_STEP)
-        rst     $28
-        defw    $30a9           ; HL=STEP*number of lines
+        ROM3    o30A9           ; HL=STEP*number of lines
         ex      de,hl           ; DE=STEP*number of lines
         ld      hl,(RC_START)
         add     hl,de           ; HL=projected last line number
@@ -4929,8 +4913,7 @@ l1a95   call    l05a7           ; page in normal memory
         sbc     hl,de
         jp      nc,l1bcd        ; if >9999, signal "command failed" & exit
         ld      hl,(PROG)       ; get start of program
-l1ab7   rst     $28
-        defw    $19b8           ; get address of next line
+l1ab7   ROM3    o19B8           ; get address of next line
         inc     hl
         inc     hl
         ld      (RC_LINE),hl    ; store address of current line (after number)
@@ -4938,8 +4921,7 @@ l1ab7   rst     $28
         inc     hl              ; point after line length
         ld      (STRIP2+$11),de ; store address of next line
 l1ac5   ld      a,(hl)          ; get next character
-        rst     $28
-        defw    $18b6           ; skip past embedded number if necessary
+        ROM3    o18B6           ; skip past embedded number if necessary
         cp      $0d
         jr      z,l1ad2         ; move on if end of line
         call    l1b1b           ; replace any line number in this command
@@ -4959,8 +4941,7 @@ l1aea   push    bc              ; save registers
         push    de
         push    hl
         ld      hl,(RC_STEP)
-        rst     $28
-        defw    $30a9           ; HL=(line-1)*STEP
+        ROM3    o30A9           ; HL=(line-1)*STEP
         ld      de,(RC_START)
         add     hl,de
         ex      de,hl           ; DE=new line number
@@ -5012,8 +4993,7 @@ l1b26   cpir                    ; check if one of line number commands
 l1b2c   ld      a,(hl)          ; get next character
         cp      $20
         jr      z,l1b4c         ; go to skip spaces
-        rst     $28
-        defw    $2d1b           ; is it a digit?
+        ROM3    o2D1B           ; is it a digit?
         jr      nc,l1b4c        ; go to skip if so
         cp      '.'
         jr      z,l1b4c         ; go to skip decimal point
@@ -5032,8 +5012,7 @@ l1b4c   inc     bc              ; increment characters found
         jr      l1b2c           ; loop back for more
 l1b50   ld      (STRIP2+$07),bc ; save no of characters before embedded #
         push    hl              ; save pointer to embedded number
-        rst     $28
-        defw    $18b6           ; skip past embedded number
+        ROM3    o18B6           ; skip past embedded number
         call    l1c43           ; skip past spaces
         ld      a,(hl)          ; get following character
         pop     hl              ; restore pointer to embedded number
@@ -5042,14 +5021,11 @@ l1b50   ld      (STRIP2+$07),bc ; save no of characters before embedded #
         cp      $0d
         ret     nz              ; exit if following character not : or ENTER
 l1b64   inc     hl              ; HL points to next statement/line
-        rst     $28
-        defw    $33b4           ; stack the embedded number
-        rst     $28
-        defw    $2da2           ; get embedded number to BC
+        ROM3    o33B4           ; stack the embedded number
+        ROM3    o2DA2           ; get embedded number to BC
         ld      h,b
         ld      l,c             ; HL=embedded line number
-        rst     $28
-        defw    $196e           ; get HL=address of target line
+        ROM3    o196E           ; get HL=address of target line
         jr      z,l1b7c         ; move on if the actual line was found
         ld      a,(hl)
       IF garry
@@ -5064,8 +5040,7 @@ l1b64   inc     hl              ; HL points to next statement/line
 l1b7c   ld      (STRIP2+$0d),hl ; save target line address
         call    l1c18           ; get DE=number of lines before it
         ld      hl,(RC_STEP)
-        rst     $28
-        defw    $30a9
+        ROM3    o30A9
         ld      de,(RC_START)
         add     hl,de           ; HL=target line's new number
 l1b8d   ld      de,STRIP2+$09
@@ -5101,8 +5076,7 @@ l1b8d   ld      de,STRIP2+$09
         jr      c,l1bcb         ; or if would encroach on stack
         pop     de              ; restore registers
         pop     hl
-        rst     $28
-        defw    $1655           ; make room
+        ROM3    o1655           ; make room
         jr      l1bdc           ; move on
 l1bcb   pop     de
         pop     hl
@@ -5113,8 +5087,7 @@ l1bd2   dec     bc
         dec     e
         jr      nz,l1bd2        ; BC=number of bytes to reclaim
         ld      hl,(STRIP2+$0f)
-        rst     $28
-        defw    $19e8           ; reclaim room
+        ROM3    o19E8           ; reclaim room
 l1bdc   ld      de,(STRIP2+$0f)
         pop     hl
         pop     bc
@@ -5124,8 +5097,7 @@ l1bdc   ld      de,(STRIP2+$0f)
         pop     bc              ; BC=new line number
         inc     hl
         push    hl              ; save address to place FP number
-        rst     $28
-        defw    $2d2b           ; stack BC on FP stack (HL=address)
+        ROM3    o2D2B           ; stack BC on FP stack (HL=address)
         pop     de
         ld      bc,$0005
         ldir                    ; copy FP representation
@@ -5165,8 +5137,7 @@ l1c18   ld      hl,(PROG)
         ld      hl,(PROG)       ; start at PROG
         ld      bc,$0000        ; with 0 lines
 l1c2a   push    bc
-        rst     $28
-        defw    $19b8           ; find DE=address of next line
+        ROM3    o19B8           ; find DE=address of next line
         ld      hl,(STRIP2+$0d)
         and     a
         sbc     hl,de
@@ -5321,8 +5292,7 @@ l1cda   ld      c,a
 
 l1ce3   push    bc
         ld      c,h
-        rst     $28
-        defw    $0e9b
+        ROM3    o0E9B
         defb    $eb
         xor     a
         or      c
@@ -5333,8 +5303,7 @@ l1ce3   push    bc
 l1cf0   dec     b
 
 l1cf1   push    de
-        rst     $28
-        defw    $0e9b
+        ROM3    o0E9B
         defb    $d1
         ld      a,c
         ld      c,$20
@@ -5353,12 +5322,10 @@ l1cfb   push    bc
         djnz    l1cfb               ; (-14)
         push    af
         push    de
-        rst     $28
-        defw    $0e88
+        ROM3    o0E88
         defb    $eb
         ex      (sp),hl
-        rst     $28
-        defw    $0e88
+        ROM3    o0E88
         defb    $eb
         ex      (sp),hl
         pop     de
@@ -5404,8 +5371,7 @@ l1d49   ld      a,(hl)
 
 l1d4f   cp      $90
         jr      nc,l1d62            ; (15)
-        rst     $28
-        defw    $0010
+        ROM3    o0010
 
 l1d56   inc     hl
         djnz    l1d49               ; (-16)
@@ -5430,8 +5396,7 @@ l1d6b   call    l1dc5           ; swap editor/BASIC colours & P_FLAG
         ld      c,a             ; C=number of lines to clear
         call    l1da5           ; convert line number as required by ROM 3
 l1d75   push    bc
-        rst     $28
-        defw    $0e9b           ; get HL=address of line B in display file
+        ROM3    o0E9B           ; get HL=address of line B in display file
         ld      c,$08           ; 8 pixel lines per character
 l1d7b   push    hl
         ld      b,$20           ; 32 characters per line
@@ -5445,8 +5410,7 @@ l1d7f   ld      (hl),a          ; clear a pixel line of a character
         jr      nz,l1d7b        ; back for rest of pixel lines
         ld      b,$20
         push    bc
-        rst     $28
-        defw    $0e88           ; get attribute address
+        ROM3    o0E88           ; get attribute address
         ex      de,hl
         pop     bc
         ld      a,(ATTR_P)
@@ -5536,8 +5500,7 @@ l1dfc   ld      ($fdb6),a
         ld      hl,$fda0
         ld      ($fda9),hl
         call    l05a7
-        rst     $28
-        defw    $16b0
+        ROM3    o16B0
         call    l05cc
         ld      a,$00
         ld      ($fdad),a
@@ -5988,8 +5951,7 @@ l20da   push    af
         call    l20f9
         pop     de
         pop     hl
-        rst     $28
-        defw    $1664
+        ROM3    o1664
         defb    $2a
         ld      h,l
         ld      e,h
@@ -6123,11 +6085,9 @@ l2187   push    af
         push    af
         ld      a, (BORDCR)
         ld      (ATTR_P), a
-        rst     $28
-        defw    $0d6e
+        ROM3    o0D6E
         ld      a, $fd
-        rst     $28
-        defw    $1601
+        ROM3    o1601
         pop     af
         ld      (ATTR_P), a
         pop     hl
@@ -6141,11 +6101,9 @@ l21a9   pop     af
         jr      z, l21bb
         call    l1871
 l21af   push    de
-        rst     $28
-        defw    $0d6e
+        ROM3    o0D6E
         ld      a, $fe
-        rst     $28
-        defw    $1601
+        ROM3    o1601
         pop     de
         ld      a, e
         ret
@@ -6170,11 +6128,9 @@ l2187   push    hl
         push    af
         ld      a,(BORDCR)
         ld      (ATTR_P),a
-        rst     $28
-        defw    $0d6e
+        ROM3    o0D6E
         ld      a,$fd
-        rst     $28
-        defw    $1601
+        ROM3    o1601
         pop     af
         ld      (ATTR_P),a
         pop     af
@@ -6190,11 +6146,9 @@ l2187   push    hl
         call    x21df
         call    l1871
 x21d3   push    de
-        rst     $28
-        defw    $0d6e
+        ROM3    o0D6E
         ld      a,$fe
-        rst     $28
-        defw    $1601
+        ROM3    o1601
         pop     de
         ld      a,e
         ret
@@ -6346,8 +6300,7 @@ l2187   jr      z,l218c
 l218c   push    de
         push    hl
         ld      a,$fd
-        rst     $28
-        defw    $1601           ; open channel to stream -3
+        ROM3    o1601           ; open channel to stream -3
         pop     hl
         push    hl
 l2195   ld      b,$20           ; 32 chars per line
@@ -6392,11 +6345,9 @@ l21c8   ld      a,(hl)
         jr      nz,l21c8        ; loop back if more possibilities to check
         jr      l21be           ; else get another key
 l21d3   push    af
-        rst     $28
-        defw    $0d6e           ; clear lower screen
+        ROM3    o0D6E           ; clear lower screen
         ld      a,$fe
-        rst     $28
-        defw    $1601           ; open channel to stream -2
+        ROM3    o1601           ; open channel to stream -2
         pop     af
         pop     hl
         ret
@@ -6519,8 +6470,7 @@ l22a1   ld      ix, (CURCHL)
         sub     $a5
 l22b4   ld      hl, (RETADDR)
         push    hl
-        rst     $28
-        defw    o0C10
+        ROM3    o0C10
         pop     hl
         ld      (RETADDR), hl
         ret
@@ -7673,8 +7623,7 @@ l2b1f   ld      bc, $3c00
         ex      de, hl
         push    de
         ld      bc, 8
-        rst     $28
-        defw    $33c3
+        ROM3    o33C3
         pop     hl
         pop     de
         ld      (RETADDR), de
@@ -8385,8 +8334,7 @@ l266f   ld      a,$52           ; signal "in test program"
         ex      af,af'
         jp      l016c           ; do some initialisation & return here
 l2675   ld      a,$02
-        rst     $28
-        defw    $1601           ; open channel to stream 2
+        ROM3    o1601           ; open channel to stream 2
 l267a   ld      hl,l2681
         call    l2703           ; output normal colour control codes
         ret
@@ -8516,14 +8464,12 @@ l270b   ld      a,$10
 
 ; Subroutine to output a character
 
-l2716   rst     $28
-        defw    $0010
+l2716   ROM3    o0010
 l2719   ret
 
 ; Subroutine to clear screen
 
-l271a   rst     $28
-        defw    $0daf           ; call ROM 3 CLS
+l271a   ROM3    o0DAF           ; call ROM 3 CLS
         jp      l267a           ; go to set "normal" colours & exit
 
 ; Subroutine to make a beep
@@ -9950,8 +9896,7 @@ l38dc   cp      13
         jr      z, l38ee
         ld      hl, (RETADDR)
         push    hl
-        rst     $28
-        defw    $0f85
+        ROM3    o0F85
         pop     hl
         ld      (RETADDR), hl
         pop     hl
@@ -9978,8 +9923,7 @@ l3916   jp      (hl)
 l3917   ld      hl, (CH_ADD)
         ld      (X_PTR), hl
         ld      l, a
-        rst     $28
-        defw    $0055
+        ROM3    o0055
 l3921   call    l3e80
         ld      l, (hl)
         rra
@@ -10069,8 +10013,7 @@ l39ae   ld      a, (hl)
         cp      c
         jr      z, l39be
         push    bc
-        rst     $28
-        defw    $19b8
+        ROM3    o19B8
         pop     bc
         ex      de, hl
         jr      l39ae
@@ -10423,8 +10366,7 @@ l3f78   push    hl
         push    hl
         ld      hl, (RETADDR)
         ex      (sp), hl
-        rst     $28
-        defw    $19e8
+        ROM3    o19E8
         pop     hl
         ld      (RETADDR), hl
         pop     bc
@@ -10463,8 +10405,7 @@ l3fb0   push    hl
         push    hl
         ld      hl, (RETADDR)
         ex      (sp), hl
-        rst     $28
-        defw    $1655
+        ROM3    o1655
         pop     hl
         ld      (RETADDR), hl
         ld      hl, (DATADD)
@@ -10757,24 +10698,21 @@ m0008   jp      m2ada           ; jump to error handler
 
 ; RST $10 - The "Print a character restart"
 
-m0010   rst     $28
-        defw    $0010           ; call RST $10 in ROM 3
+m0010   ROM3    o0010           ; call RST $10 in ROM 3
         ret
 
         defs    4
 
 ; RST $18 - The "Collect character" restart
 
-m0018   rst     $28
-        defw    $0018           ; call RST $18 in ROM 3
+m0018   ROM3    o0018           ; call RST $18 in ROM 3
         ret
 
         defs    4
 
 ; RST $20 - The "Collect next character" restart
 
-m0020   rst     $28
-        defw    $0020           ; call RST $20 in ROM 3
+m0020   ROM3    o0020           ; call RST $20 in ROM 3
         ret
 
         defs    4
@@ -11132,8 +11070,7 @@ m0269   ld      a,$40
 
 ; The FORMAT command
 
-m026c   rst     $28
-        defw    $0018           ; get character after FORMAT
+m026c   ROM3    o0018           ; get character after FORMAT
 m026f   cp      $e0
         jp      z,m03e3         ; move on if LPRINT
         cp      $ca
@@ -11143,15 +11080,12 @@ m026f   cp      $e0
         jp      z, m1dd9
       ELSE
         jr      nz,m027e        ; move on if not LINE
-        rst     $28
-        defw    $0020           ; get next character
+        ROM3    o0020           ; get next character
         jp      m1e05           ; and move on for FORMAT LINE
       ENDIF
-m027e   rst     $28
-        defw    $1c8c           ; get a string expression
+m027e   ROM3    o1C8C           ; get a string expression
         call    m10b1           ; check for end-of-statement
-        rst     $28
-        defw    $2bf1           ; get string from stack
+        ROM3    o2BF1           ; get string from stack
         ld      a,c
         dec     a
         dec     a
@@ -11291,8 +11225,7 @@ m0381   ld      hl,m03a7
 m0384   ld      a,(hl)          ; get next char
         or      a
         jr      z,m038e         ; move on if null
-        rst     $28
-        defw    $0010           ; output char
+        ROM3    o0010           ; output char
 m038b   inc     hl
         jr      m0384           ; loop back
 m038e   res     5,(iy+$01)      ; signal "no key"
@@ -11303,8 +11236,7 @@ m0392   bit     5,(iy+$01)
         cp      'A'             ; is it "A"?
         push    af
         push    hl
-        rst     $28
-        defw    $0d6e           ; clear lower screen
+        ROM3    o0D6E           ; clear lower screen
         pop     hl
         pop     af
         ret                     ; exit with Z set if abandon requested
@@ -11324,22 +11256,16 @@ m03a7   defm    "Disk is already formatted.", $0d
 
 ; The FORMAT LPRINT command
 
-m03e3   rst     $28
-        defw    $0020           ; get next char
-m03e6   rst     $28
-        defw    $1c8c           ; get string expression
-        rst     $28
-        defw    $0018           ; get next char
+m03e3   ROM3    o0020           ; get next char
+m03e6   ROM3    o1C8C           ; get string expression
+        ROM3    o0018           ; get next char
 m03ec   cp      ';'
         call    nz,m10b1        ; check for end-of-statement if not ";"
         jr      nz,m041c        ; move on if not ";"
-        rst     $28
-        defw    $0020           ; get next char
-m03f6   rst     $28
-        defw    $1c8c           ; get string expression
+        ROM3    o0020           ; get next char
+m03f6   ROM3    o1C8C           ; get string expression
         call    m10b1           ; check for end-of-statement
-        rst     $28
-        defw    $2bf1           ; get 2nd string from stack
+        ROM3    o2BF1           ; get 2nd string from stack
         ld      a,c
         dec     a
         or      b               ; check length
@@ -11363,8 +11289,7 @@ m0415   cp      'U'
         jp      nz,m028d        ; if 2nd string not "U", error
       ENDIF
         res     2,(hl)          ; if "U", reset "expand tokens" flag
-m041c   rst     $28
-        defw    $2bf1           ; get first string from stack
+m041c   ROM3    o2BF1           ; get first string from stack
         ld      a,c
         dec     a
         or      b               ; check length
@@ -11416,8 +11341,7 @@ m045b   call    m2ada
 ;       so this is output to the last used stream.
 ; *BUG* The lower screen is not cleared if "N" is pressed
 
-m044a   rst     $28
-        defw    $2bf1           ; get string from stack
+m044a   ROM3    o2BF1           ; get string from stack
         ld      a,b
         or      c               ; check length
         jr      nz,m0455
@@ -11444,8 +11368,7 @@ m0455   push    bc              ; save addresses
 m046d   push    bc
         push    de
         ld      a, $fd
-        rst     $28
-        defw    $1601           ; open channel to stream
+        ROM3    o1601           ; open channel to stream
         pop     de
         pop     bc
         ld      hl, merase
@@ -11470,8 +11393,7 @@ m0481   bit     5,(hl)
         cp      'N'
     IF garry
         jr      nz,m049c
-m0499   rst     $28
-        defw    $0d6e           ; clear lower screen
+m0499   ROM3    o0D6E           ; clear lower screen
         pop     de
         pop     bc
         ret
@@ -11482,8 +11404,7 @@ m049c   cp      'Y'
       ENDIF
         jr      z, m04a1
         jr      m047c
-m04a1   rst     $28
-        defw    $0d6e           ; clear lower screen
+m04a1   ROM3    o0D6E           ; clear lower screen
         pop     de
         pop     bc
     ELSE
@@ -11498,8 +11419,7 @@ m0493   cp      'Y'
       ENDIF
         jr      z,m0499
         jr      m047c           ; loop back for another key if not "Y"
-m0499   rst     $28
-        defw    $0d6e           ; clear lower screen
+m0499   ROM3    o0D6E           ; clear lower screen
         pop     de
         pop     bc
     ENDIF
@@ -11525,15 +11445,13 @@ m04c1   ld      a,(hl)          ; get next char
         or      a
         ret     z               ; exit if null
         inc     hl
-        rst     $28
-        defw    $0010           ; output char
+        ROM3    o0010           ; output char
 m04c8   jr      m04c1           ; loop back
 
 ; Subroutine to output a filespec at DE, length BC
 
 m04ca   ld      a,(de)          ; get next char
-        rst     $28
-        defw    $0010           ; output char
+        ROM3    o0010           ; output char
 m04ce   inc     de
         dec     bc
         ld      a,b
@@ -11557,8 +11475,7 @@ m04dc   defm    " ? (Y/N)", 0
 
 ; The MOVE command
 
-m04e5   rst     $28
-        defw    $2bf1           ; get 2nd string
+m04e5   ROM3    o2BF1           ; get 2nd string
         ld      a,b
         or      c               ; check length
         jr      nz,m04f0
@@ -11578,8 +11495,7 @@ m04f0   ld      a,(de)
 m0508   inc     de
         call    m2b64           ; page in normal memory
         push    de              ; save pointer for source filename
-        rst     $28
-        defw    $2bf1           ; get 1st string
+        ROM3    o2BF1           ; get 1st string
         ld      a,b
         or      c               ; check length
         jr      nz,m0518
@@ -11629,8 +11545,7 @@ m054b   ld      a,(de)
         defb    $47             ; invalid attribute error
 m0561   push    bc              ; save attribute flags
         push    af
-        rst     $28
-        defw    $2bf1           ; get 1st string
+        ROM3    o2BF1           ; get 1st string
         ld      a,b
         or      c               ; check length
         jr      nz,m056e
@@ -11678,8 +11593,7 @@ m059f   ld      hl,tmp_fspec
 
 m05b8   ld      hl,FLAGS3
         res     6,(hl)          ; signal "standard catalog"
-        rst     $28
-        defw    $2070           ; consider stream information
+        ROM3    o2070           ; consider stream information
         jr      c,m05dd         ; move on if default stream to be used
         ld      hl,(CH_ADD)
         ld      a,(hl)          ; get next char
@@ -11703,8 +11617,7 @@ m05da   rst     $20             ; get next char
 m05dd   ld      a,$02           ; use stream 2
         bit     7,(iy+$01)
         jr      z,m05e8         ; move on if only syntax-checking
-        rst     $28
-        defw    $1601           ; else open channel to stream
+        ROM3    o1601           ; else open channel to stream
 m05e8   ld      hl,(CH_ADD)
         ld      a,(hl)          ; check next char
         cp      $0d
@@ -11718,19 +11631,15 @@ m05e8   ld      hl,(CH_ADD)
         cp      $b9
         jr      z,m062b         ; or if EXP
       ENDIF
-m05f8   rst     $28
-        defw    $1c8c           ; get string expression
-        rst     $28
-        defw    $0018           ; get next char
+m05f8   ROM3    o1C8C           ; get string expression
+        ROM3    o0018           ; get next char
 m05fe   cp      $b9
         jr      nz,m060a        ; move on if not EXP
         ld      hl,FLAGS3
         set     6,(hl)          ; signal "expanded catalog"
-        rst     $28
-        defw    $0020           ; get next char
+        ROM3    o0020           ; get next char
 m060a   call    m10b1           ; check for end-of-statement
-        rst     $28
-        defw    $2bf1           ; get string value from stack
+        ROM3    o2BF1           ; get string value from stack
         push    bc
         push    de
         pop     hl              ; HL=string address
@@ -11757,14 +11666,12 @@ m0623   ld      a,$00
         ld      (DEFADD),a      ; signal "use default drive"
 m0628   pop     bc
         jr      m0645           ; move on
-m062b   rst     $28
-        defw    $0018           ; get next char
+m062b   ROM3    o0018           ; get next char
 m062e   cp      $b9
         jr      nz,m063a        ; move on if not EXP
         ld      hl,FLAGS3
         set     6,(hl)          ; signal "expanded catalog"
-        rst     $28
-        defw    $0020           ; get next char
+        ROM3    o0020           ; get next char
 m063a   call    m10b1           ; check for end-of-statement
       IF garry
         xor     a
@@ -11844,15 +11751,13 @@ m06b8   push    af
 m06bb   ld      a,(hl)
         and     $7f             ; get byte and mask bit
         call    m2b64           ; page in normal memory
-        rst     $28
-        defw    $0010           ; output char
+        ROM3    o0010           ; output char
 m06c4   call    m2b89           ; page in DOS workspace
         inc     hl
         djnz    m06bb           ; loop back for rest of filename
         call    m2b64           ; page in normal memory
         ld      a,'.'
-        rst     $28
-        defw    $0010           ; output "."
+        ROM3    o0010           ; output "."
 m06d2   xor     a
         ld      (RAMERR),a      ; zeroise attributes
         ld      b,$03
@@ -11877,8 +11782,7 @@ m06f8   pop     hl              ; restore values
         pop     af
         and     $7f             ; mask bit 7
 m06fc   call    m2b64           ; page in normal memory
-        rst     $28
-        defw    $0010           ; output char
+        ROM3    o0010           ; output char
 m0702   inc     hl
         djnz    m06d8           ; loop back for more extension
         push    hl
@@ -11909,8 +11813,7 @@ m072b   push    af
 m073a   call    m07e2           ; output message
         pop     hl
 m073e   ld      a,' '
-        rst     $28
-        defw    $0010           ; output space
+        ROM3    o0010           ; output space
 m0743   push    hl
         call    m2b89           ; page in DOS workspace
         ld      a,(hl)
@@ -11929,8 +11832,7 @@ m0743   push    hl
         inc     hl
         inc     hl              ; move to next file entry
         ld      a,'K'
-        rst     $28
-        defw    $0010           ; output "K"
+        ROM3    o0010           ; output "K"
 m075c   call    m07eb           ; output CR
         call    m2b89           ; page in DOS workspace
         pop     af
@@ -12023,16 +11925,14 @@ m07d1   defm    "No files found", $0d, $0d, 0
 m07e2   ld      a,(hl)          ; get next char
         or      a
         ret     z               ; exit if null
-        rst     $28
-        defw    $0010           ; output char
+        ROM3    o0010           ; output char
 m07e8   inc     hl
         jr      m07e2           ; loop back
 
 ; Subroutine to output a CR char
 
 m07eb   ld      a,$0d
-        rst     $28
-        defw    $0010           ; output CR
+        ROM3    o0010           ; output CR
 m07f0   ret
 
 
@@ -12040,25 +11940,20 @@ m07f0   ret
 
 m07f1   push    hl
         ld      bc,$d8f0        ; -10000
-        rst     $28
-        defw    $192a           ; output 10000s
+        ROM3    o192A           ; output 10000s
         ld      bc,$fc18        ; -1000
-        rst     $28
-        defw    $192a           ; output 1000s
+        ROM3    o192A           ; output 1000s
         jr      m0801
 
 ; Subroutine to output a number up to 999 (in HL)
 
 m0800   push    hl
 m0801   ld      bc,$ff9c        ; -100
-        rst     $28
-        defw    $192a           ; output 100s
+        ROM3    o192A           ; output 100s
         ld      c,$f6           ; -10
-        rst     $28
-        defw    $192a           ; output 10s
+        ROM3    o192A           ; output 10s
         ld      a,l             ; units
-        rst     $28
-        defw    $15ef           ; output units
+        ROM3    o15EF           ; output units
         pop     hl              ; restore number
         ret
 
@@ -12082,11 +11977,9 @@ m0823   defm    " ARC", 0
 
 m0828   ld      hl,m0830
         push    hl              ; stack SA-RET routine address (why??)
-        rst     $28
-        defw    $04c6           ; save bytes
+        ROM3    o04C6           ; save bytes
         ret
-m0830   rst     $28
-        defw    $053f           ; SA-RET
+m0830   ROM3    o053F           ; SA-RET
         ret
 
 ; Subroutine to LOAD/VERIFY a block of data, from tape or disk
@@ -12138,8 +12031,7 @@ m0883   pop     af              ; if tape,restore flags and enter next routine
 
 ; Subroutine to call LD-BYTES subroutine in ROM 3
 
-m0884   rst     $28
-        defw    $0556           ; call it
+m0884   ROM3    o0556           ; call it
         ret
 
 ; The SAVE/LOAD/VERIFY/MERGE commands
@@ -12158,8 +12050,7 @@ m0888   pop     af              ; discard return address of scan-loop
         and     a
         jr      z,m08a6
         ld      c,$22           ; but 34 for others
-m08a6   rst     $28
-        defw    $0030           ; make space
+m08a6   ROM3    o0030           ; make space
         push    de
         pop     ix              ; IX points to space
         ld      b,$0b
@@ -12168,8 +12059,7 @@ m08b0   ld      (de),a          ; fill 11-byte name with spaces
         inc     de
         djnz    m08b0
         ld      (ix+$01),$ff    ; place terminator in 2nd byte
-        rst     $28
-        defw    $2bf1           ; get string value from stack
+        ROM3    o2BF1           ; get string value from stack
         push    de
         push    bc
 
@@ -12396,8 +12286,7 @@ m09ba
       IF garry
         rst     $18
       ELSE
-        rst     $28
-        defw    $0018           ; get next char
+        ROM3    o0018           ; get next char
       ENDIF
         cp      $e4
         jr      nz,m0a11        ; move on if not DATA
@@ -12407,11 +12296,9 @@ m09ba
       IF garry
         rst     $20
       ELSE
-        rst     $28
-        defw    $0020           ; get current char
+        ROM3    o0020           ; get current char
       ENDIF
-m09cc   rst     $28
-        defw    $28b2           ; search for variable
+m09cc   ROM3    o28B2           ; search for variable
         set     7,c             ; set bit 7 of array's name
         jr      nc,m09e0        ; jump if handling existing array
         ld      hl,$0000
@@ -12440,8 +12327,7 @@ m0a01   ex      de,hl
       IF garry
         rst     $20
       ELSE
-        rst     $28
-        defw    $0020           ; get current char
+        ROM3    o0020           ; get current char
       ENDIF
         cp      ')'
         jr      nz,m09e0        ; error if not ")"
@@ -12460,8 +12346,7 @@ m0a11   cp      $aa             ; check for SCREEN$
       IF garry
         rst     $20
       ELSE
-        rst     $28
-        defw    $0020           ; get current char
+        ROM3    o0020           ; get current char
       ENDIF
         call    m10b1           ; check for end-of-statement
         ld      (ix+$0b),$00    ; store screen length
@@ -12481,42 +12366,35 @@ m0a36   cp      $af             ; check for CODE
       IF garry
         rst     $20
       ELSE
-        rst     $28
-        defw    $0020           ; get current char
+        ROM3    o0020           ; get current char
       ENDIF
 m0a45   call    m0e94
         jr      nz,m0a56        ; move on if not end-of-statement
         ld      a,(T_ADDR)
         and     a
         jp      z,m1125         ; error if trying to SAVE with no parameters
-        rst     $28
-        defw    $1ce6           ; get zero to calculator stack
+        ROM3    o1CE6           ; get zero to calculator stack
         jr      m0a67           ; move on
 m0a56   call    m1121           ; get numeric expression
       IF garry
         rst     $18
       ELSE
-        rst     $28
-        defw    $0018           ; get next char
+        ROM3    o0018           ; get next char
       ENDIF
         cp      ','
         jr      z,m0a6c         ; move on if comma
         ld      a,(T_ADDR)
         and     a
         jp      z,m1125         ; error if trying to SAVE with 1 parameter
-m0a67   rst     $28
-        defw    $1ce6           ; get zero to calculator stack
+m0a67   ROM3    o1CE6           ; get zero to calculator stack
         jr      m0a72           ; move on
-m0a6c   rst     $28
-        defw    $0020           ; get next char
+m0a6c   ROM3    o0020           ; get next char
 m0a6f   call    m1121           ; get numeric expression
 m0a72   call    m10b1           ; check for end-of-statement
-        rst     $28
-        defw    $1e99           ; get length to BC
+        ROM3    o1E99           ; get length to BC
         ld      (ix+$0b),c      ; store in workspace header
         ld      (ix+$0c),b
-        rst     $28
-        defw    $1e99           ; get address to BC
+        ROM3    o1E99           ; get address to BC
         ld      (ix+$0d),c      ; store in workspace header
         ld      (ix+$0e),b
         ld      h,b             ; HL=address
@@ -12538,12 +12416,10 @@ m0a96   ld      (ix+$0e),$80    ; no auto-run
 m0a9c   ld      a,(T_ADDR)
         and     a
         jp      nz,m1125        ; error unless SAVE with LINE
-        rst     $28
-        defw    $0020           ; get next char
+        ROM3    o0020           ; get next char
 m0aa6   call    m1121           ; get numeric expression
         call    m10b1           ; check for end-of-line
-        rst     $28
-        defw    $1e99           ; get line to BC
+        ROM3    o1E99           ; get line to BC
         ld      (ix+$0d),c      ; store in workspace header
         ld      (ix+$0e),b
 m0ab5   ld      (ix+$00),$00    ; type 0
@@ -12578,8 +12454,7 @@ m0ae9   push    ix
         pop     ix
         jr      nc,m0ae9        ; loop back if error
         ld      a,$fe
-        rst     $28
-        defw    $1601           ; open channel to stream -2
+        ROM3    o1601           ; open channel to stream -2
         ld      (iy+$52),$03    ; set scroll count
         ld      c,$80           ; signal "names don't match"
         ld      a,(ix+$00)
@@ -12590,8 +12465,7 @@ m0b0c   cp      $04
         jr      nc,m0ae9        ; error for types 4+
         ld      de,$09c0        ; address of message block in ROM 3
         push    bc
-        rst     $28
-        defw    $0c0a           ; print filetype message
+        ROM3    o0C0A           ; print filetype message
         pop     bc
         push    ix
         pop     de              ; DE points to filename to check for
@@ -12610,14 +12484,12 @@ m0b28   inc     de
         inc     hl
         jr      nz,m0b2f
         inc     c               ; increment C if chars match
-m0b2f   rst     $28
-        defw    $0010           ; output char
+m0b2f   ROM3    o0010           ; output char
         djnz    m0b28           ; loop back
         bit     7,c
         jr      nz,m0ae9        ; loop back if no match
         ld      a,$0d
-        rst     $28
-        defw    $0010           ; output CR
+        ROM3    o0010           ; output CR
         pop     hl
         jp      m0ba6           ; move on
 
@@ -12741,8 +12613,7 @@ m0c21   ld      de,$0005        ; allow for 5-byte overhead
         add     hl,de
         ld      b,h
         ld      c,l
-        rst     $28
-        defw    $1f05           ; test if space available
+        ROM3    o1F05           ; test if space available
 m0c2a   pop     hl              ; restore destination address
         ld      a,(ix+$00)
         and     a
@@ -12759,8 +12630,7 @@ m0c2a   pop     hl              ; restore destination address
         inc     bc
         inc     bc              ; add 3 for name & length
         ld      (X_PTR),ix      ; save IX
-        rst     $28
-        defw    $19e8           ; reclaim space
+        ROM3    o19E8           ; reclaim space
         ld      ix,(X_PTR)      ; restore IX
 m0c48   ld      hl,(E_LINE)
         dec     hl              ; HL points to $80 at end of vars
@@ -12772,8 +12642,7 @@ m0c48   ld      hl,(E_LINE)
         inc     bc              ; add 3 for name & length
         ld      a,(ix-$03)
         push    af              ; save array name (from old header)
-        rst     $28
-        defw    $1655           ; make the room
+        ROM3    o1655           ; make the room
         defb    $23
         pop     af
         ld      (hl),a          ; store name
@@ -12795,13 +12664,11 @@ m0c6f   ex      de,hl           ; save DE=destination
         ld      c,(ix+$0b)
         ld      b,(ix+$0c)      ; get length of new data block
         push    bc
-        rst     $28
-        defw    $19e5           ; reclaim entire prog+vars
+        ROM3    o19E5           ; reclaim entire prog+vars
         pop     bc
         push    hl
         push    bc
-        rst     $28
-        defw    $1655           ; make room for new block
+        ROM3    o1655           ; make room for new block
         ld      ix,(X_PTR)      ; restore IX
         inc     hl
         ld      c,(ix+$0f)
@@ -12827,8 +12694,7 @@ m0cb2   ld      c,(ix+$0b)
         ld      b,(ix+$0c)      ; fetch length of new block
         push    bc
         inc     bc
-        rst     $28
-        defw    $0030           ; make length+1 bytes in workspace
+        ROM3    o0030           ; make length+1 bytes in workspace
 m0cbd   ld      (hl),$80        ; terminate with an end-marker
         ex      de,hl           ; HL=start
         pop     de              ; DE=length
@@ -12855,8 +12721,7 @@ m0cdd   dec     de
         jr      nc,m0ce9        ; move on if can place line here
         push    hl
         ex      de,hl
-        rst     $28
-        defw    $19b8           ; get address of next line in old prog
+        ROM3    o19B8           ; get address of next line in old prog
         pop     hl
         jr      m0cd5           ; loop back
 m0ce9   call    m0d2a           ; enter the new line
@@ -12873,8 +12738,7 @@ m0cf7   ld      a,(hl)
         cp      c
         jr      z,m0d07         ; move on if found match
 m0cff   push    bc
-        rst     $28
-        defw    $19b8           ; get to next var
+        ROM3    o19B8           ; get to next var
         pop     bc
         ex      de,hl
         jr      m0cf7           ; loop back
@@ -12909,17 +12773,14 @@ m0d2a   jr      nz,m0d3c        ; move on if not replacing a line/variable
         ex      af,af'          ; save flags
         ld      (X_PTR),hl      ; save pointer in new program/vars
         ex      de,hl
-        rst     $28
-        defw    $19b8
-        rst     $28
-        defw    $19e8           ; reclaim old line/var
+        ROM3    o19B8
+        ROM3    o19E8           ; reclaim old line/var
         ex      de,hl
         ld      hl,(X_PTR)      ; restore
         ex      af,af'
 m0d3c   ex      af,af'          ; save flags
         push    de
-        rst     $28
-        defw    $19b8           ; find length of new line/var
+        ROM3    o19B8           ; find length of new line/var
         ld      (X_PTR),hl      ; save pointer in new program/vars
         ld      hl,(PROG)
         ex      (sp),hl         ; save PROG to avoid corruption
@@ -12927,12 +12788,10 @@ m0d3c   ex      af,af'          ; save flags
         ex      af,af'
         jr      c,m0d53         ; move on if adding a variable
         dec     hl
-        rst     $28
-        defw    $1655           ; make room for new line
+        ROM3    o1655           ; make room for new line
         inc     hl
         jr      m0d56
-m0d53   rst     $28
-        defw    $1655           ; make room for new var
+m0d53   ROM3    o1655           ; make room for new var
 m0d56   inc     hl              ; point to first new location
         pop     bc
         pop     de
@@ -12945,8 +12804,7 @@ m0d56   inc     hl              ; point to first new location
         pop     hl
         pop     bc
         push    de
-        rst     $28
-        defw    $19e8           ; reclaim workspace holding new var/line
+        ROM3    o19E8           ; reclaim workspace holding new var/line
         pop     de
         ret
 
@@ -13028,15 +12886,12 @@ m0e0c   call    m2b64           ; page in normal memory
 
 m0e10   push    hl
         ld      a,$fd
-        rst     $28
-        defw    $1601           ; open channel to stream -3
+        ROM3    o1601           ; open channel to stream -3
         xor     a
         ld      de,$09a1
-        rst     $28
-        defw    $0c0a           ; output ROM 3's start tape message
+        ROM3    o0C0A           ; output ROM 3's start tape message
         set     5,(iy+$02)      ; signal "screen needs clearing"
-        rst     $28
-        defw    $15d4           ; wait for a key
+        ROM3    o15D4           ; wait for a key
         push    ix              ; save header address
         ld      de,$0011
         xor     a               ; header block
@@ -13267,7 +13122,7 @@ m0f5b   defb    $00
 m0f5e   defb    $0d
         defw    m1204           ; CLEAR
 m0f61   defb    $00
-        defw    $0d6b           ; CLS
+        defw    o0D6B           ; CLS
 m0f64   defb    $09,$00
         defw    $22dc           ; PLOT
 m0f68   defb    $06,$00
@@ -13345,8 +13200,7 @@ m0fbc   defb    $0e
 ; Enter here for syntax checking
 
 m0fbf   res     7,(iy+$01)      ; signal "syntax checking"
-        rst     $28
-        defw    $19fb           ; point to the first code after any line no
+        ROM3    o19FB           ; point to the first code after any line no
         xor     a
         ld      (SUBPPC),a      ; initialise SUBPPC to zero statements
         dec     a
@@ -13356,8 +13210,7 @@ m0fbf   res     7,(iy+$01)      ; signal "syntax checking"
 ; The statement loop
 
 m0fd0   rst     $20             ; advance CH_ADD
-m0fd1   rst     $28
-        defw    $16bf           ; clear workspace
+m0fd1   ROM3    o16BF           ; clear workspace
         inc     (iy+$0d)        ; increment SUBPPC on each statement
         jp      m,m1125         ; error if more than 127 statements on line
         rst     $18             ; fetch character
@@ -13437,8 +13290,7 @@ m1048   ld      hl,$fffe
 
 ; Perform a jump in the program
 
-m105c   rst     $28
-        defw    $196e           ; get start address of line to jump to
+m105c   ROM3    o196E           ; get start address of line to jump to
         ld      a,(NSPPC)       ; get statement number
         jr      z,m1080         ; move on if correct line was found
         and     a               ; else check statement number
@@ -13489,8 +13341,7 @@ m1092   ld      (NXTLIN),hl     ; store next line address
         ld      (iy+$0d),d      ; statement number-1 to SUBPPC
         jp      z,m0fd0         ; enter loop if want first statement
         inc     d
-        rst     $28
-        defw    $198b           ; else find required statement
+        ROM3    o198B           ; else find required statement
         jr      z,m10b8         ; move on if found
 m10ad   call    m2ada
         defb    $16             ; report N - statement lost
@@ -13534,8 +13385,7 @@ m10c5   defb    m10e9-$
 ; Class $0c,$0d,$0e routines
 ; Enter at m10d4 for $0d, m10d7 for $0c and m10d8 for $0e
 
-m10d4   rst     $28
-        defw    $1cde           ; fetch a number (or 0 if none)
+m10d4   ROM3    o1CDE           ; fetch a number (or 0 if none)
 m10d7   cp      a               ; set zero flag for classes $0c & $0d
 m10d8   pop     bc              ; drop the scan-loop return address
         call    z,m10b1         ; for classes $0c,$0d check for statement end
@@ -13551,8 +13401,7 @@ m10d8   pop     bc              ; drop the scan-loop return address
 ; Class $00,$03,$05 routines
 ; Enter at m10e6 for $03, m10e9 for $00 and m10ea for $05
 
-m10e6   rst     $28
-        defw    $1cde           ; fetch a number (or 0 if none)
+m10e6   ROM3    o1CDE           ; fetch a number (or 0 if none)
 m10e9   cp      a               ; set zero flag for classes $00 & $03
 m10ea   pop     bc              ; drop the scan-loop return address
         call    z,m10b1         ; for classes $00,$03 check for statement end
@@ -13579,35 +13428,30 @@ m110b   ret                     ; done
 
 ; Class $01 routine
 
-m110c   rst     $28
-        defw    $1c1f           ; use ROM 3 to deal with class $01
+m110c   ROM3    o1C1F           ; use ROM 3 to deal with class $01
         ret
 
 ; Class $02 routine
 
 m1110   pop     bc              ; drop scan-loop return address
-        rst     $28
-        defw    $1c56           ; fetch a value
+        ROM3    o1C56           ; fetch a value
         call    m10b1           ; check for end of statement
         ret
 
 ; Class $04 routine
 
-m1118   rst     $28
-        defw    $1c6c           ; use ROM 3 to deal with class $04
+m1118   ROM3    o1C6C           ; use ROM 3 to deal with class $04
         ret
 
 ; Class $08 routine
 
 m111c   rst     $20
-m111d   rst     $28             ; use ROM 3 to deal with class $08
-        defw    $1c7a
+m111d   ROM3    o1C7A           ; use ROM 3 to deal with class $08
         ret
 
 ; Class $06 routine
 
-m1121   rst     $28
-        defw    $1c82           ; use ROM 3 to deal with class $06
+m1121   ROM3    o1C82           ; use ROM 3 to deal with class $06
         ret
 
 ; Generate C - Nonsense in BASIC error
@@ -13617,8 +13461,7 @@ m1125   call    m2ada
 
 ; Class $0a routine
 
-m1129   rst     $28
-        defw    $1c8c           ; use ROM 3 to deal with class $0a
+m1129   ROM3    o1C8C           ; use ROM 3 to deal with class $0a
         ret
 
 ; Class $07 routine
@@ -13626,13 +13469,11 @@ m1129   rst     $28
 m112d   bit     7,(iy+$01)      ; are we running or checking syntax?
         res     0,(iy+$02)      ; signal "main screen"
         jr      z,m113a
-        rst     $28
-        defw    $0d4d           ; if running, make sure temp colours are used
+        ROM3    o0D4D           ; if running, make sure temp colours are used
 m113a   pop     af              ; drop scan-loop return address
         ld      a,(T_ADDR)
         sub     (m0f8e and $ff)+$28 ; form token code INK to OVER
-        rst     $28
-        defw    $21fc           ; change temporary colours as directed
+        ROM3    o21FC           ; change temporary colours as directed
         call    m10b1           ; check for statement end
         ld      hl,(ATTR_T)
         ld      (ATTR_P),hl     ; make temporary colours permanent
@@ -13647,8 +13488,7 @@ m113a   pop     af              ; drop scan-loop return address
 
 ; Class $09 routine
 
-m1157   rst     $28
-        defw    $1cbe           ; use ROM 3 to handle class $09
+m1157   ROM3    o1CBE           ; use ROM 3 to handle class $09
         ret
 
 ; Class $0b routine
@@ -13665,8 +13505,7 @@ m115e   pop     bc              ; drop return address to STMT-RET
         ld      de,$fffb
         add     hl,de
         ld      (STKEND),hl
-        rst     $28
-        defw    $34e9           ; call "test zero" with HL holding add of value
+        ROM3    o34E9           ; call "test zero" with HL holding add of value
         jp      c,m1073         ; if false, go to next line
 m1175   jp      m0fd1           ; if true or syntax-checking, do next statement
 
@@ -13691,8 +13530,7 @@ m1185   call    m10b1           ; if no STEP, check end of statement
         ld      (hl),$00
         inc     hl
         ld      (STKEND),hl
-m119d   rst     $28
-        defw    $1d16           ; use ROM 3 to perform command
+m119d   ROM3    o1D16           ; use ROM 3 to perform command
         ret
 
 
@@ -13709,16 +13547,14 @@ m11a2   call    m110c           ; check for existing variable
         cp      ','
         jr      z,m11c2         ; move on unless new statement must be found
         ld      e,$e4
-        rst     $28
-        defw    $1d86           ; search for "DATA" statement
+        ROM3    o1D86           ; search for "DATA" statement
         jr      nc,m11c2
         call    m2ada
         defb    $0d             ; error E - out of data if not found
 m11c2   inc     hl              ; advance pointer
         ld      (CH_ADD),hl
         ld      a,(hl)
-        rst     $28
-        defw    $1c56           ; assign value to variable
+        ROM3    o1C56           ; assign value to variable
         rst     $18
         ld      (DATADD),hl     ; store CH_ADD as data pointer
         ld      hl,(X_PTR)      ; get pointer to READ statement
@@ -13735,8 +13571,7 @@ m11d9   rst     $18
 
 m11e2   bit     7,(iy+$01)
         jr      nz,m11f3        ; move on if not syntax-checking
-m11e8   rst     $28
-        defw    $24fb           ; scan next expression
+m11e8   ROM3    o24FB           ; scan next expression
         cp      ','
         call    nz,m10b1        ; if no more items, check for statement end
         rst     $20
@@ -13745,23 +13580,19 @@ m11f3   ld      a,$e4           ; we're passing by a DATA statement
 
 ; Subroutine to pass by a DEF FN or DATA statement during run-time
 
-m11f5   rst     $28
-        defw    $1e39           ; use ROM 3 routine
+m11f5   ROM3    o1E39           ; use ROM 3 routine
         ret
 
 ; The RUN command
 
-m11f9   rst     $28
-        defw    $1e67           ; set NEWPPC as required
+m11f9   ROM3    o1E67           ; set NEWPPC as required
         ld      bc,$0000
-        rst     $28
-        defw    $1e45           ; do a RESTORE 0
+        ROM3    o1E45           ; do a RESTORE 0
         jr      m1207           ; exit via CLEAR command
 
 ; The CLEAR command
 
-m1204   rst     $28
-        defw    $1e99           ; get operand, use 0 as default
+m1204   ROM3    o1E99           ; get operand, use 0 as default
 m1207   ld      a,b
         or      c
         jr      nz,m120f        ; move on if non-zero
@@ -13770,10 +13601,8 @@ m120f   push    bc
         ld      de,(VARS)
         ld      hl,(E_LINE)
         dec     hl
-        rst     $28
-        defw    $19e5           ; reclaim whole variables area
-        rst     $28
-        defw    $0d6b           ; cls
+        ROM3    o19E5           ; reclaim whole variables area
+        ROM3    o0D6B           ; cls
         ld      hl,(STKEND)
         ld      de,$0032
         add     hl,de
@@ -13810,11 +13639,9 @@ m124a   pop     de              ; save STMT_RET address
         push    hl              ; restack error address
         ld      (ERR_SP),sp     ; reset ERR_SP to error address
         push    de              ; restack STMT_RET address
-        rst     $28
-        defw    $1e67           ; set NEWPPC & NSPPC to required values
+        ROM3    o1E67           ; set NEWPPC & NSPPC to required values
         ld      bc,$0014
-        rst     $28
-        defw    $1f05           ; test for room before making jump
+        ROM3    o1F05           ; test for room before making jump
         ret
 
 ; The RETURN command
@@ -13845,8 +13672,7 @@ m1283   bit     7,(iy+$01)
         ld      a,$ce
         jp      m11f5           ; else go to skip DEF FN
 m128e   set     6,(iy+$01)      ; signal "numeric variable" in FLAGS
-        rst     $28
-        defw    $2c8d           ; check present code is a letter
+        ROM3    o2C8D           ; check present code is a letter
         jr      nc,m12ad        ; error C if not
         rst     $20             ; get next char
         cp      '$'
@@ -13858,8 +13684,7 @@ m12a1   cp      '('
         rst     $20
         cp      ')'
         jr      z,m12ca         ; move on if no parameters
-m12aa   rst     $28
-        defw    $2c8d           ; check present code is letter
+m12aa   ROM3    o2C8D           ; check present code is letter
 m12ad   jp      nc,m1125        ; error if not
         ex      de,hl
         rst     $20
@@ -13869,8 +13694,7 @@ m12ad   jp      nc,m1125        ; error if not
         rst     $20
 m12b8   ex      de,hl
         ld      bc,$0006
-        rst     $28
-        defw    $1655           ; make 6 bytes of room after parameter name
+        ROM3    o1655           ; make 6 bytes of room after parameter name
         inc     hl
         inc     hl
         ld      (hl),$0e        ; store a number marker in first location
@@ -13886,8 +13710,7 @@ m12ca   cp      ')'
         rst     $20
         ld      a,(FLAGS)
         push    af              ; save nature (number/string) of variable
-        rst     $28
-        defw    $24fb           ; scan the expression
+        ROM3    o24FB           ; scan the expression
         pop     af
         xor     (iy+$01)
         and     $40
@@ -13923,12 +13746,10 @@ m12e8   call    m2b89           ; page in DOS workspace
         defw    DOS_BOOT        ; attempt to boot a disk from the boot sector
         call    m32ee           ; restore TSTACK
         call    m2b64           ; page in normal memory
-        rst     $28
-        defw    $16b0           ; clear editing workspaces
+        ROM3    o16B0           ; clear editing workspaces
         ld      hl,(E_LINE)
         ld      bc,$0007
-        rst     $28
-        defw    $1655           ; create 7 bytes of space at E_LINE
+        ROM3    o1655           ; create 7 bytes of space at E_LINE
         ld      hl,m152e
         ld      de,(E_LINE)
         ld      bc,$0007
@@ -13938,8 +13759,7 @@ m12e8   call    m2b89           ; page in DOS workspace
         call    m22c7           ; clear whole display if necessary
         bit     6,(iy+$02)
         jr      nz,m133d        ; move on if shouldn't clear lower screen
-        rst     $28
-        defw    $0d6e           ; clear lower screen
+        ROM3    o0D6E           ; clear lower screen
 m133d   res     6,(iy+$02)      ; signal "lower screen can be cleared"
         call    m2b89           ; page in DOS workspace
         ld      hl,ed_flags
@@ -13996,12 +13816,10 @@ m1383   call    m2b89           ; page in DOS workspace
         set     6,(hl)          ; signal "don't clear lower screen"
         jr      m13c9
 m13c6   call    m2b64           ; page in normal memory
-m13c9   rst     $28
-        defw    $16b0           ; clear editing workspaces
+m13c9   ROM3    o16B0           ; clear editing workspaces
         ld      hl,(E_LINE)
         ld      bc,$0003
-        rst     $28
-        defw    $1655           ; make 3 bytes space at E_LINE
+        ROM3    o1655           ; make 3 bytes space at E_LINE
         ld      hl,m14df
         ld      de,(E_LINE)
         ld      bc,$0003
@@ -14011,8 +13829,7 @@ m13c9   rst     $28
         call    m22c7           ; clear whole screen if necessary
         bit     6,(iy+$02)
         jr      nz,m13f3
-        rst     $28
-        defw    $0d6e           ; clear lower screen if necessary
+        ROM3    o0D6E           ; clear lower screen if necessary
 m13f3   res     6,(iy+$02)      ; signal "lower screen can be cleared"
         call    m2b89           ; page in DOS workspace
         ld      hl,ed_flags
@@ -14052,12 +13869,10 @@ m1439   ld      a,(ERR_NR)      ; get error code
 
 ; The Print option, called from ROM 0
 
-m1451   rst     $28
-        defw    $16b0           ; clear E_LINE, WORKSP, STKBOT etc
+m1451   ROM3    o16B0           ; clear E_LINE, WORKSP, STKBOT etc
         ld      hl,(E_LINE)
         ld      bc,$0001
-        rst     $28
-        defw    $1655           ; make a byte of space at E_LINE
+        ROM3    o1655           ; make a byte of space at E_LINE
         ld      hl,(E_LINE)
         ld      (hl),$e1        ; insert LLIST command
         call    m24f0           ; execute it
@@ -14152,36 +13967,31 @@ m14f0   ld      a, b
         ld      a, c
         cpl
         ld      l, a
-        inc     hl
-        add     hl, sp
-        ld      sp, hl
+        inc     hl              ; HL= -BC
+        add     hl, sp          ; HL= SP-BC
+        ld      sp, hl          ; SP= SP-BC
         push    bc
         push    hl
         ex      de, hl
         ldir
         pop     hl
-        rst     $28
-        defw    $250e
+        ROM3    o250E
         pop     hl
         add     hl, sp
-        ld      sp, hl
+        ld      sp, hl          ; SP= SP+BC
         ret
 m1506   rst     $18
         cp      '#'
         jr      z, m1515
-        rst     $28
-        defw    $1c6c
+        ROM3    o1C6C
         call    m10b1
-        rst     $28
-        defw    $1dab
+        ROM3    o1DAB
         ret
 m1515   call    m2b35
         call    m3f00
         defw    $005c
-        rst     $28
-        defw    $2d28
-        rst     $28
-        defw    $2aff
+        ROM3    o2D28
+        ROM3    o2AFF
         ret
     ELSE
 msg18   defm    $16, $00, $00
@@ -14201,8 +14011,7 @@ m14e5   defm    $10, $00, $11, $07, $13, $00
 m1524   ld      a,(hl)          ; get next char
         cp      $ff
         ret     z               ; exit if end
-        rst     $28
-        defw    $0010           ; output
+        ROM3    o0010           ; output
         inc     hl
         jr      m1524           ; loop back
 
@@ -14217,34 +14026,25 @@ m1535   ld      a,$03           ; default stream 3 for LLIST
         jr      m153b
 m1539   ld      a,$02           ; default stream 2 for LIST
 m153b   ld      (iy+$02),$00    ; signal ordinary listing in main screen
-m153f   rst     $28
-        defw    $2530           ; are we checking syntax?
+m153f   ROM3    o2530           ; are we checking syntax?
         jr      z,m1547
-        rst     $28
-        defw    $1601           ; open channel if not
-m1547   rst     $28
-        defw    $0018           ; get character
-        rst     $28
-        defw    $2070           ; see if stream must be altered
+        ROM3    o1601           ; open channel if not
+m1547   ROM3    o0018           ; get character
+        ROM3    o2070           ; see if stream must be altered
         jr      c,m1567         ; move on if not
-        rst     $28
-        defw    $0018           ; get character
+        ROM3    o0018           ; get character
         cp      ';'
         jr      z,m155a         ; move on if ;
         cp      ','
         jr      nz,m1562        ; move on if not ,
-m155a   rst     $28
-        defw    $0020           ; get next character
+m155a   ROM3    o0020           ; get next character
 m155d   call    m1121           ; get numeric expression
         jr      m156a           ; move on with line number to list from
-m1562   rst     $28
-        defw    $1ce6           ; else use zero
+m1562   ROM3    o1CE6           ; else use zero
         jr      m156a
-m1567   rst     $28
-        defw    $1cde           ; fetch a numeric expression or use zero
+m1567   ROM3    o1CDE           ; fetch a numeric expression or use zero
 m156a   call    m10b1           ; check for end of statement
-m156d   rst     $28
-        defw    $1825           ; use ROM 3 for actual listing operation
+m156d   ROM3    o1825           ; use ROM 3 for actual listing operation
         ret
 
 ; PLAY command (enters here after syntax-checking)
@@ -14257,8 +14057,7 @@ m1579   add     hl,de
         djnz    m1579
         ld      c,l
         ld      b,h             ; BC=workspace required
-        rst     $28
-        defw    $0030           ; make space
+        ROM3    o0030           ; make space
         di
         push    de
 m1583   pop     iy              ; IY=start of space
@@ -14277,8 +14076,7 @@ m158c   ld      bc,$ffc9
         ld      (ix+$16),$ff
         ld      (ix+$17),$00
         ld      (ix+$18),$00
-        rst     $28
-        defw    $2bf1           ; get string from top of stack
+        ROM3    o2BF1           ; get string from top of stack
         di
         ld      (ix+$06),e
         ld      (ix+$07),d      ; store address of string (twice)
@@ -14333,15 +14131,7 @@ m158c   ld      bc,$ffc9
 ; FP routine used to calculate tempo values, executed in RAM with ROM 3
 ; paged in
 
-m161d   rst     $28             ; engage FP-calculator
-        defb    stk_ten         ; X,10
-        defb    exchange        ; 10,X
-        defb    division        ; 10/X
-        defb    stk_data        ; 10/X,Y
-        defb    $df,$75,$f4,$38,$75
-        defb    division        ; 10/(X*Y)
-        defb    end_calc
-        ret
+m161d   defb    $ef, $a4, $01, $05, $34, $df, $75, $f4, $38, $75, $05, $38, $c9
 
 ; Subroutine to check if BREAK is being pressed (exit with carry reset if so)
 
@@ -14666,8 +14456,7 @@ m181e   call    m1709           ; get number from string
         push    hl
         pop     bc              ; BC=tempo*4
         push    iy
-        rst     $28
-        defw    $2d2b           ; stack BC on calculator stack
+        ROM3    o2D2B           ; stack BC on calculator stack
         di
         pop     iy
         push    iy
@@ -14686,8 +14475,7 @@ m181e   call    m1709           ; get number from string
         push    hl
         jp      STOO            ; call FP calculator - TOS=10/(tempo*4*val)
 m1864   di
-        rst     $28
-        defw    $2da2           ; get value to BC
+        ROM3    o2DA2           ; get value to BC
         di
         pop     iy
         ld      (iy+$27),c
@@ -15445,14 +15233,12 @@ m1dd5   dec     e
 m1dd9
       IF garry
         rst     $20
-        rst     $28
-        defw    $1c82           ; get a string expression
+        ROM3    o1C82           ; get a string expression
         rst     $18
         cp      ','
         jp      nz, m1125
         rst     $20             ; get next char
-        rst     $28
-        defw    $1c82           ; get numeric expression
+        ROM3    o1C82           ; get numeric expression
         rst     $18
         ld      hl, FLAGS3
         res     6, (hl)
@@ -15460,22 +15246,17 @@ m1dd9
         jr      nz, m1df7
         set     6, (hl)
         rst     $20
-        rst     $28
-        defw    $1c82           ; get a string expression
+        ROM3    o1C82           ; get a string expression
 m1df7   call    m10b1
         ld      a, 1
-        rst     $28
-        defw    $1601
+        ROM3    o1601
         jp      m37fe
       ELSE
-        rst     $28
-        defw    $0018           ; get character at CH_ADD
-        rst     $28
-        defw    $1c8c           ; get a string expression
+        ROM3    o0018           ; get character at CH_ADD
+        ROM3    o1C8C           ; get a string expression
         bit     7,(iy+$01)
         jr      z,m1df9         ; move on if just syntax-checking
-        rst     $28
-        defw    $2bf1           ; get string from stack
+        ROM3    o2BF1           ; get string from stack
         ld      a,c
         dec     a
         or      b
@@ -15491,20 +15272,16 @@ m1df9   ld      hl,(CH_ADD)
         cp      ';'
         jp      nz,m1125        ; nonsense in BASIC error if next char not ";"
       ENDIF
-m1e02   rst     $28
-        defw    $0020           ; get next char & continue into FORMAT LINE
+m1e02   ROM3    o0020           ; get next char & continue into FORMAT LINE
 
 ; The FORMAT LINE command
 
-m1e05   rst     $28
-        defw    $1c82           ; get numeric expression
+m1e05   ROM3    o1C82           ; get numeric expression
         bit     7,(iy+$01)
         jr      z,m1e15         ; move on if syntax-checking
-        rst     $28
-        defw    $1e99           ; get value to BC
+        ROM3    o1E99           ; get value to BC
         ld      (BAUD),BC       ; set BAUD rate
-m1e15   rst     $28
-        defw    $0018           ; get next char
+m1e15   ROM3    o0018           ; get next char
         cp      $0d
         jr      z,m1e21         ; move on if end-of-line
         cp      ':'
@@ -15564,8 +15341,7 @@ m1e70   ld      hl,FLAGS3
         ld      a,(hl)          ; and get character
         scf
         ret
-m1e85   rst     $28
-        defw    $15c4           ; invalid I/O device error
+m1e85   ROM3    o15C4           ; invalid I/O device error
         ret
 m1e89   call    m2af9           ; test for BREAK
       IF v41
@@ -15890,8 +15666,7 @@ m1f8e   pop     af
         jr      c,m1fa0         ; move on unless BASIC token
         ld      hl,(RETADDR)
         push    hl              ; save RETADDR
-        rst     $28
-        defw    $0b52           ; output tokens using ROM 3
+        ROM3    o0B52           ; output tokens using ROM 3
         pop     hl
         ld      (RETADDR),hl    ; restore RETADDR
         scf
@@ -16270,8 +16045,7 @@ m2153   ld      a,(hl)          ; get next char
 ; Subroutine to check pixel at B=y,C=x
 ; On exit, Z is reset if pixel is ink, set if pixel is paper
 
-m215f   rst     $28
-        defw    $22aa           ; get address of pixel in HL
+m215f   ROM3    o22AA           ; get address of pixel in HL
         ld      b,a
         inc     b               ; B=counter to get required pixel
         xor     a               ; zero A
@@ -16302,34 +16076,25 @@ m2174   defb    $02             ; 2 bytes
 m2177   ld      a,$03           ; use stream 3 for LPRINT
         jr      m217d
 m217b   ld      a,$02           ; use stream 2 for PRINT
-m217d   rst     $28
-        defw    $2530           ; are we syntax-checking?
+m217d   ROM3    o2530           ; are we syntax-checking?
         jr      z,m2185
-        rst     $28
-        defw    $1601           ; open channel if not
-m2185   rst     $28
-        defw    $0d4d           ; set temporary colours
-        rst     $28
-        defw    $1fdf           ; use ROM 3 for command routine
+        ROM3    o1601           ; open channel if not
+m2185   ROM3    o0D4D           ; set temporary colours
+        ROM3    o1FDF           ; use ROM 3 for command routine
         call    m10b1           ; check for end-of-statement
         ret
 
 ; The INPUT command
 
-m218f   rst     $28
-        defw    $2530
+m218f   ROM3    o2530
         jr      z,m219c         ; move on if syntax-checking
         ld      a,$01
-m2196   rst     $28
-        defw    $1601           ; open channel to stream 1
-        rst     $28
-        defw    $0d6e           ; clear lower screen
+m2196   ROM3    o1601           ; open channel to stream 1
+        ROM3    o0D6E           ; clear lower screen
 m219c   ld      (iy+$02),$01    ; set DF_SZ to 1
-        rst     $28
-        defw    $20c1           ; deal with the input items
+        ROM3    o20C1           ; deal with the input items
         call    m10b1           ; check for end-of-statement
-        rst     $28
-        defw    $20a0           ; use ROM 3 for actual routine
+        ROM3    o20A0           ; use ROM 3 for actual routine
         ret
 
 ; The COPY command
@@ -16347,27 +16112,22 @@ m21aa   rst     $18
         cp      $f9
         jp      z,m35c4         ; move on if COPY RANDOMIZE
       ENDIF
-        rst     $28
-        defw    $1c8c           ; get a string expression
-        rst     $28
-        defw    $0018           ; get character
+        ROM3    o1C8C           ; get a string expression
+        ROM3    o0018           ; get character
 m21c5   cp      $cc
         jr      z,m21cd         ; move on if found TO
         call    m2ada
         defb    $0b             ; error C - nonsense in BASIC
-m21cd   rst     $28
-        defw    $0020           ; get next char
+m21cd   ROM3    o0020           ; get next char
 m21d0   cp      $aa
         jp      z,m2237         ; move on if COPY f$ TO SCREEN$
         cp      $a3
         jp      z,m2257         ; move on if COPY f$ TO SPECTRUM FORMAT
         cp      $e0
         jp      z,m2237         ; move on if COPY f$ TO LPRINT
-        rst     $28
-        defw    $1c8c           ; get a string expression
+        ROM3    o1C8C           ; get a string expression
         call    m10b1           ; check for end-of-statement
-        rst     $28
-        defw    $2bf1           ; fetch last value from calculator stack
+        ROM3    o2BF1           ; fetch last value from calculator stack
         ld      a,b
         or      c               ; check length of second string
         jr      nz,m21f0
@@ -16393,8 +16153,7 @@ m21fb   ld      hl,tmp_fspec
         inc     de              ; increment pointer after 2nd filename
         call    m2b64           ; page in normal memory
         push    de              ; save pointer
-        rst     $28
-        defw    $2bf1           ; fetch value from calculator stack
+        ROM3    o2BF1           ; fetch value from calculator stack
         ld      a,b
         or      c
         jr      nz,m2218        ; check length of first string
@@ -16426,8 +16185,7 @@ m2223   pop     hl              ; restore address in page 7
 ; The COPY...TO SCREEN$/LPRINT commands
 
 m2237   push    af              ; save keyword
-        rst     $28
-        defw    $0020           ; get next char
+        ROM3    o0020           ; get next char
       IF garry
         pop     bc
 m223b   call    m10b1           ; check for end-of-statement
@@ -16435,8 +16193,7 @@ m223b   call    m10b1           ; check for end-of-statement
       ELSE
 m223b   call    m10b1           ; check for end-of-statement
       ENDIF
-        rst     $28
-        defw    $2bf1           ; get string
+        ROM3    o2BF1           ; get string
         ld      hl,tmp_fspec
         ex      de,hl
         call    m3f63           ; copy into page 7
@@ -16451,17 +16208,14 @@ m223b   call    m10b1           ; check for end-of-statement
 
 ; The COPY....TO SPECTRUM FORMAT command
 
-m2257   rst     $28
-        defw    $0020           ; get next char
+m2257   ROM3    o0020           ; get next char
 m225a   cp      $d0             ; check for FORMAT
         jr      z,m2262
         call    m2ada
         defb    $0b             ; nonsense in BASIC if not
-m2262   rst     $28
-        defw    $0020           ; get to next char
+m2262   ROM3    o0020           ; get to next char
 m2265   call    m10b1           ; check for end-of-statement
-        rst     $28
-        defw    $2bf1           ; get string
+        ROM3    o2BF1           ; get string
         ld      hl,tmp_fspec
         ex      de,hl
         call    m3f63           ; copy into page 7
@@ -16485,11 +16239,9 @@ m2286   rst     $18             ; get current char
         cp      ','
         jr      nz,m22c3        ; error C if not comma
         rst     $20             ; get next char
-        rst     $28
-        defw    $1c82           ; get numeric expression
+        ROM3    o1C82           ; get numeric expression
         call    m10b1           ; check for end-of-statement
-        rst     $28
-        defw    $232d           ; use ROM 3 for actual routine
+        ROM3    o232D           ; use ROM 3 for actual routine
         ret
 
 ; The DRAW command
@@ -16498,31 +16250,24 @@ m2296   rst     $18             ; get current char
         cp      ','
         jr      z,m22a2         ; move on if comma
         call    m10b1           ; check for end-of-statement
-        rst     $28
-        defw    $2477           ; use ROM 3 to draw line
+        ROM3    o2477           ; use ROM 3 to draw line
         ret
 m22a2   rst     $20             ; get next char
-        rst     $28
-        defw    $1c82           ; get numeric expression
+        ROM3    o1C82           ; get numeric expression
         call    m10b1           ; check for end of statement
-        rst     $28
-        defw    $2394           ; use ROM 3 to draw curve
+        ROM3    o2394           ; use ROM 3 to draw curve
         ret
 
 ; The DIM command
 
-m22ad   rst     $28
-        defw    $28b2           ; search variables area
+m22ad   ROM3    o28B2           ; search variables area
         jr      nz,m22c3        ; move on if error
-        rst     $28
-        defw    $2530
+        ROM3    o2530
         jr      nz,m22bf        ; move on if runtime
         res     6,c             ; test string syntax as if numeric
-        rst     $28
-        defw    $2996           ; check syntax of parenthesised expression
+        ROM3    o2996           ; check syntax of parenthesised expression
         call    m10b1           ; check for end-of-statement
-m22bf   rst     $28
-        defw    $2c15           ; use ROM 3 for actual command
+m22bf   ROM3    o2C15           ; use ROM 3 for actual command
         ret
 m22c3   call    m2ada
         defb    $0b             ; error C - nonsense in BASIC
@@ -16532,8 +16277,7 @@ m22c3   call    m2ada
 
 m22c7   bit     0,(iy+$30)      ; check FLAGS2
         ret     z               ; exit if not necessay
-        rst     $28
-        defw    $0daf           ; cls
+        ROM3    o0DAF           ; cls
         ret
 
 ; Subroutine to evaluate an expression for the calculator, & set the
@@ -16543,8 +16287,7 @@ m22d0   ld      hl,$fffe
         ld      (PPC),hl        ; set statement -2
         res     7,(iy+$01)      ; signal "syntax checking"
         call    m2368           ; set interpreter to start of line
-        rst     $28
-        defw    $24fb           ; evaluate an expression
+        ROM3    o24FB           ; evaluate an expression
         bit     6,(iy+$01)
         jr      z,m2312         ; move on if value not numeric
         rst     $18
@@ -16554,8 +16297,7 @@ m22d0   ld      hl,$fffe
         call    m2368           ; set interpreter to start of line
         ld      hl,m25cb
         ld      (SYNRET),hl     ; set up error return address
-        rst     $28
-        defw    $24fb           ; evaluate an expression
+        ROM3    o24FB           ; evaluate an expression
         bit     6,(iy+$01)
         jr      z,m2312         ; move on if value not numeric
         ld      de,LASTV
@@ -16570,20 +16312,16 @@ m2312   call    m2ada
 m2316   ld      a,$0d
         call    m2347           ; do a newline
         ld      bc,$0001
-        rst     $28
-        defw    $0030           ; make a byte in the workspace
+        ROM3    o0030           ; make a byte in the workspace
 m2321   ld      (K_CUR),hl      ; save address of cursor
         push    hl
         ld      hl,(CURCHL)     ; get address of current channel information
         push    hl
         ld      a,$ff
-        rst     $28
-        defw    $1601           ; open channel to stream -1
-        rst     $28
-        defw    $2de3           ; print the result value
+        ROM3    o1601           ; open channel to stream -1
+        ROM3    o2DE3           ; print the result value
         pop     hl
-        rst     $28
-        defw    $1615           ; restore old channel
+        ROM3    o1615           ; restore old channel
         pop     de
         ld      hl,(K_CUR)      ; get new cursor address
         and     a
@@ -16606,8 +16344,7 @@ m2347   push    hl
         res     3,(hl)          ; ???
         push    af
         ld      a,$02
-        rst     $28
-        defw    $1601           ; open channel to stream 2
+        ROM3    o1601           ; open channel to stream 2
         pop     af
         call    m3e80
       IF v41
@@ -16727,8 +16464,7 @@ m23ee   cp      '0'             ; reset Z otherwise
 m23f1   ld      b,$00           ; string counter
         rst     $18             ; get char
 m23f4   push    bc
-        rst     $28
-        defw    $1c8c           ; get a string
+        ROM3    o1C8C           ; get a string
         pop     bc
         inc     b               ; increment counter
         cp      ','
@@ -16896,8 +16632,7 @@ m24b5   ld      a,(hl)          ; get next char
       IF garry
         rst     $10
       ELSE
-        rst     $28
-        defw    $0010           ; print it
+        ROM3    o0010           ; print it
       ENDIF
         inc     hl
         jr      m24b5           ; back for more
@@ -16986,8 +16721,7 @@ m2560   bit     7,(iy+$00)
         ret                     ; exit if error in line
 m2567   ld      hl,(E_LINE)
         ld      (CH_ADD),hl     ; reset CH_ADD to editing line
-        rst     $28
-        defw    $19fb           ; get line number of editing line
+        ROM3    o19FB           ; get line number of editing line
         ld      a,b
         or      c
         jp      nz,m268e        ; move on if it exists, to add to program
@@ -16997,8 +16731,7 @@ m2567   ld      hl,(E_LINE)
         call    m22c7           ; clear display if necessary
         bit     6,(iy+$02)
         jr      nz,m2585
-        rst     $28
-        defw    $0d6e           ; clear lower screen if necessary
+        ROM3    o0D6E           ; clear lower screen if necessary
 m2585   res     6,(iy+$02)      ; signal "lower screen clear"
         call    m2b89           ; page in DOS workspace
         ld      hl,ed_flags
@@ -17048,11 +16781,9 @@ m25df   push    af              ; save error code
         ld      (DEFADD),hl     ; clear DEFADD
         ld      hl,$0001
         ld      (STRMS+6),hl    ; reset stream 0
-        rst     $28
-        defw    $16b0           ; clear editing areas and calculator etc
+        ROM3    o16B0           ; clear editing areas and calculator etc
         res     5,(iy+$37)      ; ???
-        rst     $28
-        defw    $0d6e           ; clear lower screen
+        ROM3    o0D6E           ; clear lower screen
         set     5,(iy+$02)      ; signal "clear lower screen after keystroke"
         pop     af              ; get back error code
         ld      b,a             ; save it
@@ -17065,8 +16796,7 @@ m25df   push    af              ; save error code
         add     a,$14           ; else convert for errors a-o
         jr      m2614
 m2612   add     a,$07           ; convert to code to letter
-m2614   rst     $28
-        defw    $15ef           ; output error character (0-9 or A-R or a-o)
+m2614   ROM3    o15EF           ; output error character (0-9 or A-R or a-o)
         ld      a,' '
         rst     $10             ; output space
 m261a   ld      a,b             ; get back error code
@@ -17084,23 +16814,18 @@ m261a   ld      a,b             ; get back error code
         call    m2ace           ; output it
         jr      m2637
 m2631   ld      de,$1391        ; base address of ROM 3 message table
-        rst     $28
-        defw    $0c0a           ; output 48K Spectrum error message
+        ROM3    o0C0A           ; output 48K Spectrum error message
 m2637   xor     a
         ld      de,$1536
-        rst     $28
-        defw    $0c0a           ; output "comma" message
+        ROM3    o0C0A           ; output "comma" message
         ld      bc,(PPC)        ; get error line number
-        rst     $28
-        defw    $1a1b           ; output it
+        ROM3    o1A1B           ; output it
         ld      a,':'
         rst     $10             ; output ":"
         ld      c,(iy+$0d)      ; get error statement number
         ld      b,$00
-        rst     $28
-        defw    $1a1b           ; output it
-        rst     $28
-        defw    $1097           ; clear editing area/workspace
+        ROM3    o1A1B           ; output it
+        ROM3    o1097           ; clear editing area/workspace
         ld      a,(ERR_NR)
         inc     a
         jr      z,m2674         ; move on if error "OK"
@@ -17146,13 +16871,10 @@ m26a1   call    m2b64           ; page in normal memory
         push    hl              ; HL=line length
         ld      h,b
         ld      l,c
-        rst     $28
-        defw    $196e           ; get address of line in program
+        ROM3    o196E           ; get address of line in program
         jr      nz,m26c0        ; if line not in program yet, move on
-        rst     $28
-        defw    $19b8           ; get address of next line
-        rst     $28
-        defw    $19e8           ; delete the existing line
+        ROM3    o19B8           ; get address of next line
+        ROM3    o19E8           ; delete the existing line
 m26c0   pop     bc              ; restore line length
         ld      a,c
         dec     a
@@ -17175,8 +16897,7 @@ m26db   push    bc
         dec     hl
         ld      de,(PROG)
         push    de
-m26e6   rst     $28
-        defw    $1655           ; make space for ???
+m26e6   ROM3    o1655           ; make space for ???
         pop     hl
 m26ea   ld      (PROG),hl
         pop     bc
@@ -17415,14 +17136,12 @@ m2ada   pop     hl              ; get address of error code
         inc     a               ; get error code
         cp      $1e
         jr      nc,m2aeb        ; move on if a +3-specific error
-m2ae8   rst     $28
-        defw    RAMRST          ; else call ROM 3 error handler
+m2ae8   ROM3    RAMRST          ; else call ROM 3 error handler
 m2aeb   dec     a
         ld      (iy+$00),a      ; save code in ERR_NR
 m2aef   ld      hl,(CH_ADD)     ; get address at which error occurred
         ld      (X_PTR),hl      ; save it
-        rst     $28
-        defw    $16c5           ; clear calculator stack
+        ROM3    o16C5           ; clear calculator stack
         ret                     ; exit to error address
 
 ; Subroutine to test the BREAK key
@@ -17455,45 +17174,30 @@ m2b19   call    m3f00
         push    de
         push    hl
         pop     bc
-        rst     $28
-        defw    $2d2b
+        ROM3    o2D2B
         pop     bc
-        rst     $28
-        defw    $2d2b
+        ROM3    o2D2B
         ld      de, m2b56
         ld      bc, 10
         call    m14f0
-        rst     $28
-        defw    $2aff
+        ROM3    o2AFF
         ret
 m2b35   rst     $20
-        rst     $28
-        defw    $1c82
+        ROM3    o1C82
         rst     $18
         cp      ','
         jp      nz, m22c3
         rst     $20
-        rst     $28
-        defw    $1c1f
+        ROM3    o1C1F
         bit     6, (iy+$01)
         jp      z, m22c3
         pop     hl
         call    m10b1
         push    hl
-        rst     $28
-        defw    $1e94
-        rst     $28
-        defw    $1601
+        ROM3    o1E94
+        ROM3    o1601
         ret
-m2b56   rst     $28
-        defw    $4034
-        ld      b, c
-        nop
-        nop
-        inc     b
-        rrca
-        defb    $38
-        ret
+m2b56   defb    $ef, $34, $40, $41, $00, $00, $04, $0f, $38, $c9
       ELSE
 m2b09   ei
         ex      af,af'
@@ -17528,8 +17232,7 @@ m2b3e   cp      $0d
         jr      z,m2b50         ; if character was CR, move on
         ld      hl,(RETADDR)
         push    hl
-        rst     $28
-        defw    $0f85           ; else add a character to current input line
+        ROM3    o0F85           ; else add a character to current input line
         pop     hl
         ld      (RETADDR),hl
         pop     hl
@@ -17608,8 +17311,7 @@ m2ba3   call    m2b89           ; page in DOS workspace
         jr      z,m2bb4
 m2bb2   ld      a,$02           ; use stream 2
 m2bb4   call    m2b64           ; page in normal memory
-        rst     $28
-        defw    $1601           ; open channel to stream
+        ROM3    o1601           ; open channel to stream
         call    m2b89           ; page in DOS workspace
         pop     af              ; restore destination flag
         jr      z,m2c1e         ; move on if copying to another file
@@ -17640,8 +17342,7 @@ m2bed   ld      a,(dst_dev)     ; check destination flag
         jr      nc,m2bff
         ld      a,$20           ; but replace other control chars with spaces
 m2bff   call    m2b64           ; page in normal memory
-        rst     $28
-        defw    $0010           ; output byte
+        ROM3    o0010           ; output byte
 m2c05   call    m2b89           ; page in DOS workspace
         jr      m2bd7           ; back for more
 m2c0a   ld      b,$00
@@ -18344,11 +18045,9 @@ m3119   ret
 
 ; Subroutine to clear screen and open channel to stream 2
 
-m311a   rst     $28
-        defw    $0d6b           ; cls
+m311a   ROM3    o0D6B           ; cls
         ld      a,$02
-        rst     $28
-        defw    $1601           ; open channel to stream 2
+        ROM3    o1601           ; open channel to stream 2
         ret
 
 ; Routine to copy files to spectrum format
@@ -18491,8 +18190,7 @@ m3252   ld      hl,tmp_file
         call    m2b64           ; page in normal memory
       IF v41
         ld      a,$02
-        rst     $28
-        defw    $1601
+        ROM3    o1601
       ENDIF
         call    m0e9a           ; cause +3DOS error
         defb    $ff
@@ -18609,16 +18307,14 @@ m3328   xor     a
         call    m2b89           ; page in DOS workspace
         ld      (tmp_buff+5),a  ; flag "normal copy exp"
         call    m2b64           ; page in normal memory
-        rst     $28
-        defw    $0020           ; get next character
+        ROM3    o0020           ; get next character
         cp      $dd
         jr      nz,x34be        ; move on if not INVERSE
         ld      a,$fc
         call    m2b89           ; page in DOS workspace
         ld      (tmp_buff+5),a  ; flag "inverse copy exp"
         call    m2b64           ; page in normal memory
-        rst     $28
-        defw    $0020           ; get to next char
+        ROM3    o0020           ; get to next char
 x34be IF v41
         cp      $dc
         jr      nz,m3347
@@ -18635,8 +18331,7 @@ x34cf   ld      a,(hl)
         ld      a,b
         or      c
         jr      nz,x34cf
-x34d9   rst     $28
-        defw    $0020           ; get to next char
+x34d9   ROM3    o0020           ; get to next char
       ENDIF
 m3347   call    m10b1           ; check for end-of-statement
         ld      a,(BANK678)
@@ -18871,13 +18566,11 @@ m34bf   defb    $0d,$0a         ; CRLF
 ; CAT "T:" routine
 
 m34c6   ld      bc,$0011
-        rst     $28
-        defw    $0030           ; make space for tape header
+        ROM3    o0030           ; make space for tape header
         push    de
         pop     ix              ; IX=address of space
 m34cf   ld      a,$0d
-        rst     $28
-        defw    $0010           ; output CR
+        ROM3    o0010           ; output CR
 m34d4   ld      a,$7f
         in      a,($fe)
         rra
@@ -18891,18 +18584,15 @@ m34e3   ld      a,$00
         ld      de,$0011
         scf
         push    ix
-        rst     $28
-        defw    $0556           ; read a header
+        ROM3    o0556           ; read a header
         pop     ix
         jr      nc,m34d4        ; loop back if failed
         push    ix
         ld      a,'"'
-        rst     $28
-        defw    $0010           ; output quote
+        ROM3    o0010           ; output quote
         ld      b,$0a           ; name length 10
 m34fb   ld      a,(ix+$01)
-        rst     $28
-        defw    $0010           ; output next byte
+        ROM3    o0010           ; output next byte
         inc     ix
         djnz    m34fb           ; loop back
         pop     ix
@@ -18920,8 +18610,7 @@ m34fb   ld      a,(ix+$01)
         ld      b,(ix+$0e)
         call    m359a           ; output line number
         ld      a,' '
-        rst     $28
-        defw    $0010           ; output space
+        ROM3    o0010           ; output space
 m352f   ld      hl,m35a4
         call    m3591           ; output "BASIC" message
         jr      m34cf           ; loop back
@@ -18932,8 +18621,7 @@ m3537   cp      $01
         ld      a,(ix+$0e)
         and     $7f
         or      $40
-        rst     $28
-        defw    $0010           ; output variable name
+        ROM3    o0010           ; output variable name
         ld      hl,m35b9+1
         call    m3591           ; output "()" message
         jp      m34cf           ; loop back
@@ -18944,8 +18632,7 @@ m3554   cp      $02
         ld      a,(ix+$0e)
         and     $7f
         or      $40
-        rst     $28
-        defw    $0010           ; output variable name
+        ROM3    o0010           ; output variable name
         ld      hl,m35b9
         call    m3591           ; output "$()" message
         jp      m34cf           ; loop back
@@ -18955,8 +18642,7 @@ m3571   ld      hl,m35b3
         ld      b,(ix+$0e)
         call    m359a           ; output load address
         ld      a,','
-        rst     $28
-        defw    $0010           ; output comma
+        ROM3    o0010           ; output comma
         ld      c,(ix+$0b)
         ld      b,(ix+$0c)
         call    m359a           ; output length
@@ -18967,17 +18653,14 @@ m3571   ld      hl,m35b3
 m3591   ld      a,(hl)          ; get next char
         or      a
         ret     z               ; exit if null
-        rst     $28
-        defw    $0010           ; output char
+        ROM3    o0010           ; output char
         inc     hl
         jr      m3591           ; loop back
 
 ; Subroutine to output number in BC
 
-m359a   rst     $28
-        defw    $2d2b           ; stack number on calculator
-        rst     $28
-        defw    $2de3           ; output number
+m359a   ROM3    o2D2B           ; stack number on calculator
+        ROM3    o2DE3           ; output number
         ret
 
 ; Messages for tape catalogs
@@ -18990,46 +18673,37 @@ m35b9   defm    "$() ", 0
 m35be   defm    "LINE ", 0
 
   IF garry
-m35d0   rst     $28
-        defw    $2bf1
+m35d0   ROM3    o2BF1
         push    bc
         push    de
-        rst     $28
-        defw    $1e94
+        ROM3    o1E94
         pop     de
         pop     bc
         call    m3f00
         defw    $0056
 m35d3   jp      nc, m0edb
         ret
-m35d7   rst     $28
-        defw    $1e94
+m35d7   ROM3    o1E94
         call    l3f00
         defw    $0059
         jr      m35d3
 m35da   rst     $18
         cp      '#'
         jr      z, m35f0
-        rst     $28
-        defw    $1c82
+        ROM3    o1C82
         call    m10b1
-        rst     $28
-        defw    $1e67
+        ROM3    o1E67
         ret
 m35f0   call    m111c
         call    m10b1
         ld      de, m3f5c
         ld      bc, 13
         call    m14f0
-        rst     $28
-        defw    $1e94
-        rst     $28
-        defw    $1601
-        rst     $28
-        defw    $2da2
+        ROM3    o1E94
+        ROM3    o1601
+        ROM3    o2DA2
         push    bc
-        rst     $28
-        defw    $2da2
+        ROM3    o2DA2
         push    bc
         pop     hl
         pop     de
@@ -19087,12 +18761,10 @@ m37e5   bit     5, (hl)
       ENDIF
         jr      nz, m37e5
 m37f8   push    af
-        rst     $28
-        defw    $0d6e
+        ROM3    o0D6E
         pop     af
         ret
-m37fe   rst     $28
-        defw    $0d6e
+m37fe   ROM3    o0D6E
         ld      hl, m36bd
         call    m37dd
         push    af
@@ -19100,14 +18772,11 @@ m37fe   rst     $28
         ld      a, (FLAGS3)
         bit     6, a
         jr      z, m3815
-        rst     $28
-        defw    $1e99
+        ROM3    o1E99
 m3815   push    bc
-        rst     $28
-        defw    $1e99
+        ROM3    o1E99
         push    bc
-        rst     $28
-        defw    $1e94
+        ROM3    o1E94
         ld      c, a
         pop     hl
         pop     de
@@ -19165,26 +18834,21 @@ m3880   rst     $18
         jr      z, m388e
         call    m10b1
         jp      m2280
-m388e   rst     $28
-        defw    $2d28
+m388e   ROM3    o2D28
         rst     $20
-        rst     $28
-        defw    $1c8c
+        ROM3    o1C8C
         rst     $18
         cp      ','
         jp      nz, m1125
 m3899   rst     $20
-        rst     $28
-        defw    $1c82
+        ROM3    o1C82
         call    m10b1
-        rst     $28
-        defw    $1e99
+        ROM3    o1E99
         push    bc
         call    m3965
         jp      nz, m398a
         push    de
-        rst     $28
-        defw    $1e94
+        ROM3    o1E94
         pop     de
         pop     hl
         cp      $b9
@@ -19277,8 +18941,7 @@ m395d   call    m2b64
         ret     c
         call    m0ecb
         rst     $38
-m3965   rst     $28
-        defw    $2bf1
+m3965   ROM3    o2BF1
         ld      a, b
         or      c
         jr      nz, m3970
@@ -19341,13 +19004,11 @@ m39bb   rst     $18
         cp      $cc
         jp      nz, m1125
         rst     $20
-        rst     $28
-        defw    $1c8c
+        ROM3    o1C8C
         call    m10b1
         jp      m04e5
 m39dc   rst     $20
-        rst     $28
-        defw    $1c8c
+        ROM3    o1C8C
         call    m3a81
         call    m10b1
         call    m3965
@@ -19425,9 +19086,7 @@ m3a81   rst     $18
         set     6, (hl)
         rst     $20
         ret
-m3a8e   rst     $28
-        pop     af
-        dec     hl
+m3a8e   ROM3    o2BF1
         dec     bc
         dec     bc
         ld      a, b
@@ -19470,11 +19129,9 @@ m3aaf   rst     $18
         jr      nz, m3ae1
 m3adb   call    m10b1
         jp      m1465
-m3ae1   rst     $28
-        defw    $1c8c
+m3ae1   ROM3    o1C8C
         call    m10b1
-        rst     $28
-        defw    $2bf1
+        ROM3    o2BF1
         ex      de, hl
         ld      de, tmp_file
         call    m3f63
@@ -19489,14 +19146,12 @@ m3ae1   rst     $28
         jp      m3d21
 m3b08   push    bc
         rst     $20
-        rst     $28
-        defw    $1c82
+        ROM3    o1C82
         call    m3a81
         pop     bc
         call    m10b1
         push    bc
-        rst     $28
-        defw    $1e94
+        ROM3    o1E94
         pop     bc
         ld      d, a
         ld      a, c
@@ -19838,11 +19493,9 @@ m3de9   pop     hl
         call    m2b64
         ret
 m3df2   rst     $20
-        rst     $28
-        defw    $1c8c
+        ROM3    o1C8C
         call    m10b1
-        rst     $28
-        defw    $2bf1
+        ROM3    o2BF1
         ld      b, 0
         ld      a, c
         and     a
@@ -19908,16 +19561,7 @@ m3e5c   ld      b, a
         call    m32ee
         call    m2b64
         ret
-m3f5c   rst     $28
-        defw    $c101
-        ld      (bc), a
-        inc     (hl)
-        ld      b, b
-        ld      b, c
-        nop
-        nop
-        ld      ($38e1), a
-        ret
+m3f5c   defb    $ef, $01, $c1, $02, $34, $40, $41, $00, $00, $32, $e1, $38, $c9
       IF spanish
         defs    187
       ELSE
@@ -31094,11 +30738,9 @@ n2455   or      a               ; no response required
     ENDIF
 
 n6000   call    n683a+stst      ; page ROM 1/bank 0
-        rst     $28
-        defw    $0d6b           ; cls
+        ROM3    o0D6B           ; cls
         ld      a,$02
-        rst     $28
-        defw    $1601           ; open stream 2
+        ROM3    o1601           ; open stream 2
         call    n6038+stst      ; do the tests
         push    af
         ld      hl,n6544+stst   ; pass message
@@ -31293,8 +30935,7 @@ n60c3   call    n636a+stst      ; get drive status
         call    n6391+stst      ; display "remove disk" message
 n6196   call    n636a+stst      ; get drive status
         jr      nz,n6196        ; loop until no disk present
-        rst     $28
-        defw    $0daf           ; cls
+        ROM3    o0DAF           ; cls
         ld      a,$07
         call    n6391+stst      ; display "insert side 2" message
 n61a3   call    n636a+stst      ; get drive status
@@ -31335,8 +30976,7 @@ n61d2   push    bc
         call    n6391+stst      ; display "remove disk" message
 n61ea   call    n636a+stst      ; get drive status
         jr      nz,n61ea        ; loop back until no disk
-        rst     $28
-        defw    $0daf           ; cls
+        ROM3    o0DAF           ; cls
         xor     a
         scf                     ; success
         ret
@@ -31670,8 +31310,7 @@ n65a4   ld      a,(hl)          ; get next char
         ret     z               ; exit if null
         cp      $ff
         ret     z               ; or $ff
-        rst     $28
-        defw    $0010           ; output char
+        ROM3    o0010           ; output char
         jr      n65a4           ; loop back
 
 ; Error message table
@@ -33677,7 +33316,7 @@ o04C2:  LD      HL,o053F        ; address: SA/LD-RET
                                 ; however there is only one non-terminal exit
                                 ; point.
 
-        LD      HL,$1F80        ; a timing constant H=$1F, L=$80
+o04C6:  LD      HL,$1F80        ; a timing constant H=$1F, L=$80
                                 ; inner and outer loop counters
                                 ; a five second lead-in is used for a header.
 
@@ -36846,7 +36485,7 @@ o0F6C:  CALL    o15D4           ; routine WAIT-KEY for control.
 
 ;; ADD-CHAR
 o0F81:  RES     0,(IY+$07)      ; set MODE to 'L'
-        LD      HL,($5C5B)      ; fetch address of keyboard cursor from K_CUR
+o0F85:  LD      HL,($5C5B)      ; fetch address of keyboard cursor from K_CUR
         CALL    o1652           ; routine ONE-SPACE creates one space.
 
 ; either a continuation of above or from ED-CONTR with ED-LOOP on stack.
@@ -38563,7 +38202,7 @@ o1655:  PUSH    HL              ; save the address pointer.
 
         EX      DE,HL           ; HL now addresses the top of the area to
                                 ; be moved up - old STKEND.
-        LDDR                    ; the program, variables, etc are moved up.
+o1661:  LDDR                    ; the program, variables, etc are moved up.
         RET                     ; return with new area ready to be populated.
                                 ; HL points to location before new area,
                                 ; and DE to last of new locations.
@@ -39282,7 +38921,7 @@ o181F:  CALL    o1CDE           ; routine FETCH-NUM checks if a number
 ;; LIST-5
 o1822:  CALL    o1BEE           ; routine CHECK-END quits if syntax OK >>>
 
-        CALL    o1E99           ; routine FIND-INT2 fetches the number
+o1825:  CALL    o1E99           ; routine FIND-INT2 fetches the number
                                 ; from the calculator stack in run-time.
         LD      A,B             ; fetch high byte of line number and
         AND     $3F             ; make less than $40 so that NEXT-ONE
@@ -42324,7 +41963,7 @@ o2096:  LD      (IY+$02),$01    ; update TV_FLAG - signal lower screen in use
 ;   Keyboard input has been made and it remains to adjust the upper
 ;   screen in case the lower two lines have been extended upwards.
 
-        LD      BC,($5C88)      ; fetch S_POSN current line/column of
+o20A0:  LD      BC,($5C88)      ; fetch S_POSN current line/column of
                                 ; the upper screen.
         LD      A,($5C6B)       ; fetch DF_SZ the display file size of
                                 ; the lower screen.
@@ -43062,7 +42701,7 @@ o22DC:  CALL    o2307           ; routine STK-TO-BC
 
 ;; PLOT-SUB
 o22E5:  LD      ($5C7D),BC      ; store new x/y values in COORDS
-        CALL    o22AA           ; routine PIXEL-ADD gets address in HL,
+o22E9:  CALL    o22AA           ; routine PIXEL-ADD gets address in HL,
                                 ; count from left 0-7 in B.
         LD      B,A             ; transfer count to B.
         INC     B               ; increase 1-8.
@@ -43186,7 +42825,7 @@ o2320:  RST     18H             ; GET-CHAR              x, y.
 ;   Now make the radius positive and ensure that it is in floating point form
 ;   so that the exponent byte can be accessed for quick testing.
 
-        RST     28H             ;; FP-CALC              x, y, r.
+o232D:  RST     28H             ;; FP-CALC              x, y, r.
         DEFB    $2A             ;;abs                   x, y, r.
         DEFB    $3D             ;;re-stack              x, y, r.
         DEFB    $38             ;;end-calc              x, y, r.
@@ -43406,7 +43045,7 @@ o238D:  RST     20H             ; NEXT-CHAR skips over the 'comma'.
 
 ;   Now enter the calculator and store the complete rotation angle in mem-5
 
-        RST     28H             ;; FP-CALC      x, y, A.
+o2394:  RST     28H             ;; FP-CALC      x, y, A.
         DEFB    $C5             ;;st-mem-5      x, y, A.
 
 ;   Test the angle for the special case of 360 degrees.
@@ -44140,7 +43779,7 @@ o24FF:  LD      C,A             ; store the character while a look up is done.
         LD      B,$00           ; but here if it was found in table so
         LD      C,(HL)          ; fetch offset from table and make B zero.
         ADD     HL,BC           ; add the offset to position found
-        JP      (HL)            ; and jump to the routine e.g. S-BIN
+o250E:  JP      (HL)            ; and jump to the routine e.g. S-BIN
                                 ; making an indirect exit from there.
 
 ; -------------------------------------------------------------------------
@@ -49223,7 +48862,7 @@ o33B4:  LD      DE,($5C65)      ; Load destination from STKEND system variable.
 ;; MOVE-FP
 o33C0:  CALL    o33A9           ; routine TEST-5-SP test free memory
                                 ; and sets BC to 5.
-        LDIR                    ; copy the five bytes.
+o33C3:  LDIR                    ; copy the five bytes.
         RET                     ; return with DE addressing new STKEND
                                 ; and HL addressing new last value.
 
