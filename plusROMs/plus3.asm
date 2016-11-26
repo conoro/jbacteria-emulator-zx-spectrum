@@ -526,8 +526,28 @@ l00f7   di                      ; disable interrupts
 
 ; Test memory at startup & initialise
 
+      IF carmel=1
+l010f   exx
+        cp      5
+        ld      bc, $7ffd
+        ld      e, $fe
+        ld      hl, $7fff
+        jr      z, l0120
+        out     (c), a          ; page next RAM page to $c000
+        ld      h, l
+l0120   ld      d, h
+        push    bc
+        ld      bc, $4000
+        ld      (hl), c
+        lddr
+        exx
+        pop     bc
+        inc     a
+        and     7
+        jr      nz, l010f
+        ld      h, $dc
+      ELSE
 l010f   ld      b,$08           ; 8 pages to clear
-
 l0111   ld      a,b
         exx
         dec     a
@@ -543,6 +563,7 @@ l0111   ld      a,b
         xor     a
         ld      hl,$dcba        ; an address in top 16K of ROM
         ld      bc,$7ffd        ; memory paging address
+      ENDIF
 
 l0130   ld      de,$0108        ; E=8 bits to test, D=bit 0
         out     (c),a           ; get next page to segment 3
@@ -26297,7 +26318,11 @@ n1f27   push    bc
         ld      bc,$2ffd
         in      a,(c)           ; read FD status register ($ff if no i/f)
         add     a,$01
+      IF carmel=1
+        xor     a
+      ELSE
         ccf                     ; carry not set if no i/f
+      ENDIF
         pop     bc
         ret
 

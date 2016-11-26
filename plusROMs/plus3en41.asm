@@ -4,4 +4,5 @@
         define  garry   0
         define  mmc     0
         define  curkl   0
+        define  carmel  0
         include plus3.asm
