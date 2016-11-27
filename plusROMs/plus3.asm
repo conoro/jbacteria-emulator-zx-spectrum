@@ -320,6 +320,11 @@
 
         ; $fe00-$ffff used to load bootsector by +3DOS ROM
 ;--------------------------------------------------
+
+      .macro  ROM1  par1
+        call    l3e80
+        defw    par1
+      .endm
       .macro  ROM3  par1
         rst     $28
         defw    par1
@@ -671,7 +676,7 @@ l01b0   ld      hl,$3c00
         ld      hl,$000a
         ld      (RC_START),hl   ; set RCSTART
         ld      (RC_STEP),hl    ; set RCSTEP
-        ld      a,$54
+        ld      a,'T'
         ld      (LODDRV),a      ; set LODDRV to "T"
         ld      (SAVDRV),a      ; set SAVDRV to "T"
         ld      hl,$5cb6
@@ -741,8 +746,7 @@ l01b0   ld      hl,$3c00
         ld      (ed_ATTR_T),a   ; set editor's ATTR_T
         ld      (ed_ATTR_P),a   ; set editor's ATTR_P
         call    l05a7           ; switch back page 0
-        call    l3e80
-        defw    m2410           ; initialise DOS & display drive info
+        ROM1    m2410           ; initialise DOS & display drive info
         call    l05cc           ; switch in page 7 with stack in TSTACK
         ld      (iy+$31),$02    ; set DFSZ
         set     5,(iy+$02)      ; set bit 5 of TVFLAG
@@ -842,13 +846,13 @@ l030a   dec     bc
 ; to routines to handle them if necessary
       IF garry
         jr      l0302           ; sound tone again
-        call    l089f
+l031c   call    l089f
         ld      (hl), a
         ret
-        call    l089f
+l0321   call    l089f
         ld      a, (hl)
         ret
-        inc     b
+l0326   inc     b
         djnz    l032e
         ld      de, 15
         jr      l0352
@@ -1867,8 +1871,7 @@ l08ca   ld      hl,ed_flags
 ; The 48K BASIC menu option
 
 l08df   call    l05a7           ; page in normal memory
-        call    l3e80
-        defw    m1488           ; enter 48K BASIC via ROM 1
+        ROM1    m1488           ; enter 48K BASIC via ROM 1
         ret
 
 ; The Loader menu option
@@ -1877,11 +1880,11 @@ l08e8   call    l1a64           ; display "Loader" bar
         ld      hl,TV_FLAG
         set     0,(hl)          ; signal "using lower screen"
       IF garry
-       ld      de, $37eb
+        ld      de, l37eb
         nop
         nop
         ld      a, (LODDRV)
-        cp      $54
+        cp      'T'
       ELSE
         ld      de,l0884
         push    hl
@@ -1898,8 +1901,7 @@ l08ff   res     0,(hl)          ; ???
         ld      bc,$0000
         call    l191d           ; output "AT 0,0"
 l090e   call    l05a7           ; page in normal memory
-        call    l3e80
-        defw    m12e8
+        ROM1    m12e8
         ret
 
 l0917   call    l1a95
@@ -1912,8 +1914,7 @@ l0917   call    l1a95
 ; The Print menu option
 
 l0928   call    l05a7           ; page in normal memory
-        call    l3e80
-        defw    m1451
+        ROM1    m1451
 l0930   ld      hl,ed_flags
         bit     6,(hl)          ; ???
 l0935   jr      nz,l093f
@@ -2603,8 +2604,7 @@ l0d6e   ld      hl,$ec00
         call    l1dfa
         push    ix
         call    l05a7
-        call    l3e80
-        defw    m24f0
+        ROM1    m24f0
         call    l05cc
         ei
         pop     ix
@@ -2744,8 +2744,7 @@ l0e6c   inc     c
       ENDIF
         ld      a,c
         cp      (hl)
-        defb    $38
-        defb    -25
+        jr      c, l0e5d
         ld      b,$00
         ld      c,$00
 
@@ -4052,7 +4051,7 @@ l15f0   push    hl
         ld      hl,(PROG)       ; get start of program
         call    l15d3           ; check if end
       IF garry
-        jp      n3871+2
+        jp      l3871
 l15fe   ld      hl, (CURCHL)
 l1601   jp      l387f
       ELSE
@@ -5030,7 +5029,7 @@ l1b64   inc     hl              ; HL points to next statement/line
         ld      a,(hl)
       IF garry
         cp      $28
-        jr      c,l1b7c        ; or if there is a line afterwards (not end)
+        jr      c, l1b7c        ; or if there is a line afterwards (not end)
       ELSE
         cp      $80
         jr      nz,l1b7c        ; or if there is a line afterwards (not end)
@@ -5483,117 +5482,244 @@ l1dc5   push    af              ; save registers
         pop     af
         ret
 
-l1df6   ld      a,$01
-        jr      l1dfc               ; (2)
+; ========================
+; EDITOR ROUTINES - PART 5
+; ========================
 
-l1dfa   ld      a,$00
+; -------------------
+; Tokenize BASIC Line
+; -------------------
+; This routine serves two purposes. The first is to tokenize a typed BASIC line into a tokenized version. The second is when a syntax error is subsequently
+; detected within the tokenized line, and it is then used to search for the position within the typed line where the error marker should be shown.
+;
+; This routine parses the BASIC line entered by the user and generates a tokenized version in the workspace area as pointed to by system variable E_LINE.
+; It suffers from a number of bugs related to the handling of '>' and '<' characters. The keywords '<>', '>=' and '<=' are the only keywords that
+; do not commence with letters and the routine traps these in a different manner to all other keywords. If a '<' or '>' is encountered then it is not
+; immediately copied to the BASIC line workspace since the subsequent character must be examined as it could be a '>' or '=' character and therefore
+; might form the keywords '<>', '>=' or '<='. A problem occurs if the subsequent character is a letter since the parser now expects the start of a
+; possible keyword. It should at this point insert the '<' or '>' into the BASIC line workspace but neglects to do this. It is only when the next non-letter
+; character is encountered that the '<' or '>' gets inserted, but this is now after the previously found string has been inserted. This results the following
+; types of errors:
+;
+; 'PRINT varA>varB' is seen by the parser as 'PRINT varAvarB>' and hence a syntax error occurs.
+; 'PRINT varA>varB1' is seen by the parser as 'PRINT varAvarB>1' and hence is accepted as a valid statement.
+;
+; A work-around is to follow the '<' or '>' with a space since this forces the '<' or '>' to be inserted before the next potential keyword is examined.
+;
+; A consequence of shifting a '<' or '>' is that a line such as 'PRINT a$>b$' is seen by the parser as 'PRINT a$b$>' and so it throws a syntax error.
+; The parser saved the '>' character for consideration when the next character was examined to see if it was part of the keywords '<>', '>=' or '<=',
+; but fails to discard it if the end of the statement is immediately encountered. Modifying the statement to a form that will be accepted will still cause
+; a syntax error since the parser mistakenly believes the '>' character applies to this statement.
+;
+; The parser identifies string literals contained within quotes and will not tokenize any keywords that appear inside them, except for the keywords "<>",
+; "<=" and ">=" which it neglects to check for. Keywords are also not tokenized following a REM statement, except again for "<>", "<=" and ">=", until the
+; end of the line is reached. This differs slightly to 48K BASIC mode. In 48K BASIC mode, typing a ':' following a REM statement will cause a change from
+; 'L' cursor mode to 'K' cursor mode and hence the next key press results in a keyword token being inserted. In 128K BASIC mode, typing a ':' will not change
+; to 'K' cursor mode and hence the next key press will just be the letter, number or symbol. This does not affect the running of the program since 48K BASIC
+; mode will ignore all characters after a REM command until the end of the line. However, creating such a REM statement in 128K BASIC mode that appears similar
+; to one created in 48K BASIC mode will result in more memory being used since the 'keyword' must be spelled out letter by letter.
+;
+; When being used to locate the error marker position, the same process is performed as when tokenizing but no characters are actually inserted into the workspace
+; (they are still there from when the line was originally tokenized). Instead, a check is made after each character is processed to see if the error marker address
+; held in system variable X_PTR has been reached. If it does match then the routine returns with BC holding the character position where the error marker should
+; be displayed at.
 
-l1dfc   ld      ($fdb6),a
+;Entry point - A syntax error was detected so the error marker must be located
+
+l1df6   ld      a, $01          ; Signal to locate the error marker.
+        jr      l1dfc           ; Jump forward.
+
+;Entry point - Tokenize the BASIC line
+
+l1dfa   ld      a,$00           ; Signal to tokenize the BASIC line. [Could have saved 1 byte by using XOR A]
+
+l1dfc   ld      ($fdb6),a       ; Store the 'locate error marker' flag.
         ld      hl,$0000
-        ld      ($fdb1),hl
-        ld      ($fdb3),hl
+        ld      ($fdb1),hl      ; Reset count of the number of characters in the typed BASIC line being inserted.
+        ld      ($fdb3),hl      ; Reset count of the number of characters in the tokenized version of the BASIC line being inserted.
         add     hl,sp
-        ld      ($fdb7),hl
-        call    l15e4
-        ld      a,$00
-        ld      ($fdb0),a
-        ld      hl,$fda0
-        ld      ($fda9),hl
-        call    l05a7
-        ROM3    o16B0
-        call    l05cc
-        ld      a,$00
-        ld      ($fdad),a
-        ld      hl,(E_LINE)
-        ld      ($fdae),hl
-        ld      hl,$0000
-        ld      ($fdab),hl
+        ld      ($fdb7),hl      ; Store the stack pointer.
+        call    l15e4           ; Clear BASIC line construction pointers (address of next character in the Keyword Construction Buffer and the
+                                ; address of the next character in the BASIC line within the program area being de-tokenized).
+        ld      a,$00           ; [Could have saved 1 byte by using XOR A]
+        ld      ($fdb0),a       ; Signal last character was not a keyword and was not a space.
+                                ; [*BUG* - Should reset the '<' and '>' store at $FD89 to $00 here. Attempting to insert a BASIC line
+                                ; such as 'PRINT VAL a$>b' will fail since the parser does not like '>' immediately after 'a$', due to the bug at $3C5F (ROM 0).
+                                ; The parser stores the '>' in $FD89 since it will check the following character in case it should replace the two
+                                ; characters with the token '<>', '>=' or '<='. After the parser throws the syntax error, it does not clear
+                                ; $FD89 and so even if the line is modified such that it should be accepted, e.g. 'PRINT VAL a$=b', the parser
+                                ; believes the line is really '>PRINT VAL n$=b' and so throws another syntax error. Since a letter follows the '>',
+                                ; the contents of $FD89 will get cleared and hence a second attempt to insert the line will now succeed. Credit: Paul Farrow]
+        ld      hl,$fda0        ; HL=Start address of the Keyword Conversion Buffer.
+        ld      ($fda9),hl      ; Store as the next available location.
+        call    l05a7           ; Use Normal RAM Configuration (physical RAM bank 0).
+        ROM3    o16B0           ; $16B0. Clear the editing areas.
+        call    l05cc           ; Use Workspace RAM configuration (physical RAM bank 7).
+        ld      a,$00           ; [Could have saved 1 byte by using XOR A, or 2 bytes by clearing this above]
+        ld      ($fdad),a       ; Clear Keyword Conversion Buffer flags - not within REM, not with Quotes, no characters in the buffer.
+        ld      hl,(E_LINE)     ; E_LINE.
+        ld      ($fdae),hl      ; Store the address of the workspace for the tokenized BASIC line.
+        ld      hl,$0000        ; [Could have saved 1 byte by using LD H,A followed by LD L,A]
+        ld      ($fdab),hl      ; Signal no space character between words in the Keyword Conversion Buffer.
+
+;Enter a loop to fetch each character from the BASIC line and insert it into the workspace, tokenizing along the way
 
 l1e34   ld      hl,($fdb1)
-        inc     hl
+        inc     hl              ; Increment count of the number of characters in the typed BASIC line.
         ld      ($fdb1),hl
-        call    l1f30
-        ld      c,a
-        ld      a,($fdad)
-        cp      $00
-        jr      nz,l1e87            ; (65)
+        call    l1f30           ; Fetch the next character from BASIC line being inserted, return in B.
+        ld      c,a             ; Save the character status value.
 
-l1e46   ld      a,c
-        and     $04
-        jr      z,l1e80             ; (53)
+;C=$01 if not a space, not a letter, not a '#' and not a '$'.
+;  $02 if a '#' or '$'.
+;  $03 if a space.
+;  $06 if a letter.
+;B=Character fetched.
 
-l1e4b   call    l1f7c
-        jr      nc,l1e57            ; (7)
-        ld      a,$01
+        ld      a,($fdad)       ; Have any Keyword Conversion Buffer flags been set?
+        cp      $00             ; Has anything be put into the buffer yet?
+        jr      nz,l1e87        ; Jump if so.
+
+;The first character to potentially put into the Keyword Conversion Buffer
+
+l1e46   ld      a,c             ; Retrieve the character status value.
+        and     $04             ; Is the character a letter?
+        jr      z,l1e80         ; Jump if not.
+
+;Insert the character
+
+; [*BUG* - At this point a '>' or '<' that was previously stored should be inserted into the BASIC line workspace. However, the routine proceeds with the new potential
+;          keyword and this is entered into the BASIC line workspace next. The '>' or '<' will only be inserted when the next non-letter character is encountered. This causes
+;          an expression such as 'a>b1' to be translated into 'ab>1'. Credit: Ian Collier (+3), Paul Farrow (128)]
+
+; [The bug can be fixed by testing if whether a '<' or '>' character is stored. Credit: Paul Farrow.
+;
+;       LD   A,($FD89)    ;
+;       AND  A            ; Was the last character a '>' or '<'?
+;       JR   Z,INSERT     ; Jump if not.
+;
+;       PUSH BC           ; Save the new character.
+;       LD   B,A          ;
+;       CALL $3E0B (ROM 0) ; Insert the '>' or '<' into the BASIC line workspace.
+;       POP  BC           ; Retrieve the new character.
+;       XOR  A            ;
+;       LD   ($FD89),A    ; Clear the '>' or '<'.
+;
+;INSERT:                  ; ]
+
+l1e4b   call    l1f7c           ; Insert the character into the Keyword Conversion Buffer.
+        jr      nc,l1e57        ; Jump if no more room within the buffer, hence string is too large to be a token.
+        ld      a,$01           ; Signal Keyword Conversion Buffer contains characters.
         ld      ($fdad),a
-        jr      l1e34               ; (-35)
+        jr      l1e34           ; Jump back to fetch and process the next character.
 
-l1e57   ld      hl,($fdab)
+;No room to insert the character into the Keyword Conversion Buffer hence string is too large to be a valid token
+
+l1e57   ld      hl,($fdab)      ; Fetch the address of the space character between words within the Keyword Conversion Buffer.
         ld      a,l
-        or      h
-        jp      nz,l1eb1
+        or      h               ; Is there an address set?
+        jp      nz,l1eb1        ; Jump if so to copy the first word into the BASIC line workspace and the move the second word to the
+                                ; start of the Keyword Conversion Buffer. Further characters can then be appended and the contents
+                                ; re-evaluated in case a complete keyword is then available.
 
-l1e5f   push    bc
-        call    l1f60
-        pop     bc
+;Copy the Keyword Conversion Buffer into the BASIC line workspace
+
+l1e5f   push    bc              ; Save the character to insert.
+        call    l1f60           ; Copy Keyword Conversion Buffer contents into BASIC line workspace.
+        pop     bc              ; Retrieve the character to insert.
         ld      a,$00
-        ld      ($fdad),a
+        ld      ($fdad),a       ; Signal the Keyword Conversion Buffer is empty.
 
-l1e69   ld      a,c
-        and     $01
-        jr      nz,l1e46            ; (-40)
-        ld      a,b
-        call    l1fa9
-        ret     nc
+;C=$01 if not a space, not a letter, not a '#' and not a '$'.
+;  $02 if a '#' or '$'.
+;  $03 if a space.
+;  $06 if a letter.
+;B=Character fetched.
+
+l1e69   ld      a,c             ; Retrieve the character status value.
+        and     $01             ; Is it a space, or not a letter and not a '#' and not a '$'?
+        jr      nz,l1e46        ; Jump back if so to insert the character either into the Keyword Conversion Buffer or the BASIC line workspace.
+
+;The string was too long to be a keyword and was followed by a space, a '#' or a '$'. Enter a loop to insert each character of the
+;string into the BASIC line workspace.
+
+        ld      a,b             ; Retrieve the character to insert.
+        call    l1fa9           ; Insert character into BASIC line workspace.
+        ret     nc              ; Return if tokenizing is complete.
         ld      hl,($fdb1)
-        inc     hl
+        inc     hl              ; Increment the count of the number of characters in the typed BASIC line being inserted.
         ld      ($fdb1),hl
-        call    l1f30
-        ld      c,a
-        jr      l1e69               ; (-23)
+        call    l1f30           ; Fetch the next character from BASIC line being inserted.
+        ld      c,a             ; Save the flags.
+        jr      l1e69           ; Jump back to insert the character of the non-keyword string into the BASIC line workspace.
 
-l1e80   ld      a,b
-        call    l1fa9
-        ret     nc
-        jr      l1e34               ; (-83)
+;The character is not a letter so insert directly into the BASIC line workspace
 
-l1e87   cp      $01
-        jr      nz,l1e80            ; (-11)
-        ld      a,c
-        and     $01
-        jr      z,l1e4b             ; (-69)
-        push    bc
+l1e80   ld      a,b             ; Retrieve the character to insert.
+        call    l1fa9           ; Insert character into BASIC line workspace, tokenizing '<>', '<=' and '>=' if encountered.
+        ret     nc              ; Return if tokenizing is complete.
+        jr      l1e34           ; Jump back to fetch and process the next character.
 
-l1e91   call    l2113
-        pop     bc
-        jr      c,l1f10             ; (121)
-        ld      hl,($fdab)
+;Keyword Conversion buffer flags are set - either the buffer already contains characters, or within quotes or within a REM statement
+
+l1e87   cp      $01             ; Is the Keyword Conversion Buffer empty or the contents marked as being within quotes or within a REM?
+        jr      nz,l1e80        ; Jump back if so to insert the character since this is either the first character of a new word or is within quotes or within a REM.
+
+;C=$01 if not a space, not a letter, not a '#' and not a '$'.
+;  $02 if a '#' or '$'.
+;  $03 if a space.
+;  $06 if a letter.
+
+        ld      a,c             ; Retrieve the character status value.
+        and     $01             ; Is it a letter or a '#' or a '$'?
+        jr      z,l1e4b         ; Jump if so to simply insert the character.
+
+;The character is a space, or is not a letter and not a '#' and not a '$', i.e. the last character was the end of a potential keyword
+
+        push    bc              ; Save the next character to insert and the character status value.
+
+l1e91   call    l2113           ; Attempt to identify the string in Keyword Conversion Buffer.
+        pop     bc              ; Retrieve the next character to insert and the character status value.
+        jr      c,l1f10         ; Jump if keyword identified.
+
+;The string in the Keyword Conversion Buffer was not identified as a keyword
+
+        ld      hl,($fdab)      ; Fetch the address of the space character between words within the Keyword Conversion Buffer.
         ld      a,h
-        or      l
-        jr      nz,l1eb1            ; (19)
-        ld      a,c
-        and     $02
-        jr      z,l1e5f             ; (-68)
-        call    l1f7c
-        jr      nc,l1e57            ; (-81)
-        ld      hl,($fda9)
-        dec     hl
-        ld      ($fdab),hl
-        jr      l1e34               ; (-125)
+        or      l               ; Is there an address set, i.e. a space between words?
+        jr      nz,l1eb1        ; Jump if there is a space character.
+        ld      a,c             ; Retrieve the character status value.
+        and     $02             ; Is it a space?
+        jr      z,l1e5f         ; Jump if not to copy Keyword Conversion Buffer into the workspace since it is not a keyword.
 
-l1eb1   push    bc
-        ld      hl,$fda0
-        ld      de,($fdab)
+;Character is a space. Allow this as the keyword could be DEF FN, GO TO, GO SUB, etc.
+
+        call    l1f7c           ; Insert the character into the Keyword Conversion Buffer.
+        jr      nc,l1e57        ; Jump back if no room to insert the character, i.e. not a keyword since too large.
+        ld      hl,($fda9)      ; Fetch the next location address.
+        dec     hl              ; Point back to the last character.
+        ld      ($fdab),hl      ; Store as the address of the space character. This is used for double keywords such as DEF FN.
+        jr      l1e34           ; Jump back to fetch and process the next character.
+
+;The string in the Keyword Conversion Buffer contains two words separated by a space that do not form a
+;valid double keyword (such as DEF FN, GO SUB, GO TO, etc).
+;For a BASIC line such as 'IF FLAG THEN' the Keyword Conversion Buffer holds the characters 'FLAG THEN'.
+;The 'FLAG' characters get moved to the workspace and the 'THEN' characters are shifted to the start of the
+;Keyword Conversion Buffer before being re-evaluated to see if they form a keyword.
+
+l1eb1   push    bc              ; Save the character to insert and the character status value.
+        ld      hl,$fda0        ; Point to the start address of the Keyword Conversion Buffer.
+        ld      de,($fdab)      ; Fetch the address of the space character between words within the Keyword Conversion Buffer.
         ld      a,d
-        cp      h
-        jr      nz,l1ec2            ; (5)
+        cp      h               ; Is the space possibly at the start of the buffer?
+        jr      nz,l1ec2        ; Jump if not.
         ld      a,e
-        cp      l
-        jr      nz,l1ec2            ; (1)
-        inc     de
+        cp      l               ; Is the space at the start of the buffer?
+        jr      nz,l1ec2        ; Jump if not.
+        inc     de              ; Point to the next location within the buffer, counter-acting the following decrement.
 
-l1ec2   dec     de
-        jr      l1ec6               ; (1)
+l1ec2   dec     de              ; Point to the previous location within the buffer.
+        jr      l1ec6           ; Jump ahead to copy all characters to the BASIC line workspace.
 
 l1ec5   inc     hl
 
@@ -5977,8 +6103,7 @@ l20f9   ld      hl,(STKEND)
 
 l2109   ld      a,$03
         ld      (ERR_NR),a
-        call    l3e80
-        defw    m25cb
+        ROM1    m25cb
 l2113   call    l142d
         call    $fd43
         ret     c
@@ -9813,7 +9938,7 @@ l37ca   defs    $11
 l37db
   IF garry
         defs    $10
-        defm    $16, $00, $00
+l37eb   defm    $16, $00, $00
 m14e5   defm    $10, $00, $11, $07, $13, $00
       IF spanish
         defm    "Introduzca la cinta y pulse PLAY"
@@ -9825,7 +9950,7 @@ m14e5   defm    $10, $00, $11, $07, $13, $00
       ENDIF
 l3834   defm    $7f, "1982, 1986, 1987 Amstrad Plc.", 13
         defm    $7f, "2000-2015 Garry Lancaster v1.4", '3'+$80
-        ret     nc
+l3871   ret     nc
         call    l15da
         ret     c
         ld      a, b
@@ -9924,13 +10049,10 @@ l3917   ld      hl, (CH_ADD)
         ld      (X_PTR), hl
         ld      l, a
         ROM3    o0055
-l3921   call    l3e80
-        ld      l, (hl)
-        rra
+l3921   ROM1    m1f6e
         ret
-l3927   call    l3e80
-        ld      (hl), b
-        ld      e, $c9
+l3927   ROM1    m1e70
+        ret
 l392d   ld      hl, (CURCHL)
         ld      a, (hl)
         cp      0
@@ -13729,7 +13851,7 @@ m12e8   call    m2b89           ; page in DOS workspace
         ld      (hl),$ff        ; signal "current process is Loader"
       IF garry
         ld      a, (LODDRV)
-        cp      $54
+        cp      'T'
       ELSE
         ld      hl,FLAGS3
         bit     4,(hl)
@@ -20669,7 +20791,7 @@ n0338   ld      a,$0a           ; message 10
         ld      hl, l03cd
         ld      (al_resp), hl
       ENDIF
-      IF (garry=0) && (spanish=1)
+      IF garry=0 && spanish
 n033a   ld      ix,al_resp      ; address to place message
       ELSE
 n033a   ld      ix,al_resp+7    ; address to place message
@@ -20794,7 +20916,7 @@ n03ae   defm    $8b, "not ready", $8f, $ff
         defm    $8b, "track ", $fd, ", ", $ff
         defm    $8d, "sector ", $fc, ", ", $ff
         defm    " - Retry, Ignore or Cancel? ", $ff
-      IF (spanish=0) && (garry=0)
+      IF garry=0 && spanish=0
 n04cc   defm    "rRiIcC", $ff
 n04d3   defb    1,1,2,2,0,0
       ENDIF
@@ -22154,7 +22276,7 @@ n0c74   ld      a,(ix+$07)
 
 ; Subroutine to find extent HL for current file
 
-n0c81   call     n0d19           ; is correct extent in FCB?
+n0c81   call    n0d19           ; is correct extent in FCB?
         ret     c               ; exit if so
         push    hl
         call    n0cca           ; ensure directory up to date for this file
@@ -24772,15 +24894,16 @@ n19d3   ld      a,b
 n19df   push    hl
         push    bc
         ex      de,hl
-      IF garry=0
-        add     hl,hl
-        add     hl,hl           ; HL=absolute logical record number
-      ENDIF
+      IF garry
         ld      e,(ix+$00)
         ld      d,(ix+$01)      ; DE=records per track
-      IF garry
         ld      a, 2
         call    n04d9
+      ELSE
+        add     hl,hl
+        add     hl,hl           ; HL=absolute logical record number
+        ld      e,(ix+$00)
+        ld      d,(ix+$01)      ; DE=records per track
       ENDIF
         ld      bc,$ffff        ; BC=logical track counter
         or      a
@@ -25136,16 +25259,16 @@ n1a5d   push    hl
         ld      bc,$0008
         ldir                    ; copy initial disk spec for M:
         pop     de
-      IF garry=0
+      IF garry
+        ld      a,e
+        cp      $04
+        jr      c, n1b14
+      ELSE
         ld      hl,$0000
         ld      (xdpb_ptrs+$18),hl ; set M:s XDPB to null
         ld      a,e
         cp      $04
         ret     c               ; exit with M: disabled if <2K allowed
-      ELSE
-        ld      a,e
-        cp      $04
-        jr      c, n1b14
       ENDIF
         add     a,d
         ld      (spec_m+2),a    ; #tracks=size+offset (=last buffer+1)
@@ -51090,7 +51213,7 @@ o3A1B   EX      AF,AF'
 ; Patch to print error message routine
 
 o3A29   BIT     4,(IY+$01)      ; check bit 4 of FLAGS
-      IF v41 || (garry && spanish)
+      IF v41 || garry && spanish
         DEFB    $00, $00
       ELSE
         JR      NZ,o3A34        ; move on if in +3 BASIC
@@ -51109,7 +51232,7 @@ o3A37   EX      (SP),HL
 ; Patch to "STMT-RET" routine
 
 o3A3B   BIT     4,(IY+$01)      ; check bit 4 of FLAGS
-      IF v41 || (garry && spanish)
+      IF v41 || garry && spanish
         DEFB    $00, $00
       ELSE
         JR      NZ,o3A46        ; move on if in +3 BASIC
@@ -51123,7 +51246,7 @@ o3A46   LD      HL,$0112
 ; Patch to "STMT-NEXT" routine
 
 o3A4B   BIT     4,(IY+$01)      ; check bit 4 of FLAGS
-      IF v41 || (garry && spanish)
+      IF v41 || garry && spanish
         DEFB    $00, $00
       ELSE
         JR      NZ,o3A55        ; move on if in +3 BASIC
