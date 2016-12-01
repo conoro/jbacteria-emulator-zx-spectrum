@@ -325,6 +325,10 @@
         call    l3e80
         defw    par1
       .endm
+      .macro  ROM2  par1
+        call    $3f00
+        defw    par1
+      .endm
       .macro  ROM3  par1
         rst     $28
         defw    par1
@@ -4295,200 +4299,41 @@ l1758   ld      a,$00
         call    l185a
         ret
 
-
-        ld      (hl),h
-        rst     $18
-        sbc     a,$55
-        djnz    l17bd+1         ; (82)
-        ret
-        sbc     a,(hl)
-        sbc     a,(hl)
-        cp      l
-        ld      h,d
-        push    bc
-        ret     nz
-        ld      d,l
-        defb    $c2, $44, $10
-        rla
-        cp      $5f
-        sub     b
-        cp      $d1
-        defb    $dd
-        push    de
-        rla
-        sub     b
-        rst     $30
-        rst     $18
-        rst     $18
-        call    nc,$d9c7
-        sbc     a,$c3
-        cp      l
-        di
-        call    c,$d659
-        ld      d,(hl)
-        djnz    l17a8               ; (23)
-        ld      h,h
-        ld      b,a
-        ld      e,a
-        sub     b
-        ld      h,b
-        rst     $18
-        ld      b,b
-
-l1798   ld      b,e
-        sub     a
-        djnz    l1798               ; (-4)
-l179c   ld      d,c
-        rst     $0
-        ld      b,e
-        ld      e,a
-        sbc     a,$bd
-        ld      h,(hl)
-        exx
-
-l17a4   ld      e,e
-        sub     b
-        rla
-        defb    $e2
-l17a8   push    de
-l17a9   ld      d,h
-        djnz    l17a4               ; (-8)
-        ld      d,l
-        ld      b,d
-        ld      b,d
-        ld      e,c
-        sbc     a,$57
-        rla
-        sub     b
-        ld      a,a
-        ld      e,h
-        ld      e,h
-        exx
-        add     a,$55
-        jp      nz,$5190
-l17bd   sbc     a,$bd
-        call    po,$d5d8
-        sub     b
-        ld      (hl),h
-        ld      e,a
-        jp      nz,$595b
-        ld      e,(hl)
-        rst     $10
-        sub     b
-        ld      a,l
-        ld      e,a
-        jp      nc,$64bd
-        ld      e,b
-        pop     de
-
-l17d2   ld      e,(hl)
-        in      a,($c3)
-        djnz    l179c-1             ; (-60)
-        ld      e,a
-        ld      e,$1e
-        cp      l
-        ld      h,h
-        ret     c
-        push    de
-        djnz    l17d2               ; (-14)
-        ld      b,d
-        push    de
-        ld      b,a
-        push    de
-        ld      b,d
-        ret
-        sub     b
-        call    po,$c0d1
-        sub     b
-        defb    $18
-        defb    88
-        exx
-        out     ($19),a
-        cp      l
-        jp      po,$dc5f
-
-l17f4   ld      d,c
-        sbc     a,$54
-        inc     e
-        sub     b
-        ld      h,d
-        exx
-        out     ($58),a
-        ld      d,c
-        jp      nz,$9054
-        ld      d,l
-        ld      b,h
-        sub     b
-        pop     de
-        ld      e,h
-        cp      l
-        ld      d,c
-        ld      e,(hl)
-        ld      d,h
-        sub     b
-        ld      sp,hl
-        add     a,$df
-        ld      b,d
-        djnz    l17a9               ; (-104)
-        rst     $0
-        ret     c
-        ld      c,c
-        djnz    l17f4               ; (-34)
-        ld      e,a
-
-l1817   call    nz,$bd19
-        ld      h,a
-        ld      b,d
-        exx
-        ld      b,h
-        call    nz,$5ed5
-        sub     b
-        rst     $18
-        ld      e,(hl)
-        sub     b
-        ld      h,b
-        di
-        ld      h,a
-        sub     b
-        adc     a,b
-        dec     b
-        add     a,c
-        ld      (bc),a
-        ld      b,e
-        inc     e
-        djnz    l1875+1             ; (69)
-        ld      b,e
-        exx
-        ld      e,(hl)
-        cp      l
-        defb    $fd
-        ex      af,af'
-        nop
-        sub     b
-        ld      d,c
-
-l183a   sbc     a,$d4
-        djnz    l183a               ; (-4)
-        ex      af,af'
-        nop
-        djnz    l1887               ; (69)
-        ld      e,(hl)
-        call    nc,$c255
-        djnz    l183a+1             ; (-13)
-        ld      h,b
-        sbc     a,a
-        defb    $fd
-        sbc     a,e
-        cp      l
-        cp      l
-        jp      $c490
-        rst     $18
-        ld      e,$9e
-        cp      l
-        ld      h,h
-        ret     c
-        ld      d,l
-        djnz    l1817               ; (-67)
+      IF 1
+        defb    $74, $DF, $DE, $55, $10, $52, $C9, $9E
+        defb    $9E, $BD, $62, $C5, $C0, $55, $C2, $44
+        defb    $10, $17, $FE, $5F, $90, $FE, $D1, $DD
+        defb    $D5, $17, $90, $F7, $DF, $DF, $D4, $C7
+        defb    $D9, $DE, $C3, $BD, $F3, $DC, $59, $D6
+        defb    $56, $10, $17, $64, $47, $5F, $90, $60
+        defb    $DF, $40, $43, $97, $10, $FC, $51, $C7
+        defb    $43, $5F, $DE, $BD, $66, $D9, $5B, $90
+        defb    $17, $E2, $D5, $54, $10, $F8, $55, $42
+        defb    $42, $59, $DE, $57, $17, $90, $7F, $5C
+        defb    $5C, $D9, $C6, $55, $C2, $90, $51, $DE
+        defb    $BD, $E4, $D8, $D5, $90, $74, $5F, $C2
+        defb    $5B, $59, $5E, $D7, $90, $7D, $5F, $D2
+        defb    $BD, $64, $58, $D1, $5E, $DB, $C3, $10
+        defb    $C4, $5F, $1E, $1E, $BD, $64, $D8, $D5
+        defb    $10, $F2, $42, $D5, $47, $D5, $42, $C9
+        defb    $90, $E4, $D1, $C0, $90, $18, $58, $D9
+        defb    $D3, $19, $BD, $E2, $5F, $DC, $51, $DE
+        defb    $54, $1C, $90, $62, $D9, $D3, $58, $51
+        defb    $C2, $54, $90, $55, $44, $90, $D1, $5C
+        defb    $BD, $51, $5E, $54, $90, $F9, $C6, $DF
+        defb    $42, $10, $98, $C7, $D8, $49, $10, $DE
+        defb    $5F, $C4, $19, $BD, $67, $42, $D9, $44
+        defb    $C4, $D5, $5E, $90, $DF, $5E, $90, $60
+        defb    $F3, $67, $90, $88, $05, $81, $02, $43
+        defb    $1C, $10, $45, $43, $D9, $5E, $BD, $FD
+        defb    $08, $00, $90, $51, $DE, $D4, $10, $FC
+        defb    $08, $00, $10, $45, $5E, $D4, $55, $C2
+        defb    $10, $F3, $60, $9F, $FD, $9B, $BD, $BD
+        defb    $C3, $90, $C4, $DF, $1E, $9E, $BD, $64
+        defb    $D8, $55, $10, $BD
+      ELSE
+        defs    244
+      ENDIF
 
 l185a   ld      hl,FLAGS
         ld      a,(hl)
@@ -6389,42 +6234,48 @@ l2109   ld      a,$03
 ; Exit: Carry flag set if a keyword was identified.
 ;       A=Token character code.
 
-l2113   call    l142d
-        call    $fd43
-        ret     c
-        ld      b,$f9
-        ld      de,$fda0
-        ld      hl,l168e
-        call    $fd5c
-        ret     nc
-        cp      $ff
+l2113   call    l142d           ; setup token routines in RAM
+        call    $fd43           ; Attempt to identify 48K mode keyword.
+        ret     c               ; Return if keyword identified.
+
+;Attempt to identify 128K mode keywords and mis-spelled keywords.
+
+        ld      b,$f9           ; Base character code (results in codes $F9-$FF).
+        ld      de,$fda0        ; DE=Address of Keyword Conversion Buffer.
+        ld      hl,l168e        ; HL=Keywords string table.
+        call    $fd5c           ; Attempt to identify 128K mode/mis-spelled keyword.
+        ret     nc              ; Return if no keyword identified.
+
+;Attempt to convert mis-spelled keywords
+
+        cp      $ff             ; Was it "CLOSE#"?
         jr      nz,l212e
-        ld      a,$d4
-        jr      l2150
+        ld      a,$d4           ; Use character code for 'CLOSE #'.
+        jr      l2150           ; Jump ahead to continue.
 
-l212e   cp      $fe
-        jr      nz,l2136
-        ld      a,$d3
-        jr      l2150
+l212e   cp      $fe             ; Was it "OPEN#"?
+        jr      nz,l2136        ; Jump if not.
+        ld      a,$d3           ; Use character code for 'OPEN #'.
+        jr      l2150           ; Jump ahead to continue.
 
-l2136   cp      $fd
-        jr      nz,l213e
-        ld      a,$ce
-        jr      l2150
+l2136   cp      $fd             ; Was it "DEFFN"?
+        jr      nz,l213e        ; Jump if not.
+        ld      a,$ce           ; Use character code for 'DEF FN'.
+        jr      l2150           ; Jump ahead to continue.
 
-l213e   cp      $fc
-        jr      nz,l2146
-        ld      a,$ed
-        jr      l2150
+l213e   cp      $fc             ; Was it "GOSUB"?
+        jr      nz,l2146        ; Jump if not.
+        ld      a,$ed           ; Use character code for 'GO SUB'.
+        jr      l2150           ; Jump ahead to continue.
 
-l2146   cp      $fb
-        jr      nz,l214e
-        ld      a,$ec
-        jr      l2150
+l2146   cp      $fb             ; Was it "GOTO"?
+        jr      nz,l214e        ; Jump if not.
+        ld      a,$ec           ; Use character code for 'GO TO'.
+        jr      l2150           ; Jump ahead to continue.
 
-l214e   sub     $56
+l214e   sub     $56             ; Reduce to $A3 for 'SPECTRUM' and $A4 for 'PLAY'.
 
-l2150   scf
+l2150   scf                     ; Signal keyword identified.
         ret
 
 ; Subroutine to transfer a counted string (minus count) from (HL) to (DE)
@@ -6439,6 +6290,7 @@ l2154   ld      a,(hl)
         ret
 
 ; Subroutine to check if char in A is a digit. If so, carry set & A=value
+; [Never called by this ROM]
 
 l215b   cp      '0'
         ccf
@@ -6765,71 +6617,72 @@ l21d3   push    af
     ENDIF
 
     IF garry
-        defw    $2562
-        defw    $23f1
-        defw    $24bd
-        defw    $24e8
-        defw    $254b
-        defw    $2563
-        defw    $2692
-        defw    $2a49
-        defw    $2569
-        defw    $2584
-        defw    $25be
-        defw    $25db
-        defw    $25ec
-        defw    $2a16
-        defw    $269f
-        defw    $2739
-        defw    $273f
-        defw    $274c
-        defw    $275c
-        defw    $2767
-        defw    $2772
-        defw    $277d
-        defw    $261c
-        defw    $267c
-        defw    $2ab9
-        defw    $2788
-        defw    $26a3
-        defw    $2793
-        defw    $27ac
-        defw    $27b7
-        defw    $2286
-        defw    $2296
-        defw    $2624
-        defw    $2449
-        defw    $2562
-        defw    $24bd
-        defw    $24e8
-        defw    $254b
-        defw    $2563
-        defw    $2562
-        defw    $2a49
-        defw    $2562
-        defw    $2562
-        defw    $25be
-        defw    $25db
-        defw    $2562
-        defw    $2423
-        defw    $269f
-        defw    $2739
-        defw    $22de
-        defw    $22de
-        defw    $22de
-        defw    $22de
-        defw    $22de
-        defw    $22de
-        defw    $2562
-        defw    $2562
-        defw    $22de
-        defw    $2562
-        defw    $22de
-        defw    $22de
-        defw    $2562
-        defw    $22de
-        defw    $2254
-        defw    $2562
+        defw    l2562
+        defw    l23f1
+        defw    l24bd
+        defw    l24e8
+        defw    l254b
+        defw    l2563
+        defw    l2692
+        defw    l2a49
+        defw    l2569
+        defw    l2584
+        defw    l25be
+        defw    l25db
+        defw    l25ec
+        defw    l2a16
+        defw    l269f
+        defw    l2739
+        defw    l273f
+        defw    l274c
+        defw    l275c
+        defw    l2767
+        defw    l2772
+        defw    l277d
+        defw    l261c
+        defw    l267c
+        defw    l2ab9
+        defw    l2788
+        defw    l26a3
+        defw    l2793
+        defw    l27ac
+        defw    l27b7
+        defw    l2286
+        defw    l2296
+        defw    l2624
+        defw    l2449
+        defw    l2562
+        defw    l24bd
+        defw    l24e8
+        defw    l254b
+        defw    l2563
+        defw    l2562
+        defw    l2a49
+        defw    l2562
+        defw    l2562
+        defw    l25be
+        defw    l25db
+        defw    l2562
+        defw    l2423
+        defw    l269f
+        defw    l2739
+        defw    l22de
+        defw    l22de
+        defw    l22de
+        defw    l22de
+        defw    l22de
+        defw    l22de
+        defw    l2562
+        defw    l2562
+        defw    l22de
+        defw    l2562
+        defw    l22de
+        defw    l22de
+        defw    l2562
+        defw    l22de
+        defw    l2254
+        defw    l2562
+
 l2254   set     7, (ix+$1a)     ; set freeze flag
         ret
 l2259   ld      hl, (CURCHL)
@@ -6894,7 +6747,7 @@ l22c0   bit     6, (ix+$1a)
         jr      nc, l22e9
         ld      hl, $2214
         jp      l27e4
-        bit     7, (ix+$1c)
+l22de   bit     7, (ix+$1c)
         ret     z
         set     6, (ix+$1a)
         jr      l22f5
@@ -6944,11 +6797,7 @@ l233e   ld      a, (hl)
         jr      z, l2354
         inc     a
         cp      (ix+$18)
-      IF garry
         jr      z, l23d2
-      ELSE
-        jr      l23d2
-      ENDIF
         dec     a
 l2354   and     a
         jr      nz, l233e
@@ -7224,7 +7073,7 @@ l254e   add     a, a
         ld      (ix+$11), a
         ld      (ix+$16), 0
         ld      (ix+$17), 0
-        ret
+l2562   ret
 l2563   ld      a, (ix+$10)
         inc     a
         jr      l254e
@@ -7389,7 +7238,7 @@ l2692   ld      a, (ix+$18)
         jr      l267c
 l269f   call    l254b
         xor     a
-        ld      (l26e0+1), a
+l26a3   ld      (l26e0+1), a
         ld      (ix+$24), 0
 l26aa   ld      c, (ix+$0d)
         ld      b, (ix+$0e)
@@ -10017,205 +9866,41 @@ l362b   defm    $16, $0, $0
 ; *********** END OF SELF-TEST PROGRAM SECTION ***********
     ENDIF
 
-
-l36ba   ld      (hl),h
-        rst     $18
-        sbc     a,$55
-        djnz    l3719-7             ; (82)
-        ret
-        sbc     a,(hl)
-        sbc     a,(hl)
-        cp      l
-        ld      h,d
-        push    bc
-        ret     nz
-        ld      d,l
-        jp      nz,$1044
-        rla
-
-l36cc   cp      $5f
-        sub     b
-        cp      $d1
-        defb    $dd
-        push    de
-
-l36d3   rla
-        sub     b
-        rst     $30
-        rst     $18
-        rst     $18
-        call    nc,$d9c7
-        sbc     a,$c3
-        cp      l
-        di
-        call    c,$d659
-        ld      d,(hl)
-        djnz    l36f8+4             ; (23)
-        ld      h,h
-
-l36e6   ld      b,a
-        ld      e,a
-        sub     b
-
-l36e9   ld      h,b
-        rst     $18
-        ld      b,b
-
-l36ec   ld      b,e
-        sub     a
-        djnz    l36ec               ; (-4)
-
-l36f0   ld      d,c
-        rst     $0
-        ld      b,e
-        ld      e,a
-        sbc     a,$bd
-        ld      h,(hl)
-        exx
-
-l36f8   ld      e,e
-        sub     b
-        rla
-        jp      po,$54d5
-        djnz    l36f8               ; (-8)
-        ld      d,l
-        ld      b,d
-        ld      b,d
-
-l3703   ld      e,c
-        sbc     a,$57
-        rla
-        sub     b
-        ld      a,a
-
-l3709   ld      e,h
-        ld      e,h
-        exx
-        add     a,$55
-        jp      nz,$5190
-        sbc     a,$bd
-        call    po,$d5d8
-        sub     b
-        ld      (hl),h
-        ld      e,a
-
-l3719   jp      nz,$595b
-        ld      e,(hl)
-        rst     $10
-        sub     b
-        ld      a,l
-        ld      e,a
-        jp      nc,$64bd
-        ld      e,b
-        pop     de
-
-l3726   ld      e,(hl)
-        in      a,($c3)
-        djnz    l36f0-1             ; (-60)
-        ld      e,a
-        ld      e,$1e
-        cp      l
-        ld      h,h
-        ret     c
-        push    de
-        djnz    l3726               ; (-14)
-        ld      b,d
-        push    de
-        ld      b,a
-        push    de
-        ld      b,d
-        ret
-        sub     b
-        call    po,$c0d1
-        sub     b
-        defb    $18
-        defb    88
-        exx
-        out     ($19),a
-        cp      l
-        jp      po,$dc5f
-
-l3748   ld      d,c
-        sbc     a,$54
-        inc     e
-        sub     b
-        ld      h,d
-        exx
-        out     ($58),a
-        ld      d,c
-        jp      nz,$9054
-        ld      d,l
-        ld      b,h
-        sub     b
-        pop     de
-        ld      e,h
-        cp      l
-        ld      d,c
-        ld      e,(hl)
-        ld      d,h
-        sub     b
-        ld      sp,hl
-        add     a,$df
-        ld      b,d
-        djnz    l36f8+5             ; (-104)
-        rst     $0
-        ret     c
-        ld      c,c
-        djnz    l3748               ; (-34)
-        ld      e,a
-
-l376b   call    nz,$bd19
-        ld      h,a
-        ld      b,d
-        exx
-        ld      b,h
-        call    nz,$5ed5
-        sub     b
-        rst     $18
-        ld      e,(hl)
-        sub     b
-        ld      h,b
-        di
-        ld      h,a
-        sub     b
-        adc     a,b
-        dec     b
-        add     a,c
-        ld      (bc),a
-        ld      b,e
-        inc     e
-        djnz    l37ca               ; (69)
-        ld      b,e
-        exx
-        ld      e,(hl)
-        cp      l
-        defb    $fd
-        ex      af,af'
-        nop
-        sub     b
-        ld      d,c
-l378e   sbc     a,$d4
-        djnz    l378e               ; (-4)
-        ex      af,af'
-        nop
-        djnz    l37db               ; (69)
-        ld      e,(hl)
-        call    nc,$c255
-        djnz    l378e+1             ; (-13)
-        ld      h,b
-        sbc     a,a
-        defb    $fd
-        sbc     a,e
-        cp      l
-        cp      l
-        jp      $c490
-        rst     $18
-        ld      e,$9e
-        cp      l
-        ld      h,h
-        ret     c
-        ld      d,l
-        djnz    l376b               ; (-67)
+      IF 1
+        defb    $74, $DF, $DE, $55, $10, $52, $C9, $9E
+        defb    $9E, $BD, $62, $C5, $C0, $55, $C2, $44
+        defb    $10, $17, $FE, $5F, $90, $FE, $D1, $DD
+        defb    $D5, $17, $90, $F7, $DF, $DF, $D4, $C7
+        defb    $D9, $DE, $C3, $BD, $F3, $DC, $59, $D6
+        defb    $56, $10, $17, $64, $47, $5F, $90, $60
+        defb    $DF, $40, $43, $97, $10, $FC, $51, $C7
+        defb    $43, $5F, $DE, $BD, $66, $D9, $5B, $90
+        defb    $17, $E2, $D5, $54, $10, $F8, $55, $42
+        defb    $42, $59, $DE, $57, $17, $90, $7F, $5C
+        defb    $5C, $D9, $C6, $55, $C2, $90, $51, $DE
+        defb    $BD, $E4, $D8, $D5, $90, $74, $5F, $C2
+        defb    $5B, $59, $5E, $D7, $90, $7D, $5F, $D2
+        defb    $BD, $64, $58, $D1, $5E, $DB, $C3, $10
+        defb    $C4, $5F, $1E, $1E, $BD, $64, $D8, $D5
+        defb    $10, $F2, $42, $D5, $47, $D5, $42, $C9
+        defb    $90, $E4, $D1, $C0, $90, $18, $58, $D9
+        defb    $D3, $19, $BD, $E2, $5F, $DC, $51, $DE
+        defb    $54, $1C, $90, $62, $D9, $D3, $58, $51
+        defb    $C2, $54, $90, $55, $44, $90, $D1, $5C
+        defb    $BD, $51, $5E, $54, $90, $F9, $C6, $DF
+        defb    $42, $10, $98, $C7, $D8, $49, $10, $DE
+        defb    $5F, $C4, $19, $BD, $67, $42, $D9, $44
+        defb    $C4, $D5, $5E, $90, $DF, $5E, $90, $60
+        defb    $F3, $67, $90, $88, $05, $81, $02, $43
+        defb    $1C, $10, $45, $43, $D9, $5E, $BD, $FD
+        defb    $08, $00, $90, $51, $DE, $D4, $10, $FC
+        defb    $08, $00, $10, $45, $5E, $D4, $55, $C2
+        defb    $10, $F3, $60, $9F, $FD, $9B, $BD, $BD
+        defb    $C3, $90, $C4, $DF, $1E, $9E, $BD, $64
+        defb    $D8, $55, $10, $BD
+      ELSE
+        defs    244
+      ENDIF
 
         defs    $1c
 
@@ -10525,7 +10210,7 @@ l3a29   pop     hl
       ENDIF
   ENDIF
 
-        ld      (OLDHL),hl
+l3e00   ld      (OLDHL),hl
         push    af
         pop     hl
 
@@ -10916,6 +10601,45 @@ l3ff0   jp      l2187           ; go to the routine
 ; +3DOS routine addresses
 
 ;        include "p3dos.def"
+        define  IDE_STREAM_OPEN     $0056
+        define  IDE_STREAM_CLOSE    $0059
+        define  IDE_STREAM_IN       $005c
+        define  IDE_STREAM_OUT      $005f
+        define  IDE_STREAM_PTR      $0062
+        
+        define  IDE_VERSION         $00a0
+        define  IDE_INTERFACE       $00a3
+        define  IDE_INIT            $00a6
+        define  IDE_DRIVE           $00a9
+        define  IDE_SECTOR_READ     $00ac
+        define  IDE_SECTOR_WRITE    $00af
+        define  IDE_FORMAT          $00b2
+        define  IDE_PARTITION_FIND  $00b5
+        define  IDE_PARTITION_NEW   $00b8
+        define  IDE_PARTITION_INIT  $00bb
+        define  IDE_PARTITION_ERASE $00be
+        define  IDE_PARTITION_RENAME $00c1
+        define  IDE_PARTITON_READ   $00c4
+        define  IDE_PARTITION_WRITE $00c7
+        define  IDE_PARTITION_WINFO $00ca
+        define  IDE_PARTITION_OPEN  $00cd
+        define  IDE_PARTITION_CLOSE $00d0
+        define  IDE_PARTITION_GETINFO $00d3
+        define  IDE_PARTITION_SETINFO $00d6
+        define  IDE_SWAP_OPEN       $00d9
+        define  IDE_SWAP_CLOSE      $00dc
+        define  IDE_SWAP_OUT        $00df
+        define  IDE_SWAP_IN         $00e2
+        define  IDE_SWAP_EX         $00e5
+        define  IDE_SWAP_POS        $00e8
+        define  IDE_SWAP_MOVE       $00eb
+        define  IDE_SWAP_RESIZE     $00ee
+        define  IDE_DOS_MAP         $00f1
+        define  IDE_DOS_UNMAP       $00f4
+        define  IDE_DOS_MAPPING     $00f7
+        define  IDE_DOS_UNPERMANENT $00fa
+        define  IDE_SNAPLOAD        $00fd
+
         define  DOS_INITIALISE      $0100
         define  DOS_VERSION         $0103
         define  DOS_OPEN            $0106
@@ -10970,6 +10694,14 @@ l3ff0   jp      l2187           ; go to the routine
         define  DD_L_ON_MOTOR       $0196
         define  DD_L_T_OFF_MOTOR    $0199
         define  DD_L_OFF_MOTOR      $019c
+
+        define  IDE_ACCESS_DATA     $019f
+        define  IDE_IDENTIFY        $01a2
+        define  IDE_PARTITIONS      $01a5
+        define  IDE_FS_UNIT         $01a8
+        define  IDE_FS_DRIVE        $01ab
+        define  IDE_FS_FILE         $01ae
+        define  IDE_PATH            $01b1
 
 ; +3DOS Error codes
 
@@ -11540,8 +11272,7 @@ m02d3   push    af
         push    bc
         add     a,'A'
         call    m32b6           ; save TSTACK in page 7
-        call    m3f00
-        defw    DOS_REF_XDPB    ; point IX at XDPB
+        ROM2    DOS_REF_XDPB    ; point IX at XDPB
         call    m32ee           ; restore TSTACK
         jr      c,m02ec         ; move on if no error
         call    m2b64           ; page in DOS memory
@@ -11549,8 +11280,7 @@ m02d3   push    af
         defb    $ff
 m02ec   pop     bc
         call    m32b6           ; save TSTACK in page 7
-        call    m3f00
-        defw    DD_LOGIN        ; login disk
+        ROM2    DD_LOGIN        ; login disk
         call    m32ee           ; restore TSTACK
         jr      nc,m0306        ; move on if error
         or      a
@@ -11570,8 +11300,7 @@ m0315   pop     af              ; get unit number
         push    af
         add     a,'A'
         call    m32b6           ; save TSTACK in page 7
-        call    m3f00
-        defw    DOS_REF_XDPB    ; point IX to XDPB
+        ROM2    DOS_REF_XDPB    ; point IX to XDPB
         call    m32ee           ; restore TSTACK
         jr      c,m032d
         call    m2b64           ; page in normal memory
@@ -11579,8 +11308,7 @@ m0315   pop     af              ; get unit number
         defb    $ff
 m032d   xor     a
         call    m32b6           ; save TSTACK in page 7
-        call    m3f00
-        defw    DD_SEL_FORMAT   ; select +3 format
+        ROM2    DD_SEL_FORMAT   ; select +3 format
         call    m32ee           ; restore TSTACK
         jr      c,m0342
         call    m2b64           ; page in normal memory
@@ -11596,8 +11324,7 @@ m0345   ld      d,a
         ld      hl,tmp_buff     ; buffer address
         push    af
         call    m32b6           ; save TSTACK in page 7
-        call    m3f00
-        defw    DD_FORMAT       ; format a track
+        ROM2    DD_FORMAT       ; format a track
         call    m32ee           ; restore TSTACK
         jr      c,m0365
         call    m2b64           ; page in normal memory
@@ -11838,8 +11565,7 @@ m4b0    ld      hl,tmp_fspec
         ld      (de),a          ; add terminator
         ld      hl,tmp_fspec
         call    m32b6           ; save TSTACK in page 7
-        call    m3f00
-        defw    DOS_DELETE      ; delete filespec
+        ROM2    DOS_DELETE      ; delete filespec
         call    m32ee           ; restore TSTACK
         call    m2b64           ; page in normal memory
         ret     c               ; exit if ok
@@ -11920,8 +11646,7 @@ m0518   pop     hl              ; HL=address to place source filename
         ld      de,tmp_fspec
         call    m2b89           ; page in DOS workspace
         call    m32b6           ; save TSTACK in page 7
-        call    m3f00
-        defw    DOS_RENAME      ; do rename
+        ROM2    DOS_RENAME      ; do rename
         call    m32ee           ; restore TSTACK
         call    m2b64           ; page in normal memory
         ret     c               ; exit if done ok
@@ -11986,8 +11711,7 @@ m059e   ld      e,c             ; if -, we're clearing attributes
 m059f   ld      hl,tmp_fspec
         call    m2b89           ; page in DOS workspace
         call    m32b6           ; save TSTACK in page 7
-        call    m3f00
-        defw    DOS_SET_ATTRIBUTES ; set the attributes
+        ROM2    DOS_SET_ATTRIBUTES ; set the attributes
         call    m32ee           ; restore TSTACK
         call    m2b64           ; page in normal memory
         ret     c               ; exit if done ok
@@ -12137,8 +11861,7 @@ m067f   ld      b,$40           ; 64 entries in buffer
 m068c   ld      de,tmp_buff
         ld      hl,tmp_fspec
         call    m32b6           ; save TSTACK in page 7
-        call    m3f00
-        defw    DOS_CATALOG     ; get next lot of entries
+        ROM2    DOS_CATALOG     ; get next lot of entries
         call    m32ee           ; restore TSTACK
         jp      nc,m06ab        ; move on if error
         ld      hl,tmp_buff+$0d ; address of first returned entry
@@ -12273,13 +11996,11 @@ m0784   ld      a,(DEFADD)      ; get drive letter
         jr      nz,m079a        ; move on if not default
         ld      a,$ff
         call    m32b6           ; save TSTACK in page 7
-        call    m3f00
-        defw    DOS_SET_DRIVE   ; get default drive
+        ROM2    DOS_SET_DRIVE   ; get default drive
         call    m32ee           ; restore TSTACK
         jp      nc,m06ab        ; go if error
 m079a   call    m32b6           ; save TSTACK in page 7
-        call    m3f00
-        defw    DOS_FREE_SPACE  ; get free space on drive
+        ROM2    DOS_FREE_SPACE  ; get free space on drive
         call    m32ee           ; restore TSTACK
         jp      nc,m06ab        ; go if error
         call    m2b64           ; page in normal memory
@@ -12410,8 +12131,7 @@ m0834   push    af
         pop     hl              ; HL=address
         call    m2b89           ; page in DOS workspace
         call    m32b6           ; save TSTACK in page 7
-        call    m3f00
-        defw    DOS_READ        ; read the block
+        ROM2    DOS_READ        ; read the block
         call    m32ee           ; restore TSTACK
         call    m2b64           ; page in normal memory
         jr      c,m0865         ; move on to exit if okay
@@ -12422,8 +12142,7 @@ m0834   push    af
 m0865   ld      b,$00
         call    m2b89           ; page in DOS workspace
 m086a   call    m32b6           ; save TSTACK in page 7
-        call    m3f00
-        defw    DOS_CLOSE       ; close file
+        ROM2    DOS_CLOSE       ; close file
         call    m32ee           ; restore TSTACK
         call    m2b64           ; page in normal memory
         jr      nc,m087f        ; move on if error
@@ -12486,8 +12205,7 @@ m08b0   ld      (de),a          ; fill 11-byte name with spaces
       ENDIF
         call    m2b89           ; page in DOS workspace
         call    m32b6           ; save TSTACK in page 7
-        call    m3f00
-        defw    DOS_BOOT        ; boot a disk
+        ROM2    DOS_BOOT        ; boot a disk
         call    m32ee           ; restore TSTACK
         call    m2b64           ; page in normal memory
         cp      $23
@@ -12575,8 +12293,7 @@ m0942   cp      'T'
         jr      z,m095d         ; move on for T:
         call    m2b89           ; page in DOS workspace
         call    m32b6           ; save TSTACK in page 7
-        call    m3f00
-        defw    DOS_SET_DRIVE   ; set default drive
+        ROM2    DOS_SET_DRIVE   ; set default drive
         call    m32ee           ; restore TSTACK
         call    m2b64           ; page in normal memory
         jr      c,m095d         ; move on if no error
@@ -12602,8 +12319,7 @@ m0948   ld      d, a
         ld      c, a
         call    m2b89           ; page in DOS workspace
         call    m32b6
-        call    m3f00
-        defw    $00d6
+        ROM2    IDE_PARTITION_SETINFO
         call    m32ee
         call    m2b64
 m0966   pop     bc
@@ -12913,8 +12629,7 @@ m0b41   ld      a,(T_ADDR)
         ld      hl,tmp_fspec
         call    m2b89           ; page in DOS workspace
         call    m32b6           ; save TSTACK in page 7
-        call    m3f00
-        defw    DOS_OPEN        ; open file
+        ROM2    DOS_OPEN        ; open file
         call    m32ee           ; restore TSTACK
         call    m2b64           ; page in normal memory
         jr      c,m0b6c
@@ -12923,8 +12638,7 @@ m0b41   ld      a,(T_ADDR)
 m0b6c   ld      b,$00
         call    m2b89           ; page in DOS workspace
         call    m32b6           ; save TSTACK in page 7
-        call    m3f00
-        defw    DOS_REF_HEAD    ; IX to header
+        ROM2    DOS_REF_HEAD    ; IX to header
         call    m32ee           ; restore TSTACK
         call    m2b64           ; page in normal memory
         ex      (sp),ix
@@ -13229,8 +12943,7 @@ m0d6e   ld      a,(RAMERR)
         ld      hl,tmp_fspec
         push    ix
         call    m32b6           ; save TSTACK in page 7
-        call    m3f00
-        defw    DOS_OPEN        ; create the file
+        ROM2    DOS_OPEN        ; create the file
         call    m32ee           ; restore TSTACK
         jr      c,m0d9b         ; move on unless error
         call    m2b64           ; page in normal memory
@@ -13238,8 +12951,7 @@ m0d6e   ld      a,(RAMERR)
         defb    $ff
 m0d9b   ld      b,$00
         call    m32b6           ; save TSTACK in page 7
-        call    m3f00
-        defw    DOS_REF_HEAD    ; get IX=header data
+        ROM2    DOS_REF_HEAD    ; get IX=header data
         call    m32ee           ; restore TSTACK
         jr      c,m0db1
         call    m2b64           ; page in normal memory
@@ -13270,8 +12982,7 @@ m0db1   ex      (sp),ix         ; IX=pointer to header in normal memory
         jr      z,m0df6         ; move on if zero length
         pop     hl              ; restore start address
         call    m32b6           ; save TSTACK in page 7
-        call    m3f00
-        defw    DOS_WRITE       ; write block to file
+        ROM2    DOS_WRITE       ; write block to file
         call    m32ee           ; restore TSTACK
         jr      c,m0df6
         call    m2b64           ; page in normal memory
@@ -13279,8 +12990,7 @@ m0db1   ex      (sp),ix         ; IX=pointer to header in normal memory
         defb    $ff
 m0df6   ld      b,$00
         call    m32b6           ; save TSTACK in page 7
-        call    m3f00
-        defw    DOS_CLOSE       ; close file
+        ROM2    DOS_CLOSE       ; close file
         call    m32ee           ; restore TSTACK
         jr      c,m0e0c
         call    m2b64
@@ -13354,16 +13064,14 @@ m0e9b   ld      a,(RAMERR)
         ld      b,$00
         call    m2b89           ; page in DOS workspace
         call    m32b6           ; save TSTACK in page 7
-        call    m3f00
-        defw    DOS_CLOSE       ; close file 0
+        ROM2    DOS_CLOSE       ; close file 0
         call    m32ee           ; restore TSTACK
         call    m2b64           ; page in normal memory
         jr      c,m0eca         ; move on if no error
         ld      b,$00
         call    m2b89           ; page in DOS workspace
         call    m32b6           ; save TSTACK in page 7
-        call    m3f00
-        defw    DOS_ABANDON     ; else abandon file 0
+        ROM2    DOS_ABANDON     ; else abandon file 0
         call    m32ee           ; restore TSTACK
         call    m2b64           ; page in normal memory
 m0eca   pop     af              ; restore error code
@@ -14144,13 +13852,11 @@ m12e8   call    m2b89           ; page in DOS workspace
         jp      z,m13c6         ; move on if no disk interface present
         xor     a
         call    m32b6           ; save TSTACK in page 7
-        call    m3f00
-        defw    DOS_SET_MESSAGE ; disable ALERT routine
+        ROM2    DOS_SET_MESSAGE ; disable ALERT routine
         call    m32ee           ; restore TSTACK
         push    hl
         call    m32b6           ; save TSTACK in page 7
-        call    m3f00
-        defw    DOS_BOOT        ; attempt to boot a disk from the boot sector
+        ROM2    DOS_BOOT        ; attempt to boot a disk from the boot sector
         call    m32ee           ; restore TSTACK
         call    m2b64           ; page in normal memory
         ROM3    o16B0           ; clear editing workspaces
@@ -14198,8 +13904,7 @@ m1383   call    m2b89           ; page in DOS workspace
         pop     hl              ; retrieve old ALERT address
         ld      a,$ff
         call    m32b6           ; save TSTACK in page 7
-        call    m3f00
-        defw    DOS_SET_MESSAGE ; re-enable ALERT routine
+        ROM2    DOS_SET_MESSAGE ; re-enable ALERT routine
         call    m32ee           ; restore TSTACK
         call    m2b64           ; page in normal memory
         ld      a,(ERR_NR)      ; get error code
@@ -14395,8 +14100,7 @@ m1506   rst     $18
         ROM3    o1DAB
         ret
 m1515   call    m2b35
-        call    m3f00
-        defw    $005c
+        ROM2    IDE_STREAM_IN
         ROM3    o2D28
         ROM3    o2AFF
         ret
@@ -16897,19 +16601,16 @@ m2410   call    m2b89           ; page in DOS workspace (page 7)
         bit     7,(hl)
         jr      nz,m2427        ; move on if DOS already initialised
         set     7,(hl)          ; signal "DOS initialised"
-        call    m3f00
-        defw    $00a3
+        ROM2    IDE_INTERFACE
         ld      ($df9d), a
-m2427   call    m3f00
-        defw    $0100
+m2427   ROM2    DOS_INITIALISE
         call    m32ee
         ld      hl, m36b0
         call    m24b5
 m242a   ld      a,$ff
         ld      hl, $0002       ; standard ALERT routine in ROM 2
         call    m32b6           ; save TSTACK in page 7
-        call    m3f00
-        defw    DOS_SET_MESSAGE
+        ROM2    DOS_SET_MESSAGE
         call    m32ee           ; restore TSTACK
         ld      hl,FLAGS3
         res     4,(hl)          ; signal "disk interface not present"
@@ -16919,16 +16620,14 @@ m2410   call    m2b89           ; page in DOS workspace (page 7)
         bit     7,(hl)
         jr      nz,m242a        ; move on if DOS already initialised
         call    m32b6           ; save TSTACK in page 7
-        call    m3f00
-        defw    DOS_INITIALISE
+        ROM2    DOS_INITIALISE
         call    m32ee           ; restore TSTACK
         ld      hl,FLAGS3
         set     7,(hl)          ; signal "DOS initialised"
 m242a   ld      a,$ff
         ld      hl,$244e        ; standard ALERT routine in ROM 2
         call    m32b6           ; save TSTACK in page 7
-        call    m3f00
-        defw    DOS_SET_MESSAGE
+        ROM2    DOS_SET_MESSAGE
         call    m32ee           ; restore TSTACK
         call    m2b64           ; page in page 0
         ld      hl,m24be
@@ -16938,8 +16637,7 @@ m242a   ld      a,$ff
         call    m2b89           ; page in DOS workspace
       ENDIF
         call    m32b6           ; save TSTACK in page 7
-        call    m3f00
-        defw    DD_INTERFACE
+        ROM2    DD_INTERFACE
         call    m32ee           ; restore TSTACK
       IF garry
         ld      a, $30
@@ -16961,8 +16659,7 @@ m2463   ld      a,'A'           ; set "A:" as default load/save drive
         call    m2b89           ; page in DOS workspace
       ENDIF
         call    m32b6           ; save TSTACK in page 7
-        call    m3f00
-        defw    DD_ASK_1
+        ROM2    DD_ASK_1
         call    m32ee           ; restore TSTACK
       IF garry=0
         call    m2b64           ; page in page 0
@@ -16976,8 +16673,7 @@ m2463   ld      a,'A'           ; set "A:" as default load/save drive
         call    m2b89           ; page in DOS workspace
       ENDIF
         call    m32b6           ; save TSTACK in page 7
-        call    m3f00
-        defw    DOS_MAP_B       ; map drive B: to unit 0
+        ROM2    DOS_MAP_B       ; map drive B: to unit 0
         call    m32ee           ; restore TSTACK
       IF garry
         ld      a, $31
@@ -17107,14 +16803,12 @@ m253a
         call    m2b89           ; page in DOS workspace
         ld      b,$00
         call    m32b6           ; save TSTACK in page 7
-        call    m3f00
-        defw    DOS_CLOSE       ; close file 0
+        ROM2    DOS_CLOSE       ; close file 0
         call    m32ee           ; restore TSTACK
         jr      c,m2559         ; move on if no error
         ld      b,$00
         call    m32b6           ; save TSTACK in page 7
-        call    m3f00
-        defw    DOS_ABANDON     ; abandon file 0
+        ROM2    DOS_ABANDON     ; abandon file 0
         call    m32ee           ; restore TSTACK
 m2559   call    m2b64           ; page back normal memory
         ld      hl,(SYNRET)
@@ -17576,8 +17270,7 @@ m2b09   rst     $18
         jp      m1266
 m2b14   call    m2b35
         ld      b, 0
-m2b19   call    m3f00
-        defw    $0062
+m2b19   ROM2    IDE_STREAM_PTR
         push    de
         push    hl
         pop     bc
@@ -17726,14 +17419,12 @@ m2bb4   call    m2b64           ; page in normal memory
         ld      bc,$0001        ; use file number 0,exclusive-read
         ld      de,$0001        ; open action - error if doesn't exist
         call    m32b6           ; save TSTACK in page 7
-        call    m3f00
-        defw    DOS_OPEN        ; open file
+        ROM2    DOS_OPEN        ; open file
         call    m32ee           ; restore TSTACK
         jp      nc,m3219        ; move on if error opening
 m2bd7   ld      b,$00           ; file 0
         call    m32b6           ; save TSTACK in page 7
-        call    m3f00
-        defw    DOS_BYTE_READ   ; read a byte
+        ROM2    DOS_BYTE_READ   ; read a byte
         call    m32ee           ; restore TSTACK
         jr      c,m2bed         ; move on if no error
         cp      $19
@@ -17754,8 +17445,7 @@ m2c05   call    m2b89           ; page in DOS workspace
         jr      m2bd7           ; back for more
 m2c0a   ld      b,$00
         call    m32b6           ; save TSTACK in page 7
-        call    m3f00
-        defw    DOS_CLOSE       ; close file
+        ROM2    DOS_CLOSE       ; close file
         call    m32ee           ; restore TSTACK
         jp      nc,m3219        ; move on if error closing
         call    m2b64           ; page in normal memory
@@ -17771,8 +17461,7 @@ m2c1e   push    af              ; save destination flag
         push    hl              ; save address of source filespec
         ld      a,$ff
         call    m32b6           ; save TSTACK in page 7
-        call    m3f00
-        defw    DOS_SET_DRIVE   ; set default drive
+        ROM2    DOS_SET_DRIVE   ; set default drive
         call    m32ee           ; restore TSTACK
         ld      (dst_drv),a     ; use default drive for destination
         ld      (src_drv),a     ; use default drive for source
@@ -17840,8 +17529,7 @@ m2cc5   ld      hl,wld_next
         ld      bc,$0200        ; 1 entry required, include system files
         ld      de,cat_spec
         call    m32b6           ; save TSTACK in page 7
-        call    m3f00
-        defw    DOS_CATALOG     ; get next filename
+        ROM2    DOS_CATALOG     ; get next filename
         call    m32ee           ; restore TSTACK
         jp      nc,m3219        ; move on if error
         ld      hl,dst_dev
@@ -17880,8 +17568,7 @@ m2cf7   dec     b               ; B=0 if no more matches
 
 m2d26   ld      hl,tmp_file
         call    m32b6           ; save TSTACK in page 7
-        call    m3f00
-        defw    DOS_DELETE      ; delete temp file
+        ROM2    DOS_DELETE      ; delete temp file
         call    m32ee           ; restore TSTACK
         ld      a,(copied)
         dec     a               ; A=# files copied-1
@@ -17939,8 +17626,7 @@ m2d94   xor     a
         ld      (copy_ram),a    ; signal "copy via M:"
         ld      a,'M'
         call    m32b6           ; save TSTACK in page 7
-        call    m3f00
-        defw    DOS_FREE_SPACE  ; find free space on drive M:
+        ROM2    DOS_FREE_SPACE  ; find free space on drive M:
         call    m32ee           ; restore TSTACK
       IF garry
         jp      nc,m2dc7
@@ -18026,14 +17712,12 @@ m2e74   push    bc
         jp      z,m2e5d         ; move on if M: (will fail on attempted copy)
         ld      a,'A'           ; by this stage, we must be copy A:<-->B:
         call    m32b6           ; save TSTACK in page 7
-        call    m3f00
-        defw    DOS_REF_XDPB    ; get XDPB for drive A:
+        ROM2    DOS_REF_XDPB    ; get XDPB for drive A:
         call    m32ee           ; restore TSTACK
         jp      nc,m3219        ; move on if error
         ld      c,0
         call    m32b6           ; save TSTACK in page 7
-        call    m3f00
-        defw    DD_LOGIN        ; login disk in drive A:
+        ROM2    DD_LOGIN        ; login disk in drive A:
         call    m32ee           ; restore TSTACK
         jp      nc,m3219        ; move on if error
         or      a
@@ -18042,15 +17726,13 @@ m2e74   push    bc
         ld      a,(src_drv)     ; get source drive letter
         ld      bc,$0001
         call    m32b6           ; save TSTACK in page 7
-        call    m3f00
-        defw    DOS_OPEN_DRIVE  ; open source drive as exclusive-read file
+        ROM2    DOS_OPEN_DRIVE  ; open source drive as exclusive-read file
         call    m32ee           ; restore TSTACK
         jp      nc,m3219        ; move on if error
         ld      a,(dst_drv)     ; get dest drive letter
         ld      bc,$0102
         call    m32b6           ; save TSTACK in page 7
-        call    m3f00
-        defw    DOS_OPEN_DRIVE  ; open dest drive as exclusive-write file
+        ROM2    DOS_OPEN_DRIVE  ; open dest drive as exclusive-write file
         call    m32ee           ; restore TSTACK
         jp      nc,m3219        ; move on if error
         ld      a,$01
@@ -18094,8 +17776,7 @@ m2e95   ld      hl,src_file     ; source filename
         ld      bc,$0001        ; file 0,excl read
         ld      de,$0002        ; must be openable
         call    m32b6           ; save TSTACK in page 7
-        call    m3f00
-        defw    DOS_OPEN
+        ROM2    DOS_OPEN
         call    m32ee           ; restore TSTACK
         jp      nc,m3219        ; move on if error
         ld      hl,dst_file     ; dest filename
@@ -18105,8 +17786,7 @@ m2e95   ld      hl,src_file     ; source filename
         ld      bc,$0102        ; file 1, exc write
         ld      de,$0204        ; create new file
         call    m32b6           ; save TSTACK in page 7
-        call    m3f00
-        defw    DOS_OPEN
+        ROM2    DOS_OPEN
         call    m32ee           ; restore TSTACK
         jp      nc,m3219        ; move on if error
         ld      a,$01
@@ -18122,8 +17802,7 @@ m2ecd   ld      bc,$0000        ; file 0, page 0 (oops, should be page 7!)
         ld      de,$0800        ; 2K to read
         ld      hl,tmp_buff     ; address to read
         call    m32b6           ; save TSTACK in page 7
-        call    m3f00
-        defw    DOS_READ        ; read bytes
+        ROM2    DOS_READ        ; read bytes
         call    m32ee           ; restore TSTACK
         jr      c,m2f08         ; move on if no error
         cp      $19
@@ -18133,8 +17812,7 @@ m2ecd   ld      bc,$0000        ; file 0, page 0 (oops, should be page 7!)
 m2eed   push    de              ; save # unread bytes
         ld      b,$00
         call    m32b6           ; save TSTACK in page 7
-        call    m3f00
-        defw    DOS_CLOSE       ; close file 0
+        ROM2    DOS_CLOSE       ; close file 0
         call    m32ee           ; restore TSTACK
         pop     de
         jp      nc,m3219        ; move on if error
@@ -18154,8 +17832,7 @@ m2f0b   ld      a,e
         ld      bc,$0100
       ENDIF
         call    m32b6           ; save TSTACK in page 7
-        call    m3f00
-        defw    DOS_WRITE       ; write bytes to file 1 from page 0 (oops)
+        ROM2    DOS_WRITE       ; write bytes to file 1 from page 0 (oops)
         call    m32ee           ; restore TSTACK
         jp      nc,m3219        ; move on if error
 m2f23   ld      a,(eof)
@@ -18169,8 +17846,7 @@ m2f2d   ld      hl,src_file     ; source filename
         ld      bc,$0001        ; file 0, excl read
         ld      de,$0002        ; must be openable
         call    m32b6           ; save TSTACK in page 7
-        call    m3f00
-        defw    DOS_OPEN
+        ROM2    DOS_OPEN
         call    m32ee           ; restore TSTACK
         jp      nc,m3219        ; move on if error
 
@@ -18182,8 +17858,7 @@ m2f44   ld      hl,tmp_file     ; temporary filename
         ld      bc,$0203        ; file 2, exclusive read-write mode
         ld      de,$0204        ; open & create actions
         call    m32b6           ; save TSTACK in page 7
-        call    m3f00
-        defw    DOS_OPEN        ; open temporary file
+        ROM2    DOS_OPEN        ; open temporary file
         call    m32ee           ; restore TSTACK
         jp      nc,m3219        ; move on if error
         ld      hl,$0000
@@ -18196,8 +17871,7 @@ m2f61   ld      bc,$0000
         ld      de,$0800
         ld      hl,tmp_buff
         call    m32b6           ; save TSTACK in page 7
-        call    m3f00
-        defw    DOS_READ        ; read 2K into RAM
+        ROM2    DOS_READ        ; read 2K into RAM
         call    m32ee           ; restore TSTACK
         jr      c,m2f9c         ; move on if no error
         cp      $19
@@ -18207,8 +17881,7 @@ m2f61   ld      bc,$0000
         push    de              ; save # unread bytes
         ld      b,$00
         call    m32b6           ; save TSTACK in page 7
-        call    m3f00
-        defw    DOS_CLOSE       ; close file 0
+        ROM2    DOS_CLOSE       ; close file 0
         call    m32ee           ; restore TSTACK
         pop     de
         jp      nc,m3219        ; move on if error
@@ -18229,8 +17902,7 @@ m2f9f   ld      a,e
         ld      bc,$0200
       ENDIF
         call    m32b6           ; save TSTACK in page 7
-        call    m3f00
-        defw    DOS_WRITE       ; write bytes to temporary file
+        ROM2    DOS_WRITE       ; write bytes to temporary file
         call    m32ee           ; restore TSTACK
         pop     de
         jp      nc,m3219        ; move on if error
@@ -18249,16 +17921,14 @@ m2fb9   ld      hl,(tmp_bytes)
 m2fd2   ld      a,(src_drv)
         and     $df             ; get source drive (capitalised)
         call    m32b6           ; save TSTACK in page 7
-        call    m3f00
-        defw    DOS_FLUSH       ; flush for source drive
+        ROM2    DOS_FLUSH       ; flush for source drive
         call    m32ee           ; restore TSTACK
         jp      nc,m3219        ; move on if error
         ld      b,$02
         ld      hl,$0000
         ld      e,$00
         call    m32b6           ; save TSTACK in page 7
-        call    m3f00
-        defw    DOS_SET_POSITION ; get to start of temp file
+        ROM2    DOS_SET_POSITION ; get to start of temp file
         call    m32ee           ; restore TSTACK
         ld      a,(dst_open)
         or      a
@@ -18270,8 +17940,7 @@ m2fd2   ld      a,(src_drv)
         ld      bc,$0102
         ld      de,$0204
         call    m32b6           ; save TSTACK in page 7
-        call    m3f00
-        defw    DOS_OPEN        ; open file 1 in exclusive-write mode
+        ROM2    DOS_OPEN        ; open file 1 in exclusive-write mode
         call    m32ee           ; restore TSTACK
         jp      nc,m3219        ; move on if error
         ld      a,$01
@@ -18284,8 +17953,7 @@ m301e   ld      hl,tmp_buff
         ld      bc,$0200
       ENDIF
         call    m32b6           ; save TSTACK in page 7
-        call    m3f00
-        defw    DOS_READ        ; read 2K from temp file
+        ROM2    DOS_READ        ; read 2K from temp file
         call    m32ee           ; restore TSTACK
         ld      hl,$0800        ; HL=$0800 bytes read
         jr      c,m3042         ; move on if no error
@@ -18302,8 +17970,7 @@ m3042   ex      de,hl
       ENDIF
         ld      hl,tmp_buff
         call    m32b6           ; save TSTACK in page 7
-        call    m3f00
-        defw    DOS_WRITE       ; write bytes to file 1
+        ROM2    DOS_WRITE       ; write bytes to file 1
         call    m32ee           ; restore TSTACK
         jp      nc,m3219        ; move on if error
         ld      hl,(tmp_bytes)
@@ -18317,14 +17984,12 @@ m3042   ex      de,hl
         jr      nz,m301e        ; loop back to copy more
 m3069   ld      b,$02
         call    m32b6           ; save TSTACK in page 7
-        call    m3f00
-        defw    DOS_CLOSE       ; close temp file
+        ROM2    DOS_CLOSE       ; close temp file
         call    m32ee           ; restore TSTACK
         ld      a,(dst_drv)
         and     $df             ; get dest drive (capitalised)
         call    m32b6           ; save TSTACK in page 7
-        call    m3f00
-        defw    DOS_FLUSH       ; flush dest drive
+        ROM2    DOS_FLUSH       ; flush dest drive
         call    m32ee           ; restore TSTACK
         jp      nc,m3219        ; move on if error
         ld      a,(eof)
@@ -18332,16 +17997,14 @@ m3069   ld      b,$02
         jp      z,m2f44         ; loop back if not EOF
         ld      hl,tmp_file
         call    m32b6           ; save TSTACK in page 7
-        call    m3f00
-        defw    DOS_DELETE      ; delete temp file
+        ROM2    DOS_DELETE      ; delete temp file
         call    m32ee           ; restore TSTACK
 
 ; Enter here if copying via 2K area in RAM
 
 m309e   ld      b,$01
         call    m32b6           ; save TSTACK in page 7
-        call    m3f00
-        defw    DOS_CLOSE       ; close file 1
+        ROM2    DOS_CLOSE       ; close file 1
         call    m32ee           ; restore TSTACK
         jp      nc,m3219        ; move on if error
         ld      a,$0d
@@ -18487,16 +18150,14 @@ m314b   dec     hl
         ld      bc,$0001        ; file 0, exclusive read
         ld      de,$0001
         call    m32b6           ; save TSTACK in page 7
-        call    m3f00
-        defw    DOS_OPEN        ; open source file
+        ROM2    DOS_OPEN        ; open source file
         call    m32ee           ; restore TSTACK
         jp      nc,m3219        ; move on if error
         ld      hl,dst_file     ; dest filename
         ld      bc,$0102        ; file 1, exclusive write
         ld      de,$0104
         call    m32b6           ; save TSTACK in page 7
-        call    m3f00
-        defw    DOS_OPEN        ; open dest file
+        ROM2    DOS_OPEN        ; open dest file
         call    m32ee           ; restore TSTACK
         jp      nc,m3219        ; move on if error
         ld      a,$01
@@ -18505,8 +18166,7 @@ m314b   dec     hl
         ld      (tmp_bytes),hl  ; signal 0 bytes copied
 m318e   ld      b,$00
         call    m32b6           ; save TSTACK in page 7
-        call    m3f00
-        defw    DOS_BYTE_READ   ; read a byte
+        ROM2    DOS_BYTE_READ   ; read a byte
         call    m32ee           ; restore TSTACK
         jr      c,m31a4         ; move on if no error
         cp      $19
@@ -18514,8 +18174,7 @@ m318e   ld      b,$00
         jr      z,m31bd         ; move on
 m31a4   ld      b,$01
         call    m32b6           ; save TSTACK in page 7
-        call    m3f00
-        defw    DOS_BYTE_WRITE  ; write byte
+        ROM2    DOS_BYTE_WRITE  ; write byte
         call    m32ee           ; restore TSTACK
         ld      hl,(tmp_bytes)
         inc     hl              ; update bytes copied
@@ -18524,19 +18183,16 @@ m31a4   ld      b,$01
         jp      m3219           ; cause error
 m31bd   ld      b,$00
         call    m32b6           ; save TSTACK in page 7
-        call    m3f00
-        defw    DOS_CLOSE       ; close source file
+        ROM2    DOS_CLOSE       ; close source file
         call    m32ee           ; restore TSTACK
         jp      nc,m3219        ; move on if error
         ld      a,(dst_drv)
         call    m32b6           ; save TSTACK in page 7
-        call    m3f00
-        defw    DOS_FLUSH       ; flush dest drive
+        ROM2    DOS_FLUSH       ; flush dest drive
         call    m32ee           ; restore TSTACK
         ld      b,$01
         call    m32b6           ; save TSTACK in page 7
-        call    m3f00
-        defw    DOS_REF_HEAD    ; point at header data for dest file
+        ROM2    DOS_REF_HEAD    ; point at header data for dest file
         call    m32ee           ; restore TSTACK
         jp      nc,m3219
         ld      a,$03
@@ -18549,8 +18205,7 @@ m31bd   ld      b,$00
         ld      (ix+$04),a
         ld      b,$01
         call    m32b6           ; save TSTACK in page 7
-        call    m3f00
-        defw    DOS_CLOSE       ; close dest file
+        ROM2    DOS_CLOSE       ; close dest file
         call    m32ee           ; restore TSTACK
         jp      nc,m3219        ; move on if error
         call    m2b64           ; page in normal memory
@@ -18567,14 +18222,12 @@ m321c   push    bc              ; stack counter
         dec     b               ; decrement counter
         push    bc              ; stack file number
         call    m32b6           ; save TSTACK in page 7
-        call    m3f00
-        defw    DOS_CLOSE       ; try to close file B
+        ROM2    DOS_CLOSE       ; try to close file B
         call    m32ee           ; restore TSTACK
         pop     bc              ; restore file number
         jr      c,m3238         ; move on if closed okay
         call    m32b6           ; save TSTACK in page 7
-        call    m3f00
-        defw    DOS_ABANDON     ; else abandon it
+        ROM2    DOS_ABANDON     ; else abandon it
         call    m32ee           ; restore TSTACK
 m3238   pop     bc
         djnz    m321c           ; back for other files
@@ -18585,13 +18238,11 @@ m3238   pop     bc
         jr      z,m3252         ; move on if no temporary file created
         ld      hl,dst_file     ; HL=address of temporary filename
         call    m32b6           ; save TSTACK in page 7
-        call    m3f00
-        defw    DOS_DELETE      ; delete temporary file
+        ROM2    DOS_DELETE      ; delete temporary file
         call    m32ee           ; restore TSTACK
 m3252   ld      hl,tmp_file
         call    m32b6           ; save TSTACK in page 7
-        call    m3f00
-        defw    DOS_DELETE      ; delete other temporary file
+        ROM2    DOS_DELETE      ; delete other temporary file
         call    m32ee           ; restore TSTACK
         pop     af              ; restore +3DOS error code
         call    m2b64           ; page in normal memory
@@ -19086,13 +18737,11 @@ m35d0   ROM3    o2BF1
         ROM3    o1E94
         pop     de
         pop     bc
-        call    m3f00
-        defw    $0056
+        ROM2    IDE_STREAM_OPEN
 m35d3   jp      nc, m0edb
         ret
 m35d7   ROM3    o1E94
-        call    l3f00
-        defw    $0059
+        ROM2    IDE_STREAM_CLOSE
         jr      m35d3
 m35da   rst     $18
         cp      '#'
@@ -19115,8 +18764,7 @@ m35f0   call    m111c
         pop     hl
         pop     de
         ld      b, 1
-        call    m3f00
-        defw    $0062
+        ROM2    IDE_STREAM_PTR
         ret
       IF spanish
 m36b0   defm    "Unidades fisicas: ", 0
@@ -19197,8 +18845,7 @@ m3824   push    hl
         ld      hl, $ed11
         call    m2b89
         call    m32b6
-        call    m3f00
-        defw    $01a2
+        ROM2    IDE_IDENTIFY
         jp      nc, m395a
         ld      ix, $ed11
         ld      h, (ix+$06)
@@ -19227,8 +18874,7 @@ m3863   pop     bc
         pop     ix
         call    m2b89
         call    m32b6
-        call    m3f00
-        defw    $00b2
+        ROM2    IDE_FORMAT
         call    m32ee
         call    m2b64
         ret     c
@@ -19333,16 +18979,14 @@ m3925   ld      ($efca), a
         push    af
         ld      hl, $ef98
         call    m32b6
-        call    m3f00
-        defw    $00b8
+        ROM2    IDE_PARTITION_NEW
         call    m32ee
         jr      nc, m395d
         pop     af
         ld      l, $e5
         ld      ix, $001f
         call    m32b6
-        call    m3f00
-        defw    $00bb
+        ROM2    IDE_PARTITION_INIT
 m395a   call    m32ee
 m395d   call    m2b64
         ret     c
@@ -19425,8 +19069,7 @@ m39dc   rst     $20
         ld      hl, $ef98
         call    m2b89
         call    m32b6
-        call    m3f00
-        defw    $00b5
+        ROM2    IDE_PARTITION_FIND
         call    m32ee
         call    m2b64
         jr      nc, m3a1b
@@ -19436,8 +19079,7 @@ m3a03   push    bc
         pop     af
         call    m2b89
         call    m32b6
-        call    m3f00
-        defw    $00f1
+        ROM2    IDE_DOS_MAP
         call    m32ee
         call    m2b64
         ret     c
@@ -19449,8 +19091,7 @@ m3a1f   rst     $20
         call    m3a8e
         call    m2b89
         call    m32b6
-        call    m3f00
-        defw    $00f4
+        ROM2    IDE_DOS_UNMAP
         call    m32ee
         call    m2b64
         jr      nc, m3a1b
@@ -19470,16 +19111,14 @@ m3a3d   rst     $20
         ld      hl, $ef98
         call    m2b89
         call    m32b6
-        call    m3f00
-        defw    $00b5
+        ROM2    IDE_PARTITION_FIND
         call    m32ee
         call    m2b64
         jr      nc, m3a7d
         pop     af
         call    m2b89
         call    m32b6
-        call    m3f00
-        defw    $00be
+        ROM2    IDE_PARTITION_ERASE
         call    m32ee
         call    m2b64
         ret     c
@@ -19547,8 +19186,7 @@ m3ae1   ROM3    o1C8C
         ld      (de), a
         ld      hl, tmp_file
         call    m32b6
-        call    m3f00
-        defw    $00fd
+        ROM2    IDE_SNAPLOAD
         call    m32ee
         jp      m3d21
 m3b08   push    bc
@@ -19624,8 +19262,7 @@ m3b77   push    bc
         ld      b, 7
         ld      hl, $ed11
         call    m32b6
-        call    m3f00
-        defw    $01a2
+        ROM2    IDE_IDENTIFY
         call    m32ee
         jr      nc, m3c06
         ld      ix, $ed11
@@ -19656,8 +19293,7 @@ m3be0   pop     af
         push    af
         ld      hl, $ef98
         call    m32b6
-        call    m3f00
-        defw    $00c4
+        ROM2    IDE_PARTITON_READ
         call    m32ee
         jp      nc, m3d15
         ld      ix, $ef98
@@ -19872,8 +19508,7 @@ m3db3   push    bc
         push    hl
         ld      bc, $ef98
         call    m32b6
-        call    m3f00
-        defw    $00f7
+        ROM2    IDE_DOS_MAPPING
         call    m32ee
         jp      nc, m3d21
         jr      z, m3de9
@@ -19923,8 +19558,7 @@ m3e0c   push    bc
         ld      hl, $ef98
         call    m2b89
         call    m32b6
-        call    m3f00
-        defw    $00b5
+        ROM2    IDE_PARTITION_FIND
         call    m32ee
         call    m2b64
         jr      nc, m3e58
@@ -19943,8 +19577,7 @@ m3e3f   ld      (hl), $20
         ld      a, d
         ld      hl, tmp_file
         call    m32b6
-        call    m3f00
-        defw    $00c1
+        ROM2    IDE_PARTITION_RENAME
         call    m32ee
         call    m2b64
         ret     c
@@ -19955,16 +19588,14 @@ m3e5c   ld      b, a
         ld      l, 8
         call    m2b89
         call    m32b6
-        call    m3f00
-        defw    $00d6
+        ROM2    IDE_PARTITION_SETINFO
         ld      a, (ATTR_P)
         ld      h, a
         ld      l, 9
         xor     a
         ld      b, a
         ld      c, a
-        call    m3f00
-        defw    $00d6
+        ROM2    IDE_PARTITION_SETINFO
         call    m32ee
         call    m2b64
         ret
@@ -20555,11 +20186,11 @@ n0048   push    bc
         ret
 
       IF garry
-        jp      n3a24
-        jp      n3cc9
-        jp      n3d5f
-        jp      n3d55
-        jp      n3d64
+        jp      n3a24           ; IDE_STREAM_OPEN
+        jp      n3cc9           ; IDE_STREAM_CLOSE
+        jp      n3d5f           ; IDE_STREAM_IN
+        jp      n3d55           ; IDE_STREAM_OUT
+        jp      n3d64           ; IDE_STREAM_PTR
         nop
       ELSE
         defs    16
@@ -20597,38 +20228,38 @@ n0095   ld      bc,$7ffd
 
       IF garry
         defb    0, 0
-        jp      n2820
-        jp      n275b
-        jp      n2845
-        jp      n282a
-        jp      n2524
-        jp      n2529
-        jp      n2a0f
-        jp      n2bd6
-        jp      n2df0
-        jp      n2d19
-        jp      n2f94
-        jp      n2c1d
-        jp      n2b77
-        jp      n2ba0
-        jp      n2c49
-        jp      n2ca2
-        jp      n2ce9
-        jp      n3080
-        jp      n3084
-        jp      n317e
-        jp      n2ce9
-        jp      n3124
-        jp      n3107
-        jp      n3141
-        jp      n30b0
-        jp      n30bc
-        jp      n31d4
-        jp      n321a
-        jp      n3363
-        jp      n33c0
-        jp      n349f
-        jp      n3524
+        jp      n2820           ; IDE_VERSION
+        jp      n275b           ; IDE_INTERFACE
+        jp      n2845           ; IDE_INIT
+        jp      n282a           ; IDE_DRIVE
+        jp      n2524           ; IDE_SECTOR_READ
+        jp      n2529           ; IDE_SECTOR_WRITE
+        jp      n2a0f           ; IDE_FORMAT
+        jp      n2bd6           ; IDE_PARTITION_FIND
+        jp      n2df0           ; IDE_PARTITION_NEW
+        jp      n2d19           ; IDE_PARTITION_INIT
+        jp      n2f94           ; IDE_PARTITION_ERASE
+        jp      n2c1d           ; IDE_PARTITION_RENAME
+        jp      n2b77           ; IDE_PARTITON_READ
+        jp      n2ba0           ; IDE_PARTITION_WRITE
+        jp      n2c49           ; IDE_PARTITION_WINFO
+        jp      n2ca2           ; IDE_PARTITION_OPEN
+        jp      n2ce9           ; IDE_PARTITION_CLOSE
+        jp      n3080           ; IDE_PARTITION_GETINFO
+        jp      n3084           ; IDE_PARTITION_SETINFO
+        jp      n317e           ; IDE_SWAP_OPEN
+        jp      n2ce9           ; IDE_SWAP_CLOSE
+        jp      n3124           ; IDE_SWAP_OUT
+        jp      n3107           ; IDE_SWAP_IN
+        jp      n3141           ; IDE_SWAP_EX
+        jp      n30b0           ; IDE_SWAP_POS
+        jp      n30bc           ; IDE_SWAP_MOVE
+        jp      n31d4           ; IDE_SWAP_RESIZE
+        jp      n321a           ; IDE_DOS_MAP
+        jp      n3363           ; IDE_DOS_UNMAP
+        jp      n33c0           ; IDE_DOS_MAPPING
+        jp      n349f           ; IDE_DOS_UNPERMANENT
+        jp      n3524           ; IDE_SNAPLOAD
       ELSE
         defs    98
       ENDIF
@@ -20689,17 +20320,16 @@ n0196   jp      n212b           ; DD_L_ON_MOTOR
 n0199   jp      n2150           ; DD_L_T_OFF_MOTOR
 n019c   jp      n2164           ; DD_L_OFF_MOTOR
       IF garry
-        jp      n39bd
-n01a2   jp      n2475
-n01a5   jp      n29d8
-n019f   ld      a, ($df9d)
+        jp      n39bd           ; IDE_ACCESS_DATA
+        jp      n2475           ; IDE_IDENTIFY
+        jp      n29d8           ; IDE_PARTITIONS
+n019f   ld      a, ($df9d)      ; DOS_INITIALISE
         push    af
       ELSE
-n019f   
+n019f
       ENDIF
 
 ; DOS_INITIALISE
-
         ld      hl,pg_buffer
         ld      de,pg_buffer+1
         ld      bc,$09ff
