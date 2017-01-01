@@ -3,7 +3,7 @@ LOCALS
 .486
 .CODE
 ORG 100H
-;-----------------------variables guardadas en snap,f†cil acceso e inicializadas a 0
+;-----------------------variables guardadas en snap,f√°cil acceso e inicializadas a 0
 F       equ     DL
 A       equ     BYTE PTR DS:[DI]
 BC      equ     WORD PTR DS:[DI+2]
@@ -43,17 +43,14 @@ SNAPF   equ     BYTE PTR DS:[DI+27]
 SNAPSI  equ     WORD PTR DS:[DI+28]
 SNAPBP  equ     WORD PTR DS:[DI+30]
 ;-----------------------constantes ensamblaje condicional
-SOUNDB  equ     0               ;utilizo soundblaster o speaker
-ESPANOL equ     1               ;el texto aparece en espa§ol
-INGLES  equ     0               ;el texto aparece en inglÇs
-JOYST   equ     1               ;a 1 para deshabilitar el joystick
-COMPRE  equ     0               ;a 1 compresi¢n habilitada
+SOUNDB  equ     1               ;utilizo soundblaster o speaker
+JOYST   equ     0               ;a 1 para deshabilitar el joystick
 ;-----------------------constantes miscelanea
 SENSI   equ     80              ;sensibilidad del joystick
 TOTREG  equ     32              ;numero total de registros que se guardan
 HFILE   equ     5               ;handle generico del archivo tap
 TOTNOP  equ     32              ;nops que se deben insertar al principio
-;-----------------------variables no guardadas en snap,f†cil acceso e inicializadas a 0
+;-----------------------variables no guardadas en snap,f√°cil acceso e inicializadas a 0
 FLASH   equ     BYTE PTR DS:[DI-19]
 FLAS2   equ     BYTE PTR CS:[100h-19]
 EJEX    equ     WORD PTR DS:[DI-20]     ;centro del eje x del joystick
@@ -64,21 +61,18 @@ TIEM    equ     WORD PTR DS:[DI-12]
 PUNTE   equ     WORD PTR DS:[DI-10]     ;puntero del sample actual de sonido
 PUNTEG  equ     WORD PTR CS:[100h-10]
 PUNTEG1 equ     BYTE PTR CS:[100h-9]
-MAXLEN  equ     WORD PTR DS:[100h-8]    ;m†xima longitud de cadena encontrada en bytes
-MAXPOS  equ     WORD PTR DS:[100h-6]    ;posici¢n hacia atr†s donde se encuentra la cadena
-MAXTLE  equ     WORD PTR DS:[100h-4]    ;m†xima longitud total en bits que llevo
+MAXLEN  equ     WORD PTR DS:[100h-8]    ;m√°xima longitud de cadena encontrada en bytes
+MAXPOS  equ     WORD PTR DS:[100h-6]    ;posici¢n hacia atr√°s donde se encuentra la cadena
+MAXTLE  equ     WORD PTR DS:[100h-4]    ;m√°xima longitud total en bits que llevo
 TMTEC   equ     BYTE PTR DS:[DI-2]      ;tecla pulsada en el frame anterior
-EXTEN   equ     BYTE PTR CS:[100h-1]    ;flag indicando car†cter extendido
+EXTEN   equ     BYTE PTR CS:[100h-1]    ;flag indicando car√°cter extendido
 
 GRAB    equ     20h             ;GRABx128=NUMERO DE BOTONES QUE SE GRABAN
 repu    equ     100h
 longde  equ     133             ;longitud en bytes del descompresor
 ;-----------------------empieza el programa
 START:  DB      TOTNOP DUP (0)
-IF COMPRE
-ELSE
         XOR     AX,AX
-ENDIF
 IF SOUNDB
         MOV     DI,AX
         MOV     FS,AX
@@ -123,11 +117,7 @@ IF SOUNDB
         not     bl
         and     al,bl
         out     021h,al
-IF COMPRE
-        mov     bl,BYTE PTR ES:[DI+0Dh]         ;IRQ
-ELSE
         movzx   bx,BYTE PTR ES:[DI+0Dh]         ;IRQ
-ENDIF
         shl     bl,2
         mov     word ptr fs:[bx],OFFSET OWN_IRQ
         mov     word ptr fs:[bx+2],ds
@@ -190,15 +180,10 @@ ENDIF
 ELSE
         mov     bx,80h
 ENDIF
-IF COMPRE
-        pop     di           ;100h          ;Seccion 3
-        pop     es           ;ds+1000h
-ELSE
         mov     di,100h
         mov     ax,ds
         add     ah,11h
         mov     es,ax
-ENDIF
         mov     si,81h
 kili:   mov     dx,si
         lodsb
@@ -507,11 +492,7 @@ ENDIF
 
 @REPRO: 
         BT      WORD PTR DS:[OFFSET FUNCIOS],1
-IF COMPRE
-        JC      SILK
-ELSE
         JNC     SILK
-ENDIF
 IF JOYST
         XOR     WORD PTR DS:[OFFSET @MVEE],50h+((OFFSET @REPRO-OFFSET @PMVE) XOR 11)*100h
 ELSE
@@ -1871,7 +1852,7 @@ trik:   mov     ax,0
 @endl2: ret
 ENDIF
 
-PRESEN  DB 24,24,24,24,0,10Fh-70h,' BACTERIA 1.91'
+PRESEN  DB 24,24,24,24,0,10Fh-70h,' BACTERIA 1.92'
 IF SOUNDB
         DB 'A'
 ELSE
@@ -1879,38 +1860,17 @@ ELSE
 ENDIF
         DB '              ',0,104h-0Fh,'‹€',0,04Eh-4,'‹€',0,0E2h-4Eh,'‹€'
         DB 0,0129h-0E2h,'‹€',0,90h-29h,'‹€€',24,24
-IF ESPANOL
-        DB '€',0,0F0h-70h,'  El emulador m†s peque§o del mundo   €',24,24
-IF SOUNDB
-ELSE
-        DB '€',0,0F0h-70h,'    Realizado en ensamblador por:     €',24,24
-ENDIF
-ENDIF
-IF INGLES
         DB '€',0,0F0h-70h,'  The smallest emulator in the world  €',24,24
-IF SOUNDB
-ELSE
         DB '€',0,0F0h-70h,'    Made in assembly language by:     €',24,24
-ENDIF
-ENDIF
 
-IF SOUNDB
-        DB '€',0,0B0h-70h,'   Antonio Villena Godoy  1998-2003   €',24,24
-        DB 'ﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂ',24,0,100h-70h
-ELSE
         DB '€',0,0B0h-70h,'     Antonio JosÇ Villena Godoy       €',24,24
         DB '€',0,0F0h-70h,'        espineter@yahoo.com           €',24,24
         DB 'ﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂ',24,24
         DB '     ',0,0F2h-70h,'ﬂﬂﬂﬂﬂﬂ',0,17Eh-0F2h,' CP 29770, Torrox ',0,0E4h-7Eh,'ﬂﬂﬂﬂﬂﬂ',24,24
         DB '          ',0,72h-70h,'ﬂﬂﬂﬂﬂﬂ',0,74h-72h,'  MALAGA, Ap 125  ﬂﬂﬂﬂﬂﬂ'
         DB 24,24,24,24,24,'     ',0,100h-070h
-ENDIF
-IF ESPANOL
-   cade DB 'No existe '
-ENDIF
-IF INGLES
+
    cade DB 'Not found '
-ENDIF
    nrom DB '48.ROM',0,36
 
 COLORES DB  00,00,00
@@ -2128,14 +2088,11 @@ NUMEBL: ADC     AL,0
 
 @NDEPU: loop    @ATAT                           ;F5
         PUSH    PFAIR
-IF COMPRE
-ELSE
         MOV     CL,TOTNOP                       ;ahora pongo nop iniciales
         PUSH    DI
 KSXK:   MOV     BYTE PTR DS:[DI],CH
         INC     DI
         LOOP    KSXK
-ENDIF
 oche:   MOV     DX,OFFSET @LONGT+1              ;dx=asciz filename
         MOV     SI,DX                           ;si=dx para buscar el punto
 RSRA:   LODSB
@@ -2148,305 +2105,6 @@ RSRA:   LODSB
         MOV     WORD PTR DS:[OFFSET @MOFE+3],OFFSET @EXF4-OFFSET @DLDA  ;sustituyo el LDSNA por F4
         INT     21h
         XCHG    AX,BX                           ;pongo handle en bx
-IF COMPRE
-        mov     ax,es                           ;es=base+1000h
-        dec     ah
-        mov     es,ax
-        sub     ax,0FEEh                        ;ds=base+12h
-        mov     ds,ax
-        add     ax,7000h                        ;ss=base+7012h
-        POP     DX                              ;DX=PFAIR
-        mov     ss,ax
-        MOV     CX,OFFSET @LDSNA-OFFSET @GUACHI
-        MOV     DI,offset @GUACHI-offset @LDSNA
-        PUSH    ES              ;para hacer un salto retf pongo segmento en pila
-        push    di
-        MOV     SI,OFFSET @GUACHI-120h          ;-120h porque ahora ds vale 12h mas
-        REP     MOVSB           ;muevo el compresor, desde guachi hasta ldsna
-        PUSH    DS
-        POP     ES              ;ahora es apunta a zona emulador
-        RETF
-@GUACHI:MOV     DI,OFFSET @NPLA-120h            ;di=offset npla-100h porque ahora ds vale 10h mas
-        MOV     CX,OFFSET JUEGO-OFFSET @NPLA    ;cx=borrar desde npla hasta juego
-        MOV     AL,0C3h                         ;mediante ret
-        REP     STOSB                           ;borro
-        MOV     SI,OFFSET FAIR-OFFSET START-31  ;cx=longitud total
-        DEC     BP                              ;es F5 o F6
-        JNZ     @NOCM
-        ADD     SI,DX                           ;es F6, a§ado el RZX
-        LODSW                                   ;+2 para albergar ultimo F6
-IF JOYST
-        XOR     WORD PTR DS:[OFFSET @MVEE-120h],50h+((OFFSET @REPRO-OFFSET @PMVE) XOR 11)*100h
-ELSE                                            ;para empezar reproduciendo
-        XOR     WORD PTR DS:[OFFSET @MVEE-120h],50h+((OFFSET @REPRO-OFFSET @PMVE) XOR 12)*100h
-ENDIF
-        MOV     AX,WORD PTR DS:[OFFSET FAIR-120h]  ;parcheo para inicializar TVACIO
-        INC     AX
-        MOV     WORD PTR DS:[@INIV+1-120h],AX
-@NOCM:  push    ds
-        push    cs
-        pop     ds
-        mov     word ptr ds:[LONG+2-offset @LDSNA],SI
-        dec     si
-        dec     si
-        push    bx              ;handle del archivo
-        db      6Ah,0FFh
-        push    cx
-        push    cx
-        push    cx
-        push    cx
-        push    cx
-bprp:   mov     di,repu
-        mov     cx,100h         ;repeticiones posibles a 256
-        cmp     sp,1000h        ;ajusto segmento/offset de pila para no desbordarla
-        jnc     kdld
-        mov     ax,ss
-        sub     ax,800h
-        mov     ss,ax
-        add     sp,8000h
-kdld:   movzx   ax,es:[si]              ;leo de fuente
-        mov     byte ptr fs:[si],al     ;ver por pantalla el status
-        cwd                             ;dx=0
-kere:   mov     word ptr ds:[di],dx
-        scasw
-        loop    kere
-        adc     cx,si
-        xor     di,di
-nfin:   repnz   scasb
-        jcxz    fine
-        push    cx
-        mov     cx,100h
-        push    di
-        push    si
-        inc     si
-        db      26h
-        rep     cmpsb
-LONG:   cmp     si,0FE81h
-        ja      afin
-        jcxz    spec
-        sub     di,si
-        neg     di
-        mov     si,repu
-        add     si,cx
-        add     si,cx
-        not     cl
-        jcxz    afin
-mile:   mov     word ptr [si],di
-        inc     si
-        inc     si
-        loop    mile
-afin:   pop     si
-        pop     di
-        pop     cx
-        jmp     nfin
-spec:   pop     si              ;peque§o truco para acelerar algoritmo
-        pop     di              ;frente a repeticiones sucesivas
-        pop     cx
-        sub     cx,0FFh
-        ja      nfin
-
-fine:   mov     bx,repu
-        mov     cx,0FFh
-skla:   inc     bx
-        inc     bx
-        cmp     word ptr ds:[bx],dx
-        jnz     alpl
-        loop    skla
-alpl:   dec     dx
-        mov     MAXTLE,dx
-        jcxz    lits
-        dec     cx
-amib:   mov     bp,sp
-        push    cx
-        push    word ptr ds:[bx]
-        mov     dx,word ptr ds:[bx]
-        add     bp,cx
-        add     bp,cx
-        add     bp,cx
-        add     bp,cx
-        add     bp,cx
-        add     bp,cx
-        mov     ax,9
-        add     ax,cx           ;ax=11 para lon2,12 para lon3
-        cmp     dx,127
-        ja      bibi
-        cmp     cl,3
-        jc      ktik
-bibi:   push    dx              ;calculo bits general
-        push    cx
-        inc     cx
-        cmp     dx,127
-        ja      tnnn
-        dec     cx
-        dec     cx
-tnnn:   shr     dx,8
-        inc     dx
-        inc     dx
-        bsr     ax,dx
-        bsr     dx,cx
-        pop     cx
-        add     ax,dx
-        add     ax,ax
-        add     ax,10
-        pop     dx
-ktik:   add     ax,word ptr ss:[bp]
-lnzo:   cmp     ax,MAXTLE
-        jnc     fnts
-        pop     MAXPOS
-        pop     MAXLEN
-        mov     MAXTLE,ax
-        db      3Dh
-fnts:   pop     bp
-        pop     bp
-fnls:   inc     bx
-        inc     bx
-        loop    amib
-        movzx   ax,byte ptr es:[si]
-lits:   mov     bx,7
-        push    si
-        or      al,al
-        jz      lit0
-        mov     cl,15
-kluo:   dec     si
-        cmp     al,es:[si]
-        jz      lit0
-        loop    kluo
-litn:   inc     bx
-        inc     bx
-lit0:   pop     si
-        pop     bp
-        add     bx,bp
-        push    bp
-        cmp     bx,MAXTLE
-        jbe     litr
-        push    MAXLEN
-        push    MAXPOS
-        push    MAXTLE
-        jmp     amil
-litr:   jcxz    likt
-        xchg    ax,cx
-        lahf
-likt:   db      06Ah            ;push 0, literales codifican longitud con 0
-        db      0h
-        push    ax
-        push    bx
-amil:   sub     si,1            ;cierro bucle
-        jnc     bprp
-        push    ds
-        pop     es
-        mov     di,longde       ;longitud del ejecutable
-        mov     ax,0080h
-        stosb
-        rcl     ax,1
-        push    di
-maxi:   mov     ch,127-((offset @LDSNA-offset maxi+80h)/512)
-        rep     stosw
-        pop     di
-
-miot:   cmp     sp,0F000h
-        jc      nanz
-        mov     ax,ss
-        add     ax,800h
-        mov     ss,ax
-        add     sp,8000h
-nanz:   pop     dx
-        pop     bx
-        pop     cx
-        jcxz    lili
-        add     sp,cx
-        add     sp,cx
-        add     sp,cx
-        add     sp,cx
-        add     sp,cx
-        add     sp,cx
-        inc     cx
-        jz      fdto
-        db      68h
-        dw      offset miot-offset @LDSNA
-        mov     ax,8080h ;10XXXXXX1XXXXXXX mejorar para aprovechar compresor
-        cmp     bx,bp
-        mov     bp,bx
-        jz      ulpo
-nliz:   cmp     bx,127
-        ja      genl
-        cmp     cl,3
-        ja      genl
-        xchg    ax,bx
-        mov     ah,0Fh    ;111.0XXXXXXX 2  1111.0XXXXXXX 3
-        jnc     slto
-        shl     ax,1
-slto:   add     cl,9
-        shl     ax,1
-        shl     ax,1
-        shl     ax,1
-pukk:   shl     ax,1
-puta:   shl     ax,1
-putb:   rcl     byte ptr ds:[di],1
-        adc     di,0
-        loop    puta
-        ret
-ulpo:   push    cx
-        cbw
-        mov     cl,5
-        call    puta
-        pop     dx
-        jmp     gsle
-lili:   db      68h
-        dw      offset miot-offset @LDSNA
-        or      bh,bh
-        jz      norm
-        neg     bl
-        mov     ah,bl
-neno:   and     ax,0110111100000000b    ;el 0 no sirve de nada pero ocupa igual
-        mov     cl,7                    ;y mejora compresi¢n.
-        jmp     pukk
-genl:   db      68h
-        dw      offset miau-offset @LDSNA
-        push    cx
-        mov     cl,2
-        call    puta            ;10-
-        mov     dl,bh
-        inc     dx
-        inc     dx
-        call    gsle            ;10-X1X1X0-    bh-2
-        pop     dx
-        cmp     bx,127
-        ja      gsle
-        dec     dx
-        dec     dx
-gsle:   db      0Ch
-mixu:   stc
-        rcr     ax,1
-        inc     cx
-        inc     cx
-        shr     dl,1
-        rcr     ax,1
-        cmp     dl,1
-        jnz     mixu
-        jz      puta
-norm:   or      bl,bl
-        mov     ah,0E0h
-        jz      neno
-        inc     cx
-        call    putb
-miau:   mov     cl,8
-        mov     ah,bl
-        jmp     puta
-fdto:   mov     ax,040h
-        mov     cl,8
-        call    puta
-        stosb
-        pop     bx
-        pop     bx
-        pop     bx
-        pop     bx
-        mov     cx,di
-        int     21h
-        MOV     SI,OFFSET PRESEN-120h
-        DB      68h
-        DW      OFFSET @SALIR-120h
-        RETF
-ELSE
         MOV     CL,OFFSET @LDSNA-OFFSET @GUACHI
         PUSH    ES              ;para hacer un salto retf pongo segmento en pila
         push    di
@@ -2481,7 +2139,6 @@ ENDIF
         DW      OFFSET KSALIR
         RETF
 
-ENDIF
 @LDSNA: mov     si,03FE5h
         db      26h
         lodsb
