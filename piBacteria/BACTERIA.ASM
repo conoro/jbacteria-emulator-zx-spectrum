@@ -1,6 +1,6 @@
 LOCALS
 .MODEL SMALL
-.486
+.286
 .CODE
 ORG 100H
 ;-----------------------variables guardadas en snap,f√°cil acceso e inicializadas a 0
@@ -43,8 +43,8 @@ SNAPF   equ     BYTE PTR DS:[DI+27]
 SNAPSI  equ     WORD PTR DS:[DI+28]
 SNAPBP  equ     WORD PTR DS:[DI+30]
 ;-----------------------constantes ensamblaje condicional
-SOUNDB  equ     1               ;utilizo soundblaster o speaker
-JOYST   equ     0               ;a 1 para deshabilitar el joystick
+SOUNDB  equ     0               ;utilizo soundblaster o speaker
+JOYST   equ     1               ;a 0 para deshabilitar el joystick
 ;-----------------------constantes miscelanea
 SENSI   equ     80              ;sensibilidad del joystick
 TOTREG  equ     32              ;numero total de registros que se guardan
@@ -62,7 +62,7 @@ PUNTE   equ     WORD PTR DS:[DI-10]     ;puntero del sample actual de sonido
 PUNTEG  equ     WORD PTR CS:[100h-10]
 PUNTEG1 equ     BYTE PTR CS:[100h-9]
 MAXLEN  equ     WORD PTR DS:[100h-8]    ;m√°xima longitud de cadena encontrada en bytes
-MAXPOS  equ     WORD PTR DS:[100h-6]    ;posici¢n hacia atr√°s donde se encuentra la cadena
+MAXPOS  equ     WORD PTR DS:[100h-6]    ;posici√≥n hacia atr√°s donde se encuentra la cadena
 MAXTLE  equ     WORD PTR DS:[100h-4]    ;m√°xima longitud total en bits que llevo
 TMTEC   equ     BYTE PTR DS:[DI-2]      ;tecla pulsada en el frame anterior
 EXTEN   equ     BYTE PTR CS:[100h-1]    ;flag indicando car√°cter extendido
@@ -226,7 +226,6 @@ kili:   mov     dx,si
         mov     cx,3*17
         rep     outsb
 IF JOYST
-ELSE
         CALL    @LEEJO                  ;read joystick axes
         MOV     EJEY,BX
         MOV     EJEX,CX
@@ -393,22 +392,20 @@ ENDIF
 
 
 IF JOYST
-@MVEE:  MOV     CX,11             ;11 estados kempston,8 column,2funcios
-ELSE
 @DESJO: JMP     @MVEE             ;descarto si no hay joystick
         CALL    @LEEJO            ;leo ejes en cx y bx
-        MOV     AX,4              ;bit 4=boton
+        MOV     al,10h            ;bit 4=boton
         CALL    @EMJO             ;guardo en variable
-        DEC     AX                ;bit 3=arriba
+        MOV     al,08h            ;bit 3=arriba
         SUB     BX,EJEY
         JNC     @ABJ
         ADD     BX,SENSI          ;comparo arriba
         CALL    @EMJO             ;guardo
         JMP     @MVER
-@ABJ:   DEC     AX                ;bit 2=abajo
+@ABJ:   MOV     al,04h            ;bit 2=abajo
         CMP     BX,SENSI          ;comparo abajo
         CALL    @EMJO             ;guardo
-@MVER:  MOV     AL,1              ;bit 1=izqui
+@MVER:  MOV     AL,02h            ;bit 1=izqui
         MOV     BX,CX
         SUB     BX,EJEX
         JNC     @ABE
@@ -419,12 +416,14 @@ ELSE
         CMP     BX,SENSI          ;comparo
         CALL    @EMJO             ;guardo
 @MVEE:  MOV     CX,12             ;12 estados joystick,kempston,8 column,2funcios
+ELSE
+@MVEE:  MOV     CX,11             ;11 estados kempston,8 column,2funcios
 ENDIF
 @PMVE:  MOV     BX,OFFSET TECAC
 IF JOYST
-@BUBX:  MOV     AL,BYTE PTR DS:[BX+OFFSET TECLADO-OFFSET TECAC-1] ;leo de teclado
-ELSE
 @BUBX:  MOV     AL,BYTE PTR DS:[BX+OFFSET TECLADO-OFFSET TECAC-2] ;leo de teclado
+ELSE
+@BUBX:  MOV     AL,BYTE PTR DS:[BX+OFFSET TECLADO-OFFSET TECAC-1] ;leo de teclado
 ENDIF
         MOV     AH,BYTE PTR DS:[BX]                               ;leo de tecac
         MOV     BYTE PTR DS:[BX],AL                               ;escribo en teclado
@@ -446,7 +445,7 @@ ENDIF
         XCHG    AL,TMTEC
         SHL     AX,10                ;en parte alta pongo evento
         OR      AX,BX                ;en parte baja contador de estados
-        MOV     BX,PFAIR             ;leo puntero de grabaci¢n
+        MOV     BX,PFAIR             ;leo puntero de grabaci√≥n
         CMP     BH,GRAB              ;si ya he leido mucho tiempo
         JZ      @NOIN                ;no incremento puntero
         ADD     PFAIR,2              ;incremento puntero
@@ -494,9 +493,9 @@ ENDIF
         BT      WORD PTR DS:[OFFSET FUNCIOS],1
         JNC     SILK
 IF JOYST
-        XOR     WORD PTR DS:[OFFSET @MVEE],50h+((OFFSET @REPRO-OFFSET @PMVE) XOR 11)*100h
-ELSE
         XOR     WORD PTR DS:[OFFSET @MVEE],50h+((OFFSET @REPRO-OFFSET @PMVE) XOR 12)*100h
+ELSE
+        XOR     WORD PTR DS:[OFFSET @MVEE],50h+((OFFSET @REPRO-OFFSET @PMVE) XOR 11)*100h
 ENDIF
 IF SOUNDB
         MOV     BYTE PTR DS:[OFFSET trik+1],0
@@ -519,11 +518,11 @@ SIL2:   DEC     TVACIO
         PUSH    AX
         SHR     AX,10
         CMP     AL,8
-        JNZ     @KOAE                          ;miro si la orden es F6 fin de reproducci¢n
+        JNZ     @KOAE                          ;miro si la orden es F6 fin de reproducci√≥n
 IF JOYST
-        XOR     WORD PTR DS:[OFFSET @MVEE],50h+((OFFSET @REPRO-OFFSET @PMVE) XOR 11)*100h
-ELSE
         XOR     WORD PTR DS:[OFFSET @MVEE],50h+((OFFSET @REPRO-OFFSET @PMVE) XOR 12)*100h
+ELSE
+        XOR     WORD PTR DS:[OFFSET @MVEE],50h+((OFFSET @REPRO-OFFSET @PMVE) XOR 11)*100h
 ENDIF
 IF SOUNDB
         MOV     BYTE PTR DS:[OFFSET trik+1],0
@@ -531,13 +530,13 @@ ELSE
         MOV     BYTE PTR DS:[OFFSET trik+2],38
 ENDIF
 
-@KOAE:  MOV     CL,5                           ;puesto en modo grabaci¢n
+@KOAE:  MOV     CL,5                           ;puesto en modo grabaci√≥n
         DIV     CL
         MOV     CL,AH                          ;cl=columna al=fila
 IF JOYST
-        MOV     BX,OFFSET TECAC+10 ;;;
-ELSE
         MOV     BX,OFFSET TECAC+11 ;;;
+ELSE
+        MOV     BX,OFFSET TECAC+10 ;;;
 ENDIF
         CBW
         SUB     BX,AX                          ;bx apunta a byte
@@ -609,7 +608,7 @@ ENDIF
 @NNHLHH:SHR     AL,1          ;C0-FF imp*par*imp*imp  CD,DD,ED,FD
         JC      _DDFD
         JZ      _CALNN        ;C0-FF imp*par*imp*imp*par  CD,ED 
-;‹‹‹‹‹‹‹;ED PREFIX
+;;ED PREFIX
 _EDPR:  MOV     AL,R
         ROL     AL,1
         ADD     AL,2
@@ -628,7 +627,7 @@ _SNL:   SHR     AL,1      ;40 42 44 46 48 ...
         JC      _SNLH
 _SNLL:  SHR     AL,1      ;40 44 48 4C 50
         JC      _NEG
-;‹‹‹‹‹‹‹;IN S,(C) ;ED 40,48,50,58,60,68,70,78 "IN S,(C)" S=B,C,D,E,H,L,A
+;;IN S,(C) ;ED 40,48,50,58,60,68,70,78 "IN S,(C)" S=B,C,D,E,H,L,A
 _INSC:  ADD     DH,4
         ADD     BX,AX
         AND     BL,111b
@@ -639,27 +638,18 @@ _ED70:  DB      68h
 @PIN:   PUSH    DI
         CMP     AL,0DFh
 IF JOYST
-        MOV     DI,OFFSET TECAC+1        ;kempston
-ELSE
         MOV     DI,OFFSET TECAC+2
+ELSE
+        MOV     DI,OFFSET TECAC+1        ;kempston
 ENDIF
         JZ      @KOER
         TEST    AL,11100000b
         JNZ     @NOKE
 @KOER:  DEC     DI
-IF JOYST
-;        MOV     AL,0FFh                ;NO ENTIENDO PORQUE LO DE ABAJO ES
-;        XOR     AL,BYTE PTR DS:[DI]    ;MEJOR, PERO LO ES fffffffffffffff
         MOV     AL,BYTE PTR DS:[DI]
         DEC     DI
         AND     AL,BYTE PTR DS:[DI]
         NOT     AL
-ELSE
-        MOV     AL,BYTE PTR DS:[DI] ;;abcd mov al,ff xor al,
-        DEC     DI
-        AND     AL,BYTE PTR DS:[DI]
-        NOT     AL
-ENDIF
 @NKNK:  POP     DI
         RET
 @NOKE:  AND     AL,1
@@ -675,13 +665,13 @@ ENDIF
 @KEMP:  XCHG    AX,CX
         POP     DI
 _NAD:   RET
-;‹‹‹‹‹‹‹;NEG ;ED 44,4C,54,5C,64,6C,74,7C "NEG"
+;;NEG ;ED 44,4C,54,5C,64,6C,74,7C "NEG"
 _NEG:   XCHG    CH,A
         MOV     CL,010000b
-        JMP     @OPER;ﬂﬂﬂﬂﬂ
+        JMP     @OPER
 _SNLH:  SHR     AL,1       ;42 46 4A 4E 52 56 5A ....
         JC      _IMOD
-;‹‹‹‹‹‹‹;ADC,SBC HL,SS ;ED 42,4A,52,5A,62,6A,72,7A "ADC,SBB HL,SS"  SS=BC,DE,HL,SP
+;;ADC,SBC HL,SS ;ED 42,4A,52,5A,62,6A,72,7A "ADC,SBB HL,SS"  SS=BC,DE,HL,SP
 _ADSBC: ADD     DH,7
         MOV     CH,11h     ;11h=OPCODE ADC
         SHR     AL,1
@@ -705,7 +695,7 @@ _ADSBC: ADD     DH,7
 @cafi:  mov     F,ah
         OR F,CL
         RET
-;‹‹‹‹‹‹‹;IM ?      ;OP ED 46,4E,56,5E,66,6E,76,7E "IM ?"
+;;IM ?      ;OP ED 46,4E,56,5E,66,6E,76,7E "IM ?"
 _IMOD:  ;AND AL,11b
         ;JPO @AH01
         ;JZ @AH01
@@ -722,7 +712,7 @@ _SNH:   SHR     AL,1               ;41 43 45 47 49 4B 4D..
         JC      _SNHH   ;
 _SNHL:  SHR     AL,1               ;41 45 49 4D 51 55 ..
         JC      _RETI
-;‹‹‹‹‹‹‹;OUT (C),S   ;OP ED 41,49,51,59,61,69,79 "OUT (C),S" S=B,C,D,E,H,L,A   12
+;;OUT (C),S   ;OP ED 41,49,51,59,61,69,79 "OUT (C),S" S=B,C,D,E,H,L,A   12
 _OUTCS: ADD     DH,4
         ADD     BX,AX
         SHL     BL,5
@@ -743,7 +733,7 @@ _OUT0:  MOV     AL,0 ;DB      0D6h         ;ED 71
         or      al,0BFh
         MOV     BYTE PTR DS:[@issue+1],AL
 @LARE:  RET
-;‹‹‹‹‹‹‹;RETI, RETN   ;OP ED 45,4D,55,5D,65,6D,75,7D
+;;RETI, RETN   ;OP ED 45,4D,55,5D,65,6D,75,7D
 _RETI:  ADD     DH,6
         OR      IM,10000000b
 @RELT:  JMP     @SIRE
@@ -751,7 +741,7 @@ _SNHH:  SHR     AL,1           ;43 47 4B 4F 53 57 ..
         JC      _SNHHH
 _SNHHL: SHR     AL,1           ;43 4B 53 5B ..
         JC      _LSSNN
-;‹‹‹‹‹‹‹;LD (NN),SS   ;OP ED 43,53,63,73 "LD (NN),SS"  SS=BC,DE,HL,SP
+;;LD (NN),SS   ;OP ED 43,53,63,73 "LD (NN),SS"  SS=BC,DE,HL,SP
 _LNNSS: DW      0C000h ;ADD     AL,AL
         ADD     BX,AX           
         CMP     AL,6
@@ -759,7 +749,7 @@ _LNNSS: DW      0C000h ;ADD     AL,AL
         JNZ     @SBAD
         MOV     AX,BP
 @SBAD:  JMP     @LDIM
-;‹‹‹‹‹‹‹;LD SS,(NN)   ;OP ED 4B,5B,6B,7B "LD SS,(NN)"  SS=BC,DE,HL,SP
+;;LD SS,(NN)   ;OP ED 4B,5B,6B,7B "LD SS,(NN)"  SS=BC,DE,HL,SP
 _LSSNN: DW      0C000h ;ADD     AL,AL
          and al,0FFh
         ADD     BX,AX
@@ -772,7 +762,7 @@ _LSSNN: DW      0C000h ;ADD     AL,AL
         RET
 _SNHHH: CMP     AL,2     ;47 4F 57 5F 67 6F 77 7F
         JNC     _RRR1
-;‹‹‹‹‹‹‹;LD I,A ;LD R,A  ;ED 47 4F > 8 9 > A B
+;;LD I,A ;LD R,A  ;ED 47 4F > 8 9 > A B
 _LDIAR: inc     dh
         XOR     AL,13h
         ADD     BX,AX
@@ -781,7 +771,7 @@ _LDIAR: inc     dh
         RET
 _RRR1:  CMP     AL,4     ;57 5F 67 6F 77 7F
         JNC     _RRRR
-;‹‹‹‹‹‹‹;LD A,I ;LD A,R
+;;LD A,I ;LD A,R
 _LDAIR: INC     DH
         XOR     AL,11h
         ADD     BX,AX
@@ -794,7 +784,7 @@ _LDAIR: INC     DH
         SHR     AL,5
         OR      AL,AH
         MOV     F,AL
-        RET;ﬂﬂﬂﬂﬂ
+        RET
 _RRRR:  ADD     DH,10
         CMP     AL,5
         MOV     BX,HL
@@ -803,7 +793,7 @@ _RRRR:  ADD     DH,10
         MOV     AH,AL
         MOV     CL,4
         JNZ     _RRD
-;‹‹‹‹‹‹‹;RLD ;ED 6F
+;;RLD ;ED 6F
 _RLD:   SHL     CH,CL
         AND     AX,0F00FH
         OR      AL,CH
@@ -818,14 +808,14 @@ _RLD:   SHL     CH,CL
         ADC     AL,AH
         MOV     F,AL
 _2RET:  RET
-;‹‹‹‹‹‹‹;RRD ;ED 67
+;;RRD ;ED 67
 _RRD:   JNC     _2RET
         SHR     CH,CL
         SHL     AL,CL
         OR      AL,CH
         XCHG    AL,BYTE PTR ES:[BX]
         AND     AX,0F00Fh
-        JMP     @TOTE;ﬂﬂﬂﬂﬂ
+        JMP     @TOTE
 _N:     SHL     AL,1        ;80-FF
         JC      _2RET
         SUB     AL,80h      ;80-BF
@@ -838,7 +828,7 @@ _NL:    SHR     AL,1        ;A0 A2 A4 A6 A8 ..
         JC      _NLH
         SHR     AL,1        ;A0 A4 A8 AC B0 B4..
         JC      _2RET
-;‹‹‹‹‹‹‹;LD??   ;OP A0 A8 B0 B8 "LDI,LDD,LDIR,LDDR" BX=0,1,2,3
+;;LD??   ;OP A0 A8 B0 B8 "LDI,LDD,LDIR,LDDR" BX=0,1,2,3
 _LDILD: SHR     AL,1
         MOV     BX,HL
         MOV     BL,BYTE PTR ES:[BX]
@@ -867,10 +857,10 @@ _LDILD: SHR     AL,1
 @CORE:  ADD     DH,5
         SUB     SI,2
 @ORFA:  OR      F,AL
-_3RET:  RET;ﬂﬂﬂﬂﬂ
+_3RET:  RET
 _NLH:   SHR     AL,1        ;A2 A6 AA AE B2 B6
         JC      _3RET
-;‹‹‹‹‹‹‹;IN??   ;OP A2 AA B2 BA "INI,IND,INIR,INDR"
+;;IN??   ;OP A2 AA B2 BA "INI,IND,INIR,INDR"
 _INIR:  PUSH    AX
         CALL    @PINBC
         MOV     BX,HL
@@ -898,20 +888,20 @@ _INIR:  PUSH    AX
         JNZ     @RTIT
         SHR     AL,1
         JC      @CORE
-@RTIT:  RET;ﬂﬂﬂﬂﬂ
+@RTIT:  RET
 _NH:    SHR     AL,1   ; A1 A3 A5 A7 A9 AB ..
         JNC     _NHL
 _NHH:   SHR     AL,1   ; A3 A7 AB AF B3 ..
         JC      @RTIT
-;‹‹‹‹‹‹‹;OUT??  ;OP A3 AB B3 BB "OUTI,OUTD,OTIR,OTDR"
+;;OUT??  ;OP A3 AB B3 BB "OUTI,OUTD,OTIR,OTDR"
 _OUTIR: PUSH    AX
         MOV     BX,HL
         MOV     AL,BYTE PTR ES:[BX]
         CALL    @POUTBC
-        JMP     @LMQI;ﬂﬂﬂﬂﬂ
+        JMP     @LMQI
 _NHL:   SHR     AL,1
         JC      @RTIT
-;‹‹‹‹‹‹‹;CP??  ;OP A1 A9 B1 B9 "CPI,CPD,CPIR,CPDR"
+;;CP??  ;OP A1 A9 B1 B9 "CPI,CPD,CPIR,CPDR"
 _CPIR:  SHR     AL,1
         XCHG    AX,CX
         MOV     DI,HL
@@ -935,14 +925,14 @@ _CPIR:  SHR     AL,1
         TEST    AL,01000000b  ;MIRO SI FLAG Z=1 SALGO
         JZ      @CORE
 @CPIR:  OR      F,AL
-        RET;ﬂﬂﬂﬂﬂ
-;‹‹‹‹‹‹‹;DD FD PREFIX
+        RET
+;;DD FD PREFIX
 _DDFD:  SUB     DH,6
         SHL     AL,1        ;DD FD PREFIJOS
         ADD     AL,10h
         MOV     PRB,AL
-        JMP     @ABAPRE;ﬂﬂﬂﬂﬂ
-;‹‹‹‹‹‹‹;PUSH SS  ;C5,D5,E5,F5 > 00 01 02 03  BC,DE,HL,AF
+        JMP     @ABAPRE
+;;PUSH SS  ;C5,D5,E5,F5 > 00 01 02 03  BC,DE,HL,AF
 _PUSH:  INC     DH
         CMP     AL,2
         JC      @NANH
@@ -962,7 +952,7 @@ _PUSHDX:DEC     BP
 @SA04:  RET
 @NNHLL: SHR     AL,1     ;C1,C9,D1,D9,E1,E9,F1,F9
         JC      @NNHLLH ; ;C1,D1,E1,F1 > 00 40 80 C0
-;‹‹‹‹‹‹‹;POP XX  ;C1 D1 E1 F1
+;;POP XX  ;C1 D1 E1 F1
 _POPXX: MOV     CX,WORD PTR ES:[BP]
         INC     BP
         INC     BP
@@ -976,16 +966,16 @@ _POPXX: MOV     CX,WORD PTR ES:[BP]
 @NAN2:  SHL     AL,1
 @POPDE: ADD     BX,AX
 _POPDA: MOV     WORD PTR DS:[BX],CX
-        RET;ﬂﬂﬂﬂﬂ
+        RET
 @NNHLLH:SHR     AL,1               ;C9,D9,E9,F9 > 00 40 80 C0
         JC      @NNHLLHH
         JZ      _RET
-;‹‹‹‹‹‹‹;JP (HL)  ;OP E9
+;;JP (HL)  ;OP E9
 _JPHL:  SUB     DH,6
         MOV     BL,PRB
         MOV     SI,WORD PTR DS:[BX]
-        RET;ﬂﬂﬂﬂﬂ
-;‹‹‹‹‹‹‹;RET c/Nc  ;OPS C0,C8,D0,D8,E0,E8,F0,F8 *
+        RET
+;;RET c/Nc  ;OPS C0,C8,D0,D8,E0,E8,F0,F8 *
 _RETNC: SUB     DH,5
         MOV     BX,OFFSET FLCMP
         SHR     AL,1
@@ -997,13 +987,13 @@ _RETNC: SUB     DH,5
 @SISI:  TEST    F,AL
         JNZ     @NORE
 @SIRE:  ADD     DH,6
-;‹‹‹‹‹‹‹;RET  ;OP C9 *
+;;RET  ;OP C9 *
 _RET:   MOV     SI,WORD PTR ES:[BP] 
         INC     BP
         INC     BP
-@NORE:  RET;ﬂﬂﬂﬂﬂ
+@NORE:  RET
 @NNHLLHH:JNZ _LSPHL   ;D9,F9 > 00 80
-;‹‹‹‹‹‹‹;EXX  ;OP D9 *"EXX" BC DE HL
+;;EXX  ;OP D9 *"EXX" BC DE HL
 _EXX:   SUB     DH,6
         MOV     CL,3
 @LOO3:  MOV     AX,WORD PTR DS:[BX]
@@ -1013,39 +1003,21 @@ _EXX:   SUB     DH,6
         MOV     WORD PTR DS:[BX],AX
         ADD     BL,2
         LOOP    @LOO3
-        RET;ﬂﬂﬂﬂﬂ
-;‹‹‹‹‹‹‹;LD SP,HL    ;OP F9 *
+        RET
+;;LD SP,HL    ;OP F9 *
 _LSPHL: SUB     DH,4
         MOV     BL,PRB
         MOV     BP,[BX]
-        RET;ﬂﬂﬂﬂﬂ
+        RET
 @NNHH:  SHR AL,1         ;C3,C7,CB,CF,D....,E....,F.......
         JNC @NNHHL
-;‹‹‹‹‹‹‹;RST XX  ;OP C7,CF,D7,DF,E7,EF,F7,FF *"RST" XX= 00 08 10 18 ...
+;;RST XX  ;OP C7,CF,D7,DF,E7,EF,F7,FF *"RST" XX= 00 08 10 18 ...
 _RST:   INC     DH
         SHL     AL,3
         DEC     BP
         DEC     BP
         XCHG    SI,AX
-        JMP     @ESBP;ﬂﬂﬂﬂﬂ
-@NNHHL: SHR     AL,1         ;C3,CB,D3,DB,E3,EB,F3,FB @NNNNSS
-        JNC     @NNHHLL  ;
-@NNHHLH:SHR     AL,1         ;CB,DB,EB,FB  00 40 80 C0
-        JC      @NNHHLHH  ;
-        JNZ     _EXDHL   ;   ;CB,EB
-;‹‹‹‹‹‹‹;CB PREFIX
-_PRCB:  ADD     DH,4
-        MOV     BL,PRB       ;OP CB PREFIJO CB
-        MOV     DI,WORD PTR DS:[BX]  ;ch=0;MODO DE ENTRADA NORMAL (SOLO 1 OPERACION)
-        CMP     BL,06h
-        JZ      @OPOC
-        ADD     DH,8
-        MOV     CH,1  ;MODO DE ENTRADA CON PREFIJO (2 OPERACIONES)
-        DB      026h
-        LODSB
-        CBW
-        ADD     DI,AX ;;;;;;;;;;;;,ARREGLAR TODO ESTO
-        JMP     @NICR
+        JMP     @ESBP
 @OPOC:  MOV     AL,RD
         ROL     AL,1
         ADD     AL,2
@@ -1089,6 +1061,27 @@ _PRCB:  ADD     DH,4
         AND     AH,01000100b
         OR      F,AH
         RET
+
+@NNHHL: SHR     AL,1         ;C3,CB,D3,DB,E3,EB,F3,FB @NNNNSS
+        JNC     @NNHHLL  ;
+@NNHHLH:SHR     AL,1         ;CB,DB,EB,FB  00 40 80 C0
+        JC      @NNHHLHH  ;
+        JNZ     _EXDHL   ;   ;CB,EB
+;;CB PREFIX
+_PRCB:  ADD     DH,4
+        MOV     BL,PRB       ;OP CB PREFIJO CB
+        MOV     DI,WORD PTR DS:[BX]  ;ch=0;MODO DE ENTRADA NORMAL (SOLO 1 OPERACION)
+        CMP     BL,06h
+        JZ      @OPOC
+        ADD     DH,8
+        MOV     CH,1  ;MODO DE ENTRADA CON PREFIJO (2 OPERACIONES)
+        DB      026h
+        LODSB
+        CBW
+        ADD     DI,AX ;;;;;;;;;;;;,ARREGLAR TODO ESTO
+        JMP     @NICR
+
+
 @IXIY:  SUB AL,2
         MOV BYTE PTR DS:[@RTXY+2],AL
         SHR F,1
@@ -1125,54 +1118,60 @@ _PRCB:  ADD     DH,4
         JNZ     @IXY3
         OR      BYTE PTR ES:[DI],AL    ;;BBBBB
 @IXY3:  OR      BYTE PTR DS:[BX],AL
-        RET;ﬂﬂﬂﬂﬂ
-;‹‹‹‹‹‹‹;EX DE,HL  ;OP EB *
+        RET
+
+@NNHHLL:SHR     AL,1      ;C3,D3,E3,F3
+        JC      @NNHHLLH
+@NNHHLLL:JNZ     _EXPHL
+        JMP     _JUNP        ;C3,E3
+
+@NNHHLHH:JZ _INAN    ;DB,FB
+;;EI   ;OP FB
+_EI:    SUB     DH,6
+        OR      IM,10000000b
+        RET
+
+;;EX DE,HL  ;OP EB *
 _EXDHL: SUB     DH,6
         MOV     BL,PRB
         MOV     AX,DE
         XCHG    AX,WORD PTR DS:[BX]
         MOV     DE,AX
-        RET;ﬂﬂﬂﬂﬂ
-@NNHHLHH:JZ _INAN    ;DB,FB
-;‹‹‹‹‹‹‹;EI   ;OP FB
-_EI:    SUB     DH,6
-        OR      IM,10000000b
-        RET;ﬂﬂﬂﬂﬂ
-;‹‹‹‹‹‹‹;IN A,(N)  ;OP DB
+        RET
+
+;;IN A,(N)  ;OP DB
 _INAN:  INC     DH
         MOV     AH,A
         DB      026h
         LODSB
         CALL    @PIN
         MOV     A,AL
-        RET;ﬂﬂﬂﬂﬂ
-@NNHHLL:SHR     AL,1      ;C3,D3,E3,F3
-        JC      @NNHHLLH
-@NNHHLLL:JZ     _JUNP        ;C3,E3
-;‹‹‹‹‹‹‹;EX (SP),HL  ;OP E3 *
+        RET
+;;EX (SP),HL  ;OP E3 *
 _EXPHL: ADD     DH,9
         MOV     BL,PRB
         MOV     AX,WORD PTR ES:[BP]
         XCHG    AX,WORD PTR DS:[BX]
-        JMP     @ESBP;ﬂﬂﬂﬂﬂ
+        JMP     @ESBP
 @NNHHLLH:JNZ    _DI  ;D3,F3
-;‹‹‹‹‹‹‹;OUT (N),A  ;OP D3 *
+;;OUT (N),A  ;OP D3 *
 _OUTNA: INC     DH
         DB      26h
         LODSB
         MOV     AH,AL
         MOV     AL,A
-        JMP     @POUT;ﬂﬂﬂﬂﬂ
+        JMP     @POUT
 FLCMP   DB 40h,1,4;,80h OJO CON ESTE TRUCO;;;;;;NO QUITAR DE 
-;‹‹‹‹‹‹‹;DI   ;OP F3 *
+;;DI   ;OP F3 *
 _DI:    SUB     DH,6
         AND     IM,01111111b
-        RET;ﬂﬂﬂﬂﬂ
+        RET
 @NNL:   SHR     AL,1        ;C0-FF pares C0 C2 C4 C6 C8 CA ...
         JC      @NNLH
 @NNLL:  SHR     AL,1        ;C0 C4 C8 CC D0 D4 D8 *
-        JNC     _RETNC
-;‹‹‹‹‹‹‹;CALL Nc NN  ;OPS C4,CC,D4,DC,E4,EC,F4,FC ;
+        JC      _CALLC
+        JMP     _RETNC
+;;CALL Nc NN  ;OPS C4,CC,D4,DC,E4,EC,F4,FC ;
 _CALLC: MOV     BX,OFFSET FLCMP
         SHR     AL,1  
         XLAT
@@ -1183,7 +1182,7 @@ _CALLC: MOV     BX,OFFSET FLCMP
 @ZZSI:  TEST    F,AL
         JNZ     @NOXX
 @SIZZ:  ADD     DH,7
-;‹‹‹‹‹‹‹;CALL NN  ;OP CD
+;;CALL NN  ;OP CD
 _CALNN: ADD     DH,7
         DB      26h
         LODSW
@@ -1192,7 +1191,7 @@ _CALNN: ADD     DH,7
         DEC     BP
         DEC     BP
         XCHG    SI,AX
-        JMP     @ESBP;ﬂﬂﬂﬂﬂ
+        JMP     @ESBP
 @kkoe:  OR      AL,0ACh   ;96;xchg si,ax 80h
         CALL    @READ                   ;posiciono el buffer
         push    DX                      ;guardo flags
@@ -1221,7 +1220,7 @@ _CALNN: ADD     DH,7
         JMP     @GRABA                  ;hago un snapshot despues de la carga
 @NNLH:  SHR     AL,1        ;C2 C6 CA CD D2 D6 DA ..
         JC      _WOPER
-;‹‹‹‹‹‹‹;JP Nc   ;OPS C2,CA,D2,DA,E2,EA,F2,FA  ;
+;;JP Nc   ;OPS C2,CA,D2,DA,E2,EA,F2,FA  ;
 _JPCNC: MOV     BX,OFFSET FLCMP
         SHR     AL,1
         XLAT
@@ -1234,15 +1233,15 @@ _JPCNC: MOV     BX,OFFSET FLCMP
 _JUNP:  MOV     SI,WORD PTR ES:[SI] ;OP C3 "JP NN"  ;4 =1
         RET
 @NOXX:  CMPSW
-        RET;ﬂﬂﬂﬂﬂ
-;‹‹‹‹‹‹‹;ADD SUB ADC SBB AND OR XOR CP A,N ;OPS C6,CE,D6,DE,E6,EE,F6,FE *;12 =3
+        RET
+;;ADD SUB ADC SBB AND OR XOR CP A,N ;OPS C6,CE,D6,DE,E6,EE,F6,FE *;12 =3
 _WOPER: SUB     DH,3
         DEC     SI
         DB      26h
         LODSW
         XCHG    CX,AX
-        JMP     @OPER;ﬂﬂﬂﬂﬂ
-;‹‹‹‹‹‹‹;"ADD,ADC,SUB,SBC,AND,XOR,OR,CP" ;OP 80-BF
+        JMP     @OPER
+;;"ADD,ADC,SUB,SBC,AND,XOR,OR,CP" ;OP 80-BF
 _CALC:  SHR     AL,2
         MOV     CL,AL
         ADD     AX,BX ;OP 80-BF "ADD,ADC,SUB,SBC,AND,XOR,OR,CP" ;62 =16
@@ -1300,307 +1299,11 @@ _CALC:  SHR     AL,2
         SHR     AL,1
         OR      AL,BL          ;BIT H PUESTO SI LA OPERACION ES AND
 @NFHH:  MOV     F,AL           ;LO PONGO EN FLAGS
-        RET;ﬂﬂﬂﬂﬂ
+        RET
+
 @S:     SHL     AL,1
-        JC      _LDR_R
-@SS:    SHR     AL,3   ;00 01 02 03 04
-        JC      @SSH
-@SSL:   SHR     AL,1   ;00 02 04 06 08
-        JC      @SSLH
-@SSLL:  SHR     AL,1   ;00 04 08 0C 10
-        JC      _INCRU
-@SSLLL: SHR     AL,1   ;00 08 10 18 20 28 30 38
-        JC      @SSLLLH
-@SSLLLL:SHR     AL,1   ;00 10 20 30
-        JC      @SSLLLLH
-@SSLLLLL:JZ     _NOP
-;‹‹‹‹‹‹‹;JR NZ,dis ;OP 20
-_JNZ:   ADD     DH,3
-        TEST    F,01000000b
-@AJMP:  JZ      _JUMP
-@INRE:  INC     SI
-_NOP:   RET;ﬂﬂﬂﬂﬂ
-@SSLLLLH:JZ _DJNZ
-;‹‹‹‹‹‹‹;JR NC,dis ;OP 30
-_JNC:   ADC     DH,BL
-        TEST    F,00000001b
-        JMP     @AJMP;ﬂﬂﬂﬂﬂ
-;‹‹‹‹‹‹‹;DJNZ (LOOP)  ;OP 10
-_DJNZ:  ADD     DH,4
-        DEC     B
-        JZ      @INRE
-;‹‹‹‹‹‹‹;JP dis (JMP) ;OP 18 "JMP"
-_JUMP:  ADD     DH,5
-        DB      26h
-        LODSB
-        CBW
-        ADD     SI,AX
-        RET;ﬂﬂﬂﬂﬂ
-@SSLLLH:ADC     DH,BL
-        SHR     AL,1          ;08 18 28 38
-        JC      @SSLLLHH
-@SSLLLHL:JZ     _EXAF ;08 28
-;‹‹‹‹‹‹‹;JM NC (JS)  ;OP 28
-_JZ:    TEST    F,01000000b
-@BJMP:  JNZ     _JUMP
-        JZ      @INRE;ﬂﬂﬂﬂﬂ
-;‹‹‹‹‹‹‹;EX AF,AF'  ;OP 08 "EX AF,AF'"
-_EXAF:  SUB     DH,3
-        MOV     AH,A
-        MOV     AL,F
-        XCHG    AX,[DI+8]
-        MOV     A,AH
-        MOV     F,AL
-        RET;ﬂﬂﬂﬂﬂ
-@SSLLLHH:JZ     _JUMP;18 38
-;‹‹‹‹‹‹‹;JP NC (JC/JNC) ;OP 38
-_JC:    TEST    F,00000001b
-        JMP     @BJMP
-;‹‹‹‹‹‹‹;INC/DEC B,C,D,E,A,(HL) ;04,0C,14,1C,24,2C,34,3C
-_DECRU: MOV     CL,BL
-_INCRU: AND     F,BH
-        OR      F,CL
-        SHL     CL,CL
-        OR      CL,111b
-        MOV     BYTE PTR DS:[@INHL+1],CL
-        ADD     BX,AX
-        AND     BL,111b
-        JNZ     @HLSF
-        ADD     DH,7      ;34 35
-        CALL    @SAIXD
-        PUSH    ES
-        POP     DS
-        JMP     @INHL
-@HLSF:  XOR     BL,BH
-        CMP     BL,6
-        JC      @INHL
-        INC     DH
-        SUB     BL,6
-        ADD     BL,PRB
-@INHL:  INC     BYTE PTR DS:[BX]
-        MOV     BL,BYTE PTR DS:[BX]
-        PUSH    CS
-        POP     DS
-        LAHF
-        JNO     @OSNV
-        OR      F,100b
-@OSNV:  AND     AH,11010000b
-        OR      F,AH
-        AND     BL,00101000b
-        OR      F,BL
-        RET;ﬂﬂﬂﬂﬂ
-@SSLH:  SHR     AL,1                ;02 06 0A 0E 12
-        JNC     @SSLHL
-;‹‹‹‹‹‹‹;LD X,N  ;X=B,C,D,E,H,L,X,A ;OP 06,0E,16,1E,26,2E,XX,3E
-_LDXN:  ADC     DH,BL
-        ADD     AX,BX
-        AND     AL,111b
-        JZ      _LDHLN
-        XOR     AL,AH
-        CMP     AL,6
-        JC      @MALO
-        SUB     DH,BL
-        SUB     AL,6
-        ADD     AL,PRB
-@MALO:  XCHG    BX,AX
-        DB      26h
-        LODSB
-        MOV     BYTE PTR DS:[BX],AL
-        RET;ﬂﬂﬂﬂﬂ
-@SSLHL: SHR     AL,1                ;02 0A 12 1A
-        JC      @SSLHLH
-@SSLHLL:CMP     AL,2       ;02 12 22 32
-        JNC     @2232
-;‹‹‹‹‹‹‹;LD (BC/DE),A   ;OPS 02,12
-_LDXXA: ADC     DH,BL
-        DW      0C000h ;ADD     AL,AL
-        ADD     BX,AX
-        MOV     AL,A
-        MOV     DI,WORD PTR DS:[BX]
-        JMP     @TESD;ﬂﬂﬂﬂﬂ
-@2232:  JNZ     _LDNNA
-;‹‹‹‹‹‹‹;LD (NN),HL   ;OP 22
-_LNNHL: MOV     BL,PRB
-        MOV     AX,[BX]
-@LDIM:  ADD     DH,12
-        XCHG    DI,AX
-        DB      26h
-        LODSW
-        CMP     AH,40h
-        XCHG    DI,AX
-        JC      @NST0
-        STOSW
-@NST0:  RET;ﬂﬂﬂﬂﬂ
-;‹‹‹‹‹‹‹;LD (NN),A  ;OP 32
-_LDNNA: ADD     DH,9
-        DB      026h
-        LODSW
-        MOV     DI,[DI]
-        XCHG    AX,DI
-@TESD:  JMP     @SDBE
-@SSLHLH:CMP     AL,2                       ;0A 1A 2A 3A
-        JNC     @2A3A
-;‹‹‹‹‹‹‹;LD A,(BC/DE)  ;OPS 0A,1A
-_LDAXX: ADC     DH,BL
-        DW      0C000h ;ADD     AL,AL
-        ADD     BX,AX
-        MOV     BX,WORD PTR DS:[BX]
-        MOV     AL,BYTE PTR ES:[BX]
-        MOV     A,AL
-        RET;ﬂﬂﬂﬂﬂ
-@2A3A:  JNZ     _LDANN
-;‹‹‹‹‹‹‹;LD HL,(NN) ;OP 2A
-_LHLNN: MOV     BL,PRB
-@LDIX:  ADD     DH,12
-        DB      26h
-        LODSW
-        XCHG    DI,AX
-        MOV     AX,WORD PTR ES:[DI]
-        MOV     WORD PTR DS:[BX],AX
-        RET;ﬂﬂﬂﬂﬂ
-;‹‹‹‹‹‹‹;LD A,(NN)  ;OP 3A
-_LDANN: ADD     DH,9
-        DB      26h
-        LODSW
-        XCHG    AX,BX
-        MOV     AL,ES:[BX]
-        MOV     A,AL
-        RET;ﬂﬂﬂﬂﬂ
-;‹‹‹‹‹‹‹;LD (HL),N  ;OP 36
-_LDHLN: ADD     DH,3
-        CALL    @SAIXD ;;;;me falta un puto ciclo
-        MOV     DI,BX
-        DB      26h
-        LODSB
-@SDBE:  JMP     @ESDB;ﬂﬂﬂﬂﬂ
-@SSH:   SHR     AL,1         ;01 03 05 07 ...
-        JC      @SSHH
-@SSHL:  SHR     AL,1         ;01 05 09 0D 11 ...
-        JC      _DECRU
-@SSHLL: SHR     AL,1         ;01 09 11 19...
-        JC      _AHLSS
-;‹‹‹‹‹‹‹;LD XX,NN ;XX=BC,DE,HL,SP  ;01 11 21 31
-_LRRNN: ADD     DH,6
-        CMP     AL,2
-        JNZ     _CNTI
-        MOV     BL,PRB
-        JZ      @D222
-_CNTI:  JC      _NLDS
-_LDSPN: DB      26h  ; OP 31 "LD SP,NN"
-        LODSW
-        XCHG    BP,AX
-        RET
-_NLDS:  DW      0C000h ;ADD     AL,AL    ;OPS 01,11,21 "LD RR,NN"  ;19        +1
-        ADD     BX,AX
-@D222:  DB      26h
-        LODSW
-        MOV     WORD PTR DS:[BX],AX
-        RET;ﬂﬂﬂﬂﬂ
-;‹‹‹‹‹‹‹;ADD RR,NN  ;OPS 09,19,29,39
-_AHLSS: ADD     DH,7
-        CMP     AL,2
-        JC      _ADHL
-        JNZ     _AHLSP
-        MOV     BL,PRB
-        JMP     @D244;ﬂﬂﬂﬂﬂ
-;‹‹‹‹‹‹‹;ADD HL,BC/DE  ;09 19
-_ADHL:  DW      0C000h ;ADD     AL,AL
-        ADD     BX,AX
-@D244:  MOV     AX,WORD PTR DS:[BX]
-        DB      3Dh
-_AHLSP: MOV     AX,BP  ;39
-@SUMA:  MOV     BL,PRB
-        AND     F,11000100b   ; N a cero por ahora
-        ADD     WORD PTR DS:[BX],AX
-        LAHF
-        MOV     AL,BYTE PTR DS:[BX+1]
-        AND     AX,0000000100101000b
-        OR      AL,AH
-        OR      F,AL
-@DD16:  RET;ﬂﬂﬂﬂﬂ
-;‹‹‹‹‹‹‹;DEC B,C,D,E,A,(HL) ;05 0D 15 1D 25 2D 35 3D;;;;;;;;CONJUNTAR CON EL INCREMENTO
-@SSHH:  SHR     AL,1                   ;03 07 0B 0F 13 ...
-        JC      @SSHHH
-@SSHHL: ADD     DH,BL
-        CMP     AL,6                   ;03 0B 13 1B 23 2B 33 3B
-        JNC     _SPLH
-;‹‹‹‹‹‹‹;INC/DEC BC/DE/HL  ;OPS 03,0B,13,1B,23 2B
-        SHR     AL,1
-        RCL     CL,4
-        OR      CL,7
-        MOV     BYTE PTR DS:[@HL01+1],CL
-_INCXX: DW      0C000h ;ADD     AL,AL
-        ADD     AX,BX
-        CMP     AL,6
-        MOV     BL,PRB
-        JZ      @HL01
-        XCHG    BX,AX
-@HL01:  INC     WORD PTR DS:[BX]
-        RET;ﬂﬂﬂﬂﬂ
-_SPLH:  JNZ     _DECSP
-;‹‹‹‹‹‹‹;INC SP   ;OP 33
-_INCSP: INC     BP
-        INC     BP
-;‹‹‹‹‹‹‹;DEC SP   ;OP 3B
-_DECSP: DEC     BP
-        RET;ﬂﬂﬂﬂﬂ
-@SSHHH: CMP     AL,4          ;07,0F,17,1F,27,2F,37,3F,47,4F
-        JNC     @SHHHL
-;‹‹‹‹‹‹‹;RLCA RRCA RLA RRA  ;OP 07,0F,17,1F
-_RLCA:  SHL     AL,3
-        OR      AL,5
-        MOV     BYTE PTR DS:[OFFSET @MAG2+1],AL
-        AND     F,11000101b
-        SHR     F,1
-@MAG2:  ROL     A,1
-        RCL     F,1
-        MOV     AL,A
-        AND     AL,00101000b
-        OR      F,AL
-        RET;ﬂﬂﬂﬂﬂ
-@SHHHL: SUB     AL,5      ;27 2F 37 3F 
-        JNC     @NO27
-;‹‹‹‹‹‹‹;DAA   ;OP 27
-_DAA:   MOV     AL,A
-        MOV     AH,F
-        TEST    AH,2
-        JNZ     DAAS
-        SAHF
-        DAA
-        LAHF
-        MOV     A,AL
-        MOV     F,AH
-        RET
-DAAS:   SAHF
-        DAS
-        LAHF
-        MOV     A,AL
-        MOV     F,AH
-        RET;ﬂﬂﬂﬂﬂ
-@NO27:  JNZ _SCF
-;‹‹‹‹‹‹‹;CPL  ;OP 2F
-_CPL:   NOT     A
-        MOV     AL,A
-        AND     AL,00101000b
-        OR      AL,00010010b
-        AND     F,11000101b
-        OR      F,AL
-        RET;ﬂﬂﬂﬂﬂ
-;‹‹‹‹‹‹‹;SCF/CCF  ;OP 37 3F   ;1 2
-_SCF:   AND     F,11000101b     ;H N a 0
-        MOV     CL,A
-        AND     CL,00101000b
-        DEC     AX
-        JNZ     CCF
-SCF:    OR      F,BH
-        OR      F,CL
-        RET
-CCF:    TEST    F,BH
-        JZ      SCF
-        MOV     BH,00010000b     ;H a 1
-        DEC     DX       ;;CHAPUZA   ;C a 0
-        JMP     SCF
-;‹‹‹‹‹‹‹;LD R,R   ;OP 40-7F
+        JNC     @SS
+;;LD R,R   ;OP 40-7F
 _LDR_R: MOV     CL,6
         SHR     AL,2
         PUSH    AX
@@ -1662,14 +1365,316 @@ _LDR_R: MOV     CL,6
         ADD     BX,AX
         POP     AX
 @INPX:  RET
+@SS:    SHR     AL,3   ;00 01 02 03 04
+        jnc @SSL
+        JMP     @SSH
+
 @DEPU:  MOV     DI,BX
 @ESDB:  CMP     DI,4000h  ;LO PUEDO QUITAR LUEGO
         JC      @NST1
         STOSB
-@NST1:  RET;ﬂﬂﬂﬂﬂ
+@NST1:  RET
 _HALT:  SUB     DH,6
         DEC     SI              ;OP 76 HALT      ;4 =1
-        RET;ﬂﬂﬂﬂﬂ
+        RET
+
+@SSL:   SHR     AL,1   ;00 02 04 06 08
+        jnc @SSLL
+        JMP     @SSLH
+@SSLL:  SHR     AL,1   ;00 04 08 0C 10
+        JC      _INCRU
+@SSLLL: SHR     AL,1   ;00 08 10 18 20 28 30 38
+        JC      @SSLLLH
+@SSLLLL:SHR     AL,1   ;00 10 20 30
+        JC      @SSLLLLH
+@SSLLLLL:JZ     _NOP
+;;JR NZ,dis ;OP 20
+_JNZ:   ADD     DH,3
+        TEST    F,01000000b
+@AJMP:  JZ      _JUMP
+@INRE:  INC     SI
+_NOP:   RET
+@SSLLLLH:JZ _DJNZ
+;;JR NC,dis ;OP 30
+_JNC:   ADC     DH,BL
+        TEST    F,00000001b
+        JMP     @AJMP
+;;DJNZ (LOOP)  ;OP 10
+_DJNZ:  ADD     DH,4
+        DEC     B
+        JZ      @INRE
+;;JP dis (JMP) ;OP 18 "JMP"
+_JUMP:  ADD     DH,5
+        DB      26h
+        LODSB
+        CBW
+        ADD     SI,AX
+        RET
+@SSLLLH:ADC     DH,BL
+        SHR     AL,1          ;08 18 28 38
+        JC      @SSLLLHH
+@SSLLLHL:JZ     _EXAF ;08 28
+;;JM NC (JS)  ;OP 28
+_JZ:    TEST    F,01000000b
+@BJMP:  JNZ     _JUMP
+        JZ      @INRE
+;;EX AF,AF'  ;OP 08 "EX AF,AF'"
+_EXAF:  SUB     DH,3
+        MOV     AH,A
+        MOV     AL,F
+        XCHG    AX,[DI+8]
+        MOV     A,AH
+        MOV     F,AL
+        RET
+@SSLLLHH:JZ     _JUMP;18 38
+;;JP NC (JC/JNC) ;OP 38
+_JC:    TEST    F,00000001b
+        JMP     @BJMP
+;;INC/DEC B,C,D,E,A,(HL) ;04,0C,14,1C,24,2C,34,3C
+_DECRU: MOV     CL,BL
+_INCRU: AND     F,BH
+        OR      F,CL
+        SHL     CL,CL
+        OR      CL,111b
+        MOV     BYTE PTR DS:[@INHL+1],CL
+        ADD     BX,AX
+        AND     BL,111b
+        JNZ     @HLSF
+        ADD     DH,7      ;34 35
+        CALL    @SAIXD
+        PUSH    ES
+        POP     DS
+        JMP     @INHL
+@HLSF:  XOR     BL,BH
+        CMP     BL,6
+        JC      @INHL
+        INC     DH
+        SUB     BL,6
+        ADD     BL,PRB
+@INHL:  INC     BYTE PTR DS:[BX]
+        MOV     BL,BYTE PTR DS:[BX]
+        PUSH    CS
+        POP     DS
+        LAHF
+        JNO     @OSNV
+        OR      F,100b
+@OSNV:  AND     AH,11010000b
+        OR      F,AH
+        AND     BL,00101000b
+        OR      F,BL
+        RET
+@SSLH:  SHR     AL,1                ;02 06 0A 0E 12
+        JNC     @SSLHL
+;;LD X,N  ;X=B,C,D,E,H,L,X,A ;OP 06,0E,16,1E,26,2E,XX,3E
+_LDXN:  ADC     DH,BL
+        ADD     AX,BX
+        AND     AL,111b
+        JZ      _LDHLN
+        XOR     AL,AH
+        CMP     AL,6
+        JC      @MALO
+        SUB     DH,BL
+        SUB     AL,6
+        ADD     AL,PRB
+@MALO:  XCHG    BX,AX
+        DB      26h
+        LODSB
+        MOV     BYTE PTR DS:[BX],AL
+        RET
+@SSLHL: SHR     AL,1                ;02 0A 12 1A
+        JC      @SSLHLH
+@SSLHLL:CMP     AL,2       ;02 12 22 32
+        JNC     @2232
+;;LD (BC/DE),A   ;OPS 02,12
+_LDXXA: ADC     DH,BL
+        DW      0C000h ;ADD     AL,AL
+        ADD     BX,AX
+        MOV     AL,A
+        MOV     DI,WORD PTR DS:[BX]
+        JMP     @TESD
+@2232:  JNZ     _LDNNA
+;;LD (NN),HL   ;OP 22
+_LNNHL: MOV     BL,PRB
+        MOV     AX,[BX]
+@LDIM:  ADD     DH,12
+        XCHG    DI,AX
+        DB      26h
+        LODSW
+        CMP     AH,40h
+        XCHG    DI,AX
+        JC      @NST0
+        STOSW
+@NST0:  RET
+;;LD (NN),A  ;OP 32
+_LDNNA: ADD     DH,9
+        DB      026h
+        LODSW
+        MOV     DI,[DI]
+        XCHG    AX,DI
+@TESD:  JMP     @SDBE
+@SSLHLH:CMP     AL,2                       ;0A 1A 2A 3A
+        JNC     @2A3A
+;;LD A,(BC/DE)  ;OPS 0A,1A
+_LDAXX: ADC     DH,BL
+        DW      0C000h ;ADD     AL,AL
+        ADD     BX,AX
+        MOV     BX,WORD PTR DS:[BX]
+        MOV     AL,BYTE PTR ES:[BX]
+        MOV     A,AL
+        RET
+@2A3A:  JNZ     _LDANN
+;;LD HL,(NN) ;OP 2A
+_LHLNN: MOV     BL,PRB
+@LDIX:  ADD     DH,12
+        DB      26h
+        LODSW
+        XCHG    DI,AX
+        MOV     AX,WORD PTR ES:[DI]
+        MOV     WORD PTR DS:[BX],AX
+        RET
+;;LD A,(NN)  ;OP 3A
+_LDANN: ADD     DH,9
+        DB      26h
+        LODSW
+        XCHG    AX,BX
+        MOV     AL,ES:[BX]
+        MOV     A,AL
+        RET
+;;LD (HL),N  ;OP 36
+_LDHLN: ADD     DH,3
+        CALL    @SAIXD ;;;;me falta un puto ciclo
+        MOV     DI,BX
+        DB      26h
+        LODSB
+@SDBE:  JMP     @ESDB
+@SSH:   SHR     AL,1         ;01 03 05 07 ...
+        JC      @SSHH
+@SSHL:  SHR     AL,1         ;01 05 09 0D 11 ...
+        jnc @SSHLL
+        jmp     _DECRU
+@SSHLL: SHR     AL,1         ;01 09 11 19...
+        JC      _AHLSS
+;;LD XX,NN ;XX=BC,DE,HL,SP  ;01 11 21 31
+_LRRNN: ADD     DH,6
+        CMP     AL,2
+        JNZ     _CNTI
+        MOV     BL,PRB
+        JZ      @D222
+_CNTI:  JC      _NLDS
+_LDSPN: DB      26h  ; OP 31 "LD SP,NN"
+        LODSW
+        XCHG    BP,AX
+        RET
+_NLDS:  DW      0C000h ;ADD     AL,AL    ;OPS 01,11,21 "LD RR,NN"  ;19        +1
+        ADD     BX,AX
+@D222:  DB      26h
+        LODSW
+        MOV     WORD PTR DS:[BX],AX
+        RET
+;;ADD RR,NN  ;OPS 09,19,29,39
+_AHLSS: ADD     DH,7
+        CMP     AL,2
+        JC      _ADHL
+        JNZ     _AHLSP
+        MOV     BL,PRB
+        JMP     @D244
+;;ADD HL,BC/DE  ;09 19
+_ADHL:  DW      0C000h ;ADD     AL,AL
+        ADD     BX,AX
+@D244:  MOV     AX,WORD PTR DS:[BX]
+        DB      3Dh
+_AHLSP: MOV     AX,BP  ;39
+@SUMA:  MOV     BL,PRB
+        AND     F,11000100b   ; N a cero por ahora
+        ADD     WORD PTR DS:[BX],AX
+        LAHF
+        MOV     AL,BYTE PTR DS:[BX+1]
+        AND     AX,0000000100101000b
+        OR      AL,AH
+        OR      F,AL
+@DD16:  RET
+;;DEC B,C,D,E,A,(HL) ;05 0D 15 1D 25 2D 35 3D;;;;;;;;CONJUNTAR CON EL INCREMENTO
+@SSHH:  SHR     AL,1                   ;03 07 0B 0F 13 ...
+        JC      @SSHHH
+@SSHHL: ADD     DH,BL
+        CMP     AL,6                   ;03 0B 13 1B 23 2B 33 3B
+        JNC     _SPLH
+;;INC/DEC BC/DE/HL  ;OPS 03,0B,13,1B,23 2B
+        SHR     AL,1
+        RCL     CL,4
+        OR      CL,7
+        MOV     BYTE PTR DS:[@HL01+1],CL
+_INCXX: DW      0C000h ;ADD     AL,AL
+        ADD     AX,BX
+        CMP     AL,6
+        MOV     BL,PRB
+        JZ      @HL01
+        XCHG    BX,AX
+@HL01:  INC     WORD PTR DS:[BX]
+        RET
+_SPLH:  JNZ     _DECSP
+;;INC SP   ;OP 33
+_INCSP: INC     BP
+        INC     BP
+;;DEC SP   ;OP 3B
+_DECSP: DEC     BP
+        RET
+@SSHHH: CMP     AL,4          ;07,0F,17,1F,27,2F,37,3F,47,4F
+        JNC     @SHHHL
+;;RLCA RRCA RLA RRA  ;OP 07,0F,17,1F
+_RLCA:  SHL     AL,3
+        OR      AL,5
+        MOV     BYTE PTR DS:[OFFSET @MAG2+1],AL
+        AND     F,11000101b
+        SHR     F,1
+@MAG2:  ROL     A,1
+        RCL     F,1
+        MOV     AL,A
+        AND     AL,00101000b
+        OR      F,AL
+        RET
+@SHHHL: SUB     AL,5      ;27 2F 37 3F 
+        JNC     @NO27
+;;DAA   ;OP 27
+_DAA:   MOV     AL,A
+        MOV     AH,F
+        TEST    AH,2
+        JNZ     DAAS
+        SAHF
+        DAA
+        LAHF
+        MOV     A,AL
+        MOV     F,AH
+        RET
+DAAS:   SAHF
+        DAS
+        LAHF
+        MOV     A,AL
+        MOV     F,AH
+        RET
+@NO27:  JNZ _SCF
+;;CPL  ;OP 2F
+_CPL:   NOT     A
+        MOV     AL,A
+        AND     AL,00101000b
+        OR      AL,00010010b
+        AND     F,11000101b
+        OR      F,AL
+        RET
+;;SCF/CCF  ;OP 37 3F   ;1 2
+_SCF:   AND     F,11000101b     ;H N a 0
+        MOV     CL,A
+        AND     CL,00101000b
+        DEC     AX
+        JNZ     CCF
+SCF:    OR      F,BH
+        OR      F,CL
+        RET
+CCF:    TEST    F,BH
+        JZ      SCF
+        MOV     BH,00010000b     ;H a 1
+        DEC     DX       ;;CHAPUZA   ;C a 0
+        JMP     SCF
 
 NewInt9:PUSH    AX              ;guardo ax y cx
         PUSH    CX
@@ -1760,19 +1765,7 @@ NewInt9:PUSH    AX              ;guardo ax y cx
         CMP     AL,5       ;2B-2F
         JC      @DPAF
         DEC     CX
-        SUB     AL,0Eh-2Bh
-        JNZ     @NZNZ
-@BACK:  SHL     AH,8
-        PUSH    BX
-        MOV     BX,OFFSET TECLADO
-        JC      @UN1
-        BTR     WORD PTR CS:[BX],AX ;;;
-        BTR     WORD PTR CS:[BX+4],AX ;;;
-        JMP     @TAFI
-@UN1:   BTS     WORD PTR CS:[BX],AX ;;;
-        BTS     WORD PTR CS:[BX+4],AX ;;;
-@TAFI:  POP     BX
-@NZNZ:  SUB     AL,72-0Eh  ;72 DERECHA
+        SUB     AL,72-2Bh  ;72 DERECHA
         JZ      @ARI
         SUB     AL,3
         JZ      @IZQ
@@ -1789,7 +1782,6 @@ NewInt9:PUSH    AX              ;guardo ax y cx
         JMP     @DPAF
 
 IF JOYST
-ELSE
 @LEEJO: PUSH  DX
         MOV   DX,201h
 @ALO:   OUT   DX,AL
@@ -1810,23 +1802,20 @@ ELSE
 @NJOSA: POP   DX
         RET
 @EMJO:  JC      @LLT
-        BTR     WORD PTR DS:[JOYSTIK],AX
+        not     al
+        and     byte ptr ds:[JOYSTIK], al
         RET
-@LLT:   BTS     WORD PTR DS:[JOYSTIK],AX
+@LLT:   or      byte ptr ds:[JOYSTIK], al
         RET
-ENDIF
-
-IF JOYST
-ELSE
 JOYSTIK DB 0FFh
 ENDIF
 KEMPSTO DB 0FFh
 TECLADO DB 0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh
 FUNCIOS DW 0FFFFh
 IF JOYST
-  TECAC DB 11 DUP (0FFh)
-ELSE
   TECAC DB 12 DUP (0FFh)
+ELSE
+  TECAC DB 11 DUP (0FFh)
 ENDIF
 
 IF SOUNDB
@@ -1852,13 +1841,13 @@ trik:   mov     ax,0
 @endl2: ret
 ENDIF
 
-PRESEN  DB 24,24,24,24,0,10Fh-70h,' BACTERIA 1.92'
+PRESEN  DB 24,24,24,24,0,10Fh-70h,' BACTERIA 2.0'
 IF SOUNDB
         DB 'A'
 ELSE
         DB 'B'
 ENDIF
-        DB '              ',0,104h-0Fh,'‹€',0,04Eh-4,'‹€',0,0E2h-4Eh,'‹€'
+        DB '               ',0,104h-0Fh,'‹€',0,04Eh-4,'‹€',0,0E2h-4Eh,'‹€'
         DB 0,0129h-0E2h,'‹€',0,90h-29h,'‹€€',24,24
         DB '€',0,0F0h-70h,'  The smallest emulator in the world  €',24,24
         DB '€',0,0F0h-70h,'    Made in assembly language by:     €',24,24
@@ -1889,7 +1878,7 @@ COLORES DB  00,00,00
         DB  00,60,62
         DB  62,60,00
         DB  62,60,62
-        DB  12,34,56     ;color de grabaci¢n
+        DB  12,34,56     ;color de grabaci√≥n
 
 ROTEMO  DB 7,0Fh,17h,1Fh,27h,3Fh,17h,2Fh
 OPCOS   DB 0,10h,28h,18h,20h,30h,8,38h
@@ -1937,7 +1926,7 @@ OPCOS   DB 0,10h,28h,18h,20h,30h,8,38h
         POPA
         JMP     @RSTP
 
-@ATDE:                                         ;F2
+@ATDE:                                          ;F2
 IF SOUNDB
         DEC     CX
 ELSE
@@ -1947,27 +1936,19 @@ ELSE
 ENDIF
         LOOP    @NGRAB
         PUSHA                                   ;F1
-
+IF SOUNDB
         mov     si,offset BUFSO                 
         mov     ch,1400/256
 @okek:  mov     [si],al
         inc     si
         loop    @okek
-
-        PUSH    DS
-        DB      68h
-        DW      OFFSET @RREE
-        PUSH    ES
-        DB      68h
-        DW      4BFh
-        RETF
-
-@RREE: IN       AL,60h
-       test     al,80h ;;cmp      al,59+80h
-       JZ       @RREE
-@PUPA: IN       AL,60h
-       TEST     AL,80h
-       JnZ       @PUPA
+ENDIF
+@RREE:  IN      AL,60h
+        test    al,80h ;;cmp      al,59+80h
+        JZ      @RREE
+@PUPA:  IN      AL,60h
+        TEST    AL,80h
+        JnZ     @PUPA
         POPA
 
 @NGRAB: LOOP    @NSES
@@ -2009,7 +1990,7 @@ ENDIF
         add     ah,al
         jnz     @RP
         mov     ah,2
-        mov     dh,00Ah-SOUNDB*4
+        mov     dh,00Ah
         INT     10h
         mov     ah,4Ch
         INT     21h
@@ -2082,8 +2063,8 @@ NUMEBL: ADC     AL,0
 @NANTE: LOOP    @NDEPU
         INC     CX                              ;F6
         MOV     BP,CX
-        MOV     BX,PFAIR                         ;leo puntero de grabaci¢n
-        MOV     AH,23h                           ;F6 es lo £ltimo que me desactiva
+        MOV     BX,PFAIR                         ;leo puntero de grabaci√≥n
+        MOV     AH,23h                           ;F6 es lo √∫ltimo que me desactiva
         MOV     WORD PTR DS:[BX+OFFSET FAIR],AX  ;guardo en zona
 
 @NDEPU: loop    @ATAT                           ;F5
@@ -2125,9 +2106,9 @@ RSRA:   LODSB
         LODSW
         ADD     CX,SI
 IF JOYST
-        XOR     WORD PTR DS:[OFFSET @MVEE],50h+((OFFSET @REPRO-OFFSET @PMVE) XOR 11)*100h
-ELSE
         XOR     WORD PTR DS:[OFFSET @MVEE],50h+((OFFSET @REPRO-OFFSET @PMVE) XOR 12)*100h
+ELSE
+        XOR     WORD PTR DS:[OFFSET @MVEE],50h+((OFFSET @REPRO-OFFSET @PMVE) XOR 11)*100h
 ENDIF
         MOV     AX,WORD PTR DS:[OFFSET FAIR]
         INC     AX
@@ -2204,4 +2185,3 @@ END START
  pspseg+2       bacteria
  pspseg+1000h   decompresor
  pspseg+1100h   mapa z80
- pspseg+2100h   demo F1
