@@ -1,2187 +1,2148 @@
-LOCALS
-.MODEL SMALL
-.286
-.CODE
-ORG 100H
-;-----------------------variables guardadas en snap,f√°cil acceso e inicializadas a 0
-F       equ     DL
-A       equ     BYTE PTR DS:[DI]
-BC      equ     WORD PTR DS:[DI+2]
-B       equ     BYTE PTR DS:[DI+3]
-C       equ     BYTE PTR DS:[DI+2]
-DE      equ     WORD PTR DS:[DI+4]
-D       equ     BYTE PTR DS:[DI+5]
-E       equ     BYTE PTR DS:[DI+4]
-HL      equ     WORD PTR DS:[DI+6]
-H       equ     BYTE PTR DS:[DI+7]
-L       equ     BYTE PTR DS:[DI+6]
-AFp     equ     WORD PTR DS:[DI+8]
-Ap      equ     BYTE PTR DS:[DI+9]
-Fp      equ     BYTE PTR DS:[DI+8]
-BCp     equ     WORD PTR DS:[DI+10]
-Bpp     equ     BYTE PTR DS:[DI+11]
-Cp      equ     BYTE PTR DS:[DI+10]
-DEp     equ     WORD PTR DS:[DI+12]
-Dpp     equ     BYTE PTR DS:[DI+13]
-Ep      equ     BYTE PTR DS:[DI+12]
-HLp     equ     WORD PTR DS:[DI+14]
-Hp      equ     BYTE PTR DS:[DI+15]
-Lp      equ     BYTE PTR DS:[DI+14]
-IX      equ     WORD PTR DS:[DI+16]
-IY      equ     WORD PTR DS:[DI+18]
-IR      equ     WORD PTR DS:[DI+20]
-I       equ     BYTE PTR DS:[DI+21]
-R       equ     BYTE PTR DS:[DI+20]
-RD      equ     BYTE PTR DS:[100h+20]
-TIM     equ     WORD PTR DS:[DI+22]
-PRB     equ     BYTE PTR DS:[DI+24]
-POR     equ     BYTE PTR DS:[DI+25]
-POC     equ     BYTE PTR DS:[100h+25]
-IMA     equ     WORD PTR DS:[DI+25]
-IM      equ     BYTE PTR DS:[DI+26]   ;PROBAR EN DI+1
-SNAPF   equ     BYTE PTR DS:[DI+27]
-SNAPSI  equ     WORD PTR DS:[DI+28]
-SNAPBP  equ     WORD PTR DS:[DI+30]
+                org     $100
 ;-----------------------constantes ensamblaje condicional
-SOUNDB  equ     0               ;utilizo soundblaster o speaker
-JOYST   equ     1               ;a 0 para deshabilitar el joystick
+                %define SOUNDB  1               ;utilizo soundblaster o speaker
+                %define JOYST   1               ;a 0 para deshabilitar el joystick
+;-----------------------registros Z80
+                %define F       dl
+                %define A       byte [di]
+                %define BC      word [di+2]
+                %define B       byte [di+3]
+                %define C       byte [di+2]
+                %define DE      word [di+4]
+                %define D       byte [di+5]
+                %define E       byte [di+4]
+                %define HL      word [di+6]
+                %define H       byte [di+7]
+                %define L       byte [di+6]
+                %define AFp     word [di+8]
+                %define Ap      byte [di+9]
+                %define Fp      byte [di+8]
+                %define BCp     word [di+10]
+                %define Bpp     byte [di+11]
+                %define Cp      byte [di+10]
+                %define DEp     word [di+12]
+                %define Dpp     byte [di+13]
+                %define Ep      byte [di+12]
+                %define HLp     word [di+14]
+                %define Hp      byte [di+15]
+                %define Lp      byte [di+14]
+                %define IX      word [di+16]
+                %define IY      word [di+18]
+                %define IR      word [di+20]
+                %define I       byte [di+21]
+                %define R       byte [di+20]
+                %define RD      byte [$100+20]
+                %define TIM     word [di+22]
+                %define PRB     byte [di+24]
+                %define POR     byte [di+25]
+                %define POC     byte [$100+25]
+                %define IMA     word [di+25]
+                %define IM      byte [di+26]   ;PROBAR EN DI+1
+                %define SNAPF   byte [di+27]
+                %define SNAPSI  word [di+28]
+                %define SNAPBP  word [di+30]
 ;-----------------------constantes miscelanea
-SENSI   equ     80              ;sensibilidad del joystick
-TOTREG  equ     32              ;numero total de registros que se guardan
-HFILE   equ     5               ;handle generico del archivo tap
-TOTNOP  equ     32              ;nops que se deben insertar al principio
+                %define SENSI   80              ;sensibilidad del joystick
+                %define TOTREG  32              ;numero total de registros que se guardan
+                %define HFILE   5               ;handle generico del archivo tap
+                %define TOTNOP  32              ;nops que se deben insertar al principio
+                %define GRAB    20h             ;GRABx128=NUMERO DE BOTONES QUE SE GRABAN
 ;-----------------------variables no guardadas en snap,f√°cil acceso e inicializadas a 0
-FLASH   equ     BYTE PTR DS:[DI-19]
-FLAS2   equ     BYTE PTR CS:[100h-19]
-EJEX    equ     WORD PTR DS:[DI-20]     ;centro del eje x del joystick
-EJEY    equ     WORD PTR DS:[DI-18]     ;centro del eje y del joystick
-PFAIR   equ     WORD PTR DS:[DI-16]
-TVACIO  equ     WORD PTR DS:[DI-14]
-TIEM    equ     WORD PTR DS:[DI-12]
-PUNTE   equ     WORD PTR DS:[DI-10]     ;puntero del sample actual de sonido
-PUNTEG  equ     WORD PTR CS:[100h-10]
-PUNTEG1 equ     BYTE PTR CS:[100h-9]
-MAXLEN  equ     WORD PTR DS:[100h-8]    ;m√°xima longitud de cadena encontrada en bytes
-MAXPOS  equ     WORD PTR DS:[100h-6]    ;posici√≥n hacia atr√°s donde se encuentra la cadena
-MAXTLE  equ     WORD PTR DS:[100h-4]    ;m√°xima longitud total en bits que llevo
-TMTEC   equ     BYTE PTR DS:[DI-2]      ;tecla pulsada en el frame anterior
-EXTEN   equ     BYTE PTR CS:[100h-1]    ;flag indicando car√°cter extendido
-
-GRAB    equ     20h             ;GRABx128=NUMERO DE BOTONES QUE SE GRABAN
-repu    equ     100h
-longde  equ     133             ;longitud en bytes del descompresor
+                %define FLASH   byte [di-19]
+                %define FLAS2   [cs:$100-19]
+                %define EJEX    word [di-20]    ;centro del eje x del joystick
+                %define EJEY    word [di-18]    ;centro del eje y del joystick
+                %define PFAIR   word [di-16]
+                %define TVACIO  word [di-14]
+                %define TIEM    word [di-12]
+                %define PUNTE   word [di-10]    ;puntero del sample actual de sonido
+                %define PUNTEG  word [cs:$100-10]
+                %define PUNTEG1 byte [cs:$100-9]
+                %define MAXLEN  word [$100-8]   ;m√°xima longitud de cadena encontrada en bytes
+                %define MAXPOS  word [$100-6]   ;posici√≥n hacia atr√°s donde se encuentra la cadena
+                %define MAXTLE  word [$100-4]   ;m√°xima longitud total en bits que llevo
+                %define TMTEC   byte [di-2]     ;tecla pulsada en el frame anterior
+                %define EXTEN   [cs:$100-1]     ;flag indicando car√°cter extendido
+                %define fair    juego+16384*3+TOTREG
+                %define bufso   fair+4096*2
 ;-----------------------empieza el programa
-START:  DB      TOTNOP DUP (0)
-        XOR     AX,AX
-IF SOUNDB
-        MOV     DI,AX
-        MOV     FS,AX
-        MOV     CH,040h
-        mov     es,word ptr ds:[DI+2Ch]
-@sigdet:repnz   scasb
-        scasb
-        jz      @findet
-        cmp     word ptr es:[di-1],'LB'
-        jnz     @sigdet
-        mov     al,BYTE PTR ES:[di+09h]         ;PUERTOBASE
-        shl     ax,4
-        add     ax,6-100h      ;2x6
-        xchg    ax,dx
-        sub     BYTE PTR ES:[DI+0Dh],'0'-8      ;IRQ
-        mov     cl,BYTE PTR ES:[DI+0Dh]         ;IRQ
-        mov     al,1
-        rol     al,cl
-        mov     BYTE PTR DS:[offset pico+1],al
-        MOV     BP,OFFSET @waitw
-        mov     al,1
-        out     dx,al          ; start DSP reset
-        call    BP
-        xchg    ax,cx
-        out     dx,al          ; end DSP Reset
-        add     dl,8           ;2xE
-        mov     WORD PTR DS:[offset adbase+1],dx
-@waitr: in      al,dx
-        or      al,al
-        jns     @waitr
-        sub     dl,4           ; dx = 2xA DSP Read Data
-        in      al,dx
-@findet:cmp     al,0aah        ; if there is a SB then it returns 0AAh
-        jnz     @empe
-        inc     dx
-        inc     dx             ; 2xC
-        call    BP
-        mov     al,0D1h        ; AL = Enable speaker
-        out     dx,al
-        in      al,021h
-        mov     bl,BYTE PTR DS:[offset pico+1]
-        not     bl
-        and     al,bl
-        out     021h,al
-        movzx   bx,BYTE PTR ES:[DI+0Dh]         ;IRQ
-        shl     bl,2
-        mov     word ptr fs:[bx],OFFSET OWN_IRQ
-        mov     word ptr fs:[bx+2],ds
-        mov     al,BYTE PTR ES:[DI+10h]         ;DMACHANEL
-        sub     al,'0'-4
-        out     10,al                   ;Write mask
-        out     12,al                   ;Clear ff
-        add     al,01011000b-4          ;Wanted mode: singlemode, autoinit, readmode
-        out     11,al                   ;Write mode
-        sub     al,01011000b            ;Wanted mode: singlemode, autoinit, readmode
-        push    dx
-        push    ax
-        mov     ax,ds
-        rol     ax,4                ; * 16 - higher 4 bits in al
-        mov     bl,al
-        and     bl,00fh             ; BL - higher 4 bits
-        and     al,0f0h             ; clear higher 4bits in AL
-        add     ax,offset BUFSO
-        adc     bl,bh               ; BL = page
-        pop     dx
-        push    dx
-        add     dx,dx
-        out     dx,al
-        mov     al,ah
-        out     dx,al
-        mov     cx,dx
-        add     cx,cx
-        inc     dx
-        mov     al,0DFh ;1247cl
-        out     dx,al
-        mov     al,004h ;ch
-        out     dx,al
-        mov     ax,7312h
-        shl     ax,cl
-        shr     ax,12
-        add     al,80h
-        xchg    ax,dx
-        xchg    ax,bx
-        out     dx,al
-        pop     ax
-        pop     dx
-        out     10,al                   ;Write mask
-        mov     al,040h                 ;AL = Set timeconstant
-        out     dx,al
-        mov     al,224                  ; = 31250 Hz (256-1000000/11000)
-        out     dx,al
-        call    BP
-        mov     al,048h                 ;AL = DMA DAC 8bit
-        out     dx,al
-        call    BP
-        mov     al,06Fh                      ;AL = LOWER PART SAMPLELENGTH
-        out     dx,al
-        call    BP
-        mov     al,2                         ;AL = HIGHER PART SAMPLELENGTH
-        out     dx,al
-        call    BP
-        mov     al,1ch                 ;AL = Auto-Initialize DMA DAC, 8-bit
-        out     dx,al
-@empe:  mov     bl,80h
-ELSE
-        mov     bx,80h
-ENDIF
-        mov     di,100h
-        mov     ax,ds
-        add     ah,11h
-        mov     es,ax
-        mov     si,81h
-kili:   mov     dx,si
-        lodsb
-        cmp     al,32
-        jz      kili
-        mov     word ptr ds:[oche+1],dx
-        add     bl,[bx]
-        mov     [bx+1],bh
-        mov     ax,3D00h     ;open for read
-        int     21h
-        jc      @MIMI                    ;error file no exist
-        test    byte ptr ds:[bx],0Fh     ;.tap p=50h flag z activate
-        jz      @MIMI
-        mov     byte ptr ds:[offset @MOFE],03Ch ;make jump in mofe
-        xchg    ax,bx
-        push    es
-        pop     ds
-        mov     ah,3Fh
-        mov     dx,03FE5h                ;place to open snap
-        mov     cx,0C01Bh                ;length to open
-        int     21h
-        push    cs
-        pop     ds
-@MIMI:  mov     ax,3D00h                 ;open for read
-        mov     dx,OFFSET nrom           ;rom file
-        int     21h
-        jnc     @nfino
-        mov     ah,9
-        mov     dx,offset cade ;no cambiar
-        int     21h
-        ret
-@nfino: push    ax                       ;push handle
-        mov     al,13h
-        int     10h                      ;mode 13h
-        db      0D6h
-        mov     dx,3C8h
-        out     dx,al                    ;color index=0
-        inc     dx
-        mov     si,offset colores
-        mov     cx,3*17
-        rep     outsb
-IF JOYST
-        CALL    @LEEJO                  ;read joystick axes
-        MOV     EJEY,BX
-        MOV     EJEX,CX
-ENDIF
-        mov     ax,3509h                   ;save interrup vectors
-        push    es
-        int     21h
-        mov     word ptr ds:[IRQ9SEG],es
-        mov     word ptr ds:[IRQ9OFF+1],bx
-        mov     ah,25h                     ;set keyboard interrupt
-        mov     dx,offset NewInt9
-        int     21h
-        pop     es
-        xor     si,si
-@MOFE:  JMP     @FISI
-        CALL    @LDSNA                  ;load snapshot
-@DLDA:  CALL    @MUEL
-@FISI:  pop     bx                      ;end of sna, bx=handle
-        push    es
-        pop     ds
-        mov     ah,3Fh
-        PUSH    DX
-        cwd
-        mov     ch,40h
-        int     21h                     ;read 48.rom
-        POP     DX
-        push    cs
-        pop     ds
-        CALL    @GRABA
-@INIV:  MOV     AX,0
-        MOV     TVACIO,AX               ;ES IMPORTANTE QUE SEA DESPUES DE GRABA
+start           times   TOTNOP  db  0
+%if SOUNDB
+stsou           cmp     al, $0c3
+                mov     di, ax
+                mov     ch, $40
+                mov     es, [di+$2C]
+sigdet          repnz   scasb
+                scasb
+                jz      findet
+                cmp     word [es:di-1], 'BL'
+                jnz     sigdet
+                mov     al, [es:di+$09]         ;PUERTOBASE
+                shl     ax, 4
+                add     ax, 6-$100              ;2x6
+                xchg    ax, dx
+                sub     byte [es:di+$0D], '0'-8 ;IRQ
+                mov     cl, [es:di+$0D]         ;IRQ
+                mov     al, 1
+                rol     al, cl
+                mov     [pico+1], al
+                MOV     bp, waitw
+                mov     al, 1
+                out     dx, al                  ; start DSP reset
+                call    bp
+                xchg    ax, cx
+                out     dx, al                  ; end DSP Reset
+                add     dl, 8                   ;2xE
+                mov     [adbase+1], dx
+waitr           in      al, dx
+                or      al, al
+                jns     waitr
+                sub     dl, 4                   ; dx = 2xA DSP Read Data
+                in      al, dx
+findet          cmp     al, $0aa                ; if there is a SB then it returns 0AAh
+                jnz     stsou+1
+                inc     dx
+                inc     dx                      ; 2xC
+                call    bp
+                mov     al, $0d1                ; AL = Enable speaker
+                out     dx, al
+                in      al, $21
+                mov     cl, [pico+1]
+                not     cl
+                and     al, cl
+                out     $21, al
+                mov     ds, bx
+                mov     bl, [es:di+$0d]         ;IRQ
+                shl     bl, 2
+                mov     word [bx], OWN_IRQ
+                mov     [bx+2], cs
+                push    cs
+                pop     ds
+                mov     al, [es:di+$10]         ;DMACHANEL
+                sub     al, '0'-4
+                out     $0a, al                 ;Write mask
+                out     $0c, al                 ;Clear ff
+                add     al, 01011000b-4         ;Wanted mode: singlemode, autoinit, readmode
+                out     $0b, al                 ;Write mode
+                sub     al, 01011000b           ;Wanted mode: singlemode, autoinit, readmode
+                push    dx
+                push    ax
+                mov     ax, ds
+                rol     ax, 4                   ; * 16 - higher 4 bits in al
+                mov     bl, al
+                and     bl, $0f                 ; BL - higher 4 bits
+                and     al, $0f0                ; clear higher 4bits in AL
+                add     ax, bufso
+                adc     bl, bh                  ; BL = page
+                pop     dx
+                push    dx
+                add     dx, dx
+                out     dx, al
+                mov     al, ah
+                out     dx, al
+                mov     cx, dx
+                add     cx, cx
+                inc     dx
+                mov     al, $0df ;1247cl
+                out     dx, al
+                mov     al, $04 ;ch
+                out     dx, al
+                mov     ax, $7312
+                shl     ax, cl
+                shr     ax, 12
+                add     al, $80
+                xchg    ax, dx
+                xchg    ax, bx
+                out     dx, al
+                pop     ax
+                pop     dx
+                out     $0a, al                 ;Write mask
+                mov     al, $40                 ;AL = Set timeconstant
+                out     dx, al
+                mov     al, 224                 ; = 31250 Hz (256-1000000/11000)
+                out     dx, al
+                call    bp
+                mov     al, $48                 ;AL = DMA DAC 8bit
+                out     dx, al
+                call    bp
+                mov     al, $6F                 ;AL = LOWER PART SAMPLELENGTH
+                out     dx, al
+                call    bp
+                mov     al, 2                   ;AL = HIGHER PART SAMPLELENGTH
+                out     dx, al
+                call    bp
+                mov     al, $1c                 ;AL = Auto-Initialize DMA DAC, 8-bit
+                out     dx, al
+%endif
+                mov     bl, $80
+                mov     di, $0100
+                mov     ax, ds
+                add     ah, $11
+                mov     es, ax
+                mov     si, $0081
+kili            mov     dx, si
+                lodsb
+                cmp     al, 32
+                jz      kili
+                mov     [oche+1], dx
+                add     bl, [bx]
+                mov     [bx+1], bh
+                mov     ax, $3D00               ;open for read
+                int     $21
+                jc      mimi                    ;error file no exist
+                test    byte [bx], $0F          ;.tap p=50h flag z activate
+                jz      mimi
+                mov     byte [mofe], $3C        ;make jump in mofe
+                xchg    ax, bx
+                push    es
+                pop     ds
+                mov     ah, $3f
+                mov     dx, $3fe5               ;place to open snap
+                mov     cx, $0c01b              ;length to open
+                int     $21
+                push    cs
+                pop     ds
+mimi            mov     ax, $3d00               ;open for read
+                mov     dx, nrom                ;rom file
+                int     $21
+                jnc     nfino
+                mov     ah, 9
+                mov     dx, cade
+                int     $21
+                ret
+nfino           push    ax                      ;push handle
+                mov     al, $13
+                int     $10                     ;mode 13h
+                salc
+                mov     dx, $03c8
+                out     dx, al                  ;color index=0
+                inc     dx
+                mov     si, colores
+                mov     cx, 3*17
+                rep     outsb
+%if JOYST
+                call    leejo                   ;read joystick axes
+                mov     EJEY, bx
+                mov     EJEX, cx
+%endif
+                mov     ax, $3509               ;save interrup vectors
+                push    es
+                int     $21
+                mov     [irq9seg+1], es
+                mov     [irq9off+1], bx
+                mov     ah, $25                 ;set keyboard interrupt
+                mov     dx, NewInt9
+                int     $21
+                pop     es
+                xor     si, si
+mofe            jmp     fisi
+                call    ldsna                   ;load snapshot
+dlda            call    muel
+fisi            pop     bx                      ;end of sna, bx=handle
+                push    es
+                pop     ds
+                mov     ah, $3F
+                push    dx
+                cwd
+                mov     ch, $40
+                int     $21                     ;read 48.rom
+                pop     dx
+                push    cs
+                pop     ds
+                call    graba
+iniv            mov     ax, 0
+                mov     TVACIO, ax              ;es importante que sea despues de graba
+deco            mov     di, $100
+                cmp     dh, 112
+                jc      tsige
+                sub     dh, 112
+%if SOUNDB
+                mov     al, [issue+1]
+                shl     al, 2
+                salc
+                mov     bx, PUNTE
+                mov     [bx+bufso], al
+                cmp     bh, 5
+                jnc     npute
+                inc     PUNTE
+%else
+llkk            salc
+                out     $43, al
+                in      al, $40
+                mov     ah, al
+                in      al, $40
+                xchg    al, ah
+                mov     cx, ax
+                sub     cx, TIEM
+trik            add     cx, 38
+                jc      llkk
+                mov     TIEM, ax
+                in      al, $61
+                and     al, 11111100b
+                test    POR, $10
+                jz      cero
+                or      al, 2
+cero            out     $61, al
+%endif
+npute           mov     ax, TIM
+                inc     TIM
+                shr     ax, 1
+                jc      deco
+                cmp     ax, 252
+                jnc     vlsi
+                db      $2d, 52, 0  ; sub ax, 52
+                jc      deco
+                push    sige
+panta           mov     di, ax                  ;apuntaremos a la pantalla
+                xchg    ah, al                  ;multiplicamos ax por 256
+                shl     di, 6                   ;multiplicamos di por 64
+                add     di, ax                  ;di ya esta calculado di=320*line
+                mov     al, POC                 ;en al el color del borde "por"
+                push    $0a000                  ;mov ds,a000
+                pop     ds
+                and     al, 111b                ;los bits que me interesan del borde
+                sub     ah, 4
+                jc      tbde
+                cmp     ah, 192
+                jc      dntr
+tbde            mov     cx, 320                 ;numero de puntos=320=1 linea entera
+                cmp     cl, [ss:mvee+1]
+                jnc     tclp
+                mov     al, 16
+tclp            jmp     cclp
+vlsi            sub     ax, 312
+                jz      nsige
+tsige           jmp     sige
+dntr            mov     cx, 32                  ;cx = 32 puntos que hay de borde izdo
+cclo            mov     [di], al                ;pinto un punto
+                inc     di                      ;incremento posicion
+                loop    cclo                    ;repito 32 veces
+                push    ax
+                mov     cl, ah
+                and     ah, 11000000b
+                mov     bx, cx
+                and     bl, 111b
+                shl     bl, 3
+                shr     cl, 3
+                push    cx
+                and     cl, 111b
+                or      bl, cl
+                or      bl, ah
+                mov     bh, 2
+                shl     bx, 5
+                pop     ax
+                shl     ax, 5
+                add     ah, $58
+                mov     cl, 32                  ;cx=32= numero de caracteres a pintar
+                push    dx
+lin1            push    cx                      ;guardamos en pila
+                xchg    ax, bx                  ;ax=attrib  bx=bytecarac
+                mov     dh, [es:bx]             ;dh=atributo
+                xchg    ax, bx                  ;bx=attrib  ax=bytecarac
+                inc     ax                      ;incremento bytecarac
+                mov     ch, dh
+                and     ch, 111b
+                mov     cl, dh
+                and     cl, $38
+                shr     cl, 3
+                test    dh, $40
+                jz      nbri
+                or      cx, $0808
+nbri            test    dh, FLAS2
+                jns     lin2
+                xchg    ch, cl
+lin2            rol     byte [es:bx], 1
+                jc      pifo
+                mov     [di], cl
+                db      $3d
+pifo            mov     [di], ch
+                inc     di
+                test    di, 111b
+                jnz     lin2
+                pop     cx
+                inc     bx                      ;incremento atributo
+                loop    lin1                    ;repito 32 veces
+                pop     dx
+                pop     ax
+                mov     cl, 32
+cclp            mov     [di], al
+                inc     di
+                loop    cclp
+                push    cs
+                pop     ds
+                mov     di, $100
+                ret
 
-@DECO:  MOV     DI,100h
-        CMP     DH,112
-        JC      @SIGE
-        SUB     DH,112
-IF SOUNDB
-        MOV     AL,BYTE PTR DS:[@issue+1]
-        SHL     AL,2
-        DB      0D6h
-        MOV     BX,PUNTE
-        MOV     BYTE PTR DS:[BX+OFFSET BUFSO],AL
-        cmp     bh,5
-        jnc     @npute
-        INC     PUNTE
-@npute: 
-ELSE
-@llkk:  db      0D6h
-        out     43h,al
-        in      al,40h
-        mov     ah,al
-        in      al,40h
-        xchg    al,ah
-        mov     cx,ax
-        sub     cx,TIEM
-trik:   add     cx,38
-        jc      @llkk
-        mov     TIEM,ax
-        IN      AL,61h
-        AND     AL,11111100b
-        TEST    POR,10h
-        JZ      @CERO
-        OR      AL,2
-@CERO:  OUT     61h,AL
-ENDIF
-        MOV     AX,TIM
-        INC     TIM
-        SHR     AX,1
-        JC      @DECO ;;;;;;
-        CMP     AX,252
-        JNC     @VLSI
-        SUB     AX,52
-        JC      @DECO ;;;;;
-        DB      68h
-        DW      OFFSET @SIGE
-@PANTA: MOV     DI,AX     ;APUNTAREMOS A LA PANTALLA
-        XCHG    AH,AL     ;MULTIPLICAMOS AX POR 256
-        SHL     DI,6      ;MULTIPLICAMOS DI POR 64
-        ADD     DI,AX     ;DI YA ESTA CALCULADO DI=320*line
-        MOV     AL,POC    ;EN AL EL COLOR DEL BORDE "POR"
-        DB      68h        ;MOV DS,A000
-        DW      0A000h
-        POP     DS
-        PUSH    DS ;compresor
-        POP     FS
-        AND     AL,111b   ;LOS BITS QUE ME INTERESAN DEL BORDE
-        SUB     AH,4
-        JC      @TBDE
-        CMP     AH,192
-        JC      @DNTR
-@TBDE:  MOV     CX,320    ;;;;;;;NUMERO DE PUNTOS=320=1 LINEA ENTERA
-        CMP     CL,BYTE PTR SS:[@MVEE+1]
-        JNC     @TCLP
-        MOV     AL,16
-@TCLP:  JMP     @CCLP
-@DNTR:  MOV     CX,32  ;;;;;;;;;;;;;;   ;CX = 32 PUNTOS QUE HAY DE BORDE IZDO
-@CCLO:  MOV     BYTE PTR DS:[DI],AL   ;PINTO UN PUNTO
-        INC     DI        ;INCREMENTO POSICION
-        LOOP    @CCLO    ;REPITO 32 VECES
-        PUSH    AX
-        MOV     CL,AH
-        AND     AH,11000000b
-        MOV     BX,CX
-        AND     BL,111b
-        SHL     BL,3
-        SHR     CL,3
-        PUSH    CX
-        AND     CL,111b
-        OR      BL,CL
-        OR      BL,AH
-        MOV     BH,2
-        SHL     BX,5
-        POP     AX
-        SHL     AX,5
-        ADD     AH,58h
-        MOV     CL,32     ;CX=32= NUMERO DE CARACTERES A PINTAR
-        PUSH    DX
-@LIN1:  PUSH    CX       ;GUARDAMOS EN PILA
-        XCHG    AX,BX    ;AX=ATTRIB  BX=BYTECARAC
-        MOV     DH,ES:[BX];DH=ATRIBUTO
-        XCHG    AX,BX    ;BX=ATTRIB  AX=BYTECARAC
-        INC     AX        ;INCREMENTO BYTECARAC
-        MOV     CH,DH
-        AND     CH,111b
-        MOV     CL,DH
-        AND     CL,38h
-        SHR     CL,3
-        TEST    DH,40h
-        JZ      @NBRI
-        OR      CX,0808h
-@NBRI:  TEST    DH,FLAS2
-        JNS     @LIN2
-        XCHG    CH,CL
-@LIN2:  ROL     BYTE PTR ES:[BX],1
-        JC      @PIFO
-        MOV     BYTE PTR DS:[DI],CL
-        DB      3Dh
-@PIFO:  MOV     BYTE PTR DS:[DI],CH
-@PIPI:  INC     DI
-        TEST    DI,111b
-        JNZ     @LIN2
-        POP     CX
-        INC     BX          ;INCREMENTO ATRIBUTO
-        LOOP    @LIN1      ;REPITO 32 VECES
-        POP     DX
-        POP     AX
-        MOV     CL,32
-@CCLP:  MOV     BYTE PTR DS:[DI],AL
-        INC     DI
-        LOOP    @CCLP
-        PUSH    CS
-        POP     DS
-        MOV     DI,100h
-        RET
-@VLSI:  SUB     AX,312
-        JNZ     @SIGE
-        MOV     TIM,AX
+nsige           mov     TIM, ax
 
-IF SOUNDB
-@aqui:  jmp     @aqui
-        mov     byte ptr ds:[@aqui+1],0FEh
-@alli:
-ENDIF
+%if SOUNDB
+aqui            jmp     aqui
+                mov     byte [aqui+1], $0fe
+%endif
 
+%if JOYST
+desjo           JMP     mvee                    ;descarto si no hay joystick
+                call    leejo                   ;leo ejes en cx y bx
+                mov     al, $10                 ;bit 4=boton
+                call    emjo                    ;guardo en variable
+                mov     al, $08                 ;bit 3=arriba
+                sub     bx, EJEY
+                jnc     abj
+                add     bx, SENSI               ;comparo arriba
+                call    emjo                    ;guardo
+                jmp     mver
+abj             mov     al, $04                 ;bit 2=abajo
+                cmp     bx, SENSI               ;comparo abajo
+                call    emjo                    ;guardo
+mver            mov     al, $02                 ;bit 1=izqui
+                mov     bx, cx
+                sub     bx, EJEX
+                jnc     abe
+                add     bx, SENSI               ;comparo izqui
+                call    emjo                    ;guardo
+                jmp     mvee
+abe             dec     ax                      ;bit 0=dere
+                cmp     bx, SENSI               ;comparo
+                call    emjo                    ;guardo
+mvee            mov     cx, 12                  ;12 estados joystick,kempston,8 column,2funcios
+%else
+mvee            mov     cx, 11                  ;11 estados kempston,8 column,2funcios
+%endif
+pmve            mov     bx, tecac
+%if JOYST
+bubx            mov     al, [bx+teclado-tecac-2]  ;leo de teclado
+%else
+bubx            mov     al, [bx+teclado-tecac-1]  ;leo de teclado
+%endif
+                mov     ah, [bx]                ;leo de tecac
+                mov     [bx], al                ;escribo en teclado
+                xor     ah, al                  ;miro diferencias entre pulsado anterior y ahora
+                mov     ch, 5                   ;ch=5 teclas por byte=movimientos kempston=funcios
+otbx            sahf                            ;miro bit0 de ah
+                jnc     nabx                    ;si no carry salto a nabx
+                pusha                           ;diferencia, pongo todo en pila
+                xchg    ax, cx                  ;en ax tengo contadores que me indican el evento
+                sub     ax, $0101               ;resto uno a fila y columna
+                mov     ch, al                  ;ch=fila-1
+                shl     al, 2                   ;al=(fila-1)*4
+                add     al, ch                  ;al=(fila-1)*5
+                add     al, ah                  ;al=(fila-1)*5+columna-1
+                mov     ch, al                  ;ch=(fila-1)*5+columna-1
+                mov     bx, TVACIO              ;bx=contador de estados sin cambiar
+                cwd
+                mov     TVACIO, dx              ;reseteo contador de estados
+                xchg    al, TMTEC
+                shl     ax, 10                  ;en parte alta pongo evento
+                or      ax, bx                  ;en parte baja contador de estados
+                mov     bx, PFAIR               ;leo puntero de grabaci√≥n
+                cmp     bh, GRAB                ;si ya he leido mucho tiempo
+                jz      noin                    ;no incremento puntero
+                add     PFAIR, 2                ;incremento puntero
+noin            mov     [bx+fair], ax           ;guardo en zona
+                cmp     ch, 10                  ;miro si orden es mayor de 10
+                mov     [cs:tmpv+1], cx
+                popa                            ;restauro registros
+                jnc     nabx                    ;continuo bucle si no orden
+                push    cx
+tmpv            mov     cx, 0                   ;leo orden pulsada
+                shr     cl, 1                   ;veo si es descartable
+                jnc     apea
+                sub     PFAIR, 2                ;recupero puntero cambiado
+                jmp     kstk
+apea            shr     cx, 8                   ;cl=orden
+                call    execu                   ;ejecuto orden
+kstk            pop     cx
+nabx            shr     ax, 1                   ;leo siguiente bit de diferencia de entre los 5
+                dec     ch
+                jnz     otbx                    ;cierro bucle columna
+                inc     bx
+                loop    bubx                    ;cierro bucle fila
+                mov     ax, TVACIO
+                inc     ax
+                sahf
+                jnp     nmel
+                mov     al, 7                   ;F7
+                XCHG    AL, TMTEC
+                shl     ax, 10
+                or      ax, $03ff
+                mov     bx, PFAIR
+                cmp     bh, GRAB
+                jz      noia
+                add     PFAIR, 2
+noia            mov     [bx+fair], ax
+                mov     ax, 1
+nmel            mov     TVACIO, AX
+                jmp     acte
 
-IF JOYST
-@DESJO: JMP     @MVEE             ;descarto si no hay joystick
-        CALL    @LEEJO            ;leo ejes en cx y bx
-        MOV     al,10h            ;bit 4=boton
-        CALL    @EMJO             ;guardo en variable
-        MOV     al,08h            ;bit 3=arriba
-        SUB     BX,EJEY
-        JNC     @ABJ
-        ADD     BX,SENSI          ;comparo arriba
-        CALL    @EMJO             ;guardo
-        JMP     @MVER
-@ABJ:   MOV     al,04h            ;bit 2=abajo
-        CMP     BX,SENSI          ;comparo abajo
-        CALL    @EMJO             ;guardo
-@MVER:  MOV     AL,02h            ;bit 1=izqui
-        MOV     BX,CX
-        SUB     BX,EJEX
-        JNC     @ABE
-        ADD     BX,SENSI          ;comparo izqui
-        CALL    @EMJO             ;guardo
-        JMP     @MVEE
-@ABE:   DEC     AX                ;bit 0=dere
-        CMP     BX,SENSI          ;comparo
-        CALL    @EMJO             ;guardo
-@MVEE:  MOV     CX,12             ;12 estados joystick,kempston,8 column,2funcios
-ELSE
-@MVEE:  MOV     CX,11             ;11 estados kempston,8 column,2funcios
-ENDIF
-@PMVE:  MOV     BX,OFFSET TECAC
-IF JOYST
-@BUBX:  MOV     AL,BYTE PTR DS:[BX+OFFSET TECLADO-OFFSET TECAC-2] ;leo de teclado
-ELSE
-@BUBX:  MOV     AL,BYTE PTR DS:[BX+OFFSET TECLADO-OFFSET TECAC-1] ;leo de teclado
-ENDIF
-        MOV     AH,BYTE PTR DS:[BX]                               ;leo de tecac
-        MOV     BYTE PTR DS:[BX],AL                               ;escribo en teclado
-        XOR     AH,AL                ;miro diferencias entre pulsado anterior y ahora
-        MOV     CH,5                 ;ch=5 teclas por byte=movimientos kempston=funcios
-@OTBX:  SAHF                         ;miro bit0 de ah
-        JNC     @NABX                ;si no carry salto a nabx
-        PUSHA                        ;diferencia, pongo todo en pila
-        XCHG    AX,CX                ;en ax tengo contadores que me indican el evento
-        SUB     AX,0101h             ;resto uno a fila y columna
-        MOV     CH,AL                ;ch=fila-1
-        SHL     AL,2                 ;al=(fila-1)*4
-        ADD     AL,CH                ;al=(fila-1)*5
-        ADD     AL,AH                ;al=(fila-1)*5+columna-1
-        MOV     CH,AL                ;ch=(fila-1)*5+columna-1
-        MOV     BX,TVACIO            ;bx=contador de estados sin cambiar
-        CWD
-        MOV     TVACIO,DX            ;reseteo contador de estados
-        XCHG    AL,TMTEC
-        SHL     AX,10                ;en parte alta pongo evento
-        OR      AX,BX                ;en parte baja contador de estados
-        MOV     BX,PFAIR             ;leo puntero de grabaci√≥n
-        CMP     BH,GRAB              ;si ya he leido mucho tiempo
-        JZ      @NOIN                ;no incremento puntero
-        ADD     PFAIR,2              ;incremento puntero
-@NOIN:  MOV     WORD PTR DS:[BX+OFFSET FAIR],AX  ;guardo en zona
-        CMP     CH,10                ;miro si orden es mayor de 10
-        MOV     GS,CX                ;guardo orden en gs
-        POPA                         ;restauro registros
-        JNC     @NABX                ;continuo bucle si no orden
-        PUSH    CX
-        MOV     CX,GS                ;leo orden pulsada
-        SHR     CL,1                 ;veo si es descartable
-        JNC     @APEA
-        SUB     PFAIR,2              ;recupero puntero cambiado
-        JMP     @KSTK
-@APEA:  SHR     CX,8                 ;cl=orden
-        CALL    @EXECU               ;ejecuto orden
-@KSTK:  POP     CX
-@NABX:  SHR     AX,1               ;leo siguiente bit de diferencia de entre los 5
-        DEC     CH
-        JNZ     @OTBX              ;cierro bucle columna
-        INC     BX
-        LOOP    @BUBX              ;cierro bucle fila
-;IF SOUNDB
-;        INC     TVACIO             ;tvacio=tvacio+1   o 1
-;ELSE
-        MOV     AX,TVACIO
-        INC     AX
-        SAHF
-        JNP     @NMEL
-        MOV     AL,7       ;F7
-        XCHG    AL,TMTEC
-        SHL     AX,10
-        OR      AX,3FFh
-        MOV     BX,PFAIR
-        CMP     BH,GRAB
-        JZ      @NOIA
-        ADD     PFAIR,2
-@NOIA:  MOV     WORD PTR DS:[BX+OFFSET FAIR],AX
-        MOV     AX,1
-@NMEL:  MOV     TVACIO,AX
-;ENDIF
-        JMP     @NREPR
+repro           test    byte [funcios], $02
+                jz      silk
+%if JOYST
+                xor     word [mvee], $50+((repro-pmve)^12)*$100
+%else
+                xor     word [mvee], $50+((repro-pmve)^11)*$100
+%endif
+%if SOUNDB
+                mov     byte [trik+1], 0
+%else
+                mov     byte [trik+2], 38
+%endif
+silk            test    byte [funcios], $01     ;f5
+                jnz     sil2
+%if SOUNDB
+                mov     byte [trik+1], 5
+%else
+                mov     byte [trik+2], 0
+%endif
+sil2            dec     TVACIO
+                jnz     acte                    ;si tvacio=0 hago ste cosa
+migo            mov     TVACIO, $03FF           ;pongo tvacio al maximo
+                mov     bx, PFAIR
+                add     PFAIR, 2
+                mov     ax, [bx+fair+2]         ;leo orden guardada
+                push    ax
+                shr     ax, 10
+                cmp     al, 8
+                jnz     koae                    ;miro si la orden es F6 fin de reproducci√≥n
+%if JOYST
+                xor     word [mvee], $50+((repro-pmve)^12)*$100
+%else
+                xor     word [mvee], $50+((repro-pmve)^11)*$100
+%endif
+%if SOUNDB
+                mov     byte [trik+1], 0
+%else
+                mov     byte [trik+2], 38
+%endif
 
-@REPRO: 
-        BT      WORD PTR DS:[OFFSET FUNCIOS],1
-        JNC     SILK
-IF JOYST
-        XOR     WORD PTR DS:[OFFSET @MVEE],50h+((OFFSET @REPRO-OFFSET @PMVE) XOR 12)*100h
-ELSE
-        XOR     WORD PTR DS:[OFFSET @MVEE],50h+((OFFSET @REPRO-OFFSET @PMVE) XOR 11)*100h
-ENDIF
-IF SOUNDB
-        MOV     BYTE PTR DS:[OFFSET trik+1],0
-ELSE
-        MOV     BYTE PTR DS:[OFFSET trik+2],38
-ENDIF
-SILK:   BT      WORD PTR DS:[OFFSET FUNCIOS],0        ;F5
-        JC      SIL2
-IF SOUNDB
-        MOV     BYTE PTR DS:[OFFSET trik+1],5
-ELSE
-        MOV     BYTE PTR DS:[OFFSET trik+2],0
-ENDIF
-SIL2:   DEC     TVACIO
-        JNZ     @ACTE                     ;si tvacio=0 hago ste cosa
-@MIGO:  MOV     TVACIO,3FFh               ;pongo tvacio al maximo
-        MOV     BX,PFAIR
-        ADD     PFAIR,2
-        MOV     AX,WORD PTR DS:[BX+OFFSET FAIR+2] ;leo orden guardada
-        PUSH    AX
-        SHR     AX,10
-        CMP     AL,8
-        JNZ     @KOAE                          ;miro si la orden es F6 fin de reproducci√≥n
-IF JOYST
-        XOR     WORD PTR DS:[OFFSET @MVEE],50h+((OFFSET @REPRO-OFFSET @PMVE) XOR 12)*100h
-ELSE
-        XOR     WORD PTR DS:[OFFSET @MVEE],50h+((OFFSET @REPRO-OFFSET @PMVE) XOR 11)*100h
-ENDIF
-IF SOUNDB
-        MOV     BYTE PTR DS:[OFFSET trik+1],0
-ELSE
-        MOV     BYTE PTR DS:[OFFSET trik+2],38
-ENDIF
+koae            mov     cl, 5                   ;puesto en modo grabaci√≥n
+                div     cl
+                mov     cl, ah                  ;cl=columna al=fila
+%if JOYST
+                mov     bx, tecac+11
+%else
+                mov     bx, tecac+10
+%endif
+                cbw
+                sub     bx, ax                  ;bx apunta a byte
+                mov     al, $10
+                shr     al, cl                  ;al apunta a bit
+                xor     [bx], al                ;cambio estado
+                pop     ax                      ;recupero tiempo
+                and     ax, $03ff               ;filtro solo parte tiempo
+                jz      migo                    ;si cero poner a 3ff y repetir ya que se pulso otra tecla en el mismo frame
+                mov     TVACIO, ax              ;actualizar variable
+acte            mov     al, FLASH
+                inc     ax
+                mov     ah, $80
+                cmp     al, 25
+                jnz     nrst
+                mov     al, -25
+nrst            mov     FLASH, al
+                test    IM, ah
+                jz      sige
+                xor     IM, ah
+                dec     bp
+                dec     bp
+                cmp     byte [es:si], $76
+                jnz     ehal
+                inc     si
+ehal            mov     [es:bp], si
+                mov     si, $0038
+                add     dh, 13
+                sub     ah, IM
+                js      sige
+                mov     bh, I
+                mov     bl, $0ff
+                mov     si, [es:bx]
+                add     dh, 6
 
-@KOAE:  MOV     CL,5                           ;puesto en modo grabaci√≥n
-        DIV     CL
-        MOV     CL,AH                          ;cl=columna al=fila
-IF JOYST
-        MOV     BX,OFFSET TECAC+11 ;;;
-ELSE
-        MOV     BX,OFFSET TECAC+10 ;;;
-ENDIF
-        CBW
-        SUB     BX,AX                          ;bx apunta a byte
-        MOV     AL,10h
-        SHR     AL,CL                          ;al apunta a bit
-        XOR     BYTE PTR DS:[BX],AL            ;cambio estado
-        POP     AX                             ;recupero tiempo
-        AND     AX,3FFh                        ;filtro solo parte tiempo
-        JZ      @MIGO                          ;si cero poner a 3ff y repetir ya que se pulso otra tecla en el mismo frame
-        MOV     TVACIO,AX                      ;actualizar variable
-@ACTE:
+sige            push    deco
+                mov     PRB, 6
+abapre          mov     bx, 102h
+                mov     al, R
+                rol     al, 1
+                add     al, 2
+                ror     al, 1
+                mov     R, al
+                xor     cx, cx
+                xor     ax, ax
+                add     dh, 4
+                db      $26 ;es
+                lodsb
+                shl     al, 1
+                jc      n
+                jmp     s
+n               shl     al, 1                   ;80-FF
+                jc      nn
+                jmp     calc
+nn              add     dh, 6
+                shr     al, 3                   ;C0-FF
+                jc      nnh
+                jmp     nnl
+nnh             shr     al, 1                   ;C0-FF impares
+                jnc     nnhl
+                jmp     nnhh
+nnhl            shr     al, 1                   ;C0-FF imp*par C1,C5,C9,CD,D1,D5,D9,DD,E1,E5,E9,ED,F1,F5,F9,FD 
+                jc      nnhlh
+                jmp     nnhll
+nnhlh           shr     al, 1                   ;C0-FF imp*par*imp  C5,CD,D5,DD,E5,ED,F5,FD
+                jc      nnhlhh
+                jmp     _push
+nnhlhh          shr     al, 1                   ;C0-FF imp*par*imp*imp  CD,DD,ED,FD
+                jnc     nddfd
+                jmp     ddfd
+nddfd           jnz     edpr
+                jmp     calnn                   ;C0-FF imp*par*imp*imp*par  CD,ED 
+        ;;ED PREFIX
+edpr            mov     al, R
+                rol     al, 1
+                add     al, 2
+                ror     al, 1
+                mov     R, al
+                add     dh, 4
+                db      $26
+                lodsb
+                shl     al, 1
+                jnc     _s
+                jmp     _n
+_s              shl     al, 1                   ;00-7F
+                jnc     _nad
+                shr     al, 3                   ;40-7F
+                jc      _snh
+                shr     al, 1                   ;40 42 44 46 48 ...
+                jc      _snlh
+                shr     al, 1                   ;40 44 48 4c 50
+                jc      _neg
+        ;;IN S,(C) ;ED 40,48,50,58,60,68,70,78 "IN S,(C)" S=B,C,D,E,H,L,A
+                add     dh, 4
+                add     bx, ax
+                and     bl, 111b
+                xor     bl, bh
+                push    dere
+pinbc           mov     ax, BC
+pin             push    di
+                cmp     al, $0df
+%if JOYST
+                mov     di, tecac+2
+%else
+                mov     di, tecac+1             ;kempston
+%endif
+                jz      koer
+                test    al, 11100000b
+                jnz     noke
+koer            dec     di
+                mov     al, [di]
+                dec     di
+                and     al, [di]
+                not     al
+nknk            pop     di
+                ret
+noke            and     al, 1
+                jnz     nknk
+                inc     ax
+issue           mov     cl, $0bf
+rutl            shr     ah, 1
+                JC      nand
+                and     cl, [di]
+nand            inc     di
+                shl     al, 1
+                jnz     rutl
+                xchg    ax, cx
+                pop     di
+_nad            ret
+        ;;NEG ;ED 44,4C,54,5C,64,6C,74,7C "NEG"
+_neg            xchg    ch, A
+                mov     cl, 010000b
+                jmp     oper
+_snlh           shr     al, 1                   ;42 46 4A 4E 52 56 5A ....
+                jc      imod
+        ;;ADC,SBC HL,SS ;ED 42,4A,52,5A,62,6A,72,7A "ADC,SBB HL,SS"  SS=BC,DE,HL,SP
+                add     dh, 7
+                mov     ch, $11                 ;11h=opcode adc
+                shr     al, 1
+                jc      sbbb
+                mov     cx, $1902               ;19h=opcode sbb
+sbbb            mov     [sumo], ch
+                add     al, al
+                add     bx, ax
+                cmp     al, 6
+                mov     ax, [bx]
+                jnz     sbac
+                mov     ax, bp
+sbac            ror     F, 1                    ;paso el C del z80 al PC
+sumo            adc     HL, ax
+                lahf
+                pushf
+                and     ah, 11111001b           ;overflow  n a 0
+                popf
+                jno     cafi
+                or      ah, 00000100b           ;Overflow a 1
+cafi            mov     F, ah
+                or      F, cl
+                ret
+_snh            shr     al,1               ;41 43 45 47 49 4b 4d..
+                jc      _snhh
+                shr     al,1               ;41 45 49 4d 51 55 ..
+                jc      reti
+        ;;OUT (C),S   ;OP ED 41,49,51,59,61,69,79 "OUT (C),S" S=B,C,D,E,H,L,A   12
+                add     dh, 4
+                add     bx, ax
+                shl     bl, 5
+                jz      out0
+                shr     bl, 5
+                xor     bl, bh
+                mov     al, [bx]
+                db      $3d
+out0            mov     al, 0 ;db      0d6h         ;ed 71
+poutbc          mov     ah, C
+pout            shr     ah, 1
+                jc      lare                    ;entrada ah=direc puerto al=byte
+                mov     POR, al
+                shr     al, 1
+                xor     al, POR
+                shr     al, 4 
+                salc
+                or      al, $0bf
+                mov     [issue+1], al
+lare            ret
+        ;;IM ?      ;OP ED 46,4E,56,5E,66,6E,76,7E "IM ?"
+imod            inc     ax
+                and     al, 11b
+                jnz     ah01
+                stc
+ah01            rcr     IM, 1
+                rol     IM, 1
+                ret
+        ;;RETI, RETN   ;OP ED 45,4D,55,5D,65,6D,75,7D
+reti            add     dh, 6
+                or      IM, 10000000b
+                jmp     sire
+_snhh           shr     al, 1                   ;43 47 4B 4F 53 57 ..
+                jc      _snhhh
+                shr     al, 1                   ;43 4b 53 5b ..
+                jc      _lssnn
+        ;;LD (NN),SS   ;OP ED 43,53,63,73 "LD (NN),SS"  SS=BC,DE,HL,SP
+                add     al, al
+                add     bx, ax
+                cmp     al, 6
+                mov     ax, [bx]
+                jnz     sbad
+                mov     ax, bp
+sbad            jmp     ldim
+        ;;LD SS,(NN)   ;OP ED 4B,5B,6B,7B "LD SS,(NN)"  SS=BC,DE,HL,SP
+_lssnn          add     al, al
+                add     bx, ax
+                cmp     al, 6
+                jz      nldix
+                jmp     ldix
+nldix           db      $26
+                lodsw
+                xchg    bx, ax
+                mov     bp, [es:bx]             ;op ed 7b "ld sp,(nn)"
+                ret
+_snhhh          cmp     al, 2                   ;47 4f 57 5f 67 6f 77 7f
+                jnc     _rrr1
+        ;;LD I,A ;LD R,A  ;ED 47 4F > 8 9 > A B
+                inc     dh
+                xor     al, $13
+                add     bx, ax
+                mov     al, A
+dere            mov     [bx], al
+                ret
+_rrr1           cmp     al, 4                   ;57 5f 67 6f 77 7f
+                jnc     _rrrr
+        ;;LD A,I ;LD A,R
+                inc     dh
+                xor     al, $11
+                add     bx, ax
+                mov     al, [bx]
+                mov     A, al
+                mov     ah, F
+                and     ax, 0000000111101000b
+                or      ah, al
+                mov     al, IM
+                shr     al, 5
+                or      al, ah
+                mov     F, al
+                ret
+_rrrr           add     dh, 10
+                cmp     al, 5
+                mov     bx, HL
+                mov     ch, [es:bx]
+                mov     al, A
+                mov     ah, al
+                mov     cl, 4
+                jnz     _rrd
+        ;;RLD ;ED 6F
+                shl     ch, cl
+                and     ax, $0f00f
+                or      al, ch
+                xchg    al, [es:bx]
+                shr     al, cl
+tote            or      al, ah
+                mov     A, al
+                and     al, al
+                lahf
+                and     ax, 0100010010101000b
+                shr     F, 1
+                adc     al, ah
+                mov     F, al
+_2ret           ret
+        ;;RRD ;ED 67
+_rrd            jnc     _2ret
+                shr     ch, cl
+                shl     al, cl
+                or      al, ch
+                xchg    al, [es:bx]
+                and     ax, $0f00f
+                jmp     tote
+_n              shl     al, 1                   ;80-ff
+                jc      _2ret
+                sub     al, $80                 ;80-bf
+                shl     al, 1
+                jc      _2ret
+                add     dh, 8
+                shr     al, 4                   ;a0-bf > 00-1f
+                jc      _nh
+                shr     al, 1                   ;a0 a2 a4 a6 a8 ..
+                jc      _nlh
+                shr     al, 1                   ;a0 a4 a8 ac b0 b4..
+                jc      _2ret
+        ;;LD??   ;OP A0 A8 B0 B8 "LDI,LDD,LDIR,LDDR" BX=0,1,2,3
+                shr     al, 1
+                mov     bx, HL
+                mov     bl, [es:bx]
+                pushf
+                push    di
+                mov     di, DE
+                xchg    ax, bx
+                call    esdb
+                pop     di
+                popf
+                jc      oiod                    ;flag arrastrado 9 lineas arriba
+                inc     DE
+                inc     HL
+                jmp     short oooi
+_nlh            shr     al, 1                   ;a2 a6 aa ae b2 b6
+                jc      _3ret
+        ;;IN??   ;OP A2 AA B2 BA "INI,IND,INIR,INDR"
+                push    ax
+                call    pinbc
+                mov     bx, HL
+                mov     [es:bx], al
+lmqi            xchg    ax, bx
+                pop     ax
+                shr     al, 1
+                jc      ciad
+                inc     HL
+                jmp     short mier
+ciad            dec     HL
+mier            dec     B
+                lahf
+                and     ah, 11000000b
+                mov     F, ah
+                mov     ah, bl
+                stc
+                adc     bl, C
+                jno     rach
+                or      F, 00010001b
+rach            shr     ah, 7
+                add     ah, ah
+                or      F, ah
+                test    F, 01000000b
+                jnz     rtit
+                shr     al, 1
+                jc      core
+rtit            ret
+_nh             shr     al, 1                   ; a1 a3 a5 a7 a9 ab ..
+                jnc     _nhl
+                shr     al, 1                   ; a3 a7 ab af b3 ..
+                jc      rtit
+        ;;OUT??  ;OP A3 AB B3 BB "OUTI,OUTD,OTIR,OTDR"
+                push    ax
+                mov     bx, HL
+                mov     al, [es:bx]
+                call    poutbc
+                jmp     short lmqi
 
-@NREPR: MOV     AL,FLASH
-        INC     AX
-        MOV     AH,80h
-        CMP     AL,25
-        JNZ     @NRST
-        MOV     AL,-25
-@NRST:  MOV     FLASH,AL
-        TEST    IM,AH
-        JZ      @SIGE
-        XOR     IM,AH
-        DEC     BP
-        DEC     BP
-        CMP     BYTE PTR ES:[SI],76h
-        JNZ     @EHAL
-        INC     SI
-@EHAL:  MOV     WORD PTR ES:[BP],SI
-        MOV     SI,38h
-        ADD     DH,13
-        SUB     AH,IM
-        JS      @SIGE
-        MOV     BH,I
-        MOV     BL,0FFh
-        MOV     SI,WORD PTR ES:[BX]
-        ADD     DH,6
+oiod            dec     DE
+                dec     HL
+oooi            and     F, 11000001b            ;todos menos szc a la m
+                add     al, A
+                and     al, 101b
+                shl     al, 3
+                dec     BC
+                jz      orfa
+                or      al, 00000100b
+                shr     bl, 1
+                jnc     orfa
+core            add     dh, 5
+                sub     si, 2
+orfa            or      F, al
+_3ret           ret
 
-@SIGE:  DB      68h
-        DW      OFFSET @DECO
-        MOV     PRB,6
-@ABAPRE:MOV     BX,102h
-        MOV     AL,R
-        ROL     AL,1
-        ADD     AL,2
-        ROR     AL,1
-        MOV     R,AL
-        XOR     CX,CX
-        XOR     AX,AX
-;                cmp     si,0BDBBh   ;56565656
-;                jnz @pupu
-;                nop
-;@pupu:
-        ADD     DH,4
-        DB      026h
-        LODSB
-        SHL     AL,1
-        JNC     @S
-@N:     SHL     AL,1          ;80-FF
-        JNC     _CALC
-@NN:    ADD     DH,6
-        SHR     AL,3          ;C0-FF
-        JNC     @NNL
-@NNH:   SHR     AL,1          ;C0-FF impares
-        JC      @NNHH
-@NNHL:  SHR     AL,1          ;C0-FF imp*par C1,C5,C9,CD,D1,D5,D9,DD,E1,E5,E9,ED,F1,F5,F9,FD 
-        JNC     @NNHLL
-@NNHLH: SHR     AL,1          ;C0-FF imp*par*imp  C5,CD,D5,DD,E5,ED,F5,FD
-        JNC     _PUSH
-@NNHLHH:SHR     AL,1          ;C0-FF imp*par*imp*imp  CD,DD,ED,FD
-        JC      _DDFD
-        JZ      _CALNN        ;C0-FF imp*par*imp*imp*par  CD,ED 
-;;ED PREFIX
-_EDPR:  MOV     AL,R
-        ROL     AL,1
-        ADD     AL,2
-        ROR     AL,1
-        MOV     R,AL
-        ADD     DH,4
-        DB      026h
-        LODSB
-        SHL     AL,1      
-        JC      _N
-_S:     SHL     AL,1      ;00-7F
-        JNC     _NAD
-_SN:    SHR     AL,3      ;40-7F
-        JC      _SNH
-_SNL:   SHR     AL,1      ;40 42 44 46 48 ...
-        JC      _SNLH
-_SNLL:  SHR     AL,1      ;40 44 48 4C 50
-        JC      _NEG
-;;IN S,(C) ;ED 40,48,50,58,60,68,70,78 "IN S,(C)" S=B,C,D,E,H,L,A
-_INSC:  ADD     DH,4
-        ADD     BX,AX
-        AND     BL,111b
-        XOR     BL,BH
-_ED70:  DB      68h
-        DW      OFFSET @DERE
-@PINBC: MOV     AX,BC
-@PIN:   PUSH    DI
-        CMP     AL,0DFh
-IF JOYST
-        MOV     DI,OFFSET TECAC+2
-ELSE
-        MOV     DI,OFFSET TECAC+1        ;kempston
-ENDIF
-        JZ      @KOER
-        TEST    AL,11100000b
-        JNZ     @NOKE
-@KOER:  DEC     DI
-        MOV     AL,BYTE PTR DS:[DI]
-        DEC     DI
-        AND     AL,BYTE PTR DS:[DI]
-        NOT     AL
-@NKNK:  POP     DI
-        RET
-@NOKE:  AND     AL,1
-        JNZ     @NKNK
-        INC     AX
-@issue: MOV     CL,0BFh;;;;;;ABCD ;  OR  CL,0BFh ;;;;ABCD
-@RUTL:  SHR     AH,1
-        JC      @NAND
-        AND     CL,BYTE PTR DS:[DI]
-@NAND:  INC     DI
-        SHL     AL,1
-        JNZ     @RUTL
-@KEMP:  XCHG    AX,CX
-        POP     DI
-_NAD:   RET
-;;NEG ;ED 44,4C,54,5C,64,6C,74,7C "NEG"
-_NEG:   XCHG    CH,A
-        MOV     CL,010000b
-        JMP     @OPER
-_SNLH:  SHR     AL,1       ;42 46 4A 4E 52 56 5A ....
-        JC      _IMOD
-;;ADC,SBC HL,SS ;ED 42,4A,52,5A,62,6A,72,7A "ADC,SBB HL,SS"  SS=BC,DE,HL,SP
-_ADSBC: ADD     DH,7
-        MOV     CH,11h     ;11h=OPCODE ADC
-        SHR     AL,1
-        JC      @SBBB
-        MOV     CX,1902h   ;19h=OPCODE SBB
-@SBBB:  MOV     BYTE PTR DS:[OFFSET @SUMO],CH
-        DW      0C000h ;ADD     AL,AL
-        ADD     BX,AX
-        CMP     AL,6
-        MOV     AX,WORD PTR DS:[BX]
-        JNZ     @SBAC
-        MOV     AX,BP
-@SBAC:  ror F,1                  ;paso el C del z80 al PC
-@SUMO:  adc HL,ax
-        lahf
-        PUSHF
-        and     ah,11111001b    ;Overflow  N a 0
-        POPF
-        jNo @cafi
-        or      ah,00000100b    ;Overflow a 1
-@cafi:  mov     F,ah
-        OR F,CL
-        RET
-;;IM ?      ;OP ED 46,4E,56,5E,66,6E,76,7E "IM ?"
-_IMOD:  ;AND AL,11b
-        ;JPO @AH01
-        ;JZ @AH01
-        INC     AX
-        AND     AL,11b
-        JNZ     @AH01
-        STC
-@AH01:  RCR     IM,1
-        ROL     IM,1
-        RET
-;        OR      IMA,DI
-;@AH01:  RET
-_SNH:   SHR     AL,1               ;41 43 45 47 49 4B 4D..
-        JC      _SNHH   ;
-_SNHL:  SHR     AL,1               ;41 45 49 4D 51 55 ..
-        JC      _RETI
-;;OUT (C),S   ;OP ED 41,49,51,59,61,69,79 "OUT (C),S" S=B,C,D,E,H,L,A   12
-_OUTCS: ADD     DH,4
-        ADD     BX,AX
-        SHL     BL,5
-        JZ      _OUT0
-        SHR     BL,5
-        XOR     BL,BH
-        MOV     AL,BYTE PTR DS:[BX]
-        DB      03Dh
-_OUT0:  MOV     AL,0 ;DB      0D6h         ;ED 71
-@POUTBC:MOV     AH,C
-@POUT:  SHR     AH,1
-        JC      @LARE   ;ENTRADA AH=DIREC PUERTO AL=BYTE
-        MOV     POR,AL
-        SHR     AL,1
-        XOR     AL,POR
-        SHR     AL,4 
-        DB      0D6h
-        or      al,0BFh
-        MOV     BYTE PTR DS:[@issue+1],AL
-@LARE:  RET
-;;RETI, RETN   ;OP ED 45,4D,55,5D,65,6D,75,7D
-_RETI:  ADD     DH,6
-        OR      IM,10000000b
-@RELT:  JMP     @SIRE
-_SNHH:  SHR     AL,1           ;43 47 4B 4F 53 57 ..
-        JC      _SNHHH
-_SNHHL: SHR     AL,1           ;43 4B 53 5B ..
-        JC      _LSSNN
-;;LD (NN),SS   ;OP ED 43,53,63,73 "LD (NN),SS"  SS=BC,DE,HL,SP
-_LNNSS: DW      0C000h ;ADD     AL,AL
-        ADD     BX,AX           
-        CMP     AL,6
-        MOV     AX,WORD PTR DS:[BX]
-        JNZ     @SBAD
-        MOV     AX,BP
-@SBAD:  JMP     @LDIM
-;;LD SS,(NN)   ;OP ED 4B,5B,6B,7B "LD SS,(NN)"  SS=BC,DE,HL,SP
-_LSSNN: DW      0C000h ;ADD     AL,AL
-         and al,0FFh
-        ADD     BX,AX
-        CMP     AL,6
-        JNZ     @LDIX
-        DB      26h
-        LODSW
-        XCHG    BX,AX
-        MOV     BP,WORD PTR ES:[BX]  ;OP ED 7B "LD SP,(NN)"
-        RET
-_SNHHH: CMP     AL,2     ;47 4F 57 5F 67 6F 77 7F
-        JNC     _RRR1
-;;LD I,A ;LD R,A  ;ED 47 4F > 8 9 > A B
-_LDIAR: inc     dh
-        XOR     AL,13h
-        ADD     BX,AX
-        MOV     AL,A
-@DERE:  MOV     BYTE PTR DS:[BX],AL
-        RET
-_RRR1:  CMP     AL,4     ;57 5F 67 6F 77 7F
-        JNC     _RRRR
-;;LD A,I ;LD A,R
-_LDAIR: INC     DH
-        XOR     AL,11h
-        ADD     BX,AX
-        MOV     AL,BYTE PTR DS:[BX]
-        MOV     A,AL
-        MOV     AH,F
-        AND     AX, 0000000111101000b
-        OR      AH,AL
-        MOV     AL,IM
-        SHR     AL,5
-        OR      AL,AH
-        MOV     F,AL
-        RET
-_RRRR:  ADD     DH,10
-        CMP     AL,5
-        MOV     BX,HL
-        MOV     CH,ES:[BX]
-        MOV     AL,A
-        MOV     AH,AL
-        MOV     CL,4
-        JNZ     _RRD
-;;RLD ;ED 6F
-_RLD:   SHL     CH,CL
-        AND     AX,0F00FH
-        OR      AL,CH
-        XCHG    AL,BYTE PTR ES:[BX]
-        SHR     AL,CL
-@TOTE:  OR      AL,AH
-        MOV     A,AL
-        AND     AL,AL
-        LAHF
-        AND     AX,0100010010101000b
-        SHR     F,1
-        ADC     AL,AH
-        MOV     F,AL
-_2RET:  RET
-;;RRD ;ED 67
-_RRD:   JNC     _2RET
-        SHR     CH,CL
-        SHL     AL,CL
-        OR      AL,CH
-        XCHG    AL,BYTE PTR ES:[BX]
-        AND     AX,0F00Fh
-        JMP     @TOTE
-_N:     SHL     AL,1        ;80-FF
-        JC      _2RET
-        SUB     AL,80h      ;80-BF
-        SHL     AL,1
-        JC      _2RET
-        ADD     DH,8
-        SHR     AL,4        ;A0-BF > 00-1F
-        JC      _NH
-_NL:    SHR     AL,1        ;A0 A2 A4 A6 A8 ..
-        JC      _NLH
-        SHR     AL,1        ;A0 A4 A8 AC B0 B4..
-        JC      _2RET
-;;LD??   ;OP A0 A8 B0 B8 "LDI,LDD,LDIR,LDDR" BX=0,1,2,3
-_LDILD: SHR     AL,1
-        MOV     BX,HL
-        MOV     BL,BYTE PTR ES:[BX]
-        PUSHF
-        PUSH    DI
-        MOV     DI,DE
-        XCHG    AX,BX
-        CALL    @ESDB
-        POP     DI
-        POPF
-        JC      @OIOD  ;FLAG ARRASTRADO 9 LINEAS ARRIBA
-        INC     DE
-        INC     HL
-        JMP     SHORT @OOOI
-@OIOD:  DEC     DE
-        DEC     HL
-@OOOI:  AND     F,11000001b  ;TODOS MENOS SZC A LA MIERDA
-        ADD     AL,A
-        AND     AL,101b
-        SHL     AL,3
-        DEC     BC
-        JZ      @ORFA
-        OR      AL,00000100b
-        SHR     BL,1
-        JNC     @ORFA
-@CORE:  ADD     DH,5
-        SUB     SI,2
-@ORFA:  OR      F,AL
-_3RET:  RET
-_NLH:   SHR     AL,1        ;A2 A6 AA AE B2 B6
-        JC      _3RET
-;;IN??   ;OP A2 AA B2 BA "INI,IND,INIR,INDR"
-_INIR:  PUSH    AX
-        CALL    @PINBC
-        MOV     BX,HL
-        MOV     BYTE PTR ES:[BX],AL
-@LMQI:  XCHG    AX,BX
-        POP     AX
-        SHR     AL,1
-        JC      @CIAD
-        INC     HL
-        JMP     @MIER
-@CIAD:  DEC     HL
-@MIER:  DEC     B
-        LAHF
-        AND     AH,11000000b
-        MOV     F,AH
-        MOV     AH,BL
-        STC
-        ADC     BL,C
-        JNO     @RACH
-        OR      F,00010001b
-@RACH:  SHR     AH,7
-        ADD     AH,AH
-        OR      F,AH
-        TEST    F,01000000b
-        JNZ     @RTIT
-        SHR     AL,1
-        JC      @CORE
-@RTIT:  RET
-_NH:    SHR     AL,1   ; A1 A3 A5 A7 A9 AB ..
-        JNC     _NHL
-_NHH:   SHR     AL,1   ; A3 A7 AB AF B3 ..
-        JC      @RTIT
-;;OUT??  ;OP A3 AB B3 BB "OUTI,OUTD,OTIR,OTDR"
-_OUTIR: PUSH    AX
-        MOV     BX,HL
-        MOV     AL,BYTE PTR ES:[BX]
-        CALL    @POUTBC
-        JMP     @LMQI
-_NHL:   SHR     AL,1
-        JC      @RTIT
-;;CP??  ;OP A1 A9 B1 B9 "CPI,CPD,CPIR,CPDR"
-_CPIR:  SHR     AL,1
-        XCHG    AX,CX
-        MOV     DI,HL
-        JC      @CIOD
-        INC     WORD PTR DS:[BX+4];HL
-        JMP     @MDDM
-@CIOD:  DEC     WORD PTR DS:[BX+4];HL
-@MDDM:  MOV     AL,[BX-2]
-        SUB     AL,ES:[DI]
-        LAHF                     ; X VELOCIDAD CON CALL OPER TB VALE
-        SUB     AL,BYTE PTR DS:[BX+5];H
-        AND     AX,1101000000000101b
-        SHL     AL,3
-        OR      AL,10b
-        OR      AL,AH
-        AND     F,BH
-        DEC     WORD PTR DS:[BX];BC
-        JZ      @CPIR
-        OR      AL,100b ; PV LO PONGO A 1
-        JCXZ    @CPIR
-        TEST    AL,01000000b  ;MIRO SI FLAG Z=1 SALGO
-        JZ      @CORE
-@CPIR:  OR      F,AL
-        RET
-;;DD FD PREFIX
-_DDFD:  SUB     DH,6
-        SHL     AL,1        ;DD FD PREFIJOS
-        ADD     AL,10h
-        MOV     PRB,AL
-        JMP     @ABAPRE
-;;PUSH SS  ;C5,D5,E5,F5 > 00 01 02 03  BC,DE,HL,AF
-_PUSH:  INC     DH
-        CMP     AL,2
-        JC      @NANH
-        MOV     BL,PRB
-        JZ      _PUSHDA
-        MOV     AH,A    ;PUSH AF
-        MOV     AL,F
-        JMP     _PUSHDX
-@NANH:  DW      0C000h ;ADD     AL,AL
-        ADD     BX,AX
-_PUSHDA:MOV     AX,[BX]
-_PUSHDX:DEC     BP
-        DEC     BP
-@ESBP:  CMP     BP,04000h
-        JC      @SA04
-        MOV     WORD PTR ES:[BP],AX
-@SA04:  RET
-@NNHLL: SHR     AL,1     ;C1,C9,D1,D9,E1,E9,F1,F9
-        JC      @NNHLLH ; ;C1,D1,E1,F1 > 00 40 80 C0
-;;POP XX  ;C1 D1 E1 F1
-_POPXX: MOV     CX,WORD PTR ES:[BP]
-        INC     BP
-        INC     BP
-        CMP     AL,2
-        JC      @NAN2
-        MOV     BL,PRB
-        JZ      _POPDA
-        MOV     A,CH  ;POP AF
-        MOV     F,CL
-        RET
-@NAN2:  SHL     AL,1
-@POPDE: ADD     BX,AX
-_POPDA: MOV     WORD PTR DS:[BX],CX
-        RET
-@NNHLLH:SHR     AL,1               ;C9,D9,E9,F9 > 00 40 80 C0
-        JC      @NNHLLHH
-        JZ      _RET
-;;JP (HL)  ;OP E9
-_JPHL:  SUB     DH,6
-        MOV     BL,PRB
-        MOV     SI,WORD PTR DS:[BX]
-        RET
-;;RET c/Nc  ;OPS C0,C8,D0,D8,E0,E8,F0,F8 *
-_RETNC: SUB     DH,5
-        MOV     BX,OFFSET FLCMP
-        SHR     AL,1
-        XLAT      
-        JNC     @SISI
-        TEST    F,AL
-        JZ      @NORE
-        JNZ     @SIRE
-@SISI:  TEST    F,AL
-        JNZ     @NORE
-@SIRE:  ADD     DH,6
-;;RET  ;OP C9 *
-_RET:   MOV     SI,WORD PTR ES:[BP] 
-        INC     BP
-        INC     BP
-@NORE:  RET
-@NNHLLHH:JNZ _LSPHL   ;D9,F9 > 00 80
-;;EXX  ;OP D9 *"EXX" BC DE HL
-_EXX:   SUB     DH,6
-        MOV     CL,3
-@LOO3:  MOV     AX,WORD PTR DS:[BX]
-        XOR     BL,8
-        XCHG    AX,WORD PTR DS:[BX]
-        XOR     BL,8
-        MOV     WORD PTR DS:[BX],AX
-        ADD     BL,2
-        LOOP    @LOO3
-        RET
-;;LD SP,HL    ;OP F9 *
-_LSPHL: SUB     DH,4
-        MOV     BL,PRB
-        MOV     BP,[BX]
-        RET
-@NNHH:  SHR AL,1         ;C3,C7,CB,CF,D....,E....,F.......
-        JNC @NNHHL
-;;RST XX  ;OP C7,CF,D7,DF,E7,EF,F7,FF *"RST" XX= 00 08 10 18 ...
-_RST:   INC     DH
-        SHL     AL,3
-        DEC     BP
-        DEC     BP
-        XCHG    SI,AX
-        JMP     @ESBP
-@OPOC:  MOV     AL,RD
-        ROL     AL,1
-        ADD     AL,2
-        ROR     AL,1
-        MOV     RD,AL
-@NICR:  DB      026h                   ;CH=0 HL CH=1 IX CH=2 IY
-        LODSB
-        MOV     BH,AL    ;ETO E MUY COMPLICAO
-        MOV     AH,1
-        ADD     AL,2     
-        AND     AL,111b  ;HL A B C D E H L
-        JNZ     @DES0
-        ADD     DH,7
-        MOV     CH,1     ;SIMULAMOS QUE ES UN PREFIJO
-@DES0:  XOR     AL,1     ;A HL C B E D L H
-        XCHG    BX,AX
-        SHR     AX,6    ;AH 0-3 OPCODE ; AL 0-8 MODO
-        SHR     AL,5
-        OR      AH,AH
-        JNZ     @ROTE
-        PUSH    BX               ;ROTACIONES  00-3F
-        MOV     BX,OFFSET ROTEMO
-        CMP     AL,6   ;SLL RARO UNDOCUMENTADO
-        JNZ     @UNOR
-        MOV     F,1
-@UNOR:  XLAT      ;AL OPCODE INSTR ROTAR
-        POP     BX
-        OR      CH,CH   ;COMPROBAR SI HAY PREFIJO
-        JNZ     @IXIY
-        MOV     BYTE PTR DS:[@RTAD+1],AL
-        SHR     F,1
-@RTAD:  RCL     BYTE PTR DS:[BX],1
-        MOV     AL,BYTE PTR DS:[BX]
-@TSIG:  LAHF
-        AND     AX,0000000110101000b
-        OR      AL,AH
-        MOV     F,AL
-        MOV     AL,BYTE PTR DS:[BX]
-        AND     AL,AL
-        LAHF
-        AND     AH,01000100b
-        OR      F,AH
-        RET
+ciod            dec     word [bx+4];HL
+mddm            sub     al, [es:di]
+                lahf                            ; x velocidad con call oper tb vale
+                sub     al, [bx+5];H
+                and     ax, 1101000000000101b
+                shl     al, 3
+                or      al, 10b
+                or      al, ah
+                and     F, bh
+                dec     word [bx];BC
+                jz      cpir
+                or      al, 100b                ; pv lo pongo a 1
+                jcxz    cpir
+                test    al, 01000000b           ;miro si flag z=1 salgo
+                jz      core
+cpir            or      F, al
+                ret
 
-@NNHHL: SHR     AL,1         ;C3,CB,D3,DB,E3,EB,F3,FB @NNNNSS
-        JNC     @NNHHLL  ;
-@NNHHLH:SHR     AL,1         ;CB,DB,EB,FB  00 40 80 C0
-        JC      @NNHHLHH  ;
-        JNZ     _EXDHL   ;   ;CB,EB
-;;CB PREFIX
-_PRCB:  ADD     DH,4
-        MOV     BL,PRB       ;OP CB PREFIJO CB
-        MOV     DI,WORD PTR DS:[BX]  ;ch=0;MODO DE ENTRADA NORMAL (SOLO 1 OPERACION)
-        CMP     BL,06h
-        JZ      @OPOC
-        ADD     DH,8
-        MOV     CH,1  ;MODO DE ENTRADA CON PREFIJO (2 OPERACIONES)
-        DB      026h
-        LODSB
-        CBW
-        ADD     DI,AX ;;;;;;;;;;;;,ARREGLAR TODO ESTO
-        JMP     @NICR
+_nhl            shr     al, 1
+                jc      rtit
+        ;;CP??  ;OP A1 A9 B1 B9 "CPI,CPD,CPIR,CPDR"
+                shr     al, 1
+                xchg    ax, cx
+                mov     di, HL
+                mov     al, [bx-2]
+                jc      ciod
+                inc     word [bx+4];hl
+                jmp     mddm
 
+        ;;DD FD PREFIX
+ddfd            sub     dh, 6
+                shl     al, 1                   ;dd fd prefijos
+                add     al, $10
+                mov     PRB, al
+                jmp     abapre
+        ;;PUSH SS  ;C5,D5,E5,F5 > 00 01 02 03  BC,DE,HL,AF
+_push           inc     dh
+                cmp     al, 2
+                jc      nanh
+                mov     bl, PRB
+                jz      pushda
+                mov     ah, A                   ;push af
+                mov     al, F
+                jmp     pushdx
+nanh            add     al, al
+                add     bx, ax
+pushda          mov     ax, [bx]
+pushdx          dec     bp
+                dec     bp
+esbp            cmp     bp, $4000
+                jc      sa04
+                mov     [es:bp], ax
+sa04            ret
+nnhll           shr     al, 1                   ;c1,c9,d1,d9,e1,e9,f1,f9
+                jc      nnhllh                  ;c1,d1,e1,f1 > 00 40 80 c0
+        ;;POP XX  ;C1 D1 E1 F1
+                mov     cx, [es:bp]
+                inc     bp
+                inc     bp
+                cmp     al, 2
+                jc      nan2
+                mov     bl, PRB
+                jz      popda
+                mov     A, ch                   ;pop af
+                mov     F, cl
+                ret
+nan2            shl     al, 1
+                add     bx, ax
+popda           mov     [bx], cx
+                ret
+nnhllh          shr     al, 1                   ;c9,d9,e9,f9 > 00 40 80 c0
+                jc      nnhllhh
+                jz      _ret
+        ;;JP (HL)  ;OP E9
+                sub     dh, 6
+                mov     bl, PRB
+                mov     si, [bx]
+                ret
+        ;;RET c/Nc  ;OPS C0,C8,D0,D8,E0,E8,F0,F8 *
+retnc           sub     dh, 5
+                mov     bx, flcmp
+                shr     al, 1
+                xlat      
+                jnc     sisi
+                test    F, al
+                jz      nore
+                jnz     sire
+sisi            test    F, al
+                jnz     nore
+sire            add     dh, 6
+        ;;RET  ;OP C9 *
+_ret            mov     si, [es:bp] 
+                inc     bp
+                inc     bp
+nore            ret
+nnhllhh         jnz     lsphl                   ;D9,F9 > 00 80
+        ;;EXX  ;OP D9 *"EXX" BC DE HL
+                sub     dh, 6
+                mov     cl, 3
+loo3            mov     ax, [bx]
+                xor     bl, 8
+                xchg    ax, [bx]
+                xor     bl, 8
+                mov     [bx], ax
+                add     bl, 2
+                loop    loo3
+                ret
+        ;;LD SP,HL    ;OP F9 *
+lsphl           sub     dh, 4
+                mov     bl, PRB
+                mov     bp, [bx]
+                ret
+nnhh            shr     al, 1                   ;c3,c7,cb,cf,d....,e....,f.......
+                jnc     nnhhl
+        ;;RST XX  ;OP C7,CF,D7,DF,E7,EF,F7,FF *"RST" XX= 00 08 10 18 ...
+                inc     dh
+                shl     al, 3
+                dec     bp
+                dec     bp
+                xchg    si, ax
+                jmp     esbp
+opoc            mov     al, RD
+                rol     al, 1
+                add     al, 2
+                ror     al, 1
+                mov     RD, al
+nicr            db      $26                     ;ch=0 hl ch=1 ix ch=2 iy
+                lodsb
+                mov     bh, al                  ;eto e muy complicao
+                mov     ah, 1
+                add     al, 2     
+                and     al, 111b                ;hl a b c d e h l
+                jnz     des0
+                add     dh, 7
+                mov     ch, 1                   ;simulamos que es un prefijo
+des0            xor     al, 1                   ;a hl c b e d l h
+                xchg    bx, ax
+                shr     ax, 6                   ;ah 0-3 opcode ; al 0-8 modo
+                shr     al, 5
+                or      ah, ah
+                jnz     rote
+                push    bx                      ;rotaciones  00-3f
+                mov     bx, rotemo
+                cmp     al, 6                   ;sll raro undocumentado
+                jnz     unor
+                mov     F, 1
+unor            xlat                            ;al opcode instr rotar
+                pop     bx
+                or      ch, ch                  ;comprobar si hay prefijo
+                jnz     ixiy
+                mov     [rtad+1], al
+                shr     F, 1
+rtad            rcl     byte [bx], 1
+                mov     al, [bx]
+tsig            lahf
+                and     ax, 0000000110101000b
+                or      al, ah
+                mov     F, al
+                mov     al, [bx]
+                and     al, al
+                lahf
+                and     ah, 01000100b
+                or      F, ah
+                ret
 
-@IXIY:  SUB AL,2
-        MOV BYTE PTR DS:[@RTXY+2],AL
-        SHR F,1
-@RTXY:  RCL BYTE PTR ES:[DI],1
-        MOV AL,BYTE PTR ES:[DI]
-        MOV BYTE PTR DS:[BX],AL
-        JMP @TSIG
-@ROTE:  MOV CL,1
-        XCHG CX,AX
-        SHL AL,CL
-        DEC CH           ;COMPARACIONES DE BITS 40-7F
-        JNZ @BITC
-        sub dh,3
-        OR AH,AH
-        JZ @IXY1+1  ;SI NORMAL COJO DE DS:BX
-        MOV BX,DI    ;SI PREFIJO COJO DE ES:DI
-@IXY1:  TEST AL,BYTE PTR ES:[BX];;;NUEVO
-        jnz      @@bitun
-        and     F,11111101b ;N a 0
-        or      F,01010000b ;H Z a 1
-        jmp @@FinOp
-@@bitun:and     F,10111101b ;N Z a 0
-        or      F,00010000b ;H a 1
-@@FinOp:ret
-@BITC:  DEC     CH       ;PONER 0 O 1?
-        JNZ     @REST
-        NOT     AL
-        DEC     AH  ;PREFIJOS?
-        JNZ     @IXY2
-        AND     BYTE PTR ES:[DI],AL
-@IXY2:  AND     BYTE PTR DS:[BX],AL
-        RET
-@REST:  DEC     AH      ;PUESTA A 1 DE BIT C0-FF
-        JNZ     @IXY3
-        OR      BYTE PTR ES:[DI],AL    ;;BBBBB
-@IXY3:  OR      BYTE PTR DS:[BX],AL
-        RET
+nnhhl           shr     al, 1                   ;C3,CB,D3,DB,E3,EB,F3,FB @NNNNSS
+                jnc     nnhhll
+                shr     al, 1                   ;cb,db,eb,fb  00 40 80 c0
+                jc      nnhhlhh
+                jnz     exdhl                   ;cb,eb
+        ;;CB PREFIX
+                add     dh, 4
+                mov     bl, PRB                 ;OP CB PREFIJO CB
+                mov     di, [bx]                ;ch=0;modo de entrada normal (solo 1 operacion)
+                cmp     bl, $06
+                jz      opoc
+                add     dh, 8
+                mov     ch, 1                   ;modo de entrada con prefijo (2 operaciones)
+                db      $26
+                lodsb
+                cbw
+                add     di, ax                  ;;;;;;;;;;;;arreglar todo esto
+                jmp     nicr
 
-@NNHHLL:SHR     AL,1      ;C3,D3,E3,F3
-        JC      @NNHHLLH
-@NNHHLLL:JNZ     _EXPHL
-        JMP     _JUNP        ;C3,E3
+ixiy            sub     al, 2
+                mov     [rtxy+2], al
+                shr     F, 1
+rtxy            rcl     byte [es:di], 1
+                mov     al, [es:di]
+                mov     [bx], al
+                jmp     tsig
+rote            mov     cl, 1
+                xchg    cx, ax
+                shl     al, cl
+                dec     ch                      ;comparaciones de bits 40-7f
+                jnz     bitc
+                sub     dh, 3
+                or      ah, ah
+                jz      ixy1+1                  ;si normal cojo de ds:bx
+                mov     bx, di                  ;si prefijo cojo de es:di
+ixy1            test    al, [es:bx]             ;;;nuevo
+                jnz     bitun
+                and     F, 11111101b            ;n a 0
+                or      F, 01010000b            ;h z a 1
+                jmp     finop
+bitun           and     F, 10111101b            ;n z a 0
+                or      F, 00010000b            ;h a 1
+finop           ret
+bitc            dec     ch                      ;poner 0 o 1?
+                jnz     resr
+                not     al
+                dec     ah                      ;prefijos?
+                jnz     ixy2
+                and     [es:di], al
+ixy2            and     [bx], al
+                ret
+resr            dec     ah                      ;puesta a 1 de bit c0-ff
+                jnz     ixy3
+                or      [es:di], al             ;;bbbbb
+ixy3            or      [bx], al
+                ret
 
-@NNHHLHH:JZ _INAN    ;DB,FB
-;;EI   ;OP FB
-_EI:    SUB     DH,6
-        OR      IM,10000000b
-        RET
+nnhhll          shr     al, 1                   ;C3,D3,E3,F3
+                jc      nnhhllh
+                jnz     exphl
+                jmp     junp                    ;C3,E3
 
-;;EX DE,HL  ;OP EB *
-_EXDHL: SUB     DH,6
-        MOV     BL,PRB
-        MOV     AX,DE
-        XCHG    AX,WORD PTR DS:[BX]
-        MOV     DE,AX
-        RET
+nnhhlhh         jz      inan                    ;DB,FB
+        ;;EI   ;OP FB
+                sub     dh, 6
+                or      IM, 10000000b
+                ret
 
-;;IN A,(N)  ;OP DB
-_INAN:  INC     DH
-        MOV     AH,A
-        DB      026h
-        LODSB
-        CALL    @PIN
-        MOV     A,AL
-        RET
-;;EX (SP),HL  ;OP E3 *
-_EXPHL: ADD     DH,9
-        MOV     BL,PRB
-        MOV     AX,WORD PTR ES:[BP]
-        XCHG    AX,WORD PTR DS:[BX]
-        JMP     @ESBP
-@NNHHLLH:JNZ    _DI  ;D3,F3
-;;OUT (N),A  ;OP D3 *
-_OUTNA: INC     DH
-        DB      26h
-        LODSB
-        MOV     AH,AL
-        MOV     AL,A
-        JMP     @POUT
-FLCMP   DB 40h,1,4;,80h OJO CON ESTE TRUCO;;;;;;NO QUITAR DE 
-;;DI   ;OP F3 *
-_DI:    SUB     DH,6
-        AND     IM,01111111b
-        RET
-@NNL:   SHR     AL,1        ;C0-FF pares C0 C2 C4 C6 C8 CA ...
-        JC      @NNLH
-@NNLL:  SHR     AL,1        ;C0 C4 C8 CC D0 D4 D8 *
-        JC      _CALLC
-        JMP     _RETNC
-;;CALL Nc NN  ;OPS C4,CC,D4,DC,E4,EC,F4,FC ;
-_CALLC: MOV     BX,OFFSET FLCMP
-        SHR     AL,1  
-        XLAT
-        JNC     @ZZSI
-        TEST    F,AL
-        JZ      @NOXX
-        JNZ     @SIZZ
-@ZZSI:  TEST    F,AL
-        JNZ     @NOXX
-@SIZZ:  ADD     DH,7
-;;CALL NN  ;OP CD
-_CALNN: ADD     DH,7
-        DB      26h
-        LODSW
-        cmp     AX,05E7h
-        jz      @kkoe
-        DEC     BP
-        DEC     BP
-        XCHG    SI,AX
-        JMP     @ESBP
-@kkoe:  OR      AL,0ACh   ;96;xchg si,ax 80h
-        CALL    @READ                   ;posiciono el buffer
-        push    DX                      ;guardo flags
-        mov     bx,HFILE                ;cargo handle de archivo
-        push    DE                      ;DE=numero de bytes a leer
-        mov     dx,IX                   ;IX=posicion memoria a escribir
-        push    es
-        pop     ds                      ;apunto a mapa Z80
-        mov     cx,1                    ;cx=1 leo primero un byte
-        mov     ah,3Fh
-        int     21h                     ;leo 1 byte
-        pop     cx                      ;ahora cx es realmente los bytes a leer
-        mov     ah,3Fh                  ;repito lectura
-        int     21h                     ;esta vez de cx=DE bytes
-        cwd                             ;leo en zona segura dx=0 int 20, ya que ax<32768
-        push    cs
-        pop     ds                      ;restauro ds
-        add     IX,cx                   ;actualizo IX con bytes le°dos
-        mov     cx,1                    ;leo paridad
-        mov     ah,3Fh                  ;en teor°a debo dejar DE=0 H=0 L=paridad
-        int     21h                     ;en practica solo dejo HL=paridad
-        and     HL,dx                   ;reseteo HL pongo carry a 0 y sign a 0
-        mov     SI,5DFh                 ;continuo en rutina cargadora cinta
-        pop     DX                      ;recupero flag
-        CALL    @READ                   ;incremento numero de bloque
-        JMP     @GRABA                  ;hago un snapshot despues de la carga
-@NNLH:  SHR     AL,1        ;C2 C6 CA CD D2 D6 DA ..
-        JC      _WOPER
-;;JP Nc   ;OPS C2,CA,D2,DA,E2,EA,F2,FA  ;
-_JPCNC: MOV     BX,OFFSET FLCMP
-        SHR     AL,1
-        XLAT
-        JNC     @XXSI
-        TEST    F,AL
-        JZ      @NOXX
-        JNZ     _JUNP
-@XXSI:  TEST    F,AL
-        JNZ     @NOXX
-_JUNP:  MOV     SI,WORD PTR ES:[SI] ;OP C3 "JP NN"  ;4 =1
-        RET
-@NOXX:  CMPSW
-        RET
-;;ADD SUB ADC SBB AND OR XOR CP A,N ;OPS C6,CE,D6,DE,E6,EE,F6,FE *;12 =3
-_WOPER: SUB     DH,3
-        DEC     SI
-        DB      26h
-        LODSW
-        XCHG    CX,AX
-        JMP     @OPER
-;;"ADD,ADC,SUB,SBC,AND,XOR,OR,CP" ;OP 80-BF
-_CALC:  SHR     AL,2
-        MOV     CL,AL
-        ADD     AX,BX ;OP 80-BF "ADD,ADC,SUB,SBC,AND,XOR,OR,CP" ;62 =16
-        AND     AL,111b
-        PUSHF
-        XOR     AL,AH  ;1
-        CMP     AL,6
-        JC      @MAL2
-        SUB     AL,6
-        ADD     AL,PRB
-@MAL2:  POPF
-        XCHG    BX,AX
-        JNZ     @NNE7
-        ADD     DH,3
-        CALL    @SAIXD
-        DB      26h
-@NNE7:  MOV     CH,BYTE PTR DS:[BX]
-@OPER:  SHR     CL,3 ;AL VIENE SUMADO A 32
-        AND     CL,111b ;SI VIENE DE WOPER
-        MOV     AL,CL
-        MOV     BX,OFFSET OPCOS;CH=NUMERO A SUMAR.  CL=OPERACION
-        XLAT
-        MOV     BYTE PTR DS:[@ASAS],AL
-        MOV     BX,0000101000000001b  ;CARRY ANTERIOR
-        SHL     BL,CL
-        TEST    BH,BL
-        JZ      @NFLA
-        MOV     AL,F
-        SHR     AL,1
-@NFLA:  MOV     AL,A
-@ASAS:  DW      0E800h ; OPER AL,CH   ;;;;;ARREGLAR COMPRI
-        MOV     A,AL
-@FLAG:  PUSHF         ;FLAGS Z A O C= Z H PV C ;CL OPERACION ;AL RESULTADO ;SALIDA FLAGS CAMBIADOS 
-        POP BX        ;BL FLAGS PC                       ;55 =14
-        OR      BH,BL
-        AND     BH,00001100b ;BIT 3 OVERFLOW BIT 2 PARITY
-        XCHG    AL,BH
-        AND     BX,0010100011010001b  ;FLAG 5 3 YA PUESTOS LOS DEMAS A 0
-        OR      BL,BH          ;PONGO FLAGS FILTRADOS
-        INC     CX
-        AND     CL,111b
-        CMP     CL,5
-        JNC     @LOGI
-        SHR     AL,1          ;OPERACION ARITMETICA PASO OVERFLOW A PV
-        JMP     @MDDC
-@LOGI:  AND     BL,11101111b  ;PONGO A 0 EL BIT H SI SE TRATA DE OPER LOGICA
-@MDDC:  AND     AL,00000100b  ;FILTRO PV
-        OR      BL,AL          ;METO EL FLAG PV
-        MOV     AL,1  ;PONGO BIT 0 DE AL A 1
-        SHL     AL,CL
-        TEST    AL,00011001b  ;XOR,OR,AND,SBB,SUB,ADC,ADD,CP
-        JZ      @NFNN
-        OR      BL,10b         ;METO FLAG N
-@NFNN:  AND     AL,00100000b  ;XOR,OR,AND,SBB,SUB,ADC,ADD,CP
-        SHR     AL,1
-        OR      AL,BL          ;BIT H PUESTO SI LA OPERACION ES AND
-@NFHH:  MOV     F,AL           ;LO PONGO EN FLAGS
-        RET
+        ;;EX DE,HL  ;OP EB *
+exdhl           sub     dh, 6
+                mov     bl, PRB
+                mov     ax, DE
+                xchg    ax, [bx]
+                mov     DE, ax
+                ret
 
-@S:     SHL     AL,1
-        JNC     @SS
-;;LD R,R   ;OP 40-7F
-_LDR_R: MOV     CL,6
-        SHR     AL,2
-        PUSH    AX
-        ADD     AX,BX
-        MOV     BL,PRB
-        AND     AL,111b
-        JZ      @ATAJ
-        XOR     AL,AH    
-        CMP     BL,CL    ;A (HL) B C D E H L
-        JZ      @OTCO
-        CMP     AL,CL
-        JC      @OTCO
-        SUB     DH,2
-        SUB     AL,CL    ; H L > 6 7
-        ADD     AL,BL    ;
-@OTCO:  XCHG    AX,BX
-        JMP     @EHDD
-@ATAJ:  ADD     DH,3
-        MOV     CL,8
-        CALL    @SAIXD     ;46 4E 56 5E 66 6E
-@AEHH:  DB      26h
-@EHDD:  MOV     CH,[BX]
-        POP     AX
-        SHR     AL,3    ;EN BX CONSERVO FUENTE DATO
-        ADD     AL,2
-        AND     AL,111b
-        JZ      @HHHH      ;DESTINO (HL) O (IX+D)
-        XOR     AL,1
-        CMP     PRB,CL
-        JZ      @OTC2
-        CMP     AL,CL
-        JC      @OTC2
-        SUB     AL,CL
-        ADD     AL,PRB
-@OTC2:  ADD     DI,AX
-        MOV     BYTE PTR DS:[DI],CH
-        RET
-@HHHH:  ADD     DH,3
-        CMP     CL,8
-        JZ      _HALT  ;DESTINO=(HL),ORIGEN=(HL)
-        MOV     AL,CH
-        CMP     BL,8  ;DESTINO=(IX+D),ORIGEN =IXh/IXl
-        DB      68h
-        DW      OFFSET @DEPU
-        JC      @SAIXD
-        DB      0D6h
-        AND     BL,BH
-        ADD     BL,CL
-        XLAT
-@SAIXD: MOV     BL,PRB
-        CMP     BL,6
-        MOV     BX,WORD PTR DS:[BX]
-        JZ      @INPX
-        ADD     DH,8
-        PUSH    AX
-        DB      26h
-        LODSB
-        CBW
-        ADD     BX,AX
-        POP     AX
-@INPX:  RET
-@SS:    SHR     AL,3   ;00 01 02 03 04
-        jnc @SSL
-        JMP     @SSH
+        ;;IN A,(N)  ;OP DB
+inan            inc     dh
+                mov     ah,A
+                db      $26
+                lodsb
+                call    pin
+                mov     A, al
+                ret
+        ;;EX (SP),HL  ;OP E3 *
+exphl           add     dh, 9
+                mov     bl, PRB
+                mov     ax, [es:bp]
+                xchg    ax, [bx]
+                jmp     esbp
+nnhhllh         jnz     _di                     ;D3,F3
+        ;;OUT (N),A  ;OP D3 *
+                inc     dh
+                db      $26
+                lodsb
+                mov     ah, al
+                mov     al, A
+                jmp     pout
+flcmp           db      $40, 1, 4               ;,80h ojo con este truco;;;;;;no quitar de 
+        ;;DI   ;OP F3 *
+_di             sub     dh, 6
+                and     IM, 01111111b
+                ret
+nnl             shr     al, 1                   ;C0-FF pares C0 C2 C4 C6 C8 CA ...
+                jc      nnlh
+                shr     al, 1                   ;C0 C4 C8 CC D0 D4 D8 *
+                jc      callc
+                jmp     retnc
+        ;;CALL Nc NN  ;OPS C4,CC,D4,DC,E4,EC,F4,FC ;
+callc           mov     bx, flcmp
+                shr     al, 1
+                xlat
+                jnc     zzsi
+                test    F, al
+                jz      noxx
+                jnz     sizz
+zzsi            test    F, al
+                jnz     noxx
+sizz            add     dh, 7
+        ;;CALL NN  ;OP CD
+calnn           add     dh, 7
+                db      $26
+                lodsw
+                cmp     ax, $05E7
+                jz      kkoe
+                dec     bp
+                dec     bp
+                xchg    si, ax
+                jmp     esbp
+kkoe            or      al, $0ac                ;96;xchg si,ax 80h
+                call    read                    ;posiciono el buffer
+                push    dx                      ;guardo flags
+                mov     bx, HFILE               ;cargo handle de archivo
+                push    DE                      ;DE=numero de bytes a leer
+                mov     dx, IX                  ;IX=posicion memoria a escribir
+                push    es
+                pop     ds                      ;apunto a mapa Z80
+                mov     cx, 1                   ;cx=1 leo primero un byte
+                mov     ah, $3F
+                int     $21                     ;leo 1 byte
+                pop     cx                      ;ahora cx es realmente los bytes a leer
+                mov     ah, $3F                 ;repito lectura
+                int     $21                     ;esta vez de cx=DE bytes
+                xor     dx, dx
+                push    cs
+                pop     ds                      ;restauro ds
+                add     IX, cx                  ;actualizo IX con bytes le√≠dos
+                and     HL, dx                  ;reseteo HL pongo carry a 0 y sign a 0
+                mov     DE, dx
+                mov     si, $05df               ;continuo en rutina cargadora cinta
+                pop     dx                      ;recupero flag
+                call    read                    ;incremento numero de bloque
+                jmp     graba                   ;hago un snapshot despues de la carga
+nnlh            shr     al, 1                   ;C2 C6 CA CD D2 D6 DA ..
+                jc      woper
+        ;;JP Nc   ;OPS C2,CA,D2,DA,E2,EA,F2,FA  ;
+                mov     bx, flcmp
+                shr     al, 1
+                xlat
+                jnc     xxsi
+                test    F, al
+                jz      noxx
+                jnz     junp
+xxsi            test    F, al
+                jnz     noxx
+junp            mov     si, [es:si]             ;op c3 "jp nn"  ;4 =1
+                ret
+noxx            cmpsw
+                ret
+        ;;ADD SUB ADC SBB AND OR XOR CP A,N     ;OPS C6,CE,D6,DE,E6,EE,F6,FE *;12 =3
+woper           sub     dh, 3
+                dec     si
+                db      $26
+                lodsw
+                xchg    cx, ax
+                jmp     oper
+        ;;"ADD,ADC,SUB,SBC,AND,XOR,OR,CP"       ;OP 80-BF
+calc            shr     al, 2
+                mov     cl, al
+                add     ax, bx                  ;op 80-bf "add,adc,sub,sbc,and,xor,or,cp" ;62 =16
+                and     al, 111b
+                pushf
+                xor     al, ah                  ;1
+                cmp     al, 6
+                jc      mal2
+                sub     al, 6
+                add     al, PRB
+mal2            popf
+                xchg    bx, ax
+                jnz     nne7
+                add     dh, 3
+                call    saixd
+                db      $26
+nne7            mov     ch, [bx]
+oper            shr     cl, 3                   ;al viene sumado a 32
+                and     cl, 111b                ;si viene de woper
+                mov     al, cl
+                mov     bx, opcos               ;ch=numero a sumar.  cl=operacion
+                xlat
+                mov     [asas], al
+                mov     bx, 0000101000000001b   ;carry anterior
+                shl     bl, cl
+                test    bh, bl
+                jz      nfla
+                mov     al, F
+                shr     al, 1
+nfla            mov     al, A
+asas            dw      $0e800                  ; oper al,ch   ;;;;;arreglar compri
+                mov     A, al
+                pushf                           ;flags z a o c= z h pv c ;cl operacion ;al resultado ;salida flags cambiados 
+                pop     bx                      ;bl flags pc                       ;55 =14
+                or      bh, bl
+                and     bh, 00001100b           ;bit 3 overflow bit 2 parity
+                xchg    al, bh
+                and     bx, 0010100011010001b   ;flag 5 3 ya puestos los demas a 0
+                or      bl, bh                  ;pongo flags filtrados
+                inc     cx
+                and     cl, 111b
+                cmp     cl, 5
+                jnc     logi
+                shr     al, 1                   ;operacion aritmetica paso overflow a pv
+                jmp     mddc
+logi            and     bl, 11101111b           ;pongo a 0 el bit h si se trata de oper logica
+mddc            and     al, 00000100b           ;filtro pv
+                or      bl, al                  ;meto el flag pv
+                mov     al, 1                   ;pongo bit 0 de al a 1
+                shl     al, cl
+                test    al, 00011001b           ;xor,or,and,sbb,sub,adc,add,cp
+                jz      nfnn
+                or      bl, 10b                 ;meto flag n
+nfnn            and     al, 00100000b           ;xor,or,and,sbb,sub,adc,add,cp
+                shr     al, 1
+                or      al, bl                  ;bit h puesto si la operacion es and
+                mov     F, al                   ;lo pongo en flags
+                ret
 
-@DEPU:  MOV     DI,BX
-@ESDB:  CMP     DI,4000h  ;LO PUEDO QUITAR LUEGO
-        JC      @NST1
-        STOSB
-@NST1:  RET
-_HALT:  SUB     DH,6
-        DEC     SI              ;OP 76 HALT      ;4 =1
-        RET
+s               shl     al, 1
+                jnc     _ss
+        ;;LD R,R   ;OP 40-7F
+                mov     cl, 6
+                shr     al, 2
+                push    ax
+                add     ax, bx
+                mov     bl, PRB
+                and     al, 111b
+                jz      ataj
+                xor     al, ah    
+                cmp     bl, cl                  ;a (hl) b c d e h l
+                jz      otco
+                cmp     al, cl
+                jc      otco
+                sub     dh, 2
+                sub     al, cl                  ; h l > 6 7
+                add     al, bl
+otco            xchg    ax, bx
+                jmp     ehdd
+ataj            add     dh, 3
+                mov     cl, 8
+                call    saixd                   ;46 4e 56 5e 66 6e
+                db      $26
+ehdd            mov     ch, [bx]
+                pop     ax
+                shr     al, 3                   ;en bx conservo fuente dato
+                add     al, 2
+                and     al, 111b
+                jz      hhhh                    ;destino (hl) o (ix+d)
+                xor     al, 1
+                cmp     PRB, cl
+                jz      otc2
+                cmp     al, cl
+                jc      otc2
+                sub     al, cl
+                add     al, PRB
+otc2            add     di, ax
+                mov     [di], ch
+                ret
+hhhh            add     dh, 3
+                cmp     cl, 8
+                jz      halt                    ;destino=(hl),origen=(hl)
+                mov     al, ch
+                cmp     bl, 8                   ;destino=(ix+d),origen =ixh/ixl
+                push    depu
+                jc      saixd
+                salc
+                and     bl, bh
+                add     bl, cl
+                xlat
+saixd           mov     bl, PRB
+                cmp     bl, 6
+                mov     bx, [bx]
+                jz      inpx
+                add     dh, 8
+                push    ax
+                db      $26
+                lodsb
+                cbw
+                add     bx, ax
+                pop     ax
+inpx            ret
+_ss             shr     al, 3                   ;00 01 02 03 04
+                jnc     ssl
+                jmp     ssh
 
-@SSL:   SHR     AL,1   ;00 02 04 06 08
-        jnc @SSLL
-        JMP     @SSLH
-@SSLL:  SHR     AL,1   ;00 04 08 0C 10
-        JC      _INCRU
-@SSLLL: SHR     AL,1   ;00 08 10 18 20 28 30 38
-        JC      @SSLLLH
-@SSLLLL:SHR     AL,1   ;00 10 20 30
-        JC      @SSLLLLH
-@SSLLLLL:JZ     _NOP
-;;JR NZ,dis ;OP 20
-_JNZ:   ADD     DH,3
-        TEST    F,01000000b
-@AJMP:  JZ      _JUMP
-@INRE:  INC     SI
-_NOP:   RET
-@SSLLLLH:JZ _DJNZ
-;;JR NC,dis ;OP 30
-_JNC:   ADC     DH,BL
-        TEST    F,00000001b
-        JMP     @AJMP
-;;DJNZ (LOOP)  ;OP 10
-_DJNZ:  ADD     DH,4
-        DEC     B
-        JZ      @INRE
-;;JP dis (JMP) ;OP 18 "JMP"
-_JUMP:  ADD     DH,5
-        DB      26h
-        LODSB
-        CBW
-        ADD     SI,AX
-        RET
-@SSLLLH:ADC     DH,BL
-        SHR     AL,1          ;08 18 28 38
-        JC      @SSLLLHH
-@SSLLLHL:JZ     _EXAF ;08 28
-;;JM NC (JS)  ;OP 28
-_JZ:    TEST    F,01000000b
-@BJMP:  JNZ     _JUMP
-        JZ      @INRE
-;;EX AF,AF'  ;OP 08 "EX AF,AF'"
-_EXAF:  SUB     DH,3
-        MOV     AH,A
-        MOV     AL,F
-        XCHG    AX,[DI+8]
-        MOV     A,AH
-        MOV     F,AL
-        RET
-@SSLLLHH:JZ     _JUMP;18 38
-;;JP NC (JC/JNC) ;OP 38
-_JC:    TEST    F,00000001b
-        JMP     @BJMP
-;;INC/DEC B,C,D,E,A,(HL) ;04,0C,14,1C,24,2C,34,3C
-_DECRU: MOV     CL,BL
-_INCRU: AND     F,BH
-        OR      F,CL
-        SHL     CL,CL
-        OR      CL,111b
-        MOV     BYTE PTR DS:[@INHL+1],CL
-        ADD     BX,AX
-        AND     BL,111b
-        JNZ     @HLSF
-        ADD     DH,7      ;34 35
-        CALL    @SAIXD
-        PUSH    ES
-        POP     DS
-        JMP     @INHL
-@HLSF:  XOR     BL,BH
-        CMP     BL,6
-        JC      @INHL
-        INC     DH
-        SUB     BL,6
-        ADD     BL,PRB
-@INHL:  INC     BYTE PTR DS:[BX]
-        MOV     BL,BYTE PTR DS:[BX]
-        PUSH    CS
-        POP     DS
-        LAHF
-        JNO     @OSNV
-        OR      F,100b
-@OSNV:  AND     AH,11010000b
-        OR      F,AH
-        AND     BL,00101000b
-        OR      F,BL
-        RET
-@SSLH:  SHR     AL,1                ;02 06 0A 0E 12
-        JNC     @SSLHL
-;;LD X,N  ;X=B,C,D,E,H,L,X,A ;OP 06,0E,16,1E,26,2E,XX,3E
-_LDXN:  ADC     DH,BL
-        ADD     AX,BX
-        AND     AL,111b
-        JZ      _LDHLN
-        XOR     AL,AH
-        CMP     AL,6
-        JC      @MALO
-        SUB     DH,BL
-        SUB     AL,6
-        ADD     AL,PRB
-@MALO:  XCHG    BX,AX
-        DB      26h
-        LODSB
-        MOV     BYTE PTR DS:[BX],AL
-        RET
-@SSLHL: SHR     AL,1                ;02 0A 12 1A
-        JC      @SSLHLH
-@SSLHLL:CMP     AL,2       ;02 12 22 32
-        JNC     @2232
-;;LD (BC/DE),A   ;OPS 02,12
-_LDXXA: ADC     DH,BL
-        DW      0C000h ;ADD     AL,AL
-        ADD     BX,AX
-        MOV     AL,A
-        MOV     DI,WORD PTR DS:[BX]
-        JMP     @TESD
-@2232:  JNZ     _LDNNA
-;;LD (NN),HL   ;OP 22
-_LNNHL: MOV     BL,PRB
-        MOV     AX,[BX]
-@LDIM:  ADD     DH,12
-        XCHG    DI,AX
-        DB      26h
-        LODSW
-        CMP     AH,40h
-        XCHG    DI,AX
-        JC      @NST0
-        STOSW
-@NST0:  RET
-;;LD (NN),A  ;OP 32
-_LDNNA: ADD     DH,9
-        DB      026h
-        LODSW
-        MOV     DI,[DI]
-        XCHG    AX,DI
-@TESD:  JMP     @SDBE
-@SSLHLH:CMP     AL,2                       ;0A 1A 2A 3A
-        JNC     @2A3A
-;;LD A,(BC/DE)  ;OPS 0A,1A
-_LDAXX: ADC     DH,BL
-        DW      0C000h ;ADD     AL,AL
-        ADD     BX,AX
-        MOV     BX,WORD PTR DS:[BX]
-        MOV     AL,BYTE PTR ES:[BX]
-        MOV     A,AL
-        RET
-@2A3A:  JNZ     _LDANN
-;;LD HL,(NN) ;OP 2A
-_LHLNN: MOV     BL,PRB
-@LDIX:  ADD     DH,12
-        DB      26h
-        LODSW
-        XCHG    DI,AX
-        MOV     AX,WORD PTR ES:[DI]
-        MOV     WORD PTR DS:[BX],AX
-        RET
-;;LD A,(NN)  ;OP 3A
-_LDANN: ADD     DH,9
-        DB      26h
-        LODSW
-        XCHG    AX,BX
-        MOV     AL,ES:[BX]
-        MOV     A,AL
-        RET
-;;LD (HL),N  ;OP 36
-_LDHLN: ADD     DH,3
-        CALL    @SAIXD ;;;;me falta un puto ciclo
-        MOV     DI,BX
-        DB      26h
-        LODSB
-@SDBE:  JMP     @ESDB
-@SSH:   SHR     AL,1         ;01 03 05 07 ...
-        JC      @SSHH
-@SSHL:  SHR     AL,1         ;01 05 09 0D 11 ...
-        jnc @SSHLL
-        jmp     _DECRU
-@SSHLL: SHR     AL,1         ;01 09 11 19...
-        JC      _AHLSS
-;;LD XX,NN ;XX=BC,DE,HL,SP  ;01 11 21 31
-_LRRNN: ADD     DH,6
-        CMP     AL,2
-        JNZ     _CNTI
-        MOV     BL,PRB
-        JZ      @D222
-_CNTI:  JC      _NLDS
-_LDSPN: DB      26h  ; OP 31 "LD SP,NN"
-        LODSW
-        XCHG    BP,AX
-        RET
-_NLDS:  DW      0C000h ;ADD     AL,AL    ;OPS 01,11,21 "LD RR,NN"  ;19        +1
-        ADD     BX,AX
-@D222:  DB      26h
-        LODSW
-        MOV     WORD PTR DS:[BX],AX
-        RET
-;;ADD RR,NN  ;OPS 09,19,29,39
-_AHLSS: ADD     DH,7
-        CMP     AL,2
-        JC      _ADHL
-        JNZ     _AHLSP
-        MOV     BL,PRB
-        JMP     @D244
-;;ADD HL,BC/DE  ;09 19
-_ADHL:  DW      0C000h ;ADD     AL,AL
-        ADD     BX,AX
-@D244:  MOV     AX,WORD PTR DS:[BX]
-        DB      3Dh
-_AHLSP: MOV     AX,BP  ;39
-@SUMA:  MOV     BL,PRB
-        AND     F,11000100b   ; N a cero por ahora
-        ADD     WORD PTR DS:[BX],AX
-        LAHF
-        MOV     AL,BYTE PTR DS:[BX+1]
-        AND     AX,0000000100101000b
-        OR      AL,AH
-        OR      F,AL
-@DD16:  RET
-;;DEC B,C,D,E,A,(HL) ;05 0D 15 1D 25 2D 35 3D;;;;;;;;CONJUNTAR CON EL INCREMENTO
-@SSHH:  SHR     AL,1                   ;03 07 0B 0F 13 ...
-        JC      @SSHHH
-@SSHHL: ADD     DH,BL
-        CMP     AL,6                   ;03 0B 13 1B 23 2B 33 3B
-        JNC     _SPLH
-;;INC/DEC BC/DE/HL  ;OPS 03,0B,13,1B,23 2B
-        SHR     AL,1
-        RCL     CL,4
-        OR      CL,7
-        MOV     BYTE PTR DS:[@HL01+1],CL
-_INCXX: DW      0C000h ;ADD     AL,AL
-        ADD     AX,BX
-        CMP     AL,6
-        MOV     BL,PRB
-        JZ      @HL01
-        XCHG    BX,AX
-@HL01:  INC     WORD PTR DS:[BX]
-        RET
-_SPLH:  JNZ     _DECSP
-;;INC SP   ;OP 33
-_INCSP: INC     BP
-        INC     BP
-;;DEC SP   ;OP 3B
-_DECSP: DEC     BP
-        RET
-@SSHHH: CMP     AL,4          ;07,0F,17,1F,27,2F,37,3F,47,4F
-        JNC     @SHHHL
-;;RLCA RRCA RLA RRA  ;OP 07,0F,17,1F
-_RLCA:  SHL     AL,3
-        OR      AL,5
-        MOV     BYTE PTR DS:[OFFSET @MAG2+1],AL
-        AND     F,11000101b
-        SHR     F,1
-@MAG2:  ROL     A,1
-        RCL     F,1
-        MOV     AL,A
-        AND     AL,00101000b
-        OR      F,AL
-        RET
-@SHHHL: SUB     AL,5      ;27 2F 37 3F 
-        JNC     @NO27
-;;DAA   ;OP 27
-_DAA:   MOV     AL,A
-        MOV     AH,F
-        TEST    AH,2
-        JNZ     DAAS
-        SAHF
-        DAA
-        LAHF
-        MOV     A,AL
-        MOV     F,AH
-        RET
-DAAS:   SAHF
-        DAS
-        LAHF
-        MOV     A,AL
-        MOV     F,AH
-        RET
-@NO27:  JNZ _SCF
-;;CPL  ;OP 2F
-_CPL:   NOT     A
-        MOV     AL,A
-        AND     AL,00101000b
-        OR      AL,00010010b
-        AND     F,11000101b
-        OR      F,AL
-        RET
-;;SCF/CCF  ;OP 37 3F   ;1 2
-_SCF:   AND     F,11000101b     ;H N a 0
-        MOV     CL,A
-        AND     CL,00101000b
-        DEC     AX
-        JNZ     CCF
-SCF:    OR      F,BH
-        OR      F,CL
-        RET
-CCF:    TEST    F,BH
-        JZ      SCF
-        MOV     BH,00010000b     ;H a 1
-        DEC     DX       ;;CHAPUZA   ;C a 0
-        JMP     SCF
+depu            mov     di, bx
+esdb            cmp     di, $4000               ;lo puedo quitar luego
+                jc      nst1
+                stosb
+nst1            ret
+halt            sub     dh,6
+                dec     si                      ;op 76 halt      ;4 =1
+                ret
 
-NewInt9:PUSH    AX              ;guardo ax y cx
-        PUSH    CX
-        IN      AL,60h          ;leo tecla
-        MOV     AH,1
-        CMP     AL,0E0h         ;miro si es extendida
-        JNZ     @NEXT
-        MOV     EXTEN,AH        ;pongo a 1 el bit extendida
-        JMP     @FINS           ;acabo
-@NEXT:  CMP     EXTEN,AH        ;miro si antes he recibido caracter extend
-        CBW
-        JNZ     @AEXT
-        CMP     AL,02Ah         ;si lo he recibido comparo con tecla ??
-        JZ      @FINS           ;acabo
-@AEXT:  MOV     EXTEN,AH        ;reseteo exten
-        MOV     CX,010Ah        ;BANCO 8
-        SHL     AX,1            ;pongo codigo make en ah
-        SHR     AL,1
-        SUB     AL,1            ;0-2
-        JZ      @DPAF           ;escape?
-        SUB     AL,58-1
-        CMP     AL,5
-        JC      @DPAF
-        DEC     CX
-        SUB     AL,63-58
-        CMP     AL,5
-        JC      @DPAF
-        DEC     CX
-        SUB     AL,1Ch-63
-        CMP     AL,1
-        JZ      @DPAF
-        SUB     AL,2Fh-1Bh ;2B-30
-        CMP     AL,3       ;30-32
-        JC      @DPNE
-        SUB     AL,9
-        JZ      @DPAF      ;39
-        DEC     CX
-        SUB     AL,1Ch-39h ;1C
-        JZ      @DPAF
-        SUB     AL,7       ;23
-        CMP     AL,4       ;23-26
-        JC      @DPNE
-        DEC     CX
-        SUB     AL,15h-23h ;15
-        CMP     AL,5       ;15-19
-        JC      @DPNE
-        DEC     CX
-        SUB     AL,7-15h   ;7
-        CMP     AL,5       ;7-B
-        JNC     @SIPO
-@DPNE:  NOT     AL
-        ADD     AL,5
-@DPAF:  XCHG    AX,CX
-        ROL     AH,CL
-        PUSH    BX
-        MOV     BX,OFFSET TECLADO-1
-        ADD     BL,AL
-        MOV     AL,BYTE PTR CS:[BX]
-        SHR     CH,1
-        JC      @MAKE
-        NOT     AH
-        AND     AL,AH
-        DB      3Dh
-@MAKE:  OR      AL,AH
-        MOV     BYTE PTR CS:[BX],AL
-        POP     BX
-@FINS:  MOV     AL,20h
-        OUT     20h,AL
-        POP     CX
-        POP     AX
-        IRET
-@SIPO:  DEC     CX
-        SUB     AL,2-7     ;2
-        CMP     AL,5       ;2-6
-        JC      @DPAF
-        DEC     CX
-        SUB     AL,10h-2   ;10
-        CMP     AL,5       ;10-14
-        JC      @DPAF
-        DEC     CX
-        SUB     AL,1Eh-10h ;1E
-        CMP     AL,5       ;1E-23
-        JC      @DPAF
-        DEC     CX
-        SUB     AL,2Ah-1Eh ;2A
-        JZ      @DPAF
-        DEC     AX
-        CMP     AL,5       ;2B-2F
-        JC      @DPAF
-        DEC     CX
-        SUB     AL,72-2Bh  ;72 DERECHA
-        JZ      @ARI
-        SUB     AL,3
-        JZ      @IZQ
-        SUB     AL,2
-        JZ      @DPAF
-        SUB     AL,3
-        JZ      @ABA
-        SUB     AL,15-80
-        JNZ     @FINS
-        INC     AX
-@ARI:   INC     AX
-@ABA:   INC     AX
-@IZQ:   INC     AX
-        JMP     @DPAF
+ssl             shr     al,1   ;00 02 04 06 08
+                jnc     ssll
+                jmp     sslh
+ssll            shr     al, 1                   ;00 04 08 0c 10
+                jc      incru
+                shr     al, 1                   ;00 08 10 18 20 28 30 38
+                jc      sslllh
+                shr     al, 1                   ;00 10 20 30
+                jc      ssllllh
+                jz      _nop
+        ;;JR NZ,dis ;OP 20
+                add     dh, 3
+                test    F, 01000000b
+ajmp            jz      jump
+inre            inc     si
+_nop            ret
+ssllllh         jz      djnz
+        ;;JR NC,dis ;OP 30
+                adc     dh, bl
+                test    F, 00000001b
+                jmp     ajmp
+        ;;djnz (loop)  ;op 10
+djnz            add     dh, 4
+                dec     B
+                jz      inre
+        ;;jp dis (jmp) ;op 18 "jmp"
+jump            add     dh, 5
+                db      $26
+                lodsb
+                cbw
+                add     si, ax
+                ret
+sslllh          adc     dh, bl
+                shr     al, 1                   ;08 18 28 38
+                jc      sslllhh
+                jz      exaf                    ;08 28
+        ;;JM NC (JS)  ;OP 28
+                test    F, 01000000b
+bjmp            jnz     jump
+                jz      inre
+        ;;EX AF,AF'  ;OP 08 "EX AF,AF'"
+exaf            sub     dh, 3
+                mov     ah, A
+                mov     al, F
+                xchg    ax, [di+8]
+                mov     A, ah
+                mov     F, al
+                ret
+sslllhh         jz     jump                     ;18 38
+        ;;JP NC (JC/JNC) ;OP 38
+                test    F, 00000001b
+                jmp     bjmp
+        ;;INC/DEC B,C,D,E,A,(HL)                ;04,0C,14,1C,24,2C,34,3C
+decru           mov     cl, bl
+incru           and     F, bh
+                or      F, cl
+                shl     cl, cl
+                or      cl, 111b
+                mov     [inhl+1], cl
+                add     bx, ax
+                and     bl, 111b
+                jnz     hlsf
+                add     dh,7                    ;34 35
+                call    saixd
+                push    es
+                pop     ds
+                jmp     inhl
+hlsf            xor     bl, bh
+                cmp     bl, 6
+                jc      inhl
+                inc     dh
+                sub     bl, 6
+                add     bl, PRB
+inhl            inc     byte [bx]
+                mov     bl, [bx]
+                push    cs
+                pop     ds
+                lahf
+                jno     osnv
+                or      F, 100b
+osnv            and     ah, 11010000b
+                or      F, ah
+                and     bl, 00101000b
+                or      F, bl
+                ret
+sslh            shr     al, 1                   ;02 06 0a 0e 12
+                jnc     sslhl
+        ;;LD X,N  ;X=B,C,D,E,H,L,X,A            ;OP 06,0E,16,1E,26,2E,XX,3E
+                adc     dh, bl
+                add     ax, bx
+                and     al, 111b
+                jz      ldhln
+                xor     al, ah
+                cmp     al, 6
+                jc      malo
+                sub     dh, bl
+                sub     al, 6
+                add     al, PRB
+malo            xchg    bx, ax
+                db      $26
+                lodsb
+                mov     [bx], al
+                ret
+sslhl           shr     al, 1                   ;02 0a 12 1a
+                jc      sslhlh
+                cmp     al, 2                   ;02 12 22 32
+                jnc     d232
+        ;;LD (BC/DE),A                          ;OPS 02,12
+                adc     dh, bl
+                add     al, al
+                add     bx, ax
+                mov     al, A
+                mov     di, [bx]
+                jmp     tesd
+d232            jnz     ldnna
+        ;;LD (NN),HL   ;OP 22
+                mov     bl, PRB
+                mov     ax, [bx]
+ldim            add     dh, 12
+                xchg    di, ax
+                db      $26
+                lodsw
+                cmp     ah, 40h
+                xchg    di, ax
+                jc      nst0
+                stosw
+nst0            ret
+        ;;LD (NN),A  ;OP 32
+ldnna           add     dh, 9
+                db      $26
+                lodsw
+                mov     di, [di]
+                xchg    ax, di
+tesd            jmp     sdbe
+sslhlh          cmp     al, 2                   ;0a 1a 2a 3a
+                jnc     da3a
+        ;;LD A,(BC/DE)  ;OPS 0A,1A
+                adc     dh, bl
+                add     al, al
+                add     bx, ax
+                mov     bx, [bx]
+                mov     al, [es:bx]
+                mov     A, al
+                ret
+da3a            jnz     ldann
+        ;;LD HL,(NN) ;OP 2A
+                mov     bl, PRB
+ldix            add     dh, 12
+                db      $26
+                lodsw
+                xchg    di, ax
+                mov     ax, [es:di]
+                mov     [bx], ax
+                ret
+        ;;LD A,(NN)  ;OP 3A
+ldann           add     dh, 9
+                db      $26
+                lodsw
+                xchg    ax, bx
+                mov     al, [es:bx]
+                mov     A, al
+                ret
+        ;;LD (HL),N                             ;OP 36
+ldhln           add     dh, 3
+                call    saixd                   ;;;;me falta un p.ciclo
+                mov     di, bx
+                db      $26
+                lodsb
+sdbe            jmp     esdb
+ssh             shr     al, 1                   ;01 03 05 07 ...
+                jc      sshh
+                shr     al, 1                   ;01 05 09 0d 11 ...
+                jnc     sshll
+                jmp     decru
+sshll           shr     al, 1                   ;01 09 11 19...
+                jc      ahlss
+        ;;LD XX,NN ;XX=BC,DE,HL,SP              ;01 11 21 31
+                add     dh, 6
+                cmp     al, 2
+                jnz     cnti
+                mov     bl, PRB
+                jz      d222
+cnti            jc      nlds
+                db      $26  ; op 31 "ld sp,nn"
+                lodsw
+                xchg    bp, ax
+                ret
+nlds            add     al, al                  ;ops 01,11,21 "ld rr,nn"  ;19        +1
+                add     bx, ax
+d222            db      $26
+                lodsw
+                mov     [bx], ax
+                ret
+        ;;ADD RR,NN  ;OPS 09,19,29,39
+ahlss           add     dh, 7
+                cmp     al, 2
+                jc      adhl
+                jnz     ahlsp
+                mov     bl, PRB
+                jmp     d244
+        ;;ADD HL,BC/DE  ;09 19
+adhl            add     al, al
+                add     bx, ax
+d244            mov     ax, [bx]
+                db      $3d
+ahlsp           mov     ax, bp                  ;39
+        @suma:  mov     bl, PRB
+                and     F, 11000100b            ; n a cero por ahora
+                add     [bx], ax
+                lahf
+                mov     al, [bx+1]
+                and     ax, 0000000100101000b
+                or      al, ah
+                or      F, al
+                ret
+        ;;DEC B,C,D,E,A,(HL)                    ;05 0D 15 1D 25 2D 35 3D;;;;;;;;CONJUNTAR CON EL INCREMENTO
+sshh            shr     al, 1                   ;03 07 0b 0f 13 ...
+                jc      sshhh
+                add     dh, bl
+                cmp     al, 6                   ;03 0b 13 1b 23 2b 33 3b
+                jnc     splh
+        ;;INC/DEC BC/DE/HL                      ;OPS 03,0B,13,1B,23 2B
+                shr     al, 1
+                rcl     cl, 4
+                or      cl, 7
+                mov     [hl01+1], cl
+                add     al, al
+                add     ax, bx
+                cmp     al, 6
+                mov     bl, PRB
+                jz      hl01
+                xchg    bx, ax
+hl01            inc     word [bx]
+                ret
+splh            jnz     decsp
+        ;;INC SP                                ;OP 33
+                inc     bp
+                inc     bp
+        ;;DEC SP                                ;OP 3B
+decsp           dec     bp
+                ret
+sshhh           cmp     al, 4                   ;07,0f,17,1f,27,2f,37,3f,47,4f
+                jnc     shhhl
+        ;;RLCA RRCA RLA RRA                     ;OP 07,0F,17,1F
+                shl     al, 3
+                or      al, 5
+                mov     [mag2+1], al
+                and     F, 11000101b
+                shr     F, 1
+mag2            rol     A, 1
+                rcl     F, 1
+                mov     al, A
+                and     al, 00101000b
+                or      F, al
+                ret
+shhhl           sub     al, 5                   ;27 2f 37 3f 
+                jnc     no27
+        ;;DAA   ;OP 27
+                mov     al, A
+                mov     ah, F
+                test    ah, 2
+                jnz     daas
+                sahf
+                daa
+                lahf
+                mov     A, al
+                mov     F, ah
+                ret
+daas            sahf
+                das
+                lahf
+                mov     A, al
+                mov     F, ah
+                ret
+no27            jnz     tscf
+        ;;CPL                                   ;OP 2F
+                not     A
+                mov     al, A
+                and     al, 00101000b
+                or      al, 00010010b
+                and     F, 11000101b
+                or      F, al
+                ret
+        ;;SCF/CCF                               ;OP 37 3F   ;1 2
+tscf            and     F, 11000101b            ;h n a 0
+                mov     cl, A
+                and     cl, 00101000b
+                dec     ax
+                jnz     ccf
+scf             or      F, bh
+                or      F, cl
+                ret
+ccf             test    F, bh
+                jz      scf
+                mov     bh, 00010000b           ;h a 1
+                dec     dx                      ;;chapuza   ;c a 0
+                jmp     scf
 
-IF JOYST
-@LEEJO: PUSH  DX
-        MOV   DX,201h
-@ALO:   OUT   DX,AL
-        XOR   CX,CX
-        XOR   BX,BX
-@OTA:   IN    AL,DX
-        TEST  AL,1
-        JZ    @PPA
-        INC   CX
-        JZ    @NJOSA
-@PPA:   TEST  AL,2
-        JZ    @PPB
-        INC   BX
-@PPB:   TEST  AL,3
-        JNZ   @OTA
-        SHR   AL,5
-        MOV   BYTE PTR DS:[OFFSET @DESJO+1],ah
-@NJOSA: POP   DX
-        RET
-@EMJO:  JC      @LLT
-        not     al
-        and     byte ptr ds:[JOYSTIK], al
-        RET
-@LLT:   or      byte ptr ds:[JOYSTIK], al
-        RET
-JOYSTIK DB 0FFh
-ENDIF
-KEMPSTO DB 0FFh
-TECLADO DB 0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh
-FUNCIOS DW 0FFFFh
-IF JOYST
-  TECAC DB 12 DUP (0FFh)
-ELSE
-  TECAC DB 11 DUP (0FFh)
-ENDIF
+NewInt9         push    ax                      ;guardo ax y cx
+                push    cx
+                in      al, $60                 ;leo tecla
+                mov     ah, 1
+                cmp     al, $0e0                ;miro si es extendida
+                jnz     next
+                mov     EXTEN, ah               ;pongo a 1 el bit extendida
+                jmp     fins                    ;acabo
+next            cmp     EXTEN, ah               ;miro si antes he recibido caracter extend
+                cbw
+                jnz     aext
+                cmp     al, $2a                 ;si lo he recibido comparo con tecla ??
+                jz      fins                    ;acabo
+aext            mov     EXTEN, ah               ;reseteo exten
+                mov     cx, $010a               ;banco 8
+                shl     ax, 1                   ;pongo codigo make en ah
+                shr     al, 1
+                sub     al, 1                   ;0-2
+                jz      dpaf                    ;escape?
+                sub     al, 58-1
+                cmp     al, 5
+                jc      dpaf
+                dec     cx
+                sub     al, 63-58
+                cmp     al, 5
+                jc      dpaf
+                dec     cx
+                sub     al, $1c-63
+                cmp     al, 1
+                jz      dpaf
+                sub     al, $2f-$1b             ;2b-30
+                cmp     al, 3                   ;30-32
+                jc      dpne
+                sub     al, 9
+                jz      dpaf                    ;39
+                dec     cx
+                sub     al, $1c-$39             ;1c
+                jz      dpaf
+                sub     al, 7                   ;23
+                cmp     al, 4                   ;23-26
+                jc      dpne
+                dec     cx
+                sub     al, $15-$23             ;15
+                cmp     al, 5                   ;15-19
+                jc      dpne
+                dec     cx
+                sub     al, 7-$15               ;7
+                cmp     al, 5                   ;7-b
+                jnc     sipo
+dpne            not     al
+                add     al, 5
+dpaf            xchg    ax, cx
+                rol     ah, cl
+                push    bx
+                mov     bx, teclado-1
+                add     bl, al
+                mov     al, [cs:bx]
+                shr     ch, 1
+                jc      make
+                not     ah
+                and     al, ah
+                db      $3d
+make            or      al, ah
+                mov     [cs:bx], al
+                pop     bx
+fins            mov     al, $20
+                out     $20, al
+                pop     cx
+                pop     ax
+                iret
+sipo            dec     cx
+                sub     al, 2-7                 ;2
+                cmp     al, 5                   ;2-6
+                jc      dpaf
+                dec     cx
+                sub     al, $10-2               ;10
+                cmp     al, 5                   ;10-14
+                jc      dpaf
+                dec     cx
+                sub     al, $1e-$10             ;1e
+                cmp     al, 5                   ;1e-23
+                jc      dpaf
+                dec     cx
+                sub     al, $2a-$1e             ;2a
+                jz      dpaf
+                dec     ax
+                cmp     al, 5                   ;2b-2f
+                jc      dpaf
+                dec     cx
+                sub     al, 72-$2b              ;72 derecha
+                jz      ari
+                sub     al, 3
+                jz      izq
+                sub     al, 2
+                jz      dpaf
+                sub     al, 3
+                jz      aba
+                sub     al, 15-80
+                jnz     fins
+                inc     ax
+ari             inc     ax
+aba             inc     ax
+izq             inc     ax
+                jmp     dpaf
 
-IF SOUNDB
-OWN_IRQ:push    ax
-        push    dx
-adbase: mov     dx, 0
-        in      al,dx
-trik:   mov     ax,0
-        mov     byte ptr cs:[@aqui+1],al
-        CMP     PUNTEG1,3
-        JNC     @dos
-        MOV     AX,624
-@dos:   MOV     PUNTEG,ax
-        mov     al,020h
-        out     020h,al         ;ACKNOWLEDGE HARDWARE INTERRUPT
-        pop     dx
-        pop     ax
-        IRET
-@waitw: in      al,dx
-        or      al,al
-        jns     @endl2
-        loop    @waitw
-@endl2: ret
-ENDIF
+%if JOYST
+leejo           push    dx
+                mov     dx, $0201
+                out     dx, al
+                xor     cx, cx
+                xor     bx, bx
+ota             in      al, dx
+                test    al, 1
+                jz      ppa
+                inc     cx
+                jz      njosa
+ppa             test    al, 2
+                jz      ppb
+                inc     bx
+ppb             test    al, 3
+                jnz     ota
+                shr     al, 5
+                mov     [desjo+1], ah
+njosa           pop     dx
+                ret
+emjo            jc      llt
+                not     al
+                and     [joystik], al
+                ret
+llt             or      [joystik], al
+                ret
+        joystik db      255
+%endif
+kempsto         db      255
+teclado         db      255, 255, 255, 255, 255, 255, 255, 255
+funcios         dw      $0ffff
+%if JOYST
+tecac           times   12  db  255
+%else
+tecac           times   11  db  255
+%endif
 
-PRESEN  DB 24,24,24,24,0,10Fh-70h,' BACTERIA 2.0'
-IF SOUNDB
-        DB 'A'
-ELSE
-        DB 'B'
-ENDIF
-        DB '               ',0,104h-0Fh,'‹€',0,04Eh-4,'‹€',0,0E2h-4Eh,'‹€'
-        DB 0,0129h-0E2h,'‹€',0,90h-29h,'‹€€',24,24
-        DB '€',0,0F0h-70h,'  The smallest emulator in the world  €',24,24
-        DB '€',0,0F0h-70h,'    Made in assembly language by:     €',24,24
+%if SOUNDB
+OWN_IRQ         push    ax
+                push    dx
+adbase          mov     dx, 0
+                in      al, dx
+trik            mov     ax, 0
+                mov     [cs:aqui+1], al
+                cmp     PUNTEG1, 3
+                jnc     dos
+                mov     ax, 624
+dos             mov     PUNTEG, ax
+                mov     al, $20
+                out     $20, al                 ;acknowledge hardware interrupt
+                pop     dx
+                pop     ax
+                iret
+waitw           in      al, dx
+                or      al, al
+                jns     endl
+                loop    waitw
+endl            ret
+%endif
 
-        DB '€',0,0B0h-70h,'     Antonio JosÇ Villena Godoy       €',24,24
-        DB '€',0,0F0h-70h,'        espineter@yahoo.com           €',24,24
-        DB 'ﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂ',24,24
-        DB '     ',0,0F2h-70h,'ﬂﬂﬂﬂﬂﬂ',0,17Eh-0F2h,' CP 29770, Torrox ',0,0E4h-7Eh,'ﬂﬂﬂﬂﬂﬂ',24,24
-        DB '          ',0,72h-70h,'ﬂﬂﬂﬂﬂﬂ',0,74h-72h,'  MALAGA, Ap 125  ﬂﬂﬂﬂﬂﬂ'
-        DB 24,24,24,24,24,'     ',0,100h-070h
+presen          db 24,24,24,24,0,$10F-$70,' BACTERIA 2.0'
+%if SOUNDB
+                db 'A'
+%else
+                db 'B'
+%endif
+                db '               ',0,$104-$0f,220,219,0,$4e-4,220,219,0,$0e2-$4e,220,219
+                db 0,$129-$0e2,220,219,0,$90-$29,220,219,219,24,24
+                db 219,0,$0f0-$70,'  The smallest emulator in the world  ',219,24,24
+                db 219,0,$0f0-$70,'    Made in assembly language by:     ',219,24,24
+                db 219,0,$0b0-$70,'     Antonio Jos',$82,' Villena Godoy       ',219,24,24
+                db 219,0,$0f0-$70,'        espineter@yahoo.com           ',219,24,24
+                times 40  db  223
+                db 24,24
+                db '     ',0,$0f2-$70,223,223,223,223,223,223,0,$17e-$0f2,' CP 29770, Torrox ',0,$0e4-$7e,223,223,223,223,223,223,24,24
+                db '          ',0,$72-$70,223,223,223,223,223,223,0,$74-$72,'  MALAGA, Ap 125  ',223,223,223,223,223,223
+                db 24,24,24,24,24,'     ',0,$100-$70
 
-   cade DB 'Not found '
-   nrom DB '48.ROM',0,36
+cade            db 'Not found '
+nrom            db '48.ROM',0,36
 
-COLORES DB  00,00,00
-        DB  00,00,40
-        DB  56,00,00
-        DB  56,00,44
-        DB  00,52,00
-        DB  00,52,52
-        DB  52,52,00
-        DB  48,50,48
-        DB  00,00,00
-        DB  00,00,44
-        DB  60,00,00
-        DB  62,00,56
-        DB  00,60,00
-        DB  00,60,62
-        DB  62,60,00
-        DB  62,60,62
-        DB  12,34,56     ;color de grabaci√≥n
+colores         db  00,00,00
+                db  00,00,40
+                db  56,00,00
+                db  56,00,44
+                db  00,52,00
+                db  00,52,52
+                db  52,52,00
+                db  48,50,48
+                db  00,00,00
+                db  00,00,44
+                db  60,00,00
+                db  62,00,56
+                db  00,60,00
+                db  00,60,62
+                db  62,60,00
+                db  62,60,62
+                db  12,34,56     ;color de grabaci√≥n
 
-ROTEMO  DB 7,0Fh,17h,1Fh,27h,3Fh,17h,2Fh
-OPCOS   DB 0,10h,28h,18h,20h,30h,8,38h
+rotemo          db      $07, $0f, $17, $1f, $27, $3f, $17, $2f
+opcos           db      $00, $10, $28, $18, $20, $30, $08, $38
 
-@EXECU: JNZ     @TETEA
-@EXF4:  PUSH    DI                              ;F4
-        MOV     DI,16384
-        MOV     SI,OFFSET JUEGO
-        MOV     CX,6000h ;;;(16384*3/256)/2
-        REP     MOVSW
-        MOV     DI,100h
-        MOV     CL,TOTREG
-@TRAS:  LODSB
-        MOV     [DI],AL
-        INC     DI
-        LOOP    @TRAS
-        POP     DI
-        MOV     SI,SNAPSI
-        MOV     BP,SNAPBP
-        MOV     F,SNAPF
-@RSTP:  MOV     PFAIR,CX ;ecx los dos
-        MOV     TVACIO,CX
-        XCHG    CL,TMTEC
-        RET
-@TETEA: LOOP    @ATDE
+execu           jnz     tetea
+exf4            push    di                      ;F4
+                mov     di, $4000
+                mov     si, juego
+                mov     cx, $6000               ;;;(16384*3/256)/2
+                rep     movsw
+                mov     di, $100
+                mov     cl, TOTREG
+tras            lodsb
+                mov     [di], al
+                inc     di
+                loop    tras
+                pop     di
+                mov     si, SNAPSI
+                mov     bp, SNAPBP
+                mov     F, SNAPF
+rstp            mov     PFAIR, cx               ;ecx los dos
+                mov     TVACIO, cx
+                xchg    cl, TMTEC
+                ret
+tetea           loop    atde
 
-@GRABA: MOV     SNAPSI,SI                       ;F3
-        MOV     SNAPBP,BP
-        MOV     SNAPF,F
-        XOR     CX,CX
-        PUSHA
-        MOV     SI,16384
-        MOV     DI,OFFSET JUEGO
-@BKLT:  MOV     AL,BYTE PTR ES:[SI]
-        MOV     BYTE PTR DS:[DI],AL
-        INC     DI
-        INC     SI
-        JNZ     @BKLT
-        MOV     SI,100h
-        MOV     CL,TOTREG
-@O3LD:  LODSB
-        MOV     BYTE PTR DS:[DI],AL
-        INC     DI
-        LOOP    @O3LD
-        POPA
-        JMP     @RSTP
+graba           mov     SNAPSI, si              ;F3
+                mov     SNAPBP, bp
+                mov     SNAPF, F
+                xor     cx, cx
+                pusha
+                mov     si, $4000
+                mov     di, juego
+bklt            mov     al, [es:si]
+                mov     [di], al
+                inc     di
+                inc     si
+                jnz     bklt
+                mov     si, $100
+                mov     cl, TOTREG
+o3ld            lodsb
+                mov     [di], al
+                inc     di
+                loop    o3ld
+                popa
+                jmp     rstp
 
-@ATDE:                                          ;F2
-IF SOUNDB
-        DEC     CX
-ELSE
-        LOOP    @DESBE
-        MOV     BYTE PTR DS:[@CERO],03Ch
-@DESBE:
-ENDIF
-        LOOP    @NGRAB
-        PUSHA                                   ;F1
-IF SOUNDB
-        mov     si,offset BUFSO                 
-        mov     ch,1400/256
-@okek:  mov     [si],al
-        inc     si
-        loop    @okek
-ENDIF
-@RREE:  IN      AL,60h
-        test    al,80h ;;cmp      al,59+80h
-        JZ      @RREE
-@PUPA:  IN      AL,60h
-        TEST    AL,80h
-        JnZ     @PUPA
-        POPA
+atde:                                           ;F2
+%if SOUNDB
+                dec     cx
+%else
+                loop    desbe
+                mov     byte [cero], $3c
+%endif
+desbe           loop    ngrab
+                pusha                                   ;F1
+%if SOUNDB
+                mov     si, bufso
+                mov     ch, 1400/256
+okek            mov     [si], al
+                inc     si
+                loop    okek
+%endif
+rree            in      al, $60
+                test    al, $80 ;;cmp      al,59+80h
+                jz      rree
+pupa            in      al, $60
+                test    al, $80
+                jnz     pupa
+                popa
 
-@NGRAB: LOOP    @NSES
-KSALIR: MOV     SI,OFFSET PRESEN
-@SALIR:                                  ;ESCAPE
-IRQ9OFF:mov     dx,3C8h
-        DB      068h
-IRQ9SEG DW      04BFh
-        POP     DS
-        MOV     AX,2509h
-        INT     21h
-        AAD     0F2h
-        INT     10h
-        xor     bx,bx    ;KITAR EL BLINK
-        mov     ah,10h
-        int     10h
-        push    cs
-        pop     ds
+ngrab           loop    nses
+ksalir          mov     si, presen
+irq9off         mov     dx, $03c8               ;escape
+irq9seg         push    $04bf
+                pop     ds
+                mov     ax, $2509
+                int     $21
+                aad     $0f2
+                int     $10
+                xor     bx, bx                  ;kitar el blink
+                mov     ah, $10
+                int     $10
+                push    cs
+                pop     ds
+%if SOUNDB
+                in      al, $21
+pico            or      al, 00010010b
+                out     $21, al
+%endif
+                xor     di, di
+prn             push    $0b800 ;0b7f0h
+                pop     es
+                mov     cx, 20
+                mov     ax, $7000
+                db      $0f3
+st              stosw
+rp              lodsb
+                cmp     al, 24
+                jz      prn
+                jnc     st
+                lodsb
+                add     ah, al
+                jnz     rp
+                mov     ah, 2
+                mov     dh, $0a
+                int     $10
+                mov     ah, $4c
+                int     $21
+muel            pusha
+muul            mov     di, $16d4 ;en reclaim rutine
+                mov     bp, di
+                xchg    al, ah
+                stosw
+                mov     ax, 201
+papat           push    ax
+                call    panta
+                pop     ax
+                dec     ax
+                jnz     papat
+                mov     ah, $13
+                cwd
+                mov     bh, 0
+                inc     cx
+                inc     cx
+                int     $10
+lalo            loop    lalo
+                dec     al
+                jnz     lalo
+                popa
+atat            ret
+nses            loop    npla
+                xor     si, si                  ;F9
+npla            stc
+                loop    nres
+                db      $0a9                    ;test ax,.... c=0  ;F8
+nres            loop    nante
+read            pusha                           ;F7
+                salc
+                js      stlt
+                cmc
+stlt            cbw
+numebl          adc     al, 0
+                js      luka
+                mov     di, ax
+                xchg    ax, si
+                mov     ax, $4200
+                mov     bx, HFILE
+                cwd
+                xor     cx, cx
+                int     $21
+faaa            mov     ah, $3f
+                mov     dx, longt+1
+                inc     cx
+                inc     cx
+                int     $21
+                cmp     al, 2
+                jc      fnkt
+                dec     si
+                js      fnkr
+                mov     ax, $4201
+longt           mov     dx, longt+1
+                xor     cx, cx
+                int     $21
+                jmp     faaa
+fnkr            xchg    ax, di
+fnkt            mov     [numebl+1], al
+                aam     10
+                dec     ax
+luka            add     ax, '00'+1
+                jmp     muul
+nante           loop    ndepu
+                inc     cx                      ;F6
+                mov     bp, cx
+                mov     bx, PFAIR               ;leo puntero de grabaci√≥n
+                mov     ah, $23                 ;F6 es lo √∫ltimo que me desactiva
+                mov     [bx+fair], ax           ;guardo en zona
+ndepu           loop    atat                    ;F5
+                push    PFAIR
+                mov     cl, TOTNOP              ;ahora pongo nop iniciales
+                push    di
+ksxk            mov     [di], ch
+                inc     di
+                loop    ksxk
+oche            mov     dx, longt+1             ;dx=asciz filename
+                mov     si, dx                  ;si=dx para buscar el punto
+rsra            lodsb
+                cmp     al, '.'
+                jnz     rsra
+                mov     word [si], 'CO'         ;cambio el tap o sna por extension com
+                mov     byte [si+2], 'M'
+                mov     ah, $3c
+                mov     [mofe],ah
+                mov     word [mofe+3], exf4-dlda  ;sustituyo el ldsna por f4
+                int     $21
+                xchg    ax, bx                  ;pongo handle en bx
+                mov     cl, ldsna-guachi
+                push    es                      ;para hacer un salto retf pongo segmento en pila
+                push    di
+                mov     si, guachi
+                rep     movsb                   ;muevo el compresor, desde guachi hasta ldsna
+                push    ds
+                pop     es                      ;ahora es apunta a zona emulador
+                retf
+guachi          mov     di, npla
+                mov     cx, juego-npla          ;cx=borrar desde npla hasta juego
+                mov     al, $0c3                ;mediante ret
+                rep     stosb                   ;borro
+                pop     dx
+                pop     si
+                mov     cx, fair-start
+                dec     bp
+                jnz     nocm
+                lodsw
+                add     cx, si
+%if JOYST
+                xor     word [mvee],$50+((repro-pmve)^12)*$100
+%else
+                xor     word [mvee],$50+((repro-pmve)^11)*$100
+%endif
+                mov     ax, [fair]
+                inc     ax
+                mov     [iniv+1], ax
+nocm            mov     ah, $40
+                int     $21
+                push    ds
+                push    ksalir
+                retf
 
-IF SOUNDB
-        in      al,021h
-pico:   OR      AL,00010010b
-        out     021h,al
-ENDIF
-
-        XOR     DI,DI;;
-@PRN:   DB      68h
-        DW      0B800h ;0B7F0h
-        POP     ES
-        mov     cX,20
-        mov     ax,07000h
-        db      0F3h
-@ST:    STOSW
-@RP:    LODSB
-        cmp     al,24
-        jz      @PRN
-        jnc     @ST
-        lodsb
-        add     ah,al
-        jnz     @RP
-        mov     ah,2
-        mov     dh,00Ah
-        INT     10h
-        mov     ah,4Ch
-        INT     21h
-
-@MUEL:  PUSHA
-@MUUL:  MOV     DI,16D4h ;EN RECLAIM RUTINE
-        MOV     BP,DI
-        XCHG    AL,AH
-        STOSW
-        MOV     AX,201
-@PAPAT: PUSH    AX
-        CALL    @PANTA
-        POP     AX
-        DEC     AX
-        JNZ     @PAPAT
-        MOV     AH,13h
-        CWD
-        MOV     BH,0
-        INC     CX
-        INC     CX
-        INT     10h
-LALO:   LOOP    LALO
-        DEC     AX
-        JNZ     LALO
-        POPA
-@ATAT:  RET
-
-@NSES:  LOOP    @NPLA
-        XOR     SI,SI                           ;F9
-@NPLA:  STC
-        LOOP    @NRES
-        DB      0A9h   ;TEST AX,.... C=0        ;F8
-@NRES:  LOOP    @NANTE
-
-@READ:  PUSHA                                   ;F7
-        DB      0D6h
-        JS      STLT
-        CMC
-STLT:   CBW
-NUMEBL: ADC     AL,0
-        JS      @LUKA
-        MOV     DI,AX
-@FUSI:  XCHG    AX,SI
-        MOV     AX,4200h
-        MOV     BX,HFILE
-        CWD
-        XOR     CX,CX
-        INT     21h
-@FAAA:  MOV     AH,3Fh
-        MOV     DX,OFFSET @LONGT+1
-        INC     CX
-        INC     CX
-        int     21h
-        CMP     AL,2
-        JC      @FNKT
-        DEC     SI
-        JS      @FNKR
-@OSKT:  MOV     AX,4201h
-@LONGT: mov     DX,OFFSET @LONGT+1
-        XOR     CX,CX
-        int     21h
-        JMP     @FAAA
-@FNKR:  XCHG    AX,DI
-@FNKT:  MOV     BYTE PTR DS:[NUMEBL+1],AL
-        AAM     10
-        DEC     AX
-@LUKA:  ADD     AX,'00'+1
-        JMP     @MUUL
-
-@NANTE: LOOP    @NDEPU
-        INC     CX                              ;F6
-        MOV     BP,CX
-        MOV     BX,PFAIR                         ;leo puntero de grabaci√≥n
-        MOV     AH,23h                           ;F6 es lo √∫ltimo que me desactiva
-        MOV     WORD PTR DS:[BX+OFFSET FAIR],AX  ;guardo en zona
-
-@NDEPU: loop    @ATAT                           ;F5
-        PUSH    PFAIR
-        MOV     CL,TOTNOP                       ;ahora pongo nop iniciales
-        PUSH    DI
-KSXK:   MOV     BYTE PTR DS:[DI],CH
-        INC     DI
-        LOOP    KSXK
-oche:   MOV     DX,OFFSET @LONGT+1              ;dx=asciz filename
-        MOV     SI,DX                           ;si=dx para buscar el punto
-RSRA:   LODSB
-        CMP     AL,'.'
-        JNZ     RSRA
-        MOV     WORD PTR DS:[SI],'OC'           ;cambio el tap o sna por extension com
-        MOV     BYTE PTR DS:[SI+2],'M'
-        MOV     AH,3Ch
-        MOV     BYTE PTR DS:[OFFSET @MOFE],AH
-        MOV     WORD PTR DS:[OFFSET @MOFE+3],OFFSET @EXF4-OFFSET @DLDA  ;sustituyo el LDSNA por F4
-        INT     21h
-        XCHG    AX,BX                           ;pongo handle en bx
-        MOV     CL,OFFSET @LDSNA-OFFSET @GUACHI
-        PUSH    ES              ;para hacer un salto retf pongo segmento en pila
-        push    di
-        MOV     SI,OFFSET @GUACHI
-        REP     MOVSB           ;muevo el compresor, desde guachi hasta ldsna
-        PUSH    DS
-        POP     ES              ;ahora es apunta a zona emulador
-        RETF
-@GUACHI:MOV     DI,OFFSET @NPLA
-        MOV     CX,OFFSET JUEGO-OFFSET @NPLA    ;cx=borrar desde npla hasta juego
-        MOV     AL,0C3h                         ;mediante ret
-        REP     STOSB                           ;borro
-        POP     DX
-        POP     SI
-        MOV     CX,OFFSET FAIR-OFFSET START
-        DEC     BP
-        JNZ     @NOCM
-        LODSW
-        ADD     CX,SI
-IF JOYST
-        XOR     WORD PTR DS:[OFFSET @MVEE],50h+((OFFSET @REPRO-OFFSET @PMVE) XOR 12)*100h
-ELSE
-        XOR     WORD PTR DS:[OFFSET @MVEE],50h+((OFFSET @REPRO-OFFSET @PMVE) XOR 11)*100h
-ENDIF
-        MOV     AX,WORD PTR DS:[OFFSET FAIR]
-        INC     AX
-        MOV     WORD PTR DS:[@INIV+1],AX
-@NOCM:  MOV     AH,40h
-        INT     21h
-        PUSH    DS
-        DB      68h
-        DW      OFFSET KSALIR
-        RETF
-
-@LDSNA: mov     si,03FE5h
-        db      26h
-        lodsb
-        mov     i,al
-        db      26h
-        lodsw
-        MOV     HLp,AX
-        db      26h
-        lodsw
-        MOV     DEp,AX
-        db      26h
-        lodsw
-        MOV     BCp,AX
-        db      26h
-        lodsw
-        MOV     AFp,AX
-        db      26h
-        lodsw
-        MOV     HL,AX
-        db      26h
-        lodsw
-        MOV     DE,AX
-        db      26h
-        lodsw
-        MOV     BC,AX
-        db      26h
-        lodsw
-        MOV     IY,AX
-        db      26h
-        lodsw
-        MOV     IX,AX
-        db      26h
-        lodsb
-        SHL     AL,5
-        AND     AL,80h
-        mov     IM,AL
-        db      26h
-        lodsb
-        MOV     R,AL
-        db      26h
-        lodsw
-        MOV     F,AL
-        MOV     A,AH
-        db      26h
-        lodsw
-        xchg    bp,ax
-        db      26h
-        lodsb
-        SHR     AL,1
-        OR      IM,AL
-        db      26h
-        lodsb
-        MOV     POR,AL
-        MOV     SI,WORD PTR ES:[BP]
-        INC     BP
-        INC     BP
-        RET
- JUEGO  DB      16384*3+TOTREG DUP (?)
-  FAIR  DB      4096*2 DUP (?)
- BUFSO  DB      1400 DUP (?)
-END START
- pspseg         00 00 00 .. 00
- pspseg+2       bacteria
- pspseg+1000h   decompresor
- pspseg+1100h   mapa z80
+ldsna           mov     si, $3fe5
+                db      $26
+                lodsb
+                mov     I, al
+                db      $26
+                lodsw
+                mov     HLp, ax
+                db      $26
+                lodsw
+                mov     DEp, ax
+                db      $26
+                lodsw
+                mov     BCp, ax
+                db      $26
+                lodsw
+                mov     AFp, ax
+                db      $26
+                lodsw
+                mov     HL, ax
+                db      $26
+                lodsw
+                mov     DE, ax
+                db      $26
+                lodsw
+                mov     BC, ax
+                db      $26
+                lodsw
+                mov     IY, ax
+                db      $26
+                lodsw
+                mov     IX, ax
+                db      $26
+                lodsb
+                shl     al, 5
+                and     al, $80
+                mov     IM, al
+                db      $26
+                lodsb
+                mov     R, al
+                db      $26
+                lodsw
+                mov     F, al
+                mov     A, ah
+                db      $26
+                lodsw
+                xchg    bp, ax
+                db      $26
+                lodsb
+                shr     al, 1
+                or      IM, al
+                db      $26
+                lodsb
+                mov     POR, al
+                mov     si, [es:bp]
+                inc     bp
+                inc     bp
+                ret
+juego:
