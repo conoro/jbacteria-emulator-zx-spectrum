@@ -1,8 +1,8 @@
                 cpu     186
                 org     $100
 ;-----------------------constantes ensamblaje condicional
-                %define SOUNDB  1               ;utilizo soundblaster o speaker
-                %define JOYST   1               ;a 0 para deshabilitar el joystick
+                %define SOUNDB  0               ;utilizo soundblaster o speaker
+                %define JOYST   0               ;a 0 para deshabilitar el joystick
 ;-----------------------registros Z80
                 %define F       dl
                 %define A       byte [di]
@@ -70,8 +70,8 @@
 start           times   TOTNOP  db  0
                 cld
 %if SOUNDB
+                and     di, bx
                 salc
-                mov     di, ax
                 mov     ch, $40
                 mov     es, [di+$2C]
 sigdet          repnz   scasb
