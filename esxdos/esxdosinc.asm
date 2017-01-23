@@ -3,17 +3,17 @@
 ; Modified by Antonio Villena to revert to ESXDOS 0.8.5
 
 ;       This file is part of UnoDOS 3.
-;
+
 ;       UnoDOS 3 is free software: you can redistribute it and/or modify
 ;       it under the terms of the Lesser GNU General Public License as published by
 ;       the Free Software Foundation, either version 3 of the License, or
 ;       (at your option) any later version.
-;
+
 ;       UnoDOS 3 is distributed in the hope that it will be useful,
 ;       but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;       GNU General Public License for more details.
-;
+
 ;       You should have received a copy of the GNU Lesser General Public License
 ;       along with UnoDOS 3.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -63,9 +63,9 @@ ext_cmd         equ $2000;              // current external command from /CMD
 ; Passed using RST $08 followed by the code
 ; If carry is set the error code in A is printed.
 
-hook_base       equ 128;
-misc_base       equ hook_base + 8;
-fsys_base       equ misc_base + 16;
+hook_base       equ 128
+misc_base       equ hook_base + 8
+fsys_base       equ misc_base + 16
 
 disk_status     equ hook_base + 0;      // $80  add a,b
 ;                                                                       //

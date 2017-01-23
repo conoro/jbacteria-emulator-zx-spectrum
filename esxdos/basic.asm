@@ -3,17 +3,17 @@
 ; Modified by Antonio Villena to revert to ESXDOS 0.8.5
 
 ;       This file is part of UnoDOS 3.
-;
+
 ;       UnoDOS 3 is free software: you can redistribute it and/or modify
 ;       it under the terms of the Lesser GNU General Public License as published by
 ;       the Free Software Foundation, either version 3 of the License, or
 ;       (at your option) any later version.
-;
+
 ;       UnoDOS 3 is distributed in the hope that it will be useful,
 ;       but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;       GNU General Public License for more details.
-;
+
 ;       You should have received a copy of the GNU Lesser General Public License
 ;       along with UnoDOS 3.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -23,30 +23,30 @@ get_char        equ $0018;              // rst $18
 next_char       equ $0020;              // rst $20
 bc_spaces       equ $0030;              // rst $30
 reentry         equ $007b;              // IF1 reentry point
-k_test          equ $031e;
+k_test          equ $031e
 print_out       equ $09f4;              // screen channel
-key_scan        equ $028e;
-beeper          equ $03b5;
-me_new_lp       equ $08d2;
-cls_lower       equ $0d6e;
-add_char        equ $0f81;
-remove_fp       equ $11a7;
-chan_open       equ $1601;
-make_room       equ $1655;
-set_min         equ $16b0;
-set_work        equ $16bf;
-line_addr       equ $196e;
-each_stmt       equ $198b;
-reclaim_1       equ $19e5;
-e_line_no       equ $19fb;
-expt_1num       equ $1c82;
-expt_exp        equ $1c8c;
-use_zero        equ $1ce6;
-find_int2       equ $1e99;
-test_room       equ $1f05;
-pr_st_end       equ $2048;
-syntax_z        equ $2530;
-stk_fetch       equ $2bf1;
+key_scan        equ $028e
+beeper          equ $03b5
+me_new_lp       equ $08d2
+cls_lower       equ $0d6e
+add_char        equ $0f81
+remove_fp       equ $11a7
+chan_open       equ $1601
+make_room       equ $1655
+set_min         equ $16b0
+set_work        equ $16bf
+line_addr       equ $196e
+each_stmt       equ $198b
+reclaim_1       equ $19e5
+e_line_no       equ $19fb
+expt_1num       equ $1c82
+expt_exp        equ $1c8c
+use_zero        equ $1ce6
+find_int2       equ $1e99
+test_room       equ $1f05
+pr_st_end       equ $2048
+syntax_z        equ $2530
+stk_fetch       equ $2bf1
 
 
 ; // BASIC SYSTEM VARIABLES
@@ -97,12 +97,12 @@ nmiadd          equ $5cb0;              // the address of a user supplied NMI ad
 ;                                                       // non-zero value.
 
 
-; // IY OFFSETS TO BASIC SYSTEM VARIABLES;
-_err_nr         equ $00;
-_flags          equ $01;
-_tv_flag        equ $02;
-_err_sp         equ $03;
-_newppc         equ $08;
-_subppc         equ $0d;
-_x_ptr          equ $26;
-_flag_x         equ $37;
+; // IY OFFSETS TO BASIC SYSTEM VARIABLES
+_err_nr         equ $00
+_flags          equ $01
+_tv_flag        equ $02
+_err_sp         equ $03
+_newppc         equ $08
+_subppc         equ $0d
+_x_ptr          equ $26
+_flag_x         equ $37
