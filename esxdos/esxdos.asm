@@ -1,21 +1,6 @@
-; UnoDOS 3 - An operating system for the ZX-Uno and divMMC.
-; Copyright (c) 2017 Source Solutions, Inc.
-; Modified by Antonio Villena to revert to ESXDOS 0.8.5
-
-;       This file is part of UnoDOS 3.
-
-;       UnoDOS 3 is free software: you can redistribute it and/or modify
-;       it under the terms of the Lesser GNU General Public License as published by
-;       the Free Software Foundation, either version 3 of the License, or
-;       (at your option) any later version.
-
-;       UnoDOS 3 is distributed in the hope that it will be useful,
-;       but WITHOUT ANY WARRANTY; without even the implied warranty of
-;       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-;       GNU General Public License for more details.
-
-;       You should have received a copy of the GNU Lesser General Public License
-;       along with UnoDOS 3.  If not, see <http://www.gnu.org/licenses/>.
+; ESXDOS 0.8.5 disassembly. The author is Miguel Guerreiro.
+; The disassembly is not mine (antoniovillena), but the person who did
+; warn me to remove his credits from this file
 
         output  esxdos.rom
 
@@ -55,7 +40,7 @@ L0028   push    hl
         ret
 
         defb    $ff, $ff
-L0030   jr      L0091           ;auxiliary routines for internal UnoDOS business
+L0030   jr      L0091           ;auxiliary routines for internal ESXDOS business
 
 L0032   defb    '/BIN/'         ;avoids clash with keyword in tokenizers
 
@@ -277,7 +262,7 @@ L0169   xor     a               ;LD A, 0
         call    L041E
         ld      a, 13
         rst     $10
-        ld      hl, L1C58       ;UnoDOS text
+        ld      hl, L1C58       ;ESXDOS text
         call    L0257
         call    L02C5
         push    af
@@ -4419,7 +4404,7 @@ L1B37   defb    $A4, $03, $C0, $A2, $30, $AB, $1F, $E1
         defb    $E7, $E0, $AE, $FF, $80, $AE, $3C, $A2
         defb    $A0
 
-L1C58   defm    'ESXDOS'        ;UNODOS.SYS filename
+L1C58   defm    'ESXDOS'        ;ESXDOS.SYS filename
         defb    0               ;end marker
 
 L1C5F   ld      l, l
@@ -4902,7 +4887,7 @@ L1FFA   ret                     ; Jump from RST $18 handler to return to a syste
 L1FFB   jp      (hl)
 
 
-; UNODOS.SYS starts here
+; ESXDOS.SYS starts here
         block   $2000-$, $ff
 L2000   call    L23C9
         ret     c

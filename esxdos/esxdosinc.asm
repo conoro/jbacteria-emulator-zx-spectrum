@@ -1,22 +1,6 @@
-; UnoDOS 3 - An operating system for the ZX-Uno and divMMC.
-; Copyright (c) 2017 Source Solutions, Inc.
-; Modified by Antonio Villena to revert to ESXDOS 0.8.5
-
-;       This file is part of UnoDOS 3.
-
-;       UnoDOS 3 is free software: you can redistribute it and/or modify
-;       it under the terms of the Lesser GNU General Public License as published by
-;       the Free Software Foundation, either version 3 of the License, or
-;       (at your option) any later version.
-
-;       UnoDOS 3 is distributed in the hope that it will be useful,
-;       but WITHOUT ANY WARRANTY; without even the implied warranty of
-;       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-;       GNU General Public License for more details.
-
-;       You should have received a copy of the GNU Lesser General Public License
-;       along with UnoDOS 3.  If not, see <http://www.gnu.org/licenses/>.
-
+; ESXDOS 0.8.5 disassembly. The author is Miguel Guerreiro.
+; The disassembly is not mine (antoniovillena), but the person who did
+; warn me to remove his credits from this file
 
 ; EXTERNAL COMMANDS
 ; Execute at $2000. Maximum size 7168 bytes.
@@ -27,7 +11,7 @@
 ;           SCF, A=0, HL=pointer   - Print custom message.
 ;                                                                        Set bit 7 of last character as terminator.
 ;           CCF                    - Return cleanly to BASIC.
-;           RET C                  - Use UnoDOS error handler.
+;           RET C                  - Use ESXDOS error handler.
 ; Note:     You should avoid leaving handles open when returning to BASIC.
 
 
@@ -35,7 +19,7 @@
 ; RST $08:  Syscall entry point. When running in main RAM (instead of divMMC
 ;           RAM), parameters use IX in place of HL.
 ; RST $10:  Print character in A at current cursor position.
-; RST $30:  Internal UnoDOS call.
+; RST $30:  Internal ESXDOS call.
 
 
 ; I/O PORTS
@@ -44,7 +28,7 @@ mmcdev          equ $e7;                // divMMC device (write only?)
 mmcspi          equ $eb;                // divMMC SPI (read/write)
 ula             equ $fe;                // ZX Spectrum general I/O port
 
-; UNODOS VARIABLES
+; ESXDOS VARIABLES
 ; (stored in divMMC page 0)
 mmc_1           equ $2e7a;              // if SP is 3D00 - 3DFF, automapper pages in
 mmc_sp          equ $3dee;              // ?? Location of stack ??
@@ -54,12 +38,12 @@ mmc_3           equ $3df9;              // ?? (used to store memory page at one 
 cur_drive       equ $3df3;              // current SD card selected (??)
 
 
-; UNODOS DYNAMIC ROUTINES AND VARIABLES
+; ESXDOS DYNAMIC ROUTINES AND VARIABLES
 ; (stored in divMMC RAM page 3)
 ext_cmd         equ $2000;              // current external command from /CMD
 
 
-; UNODOS HOOK CODES
+; ESXDOS HOOK CODES
 ; Passed using RST $08 followed by the code
 ; If carry is set the error code in A is printed.
 
@@ -322,7 +306,7 @@ fa_use_header   equ %01000000;          // $40  ld b,b          use plus3dos hea
 ;                                                                       //                                      (passed in de)
 
 
-; UNODOS ERRORS
+; ESXDOS ERRORS
 ; Error text is read from an external file. 
 EOK             equ 1;          // OK
 EGENERAL        equ 2;          // Syntax error
