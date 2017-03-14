@@ -10,18 +10,9 @@
 ;************************************************************************
 
 ; -------------------------
-; Last updated: 13-DEC-2004
+; Last updated: 28-OCT-2012
 ; -------------------------
 
-; TASM cross-assembler directives. 
-; ( comment out, perhaps, for other assemblers - see Notes at end.)
-
-;#define DEFB .BYTE      
-;#define DEFW .WORD
-;#define DEFM .TEXT
-;#define ORG  .ORG
-;#define EQU  .EQU
-;#define equ  .EQU
 
 ;   It is always a good idea to anchor, using ORGs, important sections such as 
 ;   the character bitmaps so that they don't move as code is added and removed.
@@ -29,7 +20,7 @@
 ;   Generally most approaches try to maintain main entry points as they are
 ;   often used by third-party software. 
 
-        ORG     0000
+        ORG     $0000
 
 ;*****************************************
 ;** Part 1. RESTART ROUTINES AND TABLES **
@@ -223,12 +214,6 @@ L0055:  LD      (IY+$00),L      ; Store it in the system variable ERR_NR.
                                 ; variables area and then indirectly to MAIN-4, 
                                 ; etc.
 
-; ---
-
-        DEFB    $FF, $FF, $FF   ; Unused locations
-        DEFB    $FF, $FF, $FF   ; before the fixed-position
-        DEFB    $FF             ; NMI routine.
-
 ; ------------------------------------
 ; THE 'NON-MASKABLE INTERRUPT' ROUTINE
 ; ------------------------------------
@@ -258,6 +243,9 @@ L0055:  LD      (IY+$00),L      ; Store it in the system variable ERR_NR.
 ;   placing two zeros in the NMIADD system variable.
 
 ;; RESET
+L005F:  DEFB    $FF, $FF, $FF   ; Unused locations
+        DEFB    $FF, $FF, $FF   ; before the fixed-position
+        DEFB    $FF             ; NMI routine.
       IFDEF pokemon
         push    af
         ld      a, ($5c8f)
@@ -298,8 +286,7 @@ L0077:  INC     HL              ; increase the character address by one.
 
 ;; TEMP-PTR2
 L0078:  LD      ($5C5D),HL      ; update CH_ADD with character address.
-
-X007B:  LD      A,(HL)          ; load character to A from HL.
+        LD      A,(HL)          ; load character to A from HL.
         RET                     ; and return.
 
 ; --------------------------
@@ -2726,7 +2713,7 @@ L08B6:  LD      C,(IX+$0B)      ; fetch length
         LD      A,$FF           ; signal data not a header.
         CALL    L0802           ; routine LD-BLOCK loads to workspace.
         POP     HL              ; restore first location in workspace to HL.
-X08CE   LD      DE,($5C53)      ; set DE from system variable PROG.
+        LD      DE,($5C53)      ; set DE from system variable PROG.
 
 ;   now enter a loop to merge the data block in workspace with the program and 
 ;   variables. 
@@ -4678,9 +4665,7 @@ L0F6C:  CALL    L15D4           ; routine WAIT-KEY for control.
 
 ;; ADD-CHAR
 L0F81:  RES     0,(IY+$07)      ; set MODE to 'L'
-
-X0F85:  LD      HL,($5C5B)      ; fetch address of keyboard cursor from K_CUR
-
+        LD      HL,($5C5B)      ; fetch address of keyboard cursor from K_CUR
         CALL    L1652           ; routine ONE-SPACE creates one space.
 
 ; either a continuation of above or from ED-CONTR with ED-LOOP on stack.
@@ -5856,12 +5841,8 @@ L12AC:  LD      A,$00           ; select channel 'K' the keyboard
         BIT     7,(IY+$00)      ; test ERR_NR - will be $FF if syntax is OK.
         JR      NZ,L12CF        ; forward, if correct, to MAIN-3.
 
-; 
-
         BIT     4,(IY+$30)      ; test FLAGS2 - K channel in use ?
         JR      Z,L1303         ; forward to MAIN-4 if not.
-
-;
 
         LD      HL,($5C59)      ; an editing error so address E_LINE.
         CALL    L11A7           ; routine REMOVE-FP removes the hidden
@@ -5874,7 +5855,7 @@ L12AC:  LD      A,$00           ; select channel 'K' the keyboard
 ; the branch was here if syntax has passed test.
 
 ;; MAIN-3
-L12CF:  
+L12CF:
       IFDEF easy
         nop
         nop
@@ -5984,8 +5965,7 @@ L133C:  CALL    L15EF           ; call routine OUT-CODE to print the code.
         LD      DE,L1391        ; address: rpt-mesgs.
 
         CALL    L0C0A           ; call routine PO-MSG to print the message.
-
-X1349:  XOR     A               ; clear accumulator to directly
+        XOR     A               ; clear accumulator to directly
         LD      DE,L1537 - 1    ; address the comma and space message.  
 
         CALL    L0C0A           ; routine PO-MSG prints ', ' although it would
@@ -6117,7 +6097,7 @@ L1391:  DEFB    $80
 ;; comma-sp   
 L1537:  DEFB    ',',' '+$80                             ; used in report line.
 ;; copyright
-L1539:  
+L1539:
    IFDEF resetplay
         DEFM    "Press PLAY or SPACE to brea"
         DEFB    'k'+$80
@@ -7256,7 +7236,7 @@ L1835:  CALL    L1855           ; routine OUT-LINE outputs a BASIC line
 ; continue here if an automatic listing required.
 
         LD      A,($5C6B)       ; fetch DF_SZ lower display file size.
-        SUB     (IY+$4F)        ; subtract S_POSN_hi ithe current line number.
+        SUB     (IY+$4F)        ; subtract S_POSN_hi the current line number.
         JR      NZ,L1835        ; back to LIST-ALL-2 if upper screen not full.
 
         XOR     E               ; A contains zero, E contains one if the
@@ -16549,11 +16529,6 @@ L31FA:  INC     B               ;
         PUSH    AF              ;
         JR      Z,L31E2         ; to DIV-START
 
-;
-;
-;
-;
-
         LD      E,A             ;
         LD      D,C             ;
         EXX                     ;
@@ -20963,9 +20938,6 @@ L3D00:  DEFB    %00000000
         DEFB    %01000010
         DEFB    %00111100
 
-
-;#end                            ; generic cross-assembler directive 
-
 ; Acknowledgements
 ; -----------------
 ; Sean Irvine               for default list of section headings
@@ -20974,21 +20946,10 @@ L3D00:  DEFB    %00000000
 ;
 ; Credits
 ; -------
+; George Wearmouth          for original file http://www.wearmouth.demon.co.uk/zx82.htm
 ; Alex Pallero Gonzales     for corrections.
 ; Mike Dailly               for comments.
 ; Alvin Albrecht            for comments.
 ; Andy Styles               for full relocatability implementation and testing.                    testing.
 ; Andrew Owen               for ZASM compatibility and format improvements.
 ; Antonio Villena           for easy, resetplay and pokemon
-
-;   For other assemblers you may have to add directives like these near the 
-;   beginning - see accompanying documentation.
-;   ZASM (MacOs) cross-assembler directives. (uncomment by removing ';' )
-;   #target rom           ; declare target file format as binary.
-;   #code   0,$4000       ; declare code segment.
-;   Also see notes at Address Labels 0609 and 1CA5 if your assembler has 
-;   trouble with expressions.
-;
-;   Note. The Sinclair Interface 1 ROM written by Dr. Ian Logan and Martin 
-;   Brennan calls numerous routines in this ROM.  
-;   Non-standard entry points have a label beginning with X. 

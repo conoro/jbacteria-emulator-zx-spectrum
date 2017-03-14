@@ -1801,7 +1801,7 @@ L0574:  DJNZ    L0574           ; self loop to LD-WAIT (for 256 times)
                                 ; if no edges at all.
 
 ;; LD-LEADER
-L0580:  LD      B,$9C           ; two edges must be spaced apart.
+L0580:  LD      B,$9C           ; set timing value.
         CALL    L05E3           ; routine LD-EDGE-2
         JR      NC,L056B        ; back to LD-BREAK if time-out
 
@@ -1817,7 +1817,7 @@ L0580:  LD      B,$9C           ; two edges must be spaced apart.
 ;   Now test every edge looking for the terminal sync signal.
 
 ;; LD-SYNC
-L058F:  LD      B,$C9           ; two edges must be spaced apart.
+L058F:  LD      B,$C9           ; initial timing value in B.
         CALL    L05E7           ; routine LD-EDGE-1
         JR      NC,L056B        ; back to LD-BREAK with time-out.
 
@@ -1841,7 +1841,7 @@ L058F:  LD      B,$C9           ; two edges must be spaced apart.
         LD      C,A             ; store the new long-term byte.
 
         LD      H,$00           ; set up parity byte as zero.
-        LD      B,$B0           ; two edges must be spaced apart.
+        LD      B,$B0           ; timing.
         JR      L05C8           ; forward to LD-MARKER 
                                 ; the loop mid entry point with the alternate 
                                 ; zero flag reset to indicate first byte 
@@ -3524,7 +3524,7 @@ L0B93:  CP      C               ; this test is really for screen - new line ?
         CALL    Z,L0C55         ; routine PO-SCR considers scrolling
 
         POP     DE              ; restore source
-L0B99   PUSH    BC              ; save line/column
+L0B99:  PUSH    BC              ; save line/column
         PUSH    HL              ; and destination
         LD      A,($5C91)       ; fetch P_FLAG to accumulator
         LD      B,$FF           ; prepare OVER mask in B.
@@ -5805,6 +5805,7 @@ L121C:
 
         JR      L12A9           ; forward to MAIN-1
     ENDIF
+
 ; -------------------------
 ; THE 'MAIN EXECUTION LOOP'
 ; -------------------------
@@ -5839,12 +5840,8 @@ L12AC:  LD      A,$00           ; select channel 'K' the keyboard
         BIT     7,(IY+$00)      ; test ERR_NR - will be $FF if syntax is OK.
         JR      NZ,L12CF        ; forward, if correct, to MAIN-3.
 
-; 
-
         BIT     4,(IY+$30)      ; test FLAGS2 - K channel in use ?
         JR      Z,L1303         ; forward to MAIN-4 if not.
-
-;
 
         LD      HL,($5C59)      ; an editing error so address E_LINE.
         CALL    L11A7           ; routine REMOVE-FP removes the hidden
@@ -5857,15 +5854,7 @@ L12AC:  LD      A,$00           ; select channel 'K' the keyboard
 ; the branch was here if syntax has passed test.
 
 ;; MAIN-3
-L12CF:;  LD      HL,($5C59)      ; fetch the edit line address from E_LINE.
-
-;        LD      ($5C5D),HL      ; system variable CH_ADD is set to first
-                                ; character of edit line.
-                                ; Note. the above two instructions are a little
-                                ; inadequate. 
-                                ; They are repeated with a subtle difference 
-                                ; at the start of the next subroutine and are 
-                                ; therefore not required above.
+L12CF:
       IFDEF easy
         nop
         nop
@@ -5907,7 +5896,7 @@ L12D5:
         SET     7,(IY+$01)      ; update FLAGS - signal running program.
         LD      (IY+$00),$FF    ; set ERR_NR to 'OK'.
         LD      (IY+$0A),$01    ; set NSPPC to one for first statement.
-L1300:  CALL    L1B8A           ; call routine LINE-RUN to run the line.
+        CALL    L1B8A           ; call routine LINE-RUN to run the line.
                                 ; sysvar ERR_SP therefore addresses MAIN-4
 
 ; Examples of direct commands are RUN, CLS, LOAD "", PRINT USR 40000,
@@ -6099,7 +6088,7 @@ L1391:  DEFB    $80
         DEFM    "Parameter erro"
         DEFB    'r'+$80                                 ; Q
         DEFM    "Tape loading erro"
-L1536:  DEFB    'r'+$80                                 ; R
+        DEFB    'r'+$80                                 ; R
 ;; comma-sp   
 L1537:  DEFB    ',',' '+$80                             ; used in report line.
 ;; copyright
@@ -8322,7 +8311,7 @@ L1B02:  DEFB    $06             ; Class-06 - A numeric expression must follow.
 L1B06:  DEFB    $0A             ; Class-0A - A string expression must follow.
         DEFB    $00             ; Class-00 - No further operands.
         DEFW    L1793           ; Address: $1793; Address: CAT-ETC
-        
+
 ;; P-MOVE
 L1B0A:  DEFB    $0A             ; Class-0A - A string expression must follow.
         DEFB    $2C             ; Separator:  ','
@@ -16539,11 +16528,6 @@ L31FA:  INC     B               ;
         PUSH    AF              ;
         JR      Z,L31E2         ; to DIV-START
 
-;
-;
-;
-;
-
         LD      E,A             ;
         LD      D,C             ;
         EXX                     ;
@@ -16723,9 +16707,6 @@ L3296:  RST     28H             ;; FP-CALC              x.    (= 3.4 or -3.4).
         DEFB    $38             ;;end-calc              3.
 
         RET                     ; return with + int x on stack.
-
-; ---
-
 
 ;; X-NEG
 L329E:  DEFB    $31             ;;duplicate             -3.4, -3.4.
@@ -21178,6 +21159,7 @@ L3D00:  DEFB    %00000000
 ;
 ; Credits
 ; -------
+; George Wearmouth          for original file http://www.wearmouth.demon.co.uk/zx82.htm
 ; Alex Pallero Gonzales     for corrections.
 ; Mike Dailly               for comments.
 ; Alvin Albrecht            for comments.
