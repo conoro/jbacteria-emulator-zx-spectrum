@@ -31,26 +31,25 @@ int main(int argc, char* argv[]){
   if( !fo )
     printf("\nCannot create output file: %s\n", output_name),
     exit(-1);
-  size= fread(mem+28, 1, 0x10000, fi);
+  size= fread(mem+23, 1, 0x10000, fi);
   *(int*)(mem)= 19;
   for ( i= 0; i<10 && argv[2][i]; i++ )
     mem[i+4]= argv[2][i];
   while( ++i<11 )
     mem[i+3]= ' ';
-  *(short*)(mem+18)= *(short*)(mem+14)= *(short*)(mem+21)= size+25;
-  size+= 29;
+  *(short*)(mem+18)= *(short*)(mem+14)= *(short*)(mem+21)= size+20;
+  size+= 24;
   for ( checksum= 0, i= 2; i<20; ++i )
     checksum^= mem[i];
   mem[20]= checksum;
   fwrite(mem, 1, 21, fo);
   *(short*)(mem)= size-2;
-  *(int*)(mem+2)= 0x800031ff;
-  *(int*)(mem+6)= 0x37c0def3;
-  *(int*)(mem+10)= 0x96398f0e;
-  *(int*)(mem+14)= 0x11dc7221;
-  *(int*)(mem+18)= 0x7f06ff8e;
-  *(int*)(mem+22)= 0xc3fbb8ed;
-  *(short*)(mem+26)= 0x8000;
+  mem[2]= 255;
+  *(int*)(mem+3)= 0x8e117d06;
+  *(int*)(mem+7)= 0x0e37c0fd;
+  *(int*)(mem+11)= 0x2196398f;
+  *(int*)(mem+15)= 0xb8edda6d;
+  *(int*)(mem+19)= 0xe9f9eb13;
   for ( checksum= 0, i= 2; i<size; ++i )
     checksum^= mem[i];
   mem[size-1]= checksum;
